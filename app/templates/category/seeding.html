@@ -11,7 +11,7 @@
             </p>
         </div>
         <div class="page-actions">
-            <a href="{{ url_for('manage_category', slug=tournament.url_slug, category_id=category.id) }}"
+            <a href="{{ url_for('category.manage_category', slug=tournament.url_slug, category_id=category.id) }}"
                 class="btn btn-secondary">← Back</a>
         </div>
     </div>
@@ -39,7 +39,7 @@
 
         <div class="form-actions">
             <button type="submit" class="btn btn-primary btn-large">Save Seeding</button>
-            <a href="{{ url_for('manage_category', slug=tournament.url_slug, category_id=category.id) }}"
+            <a href="{{ url_for('category.manage_category', slug=tournament.url_slug, category_id=category.id) }}"
                 class="btn btn-secondary btn-large">Cancel</a>
         </div>
     </form>

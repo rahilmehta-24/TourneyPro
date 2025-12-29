@@ -1,5 +1,5 @@
 import math
-from models import db, Match, Participant, Group
+from app.models import db, Match, Participant, Group
 
 def generate_group_stage(category, participants):
     """

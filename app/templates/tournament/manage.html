@@ -10,7 +10,8 @@
 
         </div>
         <div class="page-actions">
-            <a href="{{ url_for('view_tournament', slug=tournament.url_slug) }}" class="btn btn-secondary">View
+            <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug) }}"
+                class="btn btn-secondary">View
                 Tournament</a>
         </div>
     </div>
@@ -29,9 +30,7 @@
                             <div class="participant-info">
                                 <span class="participant-seed">#{{ participant.seed or loop.index }}</span>
                                 <span class="participant-name">{{ participant.name }}</span>
-                                {% if participant.email %}
-                                <span class="participant-email">{{ participant.email }}</span>
-                                {% endif %}
+                                <span class="participant-email">{{ participant.email or '' }}</span>
                             </div>
                         </div>
                         {% endfor %}
@@ -59,7 +58,7 @@
                         <h4 style="margin-bottom: 0.5rem; font-size: 0.9rem; color: #cbd5e1;">Existing Categories:</h4>
                         <div style="display: flex; flex-direction: column; gap: 0.5rem;">
                             {% for category in tournament.categories %}
-                            <a href="{{ url_for('view_category', slug=tournament.url_slug, category_id=category.id) }}"
+                            <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=category.id) }}"
                                 style="padding: 0.5rem 1rem; background: #1e293b; border-radius: 6px; text-decoration: none; color: white; display: flex; justify-content: space-between; align-items: center;">
                                 <span>{{ category.name }}</span>
                                 <span class="tab-badge status-{{ category.status }}" style="font-size: 0.75rem;">{{
@@ -72,7 +71,7 @@
                     <p style="color: #64748b; font-style: italic; margin-bottom: 1rem;">No categories yet.</p>
                     {% endif %}
 
-                    <a href="{{ url_for('create_category', slug=tournament.url_slug) }}"
+                    <a href="{{ url_for('category.create_category', slug=tournament.url_slug) }}"
                         class="btn btn-primary btn-block">
                         <span class="btn-icon">➕</span>
                         Create Category
@@ -178,7 +177,7 @@
                 </div>
                 <div class="card-body">
                     <p class="text-muted">Permanently delete this tournament and all its data.</p>
-                    <form method="POST" action="{{ url_for('delete_tournament', slug=tournament.url_slug) }}"
+                    <form method="POST" action="{{ url_for('tournament.delete_tournament', slug=tournament.url_slug) }}"
                         onsubmit="return confirm('Are you sure? This cannot be undone!');">
                         <button type="submit" class="btn btn-danger btn-block mt-2">Delete Tournament</button>
                     </form>

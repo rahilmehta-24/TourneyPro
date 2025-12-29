@@ -10,9 +10,10 @@
             <p class="subtitle">{{ tournament.name }} | {{ formats[category.format].name }}</p>
         </div>
         <div class="page-actions">
-            <a href="{{ url_for('view_tournament', slug=tournament.url_slug) }}" class="btn btn-secondary">← Back to
+            <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug) }}" class="btn btn-secondary">←
+                Back to
                 Tournament</a>
-            <a href="{{ url_for('export_category_pdf', slug=tournament.url_slug, category_id=category.id) }}"
+            <a href="{{ url_for('export.export_category_pdf', slug=tournament.url_slug, category_id=category.id) }}"
                 class="btn btn-primary" target="_blank">🖨️ Export PDF</a>
         </div>
     </div>
@@ -117,7 +118,7 @@
 
         {% if category.status == 'in_progress' %}
         <form method="POST"
-            action="{{ url_for('start_knockout_stage', slug=tournament.url_slug, category_id=category.id) }}">
+            action="{{ url_for('category.start_knockout_stage', slug=tournament.url_slug, category_id=category.id) }}">
             <button type="submit" class="btn btn-primary btn-large">Start Knockout Stage</button>
         </form>
         {% endif %}
@@ -130,7 +131,7 @@
         <div class="page-header">
             <h2>Bracket</h2>
             <div class="page-actions">
-                <a href="{{ url_for('manage_category', slug=tournament.url_slug, category_id=category.id) }}"
+                <a href="{{ url_for('category.manage_category', slug=tournament.url_slug, category_id=category.id) }}"
                     class="btn btn-secondary">Manage Category</a>
                 {% if category.status == 'in_progress' %}
                 {# Check if finals match is complete #}
@@ -139,7 +140,7 @@
                 {% set finals_match = rounds[final_round][0] %}
                 {% if finals_match and finals_match.status == 'completed' %}
                 <form method="POST"
-                    action="{{ url_for('manage_category', slug=tournament.url_slug, category_id=category.id) }}"
+                    action="{{ url_for('category.manage_category', slug=tournament.url_slug, category_id=category.id) }}"
                     style="display: inline;">
                     <input type="hidden" name="action" value="finish_category">
                     <button type="submit" class="btn btn-success">

@@ -1,43 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Tournament Platform{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     {% block extra_css %}{% endblock %}
 </head>
+
 <body>
     <nav class="navbar">
         <div class="container">
-            <a href="{{ url_for('index') }}" class="logo">
+            <a href="{{ url_for('main.index') }}" class="logo">
                 <span class="logo-icon">🏆</span>
                 <span class="logo-text">TourneyPro</span>
             </a>
             <div class="nav-links">
-                <a href="{{ url_for('index') }}" class="nav-link">Home</a>
-                <a href="{{ url_for('tournament_list') }}" class="nav-link">Tournaments</a>
-                <a href="{{ url_for('create_tournament') }}" class="btn btn-primary">Create Tournament</a>
+                <a href="{{ url_for('main.index') }}" class="nav-link">Home</a>
+                <a href="{{ url_for('main.tournament_list') }}" class="nav-link">Tournaments</a>
+                <a href="{{ url_for('tournament.create_tournament') }}" class="btn btn-primary">Create Tournament</a>
             </div>
         </div>
     </nav>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div class="flash-messages">
-                {% for category, message in messages %}
-                    <div class="flash flash-{{ category }}">
-                        <span class="flash-icon">
-                            {% if category == 'success' %}✓{% elif category == 'error' %}✗{% elif category == 'warning' %}⚠{% else %}ℹ{% endif %}
-                        </span>
-                        <span class="flash-text">{{ message }}</span>
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
+    {% if messages %}
+    <div class="flash-messages">
+        {% for category, message in messages %}
+        <div class="flash flash-{{ category }}">
+            <span class="flash-icon">
+                {% if category == 'success' %}✓{% elif category == 'error' %}✗{% elif category == 'warning' %}⚠{% else
+                %}ℹ{% endif %}
+            </span>
+            <span class="flash-text">{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
     {% endwith %}
 
     <main class="main-content">
@@ -53,4 +57,5 @@
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block extra_js %}{% endblock %}
 </body>
+
 </html>

@@ -10,9 +10,10 @@
 
         </div>
         <div class="page-actions">
-            <a href="{{ url_for('index') }}" class="btn btn-secondary">← Back to Tournaments</a>
+            <a href="{{ url_for('main.index') }}" class="btn btn-secondary">← Back to Tournaments</a>
             {% if tournament.status == 'setup' %}
-            <a href="{{ url_for('manage_tournament', slug=tournament.url_slug) }}" class="btn btn-primary">Manage
+            <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}"
+                class="btn btn-primary">Manage
                 Tournament</a>
             {% endif %}
         </div>
@@ -29,7 +30,7 @@
         <div class="page-header">
             <h2 class="section-title">Categories</h2>
             <div class="page-actions">
-                <a href="{{ url_for('create_category', slug=tournament.url_slug) }}" class="btn btn-primary">
+                <a href="{{ url_for('category.create_category', slug=tournament.url_slug) }}" class="btn btn-primary">
                     ➕ Create Category
                 </a>
             </div>
@@ -107,11 +108,11 @@
 
                 <!-- Action Buttons -->
                 <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                    <a href="{{ url_for('view_category', slug=tournament.url_slug, category_id=category.id) }}"
+                    <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=category.id) }}"
                         class="btn btn-primary" style="flex: 1; text-align: center; text-decoration: none;">
                         View Bracket
                     </a>
-                    <a href="{{ url_for('manage_category', slug=tournament.url_slug, category_id=category.id) }}"
+                    <a href="{{ url_for('category.manage_category', slug=tournament.url_slug, category_id=category.id) }}"
                         class="btn btn-secondary" style="flex: 1; text-align: center; text-decoration: none;">
                         Manage
                     </a>
@@ -389,7 +390,7 @@
         {% if tournament.has_categories %}
         <div class="alert alert-info">
             <span class="alert-icon">ℹ️</span>
-            <span>Tournament not started yet. <a href="{{ url_for('manage_tournament', slug=tournament.url_slug) }}">Add
+            <span>Tournament not started yet. <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}">Add
                 participants and start the tournament</a> to generate the bracket.</span>
         </div>
         {% elif matches %}
@@ -397,7 +398,7 @@
             <div class="page-header">
                 <h2 class="section-title">Tournament Bracket</h2>
                 <div class="page-actions">
-                    <a href="{{ url_for('manage_tournament', slug=tournament.url_slug) }}" class="btn btn-secondary">Manage
+                    <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}" class="btn btn-secondary">Manage
                         Tournament</a>
                     {% if tournament.status == 'in_progress' %}
                     {# Check if finals match is complete #}
@@ -405,7 +406,7 @@
                     {% set finals_match = rounds[final_round][0] if final_round in rounds and rounds[final_round] else none
                 %}
                     {% if finals_match and finals_match.status == 'completed' %}
-                    <form method="POST" action="{{ url_for('manage_tournament', slug=tournament.url_slug) }}"
+                    <form method="POST" action="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}"
                         style="display: inline;">
                         <input type="hidden" name="action" value="finish_tournament">
                             <button type="submit" class="btn btn-success">

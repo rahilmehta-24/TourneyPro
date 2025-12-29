@@ -184,7 +184,7 @@ def calculate_final_rankings(category):
     Returns:
         dict with 'winner', 'runner_up', 'semi_finalists' (list of 2)
     """
-    from models import Match, Participant
+    from app.models import Match, Participant
     
     # Find the final match (highest round number)
     final_match = Match.query.filter_by(

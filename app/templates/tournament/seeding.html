@@ -10,7 +10,8 @@
             <p class="page-subtitle">{{ tournament.name }}</p>
         </div>
         <div class="page-actions">
-            <a href="{{ url_for('manage_tournament', slug=tournament.url_slug) }}" class="btn btn-secondary">← Back</a>
+            <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}"
+                class="btn btn-secondary">← Back</a>
         </div>
     </div>
 
@@ -46,7 +47,7 @@
         </div>
         <div class="card-footer">
             <button type="submit" class="btn btn-primary btn-large">Save Seeding</button>
-            <a href="{{ url_for('manage_tournament', slug=tournament.url_slug) }}"
+            <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}"
                 class="btn btn-secondary btn-large">Cancel</a>
         </div>
     </form>

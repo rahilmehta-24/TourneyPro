@@ -35,7 +35,7 @@ def calculate_round_robin_standings(category_id):
     Returns:
         List of participants sorted by wins (desc), losses (asc)
     """
-    from models import Participant, Match, db
+    from app.models import Participant, Match, db
     
     participants = Participant.query.filter_by(category_id=category_id).all()
     

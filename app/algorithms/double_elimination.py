@@ -114,7 +114,7 @@ def calculate_double_elimination_rankings(category):
     Returns:
         dict with 'winner', 'runner_up', 'semi_finalists'
     """
-    from models import Match, Participant
+    from app.models import Match, Participant
     
     # Find grand finals
     grand_finals = Match.query.filter_by(

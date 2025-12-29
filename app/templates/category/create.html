@@ -63,7 +63,7 @@
 
         <div class="form-actions">
             <button type="submit" class="btn btn-primary btn-large">Create Category</button>
-            <a href="{{ url_for('view_tournament', slug=tournament.url_slug) }}"
+            <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug) }}"
                 class="btn btn-secondary btn-large">Cancel</a>
         </div>
     </form>
