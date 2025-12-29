@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Tournament Platform{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <div class="container">
+        <h1 class="hero-title">Manage Tournaments Like a Pro</h1>
+        <p class="hero-subtitle">Create and manage competitive tournaments with 9 different bracket formats</p>
+        <div class="hero-actions">
+            <a href="{{ url_for('create_tournament') }}" class="btn btn-primary btn-large">
+                <span class="btn-icon">➕</span>
+                Create Tournament
+            </a>
+            <a href="{{ url_for('tournament_list') }}" class="btn btn-secondary btn-large">
+                <span class="btn-icon">📋</span>
+                Browse Tournaments
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <section class="formats-section">
+        <h2 class="section-title">Tournament Formats</h2>
+        <div class="formats-grid">
+            {% for format_key, format_info in formats.items() %}
+            <div class="format-card">
+                <div class="format-icon">{{ format_info.icon }}</div>
+                <h3 class="format-name">{{ format_info.name }}</h3>
+                <p class="format-description">{{ format_info.description }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    {% if tournaments %}
+    <section class="recent-tournaments">
+        <h2 class="section-title">Recent Tournaments</h2>
+        <div class="tournament-list">
+            {% for tournament in tournaments %}
+            <div class="tournament-card">
+                <div class="tournament-header">
+                    <div class="tournament-format-badge">
+                        {{ formats[tournament.format].icon }} {{ formats[tournament.format].name }}
+                    </div>
+                    <div class="tournament-status status-{{ tournament.status }}">
+                        {{ tournament.status.replace('_', ' ').title() }}
+                    </div>
+                </div>
+                <h3 class="tournament-name">{{ tournament.name }}</h3>
+                {% if tournament.game_info %}
+                <p class="tournament-game">🎮 {{ tournament.game_info }}</p>
+                {% endif %}
+                <div class="tournament-meta">
+                    <span class="meta-item">👥 {{ tournament.participants|length }} participants</span>
+                    <span class="meta-item">📅 {{ tournament.created_at.strftime('%b %d, %Y') }}</span>
+                </div>
+                <div class="tournament-actions">
+                    <a href="{{ url_for('view_tournament', slug=tournament.url_slug) }}"
+                        class="btn btn-secondary btn-small">View Bracket</a>
+                    {% if tournament.status == 'setup' %}
+                    <a href="{{ url_for('manage_tournament', slug=tournament.url_slug) }}"
+                        class="btn btn-primary btn-small">Manage</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

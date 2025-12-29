@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>{{ tournament.name }} - {{ category.name }}</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 0.5cm;
+        }
+
+        body {
+            font-family: Helvetica, sans-serif;
+            font-size: 10px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        h2 {
+            margin: 5px 0;
+            font-size: 14px;
+            font-weight: normal;
+        }
+
+        /* Table-based bracket layout for xhtml2pdf compatibility */
+        table.bracket {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        td {
+            vertical-align: middle;
+            padding: 0;
+            margin: 0;
+        }
+
+        /* Round Headers */
+        .round-header {
+            text-align: center;
+            font-weight: bold;
+            font-size: 12px;
+            padding-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        /* Match Box Styling */
+        .match-container {
+            width: 180px;
+            padding: 5px;
+        }
+
+        .player-line {
+            border-bottom: 1px solid #000;
+            height: 20px;
+            position: relative;
+            margin-bottom: 5px;
+        }
+
+        .player-name {
+            position: absolute;
+            bottom: 2px;
+            left: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .player-seed {
+            font-size: 8px;
+            color: #666;
+            margin-right: 3px;
+        }
+
+        .score-line {
+            position: absolute;
+            bottom: 2px;
+            right: 5px;
+            font-weight: bold;
+        }
+
+        .bye-text {
+            font-style: italic;
+            color: #666;
+        }
+
+        .winner-bold {
+            font-weight: bold;
+        }
+
+        /* Connector Lines */
+        .connector-right {
+            border-right: 1px solid #000;
+        }
+
+        .connector-bottom {
+            border-bottom: 1px solid #000;
+        }
+
+        .connector-top {
+            border-top: 1px solid #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>{{ tournament.name }}</h1>
+        <h2>{{ category.name }}</h2>
+    </div>
+
+    <table class="bracket">
+        <!-- Round Headers Row -->
+        <tr>
+            {% set total_rounds = rounds|length %}
+            {% for round_num in rounds.keys() %}
+            <td class="round-header">
+                {% if round_num == total_rounds %}
+                Final
+                {% elif round_num == total_rounds - 1 %}
+                Semi-Final
+                {% elif round_num == total_rounds - 2 %}
+                Quarter-Final
+                {% else %}
+                Round {{ round_num }}
+                {% endif %}
+            </td>
+            <!-- Empty cell for connector column (except last round) -->
+            {% if not loop.last %}
+            <td></td>
+            {% endif %}
+            {% endfor %}
+        </tr>
+
+        <!-- Matches Row -->
+        <tr>
+            {% for round_num, round_matches in rounds.items() %}
+            <td valign="middle">
+                <table style="width: 100%;">
+                    {% for match in round_matches %}
+                    <!-- Spacer Above -->
+                    <tr>
+                        <td height="{{ 20 * (round_num * round_num) }}"></td>
+                    </tr>
+
+                    <tr>
+                        <td class="match-container">
+                            <!-- Player 1 -->
+                            <div class="player-line">
+                                <span
+                                    class="player-name {% if match.winner_id and match.participant1 and match.winner_id == match.participant1.id %}winner-bold{% endif %}">
+                                    {% if match.participant1 %}
+                                    <span class="player-seed">{{ match.participant1.seed if match.participant1.seed else
+                                        '' }}</span>{{ match.participant1.name }}
+                                    {% elif match.participant2 and round_num == 1 %}
+                                    <span class="bye-text">Bye</span>
+                                    {% else %}
+                                    <span style="color: #999;">TBD</span>
+                                    {% endif %}
+                                </span>
+                                <span class="score-line">
+                                    {% if match.score1 != None and match.score1 != 'Bye' %}
+                                    {{ match.score1 }}
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <!-- Player 2 -->
+                            <div class="player-line">
+                                <span
+                                    class="player-name {% if match.winner_id and match.participant2 and match.winner_id == match.participant2.id %}winner-bold{% endif %}">
+                                    {% if match.participant2 %}
+                                    <span class="player-seed">{{ match.participant2.seed if match.participant2.seed else
+                                        '' }}</span>{{ match.participant2.name }}
+                                    {% elif match.participant1 and round_num == 1 %}
+                                    <span class="bye-text">Bye</span>
+                                    {% else %}
+                                    <span style="color: #999;">TBD</span>
+                                    {% endif %}
+                                </span>
+                                <span class="score-line">
+                                    {% if match.score2 != None and match.score2 != 'Bye' %}
+                                    {{ match.score2 }}
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </td>
+
+                        <!-- Connectors -->
+                        {% if not loop.last and not is_final_round %}
+                        <td width="20" class="connector-right"></td>
+                        {% endif %}
+                    </tr>
+
+                    <!-- Spacer Below -->
+                    <tr>
+                        <td height="{{ 20 * (round_num * round_num) }}"></td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </td>
+
+            <!-- Connectors Column -->
+            {% if not loop.last %}
+            <td width="20"></td>
+            {% endif %}
+
+            {% endfor %}
+        </tr>
+    </table>
+</body>
+
+</html>

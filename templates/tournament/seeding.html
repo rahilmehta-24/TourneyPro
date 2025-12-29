@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Seeding - {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Manage Seeding</h1>
+            <p class="page-subtitle">{{ tournament.name }}</p>
+        </div>
+        <div class="page-actions">
+            <a href="{{ url_for('manage_tournament', slug=tournament.url_slug) }}" class="btn btn-secondary">← Back</a>
+        </div>
+    </div>
+
+    <div class="alert alert-info">
+        <span class="alert-icon">💡</span>
+        <span>Assign manual seeds to participants. Top seeds (lower numbers) will get byes if needed.</span>
+    </div>
+
+    <form method="POST" class="card">
+        <div class="card-header">
+            <h2 class="card-title">Participant Seeding</h2>
+        </div>
+        <div class="card-body">
+            <table class="seeding-table">
+                <thead>
+                    <tr>
+                        <th>Participant Name</th>
+                        <th>Seed Number</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for participant in participants %}
+                    <tr>
+                        <td>{{ participant.name }}</td>
+                        <td>
+                            <input type="number" name="seed_{{ participant.id }}" class="form-input"
+                                value="{{ participant.manual_seed or '' }}" min="1" placeholder="Enter seed #" required>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer">
+            <button type="submit" class="btn btn-primary btn-large">Save Seeding</button>
+            <a href="{{ url_for('manage_tournament', slug=tournament.url_slug) }}"
+                class="btn btn-secondary btn-large">Cancel</a>
+        </div>
+    </form>
+
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Seeding Tips</h3>
+        </div>
+        <div class="card-body">
+            <ul>
+                <li>Lower seed numbers = higher priority (Seed 1 is the top seed)</li>
+                <li>Top seeds will receive byes in single elimination if participants < bracket size</li>
+                <li>All participants must be assigned a seed number</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

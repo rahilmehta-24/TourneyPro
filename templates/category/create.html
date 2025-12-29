@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Create Category - {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Create New Category</h1>
+    <p class="subtitle">Tournament: {{ tournament.name }}</p>
+
+    <form method="POST" class="form-card">
+        <div class="form-group">
+            <label for="name">Category Name *</label>
+            <input type="text" id="name" name="name" class="form-input"
+                placeholder="e.g., Men's Singles, Women's Doubles" required>
+        </div>
+
+        <div class="form-group">
+            <label for="format">Tournament Format *</label>
+            <select id="format" name="format" class="form-input" required onchange="toggleGroupStageFields()">
+                <option value="">Select a format</option>
+                <option value="single_elimination">🏆 Single Elimination</option>
+                <option value="double_elimination">🥇 Double Elimination</option>
+                <option value="round_robin">🔄 Round Robin</option>
+                <option value="group_stage">🎪 Group Stage + Knockout</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="max_participants">Max Participants</label>
+            <input type="number" id="max_participants" name="max_participants" class="form-input" min="2"
+                placeholder="Leave empty for unlimited">
+        </div>
+
+        <div id="group-stage-fields" style="display: none;">
+            <h3>Group Stage Configuration</h3>
+
+            <div class="form-group">
+                <label for="num_groups">Number of Groups *</label>
+                <input type="number" id="num_groups" name="num_groups" class="form-input" min="2"
+                    placeholder="e.g., 2, 4, 8">
+            </div>
+
+            <div class="form-group">
+                <label for="teams_per_group">Teams Per Group *</label>
+                <input type="number" id="teams_per_group" name="teams_per_group" class="form-input" min="2"
+                    placeholder="e.g., 4">
+            </div>
+
+            <div class="form-group">
+                <label for="matches_per_team_pair">Matches Per Team Pair</label>
+                <input type="number" id="matches_per_team_pair" name="matches_per_team_pair" class="form-input" min="1"
+                    value="1" placeholder="1">
+                <small>How many times each pair plays in group stage</small>
+            </div>
+
+            <div class="form-group">
+                <label for="qualifiers_per_group">Qualifiers Per Group *</label>
+                <input type="number" id="qualifiers_per_group" name="qualifiers_per_group" class="form-input" min="1"
+                    placeholder="e.g., 2">
+                <small>How many teams advance to knockout from each group</small>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-large">Create Category</button>
+            <a href="{{ url_for('view_tournament', slug=tournament.url_slug) }}"
+                class="btn btn-secondary btn-large">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<script>
+    function toggleGroupStageFields() {
+        const format = document.getElementById('format').value;
+        const groupFields = document.getElementById('group-stage-fields');
+
+        if (format === 'group_stage') {
+            groupFields.style.display = 'block';
+        } else {
+            groupFields.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}

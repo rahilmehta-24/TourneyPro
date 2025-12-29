@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Manage {{ category.name }} - {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Manage Category: {{ category.name }}</h1>
+    <p class="subtitle">Tournament: {{ tournament.name }} | Format: {{ formats[category.format].name }}</p>
+
+    <div class="category-info">
+        <p><strong>Status:</strong> <span class="status-{{ category.status }}">{{ category.status.replace('_', '
+                ').title() }}</span></p>
+        <p><strong>Participants:</strong> {{ participants|length }}{% if category.max_participants %} / {{
+            category.max_participants }}{% endif %}</p>
+    </div>
+
+    {% if category.status == 'setup' %}
+    <div class="section">
+        <h2>Add Participants</h2>
+        <form method="POST" class="form-inline">
+            <input type="hidden" name="action" value="add_participant">
+            <input type="text" name="participant_name" class="form-input" placeholder="Participant name" required>
+            <input type="number" name="manual_seed" class="form-input" placeholder="Seed (optional)" min="1">
+            <input type="email" name="participant_email" class="form-input" placeholder="Email (optional)">
+            <button type="submit" class="btn btn-primary">Add Participant</button>
+        </form>
+    </div>
+
+    <div class="section">
+        <h2>Participants ({{ participants|length }})</h2>
+        {% if participants %}
+        <table class="participants-table">
+            <thead>
+                <tr>
+                    <th>Seed</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for participant in participants %}
+                <tr>
+                    <td>{{ participant.manual_seed or participant.seed or '-' }}</td>
+                    <td>{{ participant.name }}</td>
+                    <td>{{ participant.email or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="actions">
+            <a href="{{ url_for('manage_seeding', slug=tournament.url_slug, category_id=category.id) }}"
+                class="btn btn-secondary">Manage Seeding</a>
+
+            <form method="POST" style="display: inline;">
+                <input type="hidden" name="action" value="start_category">
+                <button type="submit" class="btn btn-primary btn-large" {% if participants|length < 2 %}disabled{% endif
+                    %}>
+                    Start Category
+                </button>
+            </form>
+        </div>
+        {% else %}
+        <p>No participants yet. Add participants above to get started.</p>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="section">
+        <h2>Participants</h2>
+        <p>{{ participants|length }} participants registered</p>
+        <a href="{{ url_for('view_category', slug=tournament.url_slug, category_id=category.id) }}"
+            class="btn btn-primary">View Bracket</a>
+    </div>
+    {% endif %}
+
+    <div class="actions">
+        <a href="{{ url_for('view_tournament', slug=tournament.url_slug) }}" class="btn btn-secondary">Back to
+            Tournament</a>
+    </div>
+</div>
+{% endblock %}

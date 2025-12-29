@@ -1,0 +1,362 @@
+{% extends "base.html" %}
+
+{% block title %}{{ category.name }} - {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <div>
+            <h1>{{ category.name }}</h1>
+            <p class="subtitle">{{ tournament.name }} | {{ formats[category.format].name }}</p>
+        </div>
+        <div class="page-actions">
+            <a href="{{ url_for('view_tournament', slug=tournament.url_slug) }}" class="btn btn-secondary">← Back to
+                Tournament</a>
+            <a href="{{ url_for('export_category_pdf', slug=tournament.url_slug, category_id=category.id) }}"
+                class="btn btn-primary" target="_blank">🖨️ Export PDF</a>
+        </div>
+    </div>
+
+    <div class="category-status">
+        <span class="status-badge status-{{ category.status }}">{{ category.status.replace('_', ' ').title() }}</span>
+        <span>{{ participants|length }} Participants</span>
+    </div>
+
+    {% if rankings %}
+    <!-- WINNER DISPLAY -->
+    <div class="winner-section">
+        <div class="winner-card">
+            <div class="medal gold">🥇</div>
+            <h2>WINNER</h2>
+            <h1 class="winner-name">{{ rankings.winner.name }}</h1>
+            {% if rankings.winner.manual_seed %}
+            <p class="seed-info">Seed #{{ rankings.winner.manual_seed }}</p>
+            {% endif %}
+        </div>
+
+        {% if rankings.runner_up %}
+        <div class="runner-up-card">
+            <div class="medal silver">🥈</div>
+            <h3>Runner-Up</h3>
+            <h2>{{ rankings.runner_up.name }}</h2>
+            {% if rankings.runner_up.manual_seed %}
+            <p class="seed-info">Seed #{{ rankings.runner_up.manual_seed }}</p>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% if rankings.semi_finalists %}
+        <div class="semi-finalists-section">
+            <h3>🥉 Semi-Finalists</h3>
+            <div class="semi-finalists-grid">
+                {% for sf in rankings.semi_finalists %}
+                <div class="semi-finalist-card">
+                    <h4>{{ sf.name }}</h4>
+                    {% if sf.manual_seed %}
+                    <p class="seed-info">Seed #{{ sf.manual_seed }}</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if groups_data %}
+    <!-- GROUP STAGE VIEW -->
+    <div class="groups-section">
+        <h2>Group Stage</h2>
+
+        {% for group_info in groups_data %}
+        <div class="group-card">
+            <h3>{{ group_info.group.name }}</h3>
+
+            <table class="standings-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Participant</th>
+                        <th>W</th>
+                        <th>L</th>
+                        <th>Pts</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for participant in group_info.standings %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ participant.name }}</td>
+                        <td>{{ participant.group_wins }}</td>
+                        <td>{{ participant.group_losses }}</td>
+                        <td>{{ participant.group_points }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <details>
+                <summary>View Matches</summary>
+                <div class="matches-list">
+                    {% for match in group_info.matches %}
+                    <div class="match-card {% if match.status == 'completed' %}completed{% endif %}">
+                        <span>{{ match.participant1.name if match.participant1 else 'TBD' }}</span>
+                        <span class="vs">vs</span>
+                        <span>{{ match.participant2.name if match.participant2 else 'TBD' }}</span>
+                        {% if match.status == 'completed' %}
+                        <span class="score">{{ match.score1 }} - {{ match.score2 }}</span>
+                        {% else %}
+                        <button onclick="openReportModal({{ match.id }})" class="btn btn-small">Report Result</button>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </details>
+        </div>
+        {% endfor %}
+
+        {% if category.status == 'in_progress' %}
+        <form method="POST"
+            action="{{ url_for('start_knockout_stage', slug=tournament.url_slug, category_id=category.id) }}">
+            <button type="submit" class="btn btn-primary btn-large">Start Knockout Stage</button>
+        </form>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if rounds %}
+    <!-- BRACKET VIEW -->
+    <div class="bracket-section">
+        <div class="page-header">
+            <h2>Bracket</h2>
+            <div class="page-actions">
+                <a href="{{ url_for('manage_category', slug=tournament.url_slug, category_id=category.id) }}"
+                    class="btn btn-secondary">Manage Category</a>
+                {% if category.status == 'in_progress' %}
+                {# Check if finals match is complete #}
+                {% set final_round = rounds|length %}
+                {% if final_round in rounds.keys() and rounds[final_round] %}
+                {% set finals_match = rounds[final_round][0] %}
+                {% if finals_match and finals_match.status == 'completed' %}
+                <form method="POST"
+                    action="{{ url_for('manage_category', slug=tournament.url_slug, category_id=category.id) }}"
+                    style="display: inline;">
+                    <input type="hidden" name="action" value="finish_category">
+                    <button type="submit" class="btn btn-success">
+                        <span class="btn-icon">🏆</span>
+                        Finish Tournament
+                    </button>
+                </form>
+                {% endif %}
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+
+
+
+        <div class="bracket">
+            {% for round_num, round_matches in rounds.items() %}
+            <div class="bracket-round">
+                <h3 class="round-title">
+                    {% set total_rounds = rounds|length %}
+                    {% if round_num == total_rounds %}
+                    Final
+                    {% elif round_num == total_rounds - 1 %}
+                    Semi-Final
+                    {% elif round_num == total_rounds - 2 %}
+                    Quarter-Final
+                    {% else %}
+                    Round {{ round_num }}
+                    {% endif %}
+                </h3>
+                <div class="round-matches">
+
+                    {% for match in round_matches %}
+                    <div class="match-card {% if match.status == 'completed' %}match-completed{% endif %}">
+                        <div class="match-header">
+                            <span class="match-number">Match #{{ match.match_number }}</span>
+                            {% if match.status == 'completed' %}
+                            <span class="match-status-badge">✓ Complete</span>
+                            {% endif %}
+                        </div>
+                        <div class="match-participants">
+                            <div
+                                class="match-participant {% if match.winner_id and match.winner_id == match.participant1_id %}winner{% endif %}">
+                                {% if match.participant1 %}
+                                {{ match.participant1.name }}
+                                {% if match.participant1.manual_seed %}
+                                <span class="seed">#{{ match.participant1.manual_seed }}</span>
+                                {% endif %}
+                                {% elif match.participant2 and match.round == 1 %}
+                                Bye
+                                {% else %}
+                                TBD
+                                {% endif %}
+                            </div>
+                            <div class="vs">vs</div>
+                            <div
+                                class="match-participant {% if match.winner_id and match.winner_id == match.participant2_id %}winner{% endif %}">
+                                {% if match.participant2 %}
+                                {{ match.participant2.name }}
+                                {% if match.participant2.manual_seed %}
+                                <span class="seed">#{{ match.participant2.manual_seed }}</span>
+                                {% endif %}
+                                {% elif match.participant1 and match.round == 1 %}
+                                Bye
+                                {% else %}
+                                TBD
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if match.status == 'pending' and match.participant1 and match.participant2 %}
+                        <div class="match-actions">
+                            <button
+                                onclick="openReportModal({{ match.id }}, '{{ match.participant1.name }}', {{ match.participant1_id }}, '{{ match.participant2.name }}', {{ match.participant2_id }})"
+                                class="btn-report">Report Result</button>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+
+</div>
+
+<!-- Match Report Modal -->
+<div id="reportModal" class="modal">
+    <div class="modal-content" style="padding: 2rem; position: relative;">
+        <span class="close" onclick="closeReportModal()"
+            style="position: absolute; top: 1rem; right: 1rem; font-size: 2rem; cursor: pointer; color: #94a3b8;">&times;</span>
+        <h2 style="margin-bottom: 1.5rem;">Report Match Result</h2>
+        <form id="reportForm" method="POST">
+            <div class="modal-body" style="margin-bottom: 1.5rem;">
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label class="form-label"
+                        style="display: block; margin-bottom: 1rem; font-weight: 600; font-size: 1.1rem;">Select
+                        Winner</label>
+                    <div class="winner-options" style="display: flex; flex-direction: column; gap: 1rem;">
+                        <label class="winner-option"
+                            style="display: flex; align-items: center; padding: 1rem; background: var(--bg-tertiary); border-radius: var(--radius-md); cursor: pointer; border: 2px solid transparent; transition: all 0.2s;">
+                            <input type="radio" name="winner_id" id="winner1" value="" required
+                                style="margin-right: 1rem; width: 20px; height: 20px;">
+                            <span id="winner1Label" style="font-size: 1.1rem; font-weight: 500;">Participant
+                                1</span>
+                        </label>
+                        <label class="winner-option"
+                            style="display: flex; align-items: center; padding: 1rem; background: var(--bg-tertiary); border-radius: var(--radius-md); cursor: pointer; border: 2px solid transparent; transition: all 0.2s;">
+                            <input type="radio" name="winner_id" id="winner2" value="" required
+                                style="margin-right: 1rem; width: 20px; height: 20px;">
+                            <span id="winner2Label" style="font-size: 1.1rem; font-weight: 500;">Participant
+                                2</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label class="form-label" id="score1Label">Score</label>
+                        <input type="text" name="score1" class="form-input" placeholder="Optional">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" id="score2Label">Score</label>
+                        <input type="text" name="score2" class="form-input" placeholder="Optional">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="closeReportModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Submit Result</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openReportModal(matchId, p1Name, p1Id, p2Name, p2Id) {
+        const modal = document.getElementById('reportModal');
+        const form = document.getElementById('reportForm');
+
+        form.action = `/tournaments/{{ tournament.url_slug }}/categories/{{ category.id }}/match/${matchId}/report`;
+
+        document.getElementById('winner1').value = p1Id;
+        document.getElementById('winner1Label').textContent = p1Name;
+        document.getElementById('score1Label').textContent = p1Name + ' Score';
+
+        document.getElementById('winner2').value = p2Id;
+        document.getElementById('winner2Label').textContent = p2Name;
+        document.getElementById('score2Label').textContent = p2Name + ' Score';
+
+        modal.style.display = 'flex';
+    }
+
+    function closeReportModal() {
+        const modal = document.getElementById('reportModal');
+        modal.style.display = 'none';
+        document.getElementById('reportForm').reset();
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function (event) {
+        const modal = document.getElementById('reportModal');
+        if (event.target === modal) {
+            closeReportModal();
+        }
+    }
+</script>
+
+<style>
+    .winner-section {
+        margin: 2rem 0;
+        text-align: center;
+    }
+
+    .winner-card {
+        background: linear-gradient(135deg, #FFD700, #FFA500);
+        padding: 3rem;
+        border-radius: 20px;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 30px rgba(255, 215, 0, 0.3);
+    }
+
+    .winner-name {
+        font-size: 3rem;
+        font-weight: bold;
+        margin: 1rem 0;
+    }
+
+    .medal {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+    }
+
+    .runner-up-card {
+        background: linear-gradient(135deg, #C0C0C0, #A8A8A8);
+        padding: 2rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+    }
+
+    .semi-finalists-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .semi-finalist-card {
+        background: linear-gradient(135deg, #CD7F32, #B87333);
+        padding: 1.5rem;
+        border-radius: 10px;
+    }
+
+    .seed-info {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}

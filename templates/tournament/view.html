@@ -1,0 +1,601 @@
+{% extends "base.html" %}
+
+{% block title %}{{ tournament.name }} - Bracket{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">{{ tournament.name }}</h1>
+
+        </div>
+        <div class="page-actions">
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">← Back to Tournaments</a>
+            {% if tournament.status == 'setup' %}
+            <a href="{{ url_for('manage_tournament', slug=tournament.url_slug) }}" class="btn btn-primary">Manage
+                Tournament</a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if tournament.description %}
+    <div class="tournament-description">
+        <p>{{ tournament.description }}</p>
+    </div>
+    {% endif %}
+
+    <!-- CATEGORIES SECTION -->
+    <div class="category-section" style="margin: 2rem 0;">
+        <div class="page-header">
+            <h2 class="section-title">Categories</h2>
+            <div class="page-actions">
+                <a href="{{ url_for('create_category', slug=tournament.url_slug) }}" class="btn btn-primary">
+                    ➕ Create Category
+                </a>
+            </div>
+        </div>
+
+        {% if tournament.categories %}
+        <div class="category-grid"
+            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+            {% for category in tournament.categories %}
+            <div class="category-card"
+                style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-radius: 12px; padding: 1.5rem; border: 1px solid #334155; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <!-- Category Header -->
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.25rem; color: white;">{{ category.name }}</h3>
+                        <p style="margin: 0.25rem 0 0 0; color: #94a3b8; font-size: 0.875rem;">
+                            {{ formats[category.format].icon }} {{ formats[category.format].name }}
+                        </p>
+                    </div>
+                    <span class="status-badge status-{{ category.status }}"
+                        style="padding: 0.25rem 0.75rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600;">
+                        {{ category.status.replace('_', ' ').title() }}
+                    </span>
+                </div>
+
+                <!-- Category Stats -->
+                <div
+                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                    <div>
+                        <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.25rem;">Participants</div>
+                        <div style="font-size: 1.5rem; font-weight: bold; color: white;">
+                            {{ category.participants|length }}
+                        </div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.25rem;">Matches</div>
+                        <div style="font-size: 1.5rem; font-weight: bold; color: white;">
+                            {% set completed_matches = category.matches|selectattr('status', 'equalto',
+                            'completed')|list|length %}
+                            {% set total_matches = category.matches|length %}
+                            {{ completed_matches }}/{{ total_matches }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                {% set progress = (completed_matches / total_matches * 100)|int if total_matches > 0 else 0 %}
+                <div style="margin: 1rem 0;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span style="font-size: 0.75rem; color: #94a3b8;">Progress</span>
+                        <span style="font-size: 0.75rem; color: white; font-weight: 600;">{{ progress }}%</span>
+                    </div>
+                    <div style="width: 100%; height: 8px; background: #1e293b; border-radius: 10px; overflow: hidden;">
+                        <div
+                            style="width: {{ progress }}%; height: 100%; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); transition: width 0.3s ease;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Winner Display (if completed) -->
+                {% if category.status == 'completed' %}
+                {% set final_round = category.matches|selectattr('round', 'equalto',
+                category.matches|map(attribute='round')|max)|list %}
+                {% set finals_match = final_round[0] if final_round else none %}
+                {% if finals_match and finals_match.winner %}
+                <div
+                    style="margin: 1rem 0; padding: 1rem; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 8px;">
+                    <div style="font-size: 0.75rem; color: rgba(255,255,255,0.8); margin-bottom: 0.25rem;">🏆 Winner
+                    </div>
+                    <div style="font-size: 1.125rem; font-weight: bold; color: white;">{{ finals_match.winner.name }}
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                    <a href="{{ url_for('view_category', slug=tournament.url_slug, category_id=category.id) }}"
+                        class="btn btn-primary" style="flex: 1; text-align: center; text-decoration: none;">
+                        View Bracket
+                    </a>
+                    <a href="{{ url_for('manage_category', slug=tournament.url_slug, category_id=category.id) }}"
+                        class="btn btn-secondary" style="flex: 1; text-align: center; text-decoration: none;">
+                        Manage
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="alert alert-info" style="margin-top: 1rem;">
+            <span class="alert-icon">💡</span>
+            <span>No categories yet. Create a category to organize different tournament formats (Single Elimination,
+                Round Robin, etc.)</span>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- OVERALL LEADERBOARD -->
+    <div class="overall-leaderboard" style="margin: 2rem 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h2 class="section-title" style="margin: 0;">🏆 Overall Leaderboard</h2>
+            <div style="min-width: 250px;">
+                <select id="categoryFilter" onchange="filterLeaderboard()" class="form-input"
+                    style="padding: 0.625rem 1rem; font-size: 1rem; cursor: pointer;">
+                    <option value="all">All Categories</option>
+                    {% for cat in tournament.categories %}
+                    {% if cat.status == 'completed' %}
+                    <option value="{{ cat.id }}">{{ cat.name }}</option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 1.5rem; overflow-x: auto; padding-bottom: 1rem;">
+            {% for category in tournament.categories %}
+            {% if category.status == 'completed' %}
+            {% set final_round = category.matches|selectattr('round', 'equalto',
+            category.matches|map(attribute='round')|max)|list %}
+            {% set finals_match = final_round[0] if final_round else none %}
+
+            <div data-category="{{ category.id }}" class="category-leaderboard-card"
+                style="min-width: 250px; background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid rgba(255,255,255,0.1); overflow: hidden;">
+                <div style="background: var(--gradient-primary); padding: 1rem; text-align: center;">
+                    <h3 style="margin: 0; color: white; font-size: 1.125rem; font-weight: 700;">{{ category.name }}</h3>
+                </div>
+
+                <div style="padding: 0;">
+                    {% if finals_match and finals_match.winner %}
+                    <div style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <div
+                            style="padding: 0.75rem 1rem; background: rgba(255,215,0,0.1); border-left: 3px solid #FFD700;">
+                            <div style="font-weight: 700; font-size: 0.875rem; color: #FFD700; margin-bottom: 0.25rem;">
+                                🥇 CHAMPION</div>
+                            <div style="color: var(--text-primary); font-weight: 600;">{{ finals_match.winner.name }}
+                            </div>
+                        </div>
+                    </div>
+
+                    {% set runner_up = finals_match.participant1 if finals_match.participant1_id !=
+                    finals_match.winner_id else finals_match.participant2 %}
+                    <div style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <div
+                            style="padding: 0.75rem 1rem; background: rgba(192,192,192,0.1); border-left: 3px solid #C0C0C0;">
+                            <div style="font-weight: 700; font-size: 0.875rem; color: #C0C0C0; margin-bottom: 0.25rem;">
+                                🥈 RUNNER-UP</div>
+                            <div style="color: var(--text-primary); font-weight: 600;">{{ runner_up.name }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% set total_rounds = category.matches|map(attribute='round')|max %}
+                    {% if total_rounds >= 2 %}
+                    {% set semi_final_round = category.matches|selectattr('round', 'equalto', total_rounds - 1)|list %}
+                    <div
+                        style="padding: 0.75rem 1rem; background: rgba(205,127,50,0.1); border-left: 3px solid #cd7f32;">
+                        <div style="font-weight: 700; font-size: 0.875rem; color: #cd7f32; margin-bottom: 0.5rem;">🥉
+                            SEMI-FINALISTS</div>
+                        {% for match in semi_final_round %}
+                        {% set loser = match.participant1 if match.participant1_id != match.winner_id else
+                        match.participant2 %}
+                        {% if loser %}
+                        <div style="color: var(--text-primary); font-weight: 500; padding: 0.25rem 0;">{{ loser.name }}
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        function filterLeaderboard() {
+            const filter = document.getElementById('categoryFilter').value;
+            const cards = document.querySelectorAll('.category-leaderboard-card');
+
+            cards.forEach(card => {
+                if (filter === 'all' || card.dataset.category === filter) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+    </script>
+
+    <!-- PLAYER REGISTRY -->
+    {% if player_registry %}
+    <div class="player-registry" style="margin: 2rem 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h2 class="section-title" style="margin: 0;">👥 Player Registry</h2>
+            <div style="min-width: 300px;">
+                <input type="text" id="playerSearch" placeholder="Search players..." class="form-input"
+                    style="padding: 0.625rem 1rem; font-size: 1rem;">
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div
+            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+            <div
+                style="background: var(--bg-card); padding: 1.5rem; border-radius: var(--radius-lg); border: 1px solid rgba(255,255,255,0.1);">
+                <div style="font-size: 2rem; font-weight: 700; color: var(--primary);">{{ player_registry|length }}
+                </div>
+                <div style="color: var(--text-secondary); font-size: 0.875rem;">Total Players</div>
+            </div>
+            <div
+                style="background: var(--bg-card); padding: 1.5rem; border-radius: var(--radius-lg); border: 1px solid rgba(255,255,255,0.1);">
+                <div style="font-size: 2rem; font-weight: 700; color: var(--primary);">{{
+                    tournament.categories|selectattr('status', 'equalto', 'completed')|list|length }}</div>
+                <div style="color: var(--text-secondary); font-size: 0.875rem;">Completed Categories</div>
+            </div>
+            <div
+                style="background: var(--bg-card); padding: 1.5rem; border-radius: var(--radius-lg); border: 1px solid rgba(255,255,255,0.1);">
+                <div style="font-size: 2rem; font-weight: 700; color: var(--primary);">{{
+                    player_registry|sum(attribute='total_matches') }}</div>
+                <div style="color: var(--text-secondary); font-size: 0.875rem;">Total Matches</div>
+            </div>
+        </div>
+
+        <!-- Player Table -->
+        <div
+            style="background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid rgba(255,255,255,0.1); overflow: hidden;">
+            <div style="overflow-x: auto;">
+                <table id="playerTable" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <th style="padding: 1rem; text-align: left; font-weight: 600; color: var(--text-secondary); cursor: pointer;"
+                                onclick="sortTable(0)">Player Name ↕</th>
+                            <th
+                                style="padding: 1rem; text-align: left; font-weight: 600; color: var(--text-secondary);">
+                                Categories</th>
+                            <th style="padding: 1rem; text-align: center; font-weight: 600; color: var(--text-secondary); cursor: pointer;"
+                                onclick="sortTable(2)">Matches ↕</th>
+                            <th style="padding: 1rem; text-align: center; font-weight: 600; color: var(--text-secondary); cursor: pointer;"
+                                onclick="sortTable(3)">Wins ↕</th>
+                            <th style="padding: 1rem; text-align: center; font-weight: 600; color: var(--text-secondary); cursor: pointer;"
+                                onclick="sortTable(4)">Win % ↕</th>
+                            <th
+                                style="padding: 1rem; text-align: left; font-weight: 600; color: var(--text-secondary);">
+                                Best Placement</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for player in player_registry %}
+                        <tr class="player-row"
+                            style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;">
+                            <td style="padding: 1rem; font-weight: 600; color: var(--text-primary);">{{ player.name }}
+                            </td>
+                            <td style="padding: 1rem;">
+                                {% for cat in player.categories %}
+                                <span
+                                    style="display: inline-block; background: rgba(124,58,237,0.2); color: #a78bfa; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; margin-right: 0.5rem; margin-bottom: 0.25rem;">{{
+                                    cat }}</span>
+                                {% endfor %}
+                            </td>
+                            <td style="padding: 1rem; text-align: center; color: var(--text-primary);">{{
+                                player.total_matches }}</td>
+                            <td style="padding: 1rem; text-align: center; color: var(--text-primary);">{{
+                                player.total_wins }}</td>
+                            <td style="padding: 1rem; text-align: center; color: var(--text-primary);">
+                                {% if player.total_matches > 0 %}
+                                {{ ((player.total_wins / player.total_matches) * 100)|round(1) }}%
+                                {% else %}
+                                0%
+                                {% endif %}
+                            </td>
+                            <td style="padding: 1rem;">
+                                {% if player.placements %}
+                                {% set best = player.placements[0] %}
+                                {% if best[0] == 'Champion' %}
+                                <span style="color: #FFD700; font-weight: 600;">🥇 {{ best[0] }}</span>
+                                {% elif best[0] == 'Runner-Up' %}
+                                <span style="color: #C0C0C0; font-weight: 600;">🥈 {{ best[0] }}</span>
+                                {% elif best[0] == 'Semi-Finalist' %}
+                                <span style="color: #cd7f32; font-weight: 600;">🥉 {{ best[0] }}</span>
+                                {% endif %}
+                                <span style="color: var(--text-secondary); font-size: 0.875rem;"> in {{ best[1]
+                                    }}</span>
+                                {% else %}
+                                <span style="color: var(--text-secondary);">Participant</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Search functionality
+        (function () {
+            const searchInput = document.getElementById('playerSearch');
+            if (searchInput) {
+                searchInput.addEventListener('input', function () {
+                    const filter = this.value.toUpperCase();
+                    const table = document.getElementById('playerTable');
+                    const rows = table.querySelectorAll('tbody tr.player-row');
+
+                    rows.forEach(row => {
+                        const nameCell = row.cells[0]; // First cell is name
+                        if (nameCell) {
+                            const txtValue = nameCell.textContent || nameCell.innerText;
+                            if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                                row.style.display = '';
+                            } else {
+                                row.style.display = 'none';
+                            }
+                        }
+                    });
+                });
+            }
+        })();
+
+        // Sort table functionality
+        function sortTable(columnIndex) {
+            const table = document.getElementById('playerTable');
+            const tbody = table.getElementsByTagName('tbody')[0];
+            const rows = Array.from(tbody.getElementsByTagName('tr'));
+
+            rows.sort((a, b) => {
+                let aValue = a.getElementsByTagName('td')[columnIndex].textContent.trim();
+                let bValue = b.getElementsByTagName('td')[columnIndex].textContent.trim();
+
+                // For numeric columns
+                if (columnIndex >= 2 && columnIndex <= 4) {
+                    aValue = parseFloat(aValue) || 0;
+                    bValue = parseFloat(bValue) || 0;
+                    return bValue - aValue; // Descending order for numbers
+                }
+
+                // For text columns
+                return aValue.localeCompare(bValue);
+            });
+
+            rows.forEach(row => tbody.appendChild(row));
+        }
+
+        // Add hover effect
+        document.querySelectorAll('.player-row').forEach(row => {
+            row.addEventListener('mouseenter', () => {
+                row.style.background = 'rgba(255,255,255,0.05)';
+            });
+            row.addEventListener('mouseleave', () => {
+                row.style.background = '';
+            });
+        });
+
+
+        {% if tournament.has_categories %}
+        <div class="alert alert-info">
+            <span class="alert-icon">ℹ️</span>
+            <span>Tournament not started yet. <a href="{{ url_for('manage_tournament', slug=tournament.url_slug) }}">Add
+                participants and start the tournament</a> to generate the bracket.</span>
+        </div>
+        {% elif matches %}
+        <div class="bracket-container">
+            <div class="page-header">
+                <h2 class="section-title">Tournament Bracket</h2>
+                <div class="page-actions">
+                    <a href="{{ url_for('manage_tournament', slug=tournament.url_slug) }}" class="btn btn-secondary">Manage
+                        Tournament</a>
+                    {% if tournament.status == 'in_progress' %}
+                    {# Check if finals match is complete #}
+                    {% set final_round = rounds.keys()|max %}
+                    {% set finals_match = rounds[final_round][0] if final_round in rounds and rounds[final_round] else none
+                %}
+                    {% if finals_match and finals_match.status == 'completed' %}
+                    <form method="POST" action="{{ url_for('manage_tournament', slug=tournament.url_slug) }}"
+                        style="display: inline;">
+                        <input type="hidden" name="action" value="finish_tournament">
+                            <button type="submit" class="btn btn-success">
+                                <span class="btn-icon">🏆</span>
+                                Finish Tournament
+                            </button>
+                    </form>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if tournament.status == 'in_progress' or tournament.status == 'completed' %}
+            {# Check if finals match is complete and display winner #}
+            {% set final_round = rounds.keys()|max %}
+            {% set finals_match = rounds[final_round][0] if final_round in rounds and rounds[final_round] else none %}
+            {% if finals_match and finals_match.status == 'completed' and finals_match.winner %}
+            <div class="winner-announcement"
+                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem; border-radius: 12px; text-align: center; margin: 2rem 0; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+                <div
+                    style="font-size: 1.2rem; color: rgba(255,255,255,0.9); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 2px; font-weight: 600;">
+                    🏆 Tournament Champion 🏆</div>
+                <div style="font-size: 2.5rem; color: white; font-weight: bold; text-shadow: 0 2px 10px rgba(0,0,0,0.3);">{{
+                    finals_match.winner.name
+                }}</div>
+                {% if finals_match.winner.manual_seed %}
+                <div style="font-size: 1rem; color: rgba(255,255,255,0.8); margin-top: 0.5rem;">Seed #{{
+                    finals_match.winner.manual_seed
+                }}</div>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% endif %}
+
+            <div class="bracket">
+                {% for round_num in rounds.keys()|sort %}
+                <div class="bracket-round">
+                    <h3 class="round-title">
+                        {% set total_rounds = rounds.keys()|max %}
+                        {% if round_num == total_rounds %}
+                        Finals
+                        {% elif round_num == total_rounds - 1 and total_rounds >= 4 %}
+                        Semi-Finals
+                        {% elif round_num == total_rounds - 2 and total_rounds >= 5 %}
+                        Quarter-Finals
+                        {% else %}
+                        Round {{ round_num }}
+                        {% endif %}
+                    </h3>
+                    <div class="round-matches">
+                        {% for match in rounds[round_num] %}
+                        <div class="match-card {% if match.status == 'completed' %}match-completed{% endif %}">
+                            <div class="match-header">
+                                <span class="match-number">Match #{{ match.match_number }}</span>
+                                {% if match.status == 'completed' %}
+                                <span class="match-status-badge">✓ Complete</span>
+                                {% endif %}
+                            </div>
+                            <div class="match-participants">
+                                <div
+                                    class="match-participant {% if match.winner_id == match.participant1_id %}winner{% endif %}">
+                                    <span class="participant-name">
+                                        {% if match.participant1 %}
+                                        {{ match.participant1.name }}
+                                        {% if match.participant1.manual_seed %}
+                                        <span class="seed-badge">#{{ match.participant1.manual_seed }}</span>
+                                        {% endif %}
+                                        {% elif match.participant2 and match.round == 1 %}
+                                        <em class="text-muted">Bye</em>
+                                        {% else %}
+                                        <em class="text-muted">TBD</em>
+                                        {% endif %}
+                                    </span>
+                                    {% if match.score1 %}
+                                    <span class="participant-score">{{ match.score1 }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="match-vs">vs</div>
+                                <div
+                                    class="match-participant {% if match.winner_id == match.participant2_id %}winner{% endif %}">
+                                    <span class="participant-name">
+                                        {% if match.participant2 %}
+                                        {{ match.participant2.name }}
+                                        {% if match.participant2.manual_seed %}
+                                        <span class="seed-badge">#{{ match.participant2.manual_seed }}</span>
+                                        {% endif %}
+                                        {% elif match.participant1 and match.round == 1 %}
+                                        <em class="text-muted">Bye</em>
+                                        {% else %}
+                                        <em class="text-muted">TBD</em>
+                                        {% endif %}
+                                    </span>
+                                    {% if match.score2 %}
+                                    <span class="participant-score">{{ match.score2 }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% if match.status == 'pending' and match.participant1 and match.participant2 %}
+                            <div class="match-actions">
+                                <button class="btn btn-small btn-primary"
+                                    onclick="openReportModal({{ match.id }}, '{{ match.participant1.name }}', {{ match.participant1.id }}, '{{ match.participant2.name }}', {{ match.participant2.id }})">
+                                    Report Result
+                                </button>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">🏆</div>
+            <p>No matches yet. Start the tournament to generate the bracket!</p>
+        </div>
+        {% endif %}
+</div >
+
+<!-- Report Result Modal -->
+<div id="reportModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Report Match Result</h2>
+            <button class="modal-close" onclick="closeReportModal()">&times;</button>
+        </div>
+        <form method="POST" id="reportForm">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Winner</label>
+                    <div class="winner-selector">
+                        <label class="winner-option">
+                            <input type="radio" name="winner_id" id="winner1" required>
+                            <span class="winner-label" id="winner1Label"></span>
+                        </label>
+                        <label class="winner-option">
+                            <input type="radio" name="winner_id" id="winner2" required>
+                            <span class="winner-label" id="winner2Label"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" id="score1Label">Score</label>
+                        <input type="text" name="score1" class="form-input" placeholder="Optional">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" id="score2Label">Score</label>
+                        <input type="text" name="score2" class="form-input" placeholder="Optional">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeReportModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Submit Result</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openReportModal(matchId, p1Name, p1Id, p2Name, p2Id) {
+        const modal = document.getElementById('reportModal');
+        const form = document.getElementById('reportForm');
+
+        form.action = `/tournaments/{{ tournament.url_slug }}/match/${matchId}/report`;
+
+        document.getElementById('winner1').value = p1Id;
+        document.getElementById('winner1Label').textContent = p1Name;
+        document.getElementById('score1Label').textContent = p1Name + ' Score';
+
+        document.getElementById('winner2').value = p2Id;
+        document.getElementById('winner2Label').textContent = p2Name;
+        document.getElementById('score2Label').textContent = p2Name + ' Score';
+
+        modal.style.display = 'flex';
+    }
+
+    function closeReportModal() {
+        document.getElementById('reportModal').style.display = 'none';
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function (event) {
+        const modal = document.getElementById('reportModal');
+        if (event.target == modal) {
+            closeReportModal();
+        }
+    }
+    </script>
+    {% endif %}
+    {% endblock %}

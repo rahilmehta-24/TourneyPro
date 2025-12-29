@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Seeding - {{ category.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <div>
+            <h1>Manage Seeding: {{ category.name }}</h1>
+            <p class="subtitle">Assign manual seeds to participants. Top seeds (lower numbers) will get byes if needed.
+            </p>
+        </div>
+        <div class="page-actions">
+            <a href="{{ url_for('manage_category', slug=tournament.url_slug, category_id=category.id) }}"
+                class="btn btn-secondary">← Back</a>
+        </div>
+    </div>
+
+    <form method="POST" class="form-card">
+        <table class="seeding-table">
+            <thead>
+                <tr>
+                    <th>Participant Name</th>
+                    <th>Seed Number</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for participant in participants %}
+                <tr>
+                    <td>{{ participant.name }}</td>
+                    <td>
+                        <input type="number" name="seed_{{ participant.id }}" class="form-input"
+                            value="{{ participant.manual_seed or '' }}" min="1" placeholder="Enter seed #" required>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-large">Save Seeding</button>
+            <a href="{{ url_for('manage_category', slug=tournament.url_slug, category_id=category.id) }}"
+                class="btn btn-secondary btn-large">Cancel</a>
+        </div>
+    </form>
+
+    <div class="info-box">
+        <h3>Seeding Tips</h3>
+        <ul>
+            <li>Lower seed numbers = higher priority (Seed 1 is the top seed)</li>
+            <li>Top seeds will receive byes in single elimination if participants < bracket size</li>
+            <li>All participants must be assigned a seed number</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
