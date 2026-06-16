@@ -20,10 +20,36 @@
                 <span class="logo-icon">🏆</span>
                 <span class="logo-text">TourneyPro</span>
             </a>
-            <div class="nav-links">
+            <div class="nav-links" style="display: flex; gap: var(--spacing-md); align-items: center;">
                 <a href="{{ url_for('main.index') }}" class="nav-link">Home</a>
                 <a href="{{ url_for('main.tournament_list') }}" class="nav-link">Tournaments</a>
-                <a href="{{ url_for('tournament.create_tournament') }}" class="btn btn-primary">Create Tournament</a>
+                
+                {% if current_user %}
+                    {% if current_user.role in ['admin', 'superadmin'] %}
+                        <a href="{{ url_for('tournament.create_tournament') }}" class="btn btn-primary">Create Tournament</a>
+                    {% endif %}
+                    
+                    {% if current_user.role == 'superadmin' %}
+                        <a href="{{ url_for('auth.user_management') }}" class="nav-link" style="color: var(--accent-info); font-weight: bold;">User Management</a>
+                    {% elif current_user.role == 'user' %}
+                        <form method="POST" action="{{ url_for('auth.request_admin') }}" style="display: inline;">
+                            <button type="submit" class="btn btn-secondary btn-small" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;">
+                                {% if current_user.admin_requested %}Cancel Admin Request{% else %}Request Admin Role{% endif %}
+                            </button>
+                        </form>
+                    {% endif %}
+                    
+                    <span style="color: var(--text-secondary); font-size: 0.9rem; border-left: 1px solid rgba(255,255,255,0.1); padding-left: var(--spacing-sm);">
+                        👤 <strong>{{ current_user.username }}</strong> 
+                        <span style="font-size: 0.75rem; vertical-align: middle; background: rgba(99, 102, 241, 0.2); color: var(--accent-primary); padding: 2px 6px; border-radius: var(--radius-sm); margin-left: 4px;">
+                            {{ current_user.role.upper() }}
+                        </span>
+                    </span>
+                    <a href="{{ url_for('auth.logout') }}" class="btn btn-secondary btn-small">Log Out</a>
+                {% else %}
+                    <a href="{{ url_for('auth.login') }}" class="nav-link">Log In</a>
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Register</a>
+                {% endif %}
             </div>
         </div>
     </nav>

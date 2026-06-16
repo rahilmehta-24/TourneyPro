@@ -32,7 +32,6 @@ def generate_double_elimination(participants, use_manual_seeding=True):
     # Losers bracket has (2 * num_rounds_winners - 1) rounds
     # Each round in winners bracket feeds into losers bracket
     losers_matches = []
-    losers_match_number = 1
     
     # Losers bracket Round 1: First round losers from winners bracket
     num_first_round_losers = len([m for m in winners_matches if m['round'] == 1])
@@ -40,20 +39,18 @@ def generate_double_elimination(participants, use_manual_seeding=True):
     for i in range(0, num_first_round_losers, 2):
         match = {
             'round': 1,
-            'match_number': losers_match_number,
+            'match_number': (i // 2) + 1,
             'participant1_id': None,  # Will be filled by losers
             'participant2_id': None,
             'bracket_type': 'losers',
             'match_type': 'knockout'
         }
         losers_matches.append(match)
-        losers_match_number += 1
     
     # Subsequent losers bracket rounds alternate between:
     # 1. Losers from winners bracket
     # 2. Winners from previous losers round
     current_losers_round = 2
-    current_round_matches = len([m for m in losers_matches if m['round'] == 1])
     
     for winners_round in range(2, num_rounds_winners + 1):
         # Losers from this winners round enter losers bracket
@@ -63,14 +60,13 @@ def generate_double_elimination(participants, use_manual_seeding=True):
         for i in range(num_new_losers):
             match = {
                 'round': current_losers_round,
-                'match_number': losers_match_number,
+                'match_number': i + 1,
                 'participant1_id': None,
                 'participant2_id': None,
                 'bracket_type': 'losers',
                 'match_type': 'knockout'
             }
             losers_matches.append(match)
-            losers_match_number += 1
         
         current_losers_round += 1
         
@@ -80,18 +76,17 @@ def generate_double_elimination(participants, use_manual_seeding=True):
             for i in range(num_matches):
                 match = {
                     'round': current_losers_round,
-                    'match_number': losers_match_number,
+                    'match_number': i + 1,
                     'participant1_id': None,
                     'participant2_id': None,
                     'bracket_type': 'losers',
                     'match_type': 'knockout'
                 }
                 losers_matches.append(match)
-                losers_match_number += 1
             
             current_losers_round += 1
     
-    # Grand Finals: Winner of winners bracket vs winner of losers bracket
+    # Grand Finals Match 1: Winner of winners bracket vs winner of losers bracket
     grand_finals = {
         'round': num_rounds_winners + 1,
         'match_number': 1,
@@ -101,8 +96,18 @@ def generate_double_elimination(participants, use_manual_seeding=True):
         'match_type': 'knockout'
     }
     
+    # Grand Finals Match 2: Reset match if losers champion wins Match 1
+    grand_finals_reset = {
+        'round': num_rounds_winners + 1,
+        'match_number': 2,
+        'participant1_id': None,
+        'participant2_id': None,
+        'bracket_type': 'grand_finals',
+        'match_type': 'knockout'
+    }
+    
     # Combine all matches
-    all_matches = winners_matches + losers_matches + [grand_finals]
+    all_matches = winners_matches + losers_matches + [grand_finals, grand_finals_reset]
     
     return all_matches
 
@@ -116,23 +121,38 @@ def calculate_double_elimination_rankings(category):
     """
     from app.models import Match, Participant
     
-    # Find grand finals
+    # Check if reset match (match_number 2) was played and completed
     grand_finals = Match.query.filter_by(
         category_id=category.id,
-        bracket_type='grand_finals'
+        bracket_type='grand_finals',
+        match_number=2
     ).first()
     
-    if not grand_finals or not grand_finals.winner_id:
-        return None
-    
-    winner = Participant.query.get(grand_finals.winner_id)
-    
-    # Runner-up is loser of grand finals
-    if grand_finals.participant1_id == grand_finals.winner_id:
-        runner_up_id = grand_finals.participant2_id
+    if grand_finals and grand_finals.status == 'completed' and grand_finals.winner_id:
+        # Reset match was played
+        winner = Participant.query.get(grand_finals.winner_id)
+        if grand_finals.participant1_id == grand_finals.winner_id:
+            runner_up_id = grand_finals.participant2_id
+        else:
+            runner_up_id = grand_finals.participant1_id
+        runner_up = Participant.query.get(runner_up_id)
     else:
-        runner_up_id = grand_finals.participant1_id
-    runner_up = Participant.query.get(runner_up_id)
+        # No reset match played, look at Match 1
+        grand_finals = Match.query.filter_by(
+            category_id=category.id,
+            bracket_type='grand_finals',
+            match_number=1
+        ).first()
+        
+        if not grand_finals or not grand_finals.winner_id:
+            return None
+            
+        winner = Participant.query.get(grand_finals.winner_id)
+        if grand_finals.participant1_id == grand_finals.winner_id:
+            runner_up_id = grand_finals.participant2_id
+        else:
+            runner_up_id = grand_finals.participant1_id
+        runner_up = Participant.query.get(runner_up_id)
     
     # Semi-finalists: loser of winners bracket final and loser of losers bracket final
     winners_final = Match.query.filter_by(

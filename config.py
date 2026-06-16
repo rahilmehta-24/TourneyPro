@@ -1,4 +1,10 @@
 import os
+# Load dotenv if present
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 

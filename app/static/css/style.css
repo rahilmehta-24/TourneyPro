@@ -471,6 +471,11 @@ h6 {
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
+select option {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
 .form-help {
     display: block;
     margin-top: var(--spacing-xs);
@@ -1046,4 +1051,241 @@ h6 {
         flex-direction: column;
         gap: var(--spacing-md);
     }
+}
+
+/* ===== LAWN TENNIS SCOREBOARD & BRACKET DESIGN ===== */
+.bracket {
+    display: flex;
+    gap: 40px; /* Space between round columns */
+    overflow-x: auto;
+    padding: var(--spacing-lg) var(--spacing-md);
+    align-items: stretch;
+}
+
+.bracket-round {
+    display: flex;
+    flex-direction: column;
+    min-width: 280px;
+}
+
+.round-matches {
+    display: flex;
+    flex-direction: column;
+    justify-content: stretch;
+    flex: 1;
+}
+
+.match-card-wrapper {
+    position: relative;
+    padding: 20px 0; /* Vertical breathing room for connectors */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+}
+
+/* Horizontal connector line on the right of the match */
+.match-card-wrapper::after {
+    content: "";
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    width: 20px;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.15);
+    z-index: 1;
+}
+
+/* Hide right horizontal connector in the last round */
+.bracket-round:last-child .match-card-wrapper::after {
+    display: none;
+}
+
+/* Horizontal connector line on the left of the match (incoming) */
+.bracket-round:not(:first-child) .tennis-match::before {
+    content: "";
+    position: absolute;
+    left: -20px;
+    top: 50%;
+    width: 20px;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.15);
+    z-index: 1;
+}
+
+/* Vertical connector line on the right of the column to connect the pair */
+.match-card-wrapper::before {
+    content: "";
+    position: absolute;
+    right: -20px;
+    width: 2px;
+    background: rgba(255, 255, 255, 0.15);
+    z-index: 1;
+}
+
+/* Hide vertical connector in the last round */
+.bracket-round:last-child .match-card-wrapper::before {
+    display: none;
+}
+
+/* Hide vertical connector when not needed (e.g. 1-to-1 rounds in losers bracket) */
+.match-card-wrapper.no-vertical-connector::before {
+    display: none;
+}
+
+/* Odd matches: vertical connector goes down to meet the midpoint */
+.match-card-wrapper:nth-child(odd)::before {
+    top: 50%;
+    bottom: 0;
+}
+
+/* Even matches: vertical connector goes up to meet the midpoint */
+.match-card-wrapper:nth-child(even)::before {
+    top: 0;
+    bottom: 50%;
+}
+
+/* Tennis Scoreboard Card */
+.tennis-match {
+    background: var(--bg-card);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    width: 280px;
+    height: 130px; /* Fixed height for pixel-perfect vertical connector alignment */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+    position: relative;
+    transition: all 0.2s ease-in-out;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+
+.tennis-match:hover {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.25);
+    transform: translateY(-1px);
+}
+
+.tennis-match-header {
+    background: rgba(255, 255, 255, 0.02);
+    padding: 4px 12px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 26px;
+    box-sizing: border-box;
+}
+
+.tennis-match-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+
+.tennis-player-row {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    background: var(--bg-secondary);
+    font-size: 0.9rem;
+    position: relative;
+    box-sizing: border-box;
+}
+
+.tennis-player-row:not(:last-child) {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.match-actions {
+    padding: 4px 12px;
+    background: rgba(255, 255, 255, 0.01);
+    border-top: 1px solid rgba(255, 255, 255, 0.03);
+    height: 36px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+}
+
+.tennis-player-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    overflow: hidden;
+}
+
+.tennis-player-seed {
+    font-size: 0.7rem;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-muted);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+    min-width: 20px;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.tennis-player-name {
+    color: var(--text-secondary);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tennis-match-completed .tennis-player-row.winner .tennis-player-name {
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.tennis-player-row.winner::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--accent-success);
+}
+
+.tennis-set-scores {
+    display: flex;
+    gap: 3px;
+    align-items: center;
+    margin-left: var(--spacing-sm);
+}
+
+.tennis-set-box {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    border: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+.tennis-set-box.set-winner {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--accent-success);
+    border-color: rgba(16, 185, 129, 0.2);
+}
+
+.tennis-set-box.empty {
+    color: rgba(255, 255, 255, 0.15);
+    background: transparent;
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    font-weight: 400;
 }

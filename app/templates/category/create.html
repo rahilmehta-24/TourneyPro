@@ -18,11 +18,24 @@
             <label for="format">Tournament Format *</label>
             <select id="format" name="format" class="form-input" required onchange="toggleGroupStageFields()">
                 <option value="">Select a format</option>
-                <option value="single_elimination">🏆 Single Elimination</option>
-                <option value="double_elimination">🥇 Double Elimination</option>
-                <option value="round_robin">🔄 Round Robin</option>
+                <option value="single_elimination">🏆 Single Elimination (Knockout)</option>
+                <option value="double_elimination">🥇 Double Elimination (Knockout)</option>
                 <option value="group_stage">🎪 Group Stage + Knockout</option>
             </select>
+        </div>
+
+        <div class="form-group">
+            <label for="num_sets">Match Format (Sets) *</label>
+            <select id="num_sets" name="num_sets" class="form-input" required>
+                <option value="1" selected>1 Set</option>
+                <option value="2">2 Sets</option>
+                <option value="3">3 Sets (Best of 3)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="games_per_set">Games Per Set *</label>
+            <input type="number" id="games_per_set" name="games_per_set" class="form-input" min="1" max="25" value="6" required>
         </div>
 
         <div class="form-group">

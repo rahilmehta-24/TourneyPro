@@ -5,17 +5,18 @@ A robust Flask-based web application for managing sports and gaming tournaments.
 ## Features
 
 - **Tournament Management**
+
   - Create and manage multiple tournaments
   - Customizable formats (Single/Double Elimination, Round Robin, Group Stage)
   - Automatic bracket generation
   - Seeding management
   - PDF Export of brackets
-
 - **Categories**
+
   - Support for multiple categories per tournament (e.g., Men's, Women's, Doubles)
   - Independent formats for each category
-
 - **Match Management**
+
   - Interactive bracket view
   - Match reporting and score tracking
   - Automatic progression of winners
@@ -47,12 +48,13 @@ test/
 ## Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd test
    ```
-
 2. **Create a virtual environment**
+
    ```bash
    python -m venv venv
    # Windows
@@ -60,17 +62,16 @@ test/
    # macOS/Linux
    source venv/bin/activate
    ```
-
 3. **Install dependencies**
+
    ```bash
    pip install -r requirements.txt
    ```
-
 4. **Run the application**
+
    ```bash
    python run.py
    ```
-
 5. **Access the app**
    Open your browser and navigate to `http://127.0.0.1:5000`
 

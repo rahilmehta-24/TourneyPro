@@ -31,7 +31,11 @@ def generate_group_stage(category, participants):
     participants_sorted = sorted(participants, key=lambda p: p.manual_seed or p.seed or 999)
     
     for i, participant in enumerate(participants_sorted):
-        group_index = i % num_groups
+        round_num = i // num_groups
+        if round_num % 2 == 0:
+            group_index = i % num_groups
+        else:
+            group_index = (num_groups - 1) - (i % num_groups)
         participant.group_id = groups[group_index].id
     
     db.session.commit()

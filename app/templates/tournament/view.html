@@ -439,85 +439,210 @@
                 {% endif %}
             </div>
             {% endif %}
-            {% endif %}
 
+            {% macro render_set_scores(score_str, num_sets) %}
+                {% if score_str and score_str != 'N/A' %}
+                    {% set set_scores = score_str.split(', ') %}
+                    {% for score in set_scores %}
+                        {% if '-' in score %}
+                            {% set games_str = score.split('-')[0] %}
+                            {% set opp_games_str = score.split('-')[1] %}
+                            
+                            {% set games = games_str %}
+                            {% set tb = "" %}
+                            {% if '(' in games_str %}
+                                {% set parts = games_str.split('(') %}
+                                {% set games = parts[0] %}
+                                {% set tb = parts[1].replace(')', '') %}
+                            {% endif %}
+                            
+                            {% set opp_games = opp_games_str.split('(')[0] %}
+                            
+                            {% set games_int = games|int %}
+                            {% set opp_games_int = opp_games|int %}
+                            {% set is_set_winner = games_int > opp_games_int %}
+                            
+                            <span class="tennis-set-box {% if is_set_winner %}set-winner{% endif %}">
+                                {{ games }}{% if tb %}<sup style="font-size: 0.7em; opacity: 0.8; margin-left: 1px;">{{ tb }}</sup>{% endif %}
+                            </span>
+                        {% else %}
+                            <span class="tennis-set-box empty">-</span>
+                        {% endif %}
+                    {% endfor %}
+                    {% if set_scores|length < (num_sets or 1) %}
+                        {% for _ in range((num_sets or 1) - set_scores|length) %}
+                            <span class="tennis-set-box empty">-</span>
+                        {% endfor %}
+                    {% endif %}
+                {% else %}
+                    {% for _ in range(num_sets or 1) %}
+                        <span class="tennis-set-box empty">-</span>
+                    {% endfor %}
+                {% endif %}
+            {% endmacro %}
+
+            {% macro render_bracket_tree(rounds_dict) %}
             <div class="bracket">
-                {% for round_num in rounds.keys()|sort %}
-                <div class="bracket-round">
+                {% set sorted_keys = rounds_dict.keys()|sort %}
+                {% for round_num in sorted_keys %}
+                {% set round_matches = rounds_dict[round_num] %}
+                {% set next_round_key = sorted_keys[loop.index] if not loop.last else none %}
+                {% set next_round_matches = rounds_dict[next_round_key] if next_round_key else none %}
+                {% set has_vertical = next_round_matches and (next_round_matches|length < round_matches|length) %}
+                <div class="bracket-round round-{{ round_num }}">
                     <h3 class="round-title">
-                        {% set total_rounds = rounds.keys()|max %}
+                        {% set total_rounds = sorted_keys|max %}
                         {% if round_num == total_rounds %}
-                        Finals
-                        {% elif round_num == total_rounds - 1 and total_rounds >= 4 %}
-                        Semi-Finals
-                        {% elif round_num == total_rounds - 2 and total_rounds >= 5 %}
-                        Quarter-Finals
+                        Final
+                        {% elif round_num == total_rounds - 1 %}
+                        Semi-Final
+                        {% elif round_num == total_rounds - 2 %}
+                        Quarter-Final
                         {% else %}
                         Round {{ round_num }}
                         {% endif %}
                     </h3>
                     <div class="round-matches">
-                        {% for match in rounds[round_num] %}
-                        <div class="match-card {% if match.status == 'completed' %}match-completed{% endif %}">
-                            <div class="match-header">
-                                <span class="match-number">Match #{{ match.match_number }}</span>
-                                {% if match.status == 'completed' %}
-                                <span class="match-status-badge">✓ Complete</span>
+                        {% for match in round_matches %}
+                        <div class="match-card-wrapper {% if not has_vertical %}no-vertical-connector{% endif %}">
+                            <div class="tennis-match {% if match.status == 'completed' %}tennis-match-completed{% endif %}">
+                                <div class="tennis-match-header">
+                                    <span>Match #{{ match.match_number }}</span>
+                                    {% if match.status == 'completed' %}
+                                    <span class="match-status-badge">✓ Complete</span>
+                                    {% endif %}
+                                </div>
+                                <div class="tennis-match-body">
+                                    <!-- Player 1 Row -->
+                                    <div class="tennis-player-row {% if match.winner_id and match.winner_id == match.participant1_id %}winner{% endif %}">
+                                        <div class="tennis-player-info">
+                                            {% if match.participant1 %}
+                                                <span class="tennis-player-seed">#{{ match.participant1.manual_seed or match.participant1.seed or loop.index }}</span>
+                                                <span class="tennis-player-name">{{ match.participant1.name }}</span>
+                                            {% elif match.participant2 and match.round == 1 %}
+                                                <span class="tennis-player-name" style="color: var(--text-muted); font-style: italic;">Bye</span>
+                                            {% else %}
+                                                <span class="tennis-player-name" style="color: var(--text-muted); font-style: italic;">TBD</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="tennis-set-scores">
+                                            {{ render_set_scores(match.score1, tournament.num_sets) }}
+                                        </div>
+                                    </div>
+                                    <!-- Player 2 Row -->
+                                    <div class="tennis-player-row {% if match.winner_id and match.winner_id == match.participant2_id %}winner{% endif %}">
+                                        <div class="tennis-player-info">
+                                            {% if match.participant2 %}
+                                                <span class="tennis-player-seed">#{{ match.participant2.manual_seed or match.participant2.seed or loop.index }}</span>
+                                                <span class="tennis-player-name">{{ match.participant2.name }}</span>
+                                            {% elif match.participant1 and match.round == 1 %}
+                                                <span class="tennis-player-name" style="color: var(--text-muted); font-style: italic;">Bye</span>
+                                            {% else %}
+                                                <span class="tennis-player-name" style="color: var(--text-muted); font-style: italic;">TBD</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="tennis-set-scores">
+                                            {{ render_set_scores(match.score2, tournament.num_sets) }}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% if match.status == 'pending' and match.participant1 and match.participant2 %}
+                                <div class="match-actions">
+                                    <button class="btn btn-small btn-primary btn-report"
+                                        onclick="openReportModal({{ match.id }}, '{{ match.participant1.name }}', {{ match.participant1.id }}, '{{ match.participant2.name }}', {{ match.participant2_id }})">
+                                        Report Result
+                                    </button>
+                                </div>
                                 {% endif %}
                             </div>
-                            <div class="match-participants">
-                                <div
-                                    class="match-participant {% if match.winner_id == match.participant1_id %}winner{% endif %}">
-                                    <span class="participant-name">
-                                        {% if match.participant1 %}
-                                        {{ match.participant1.name }}
-                                        {% if match.participant1.manual_seed %}
-                                        <span class="seed-badge">#{{ match.participant1.manual_seed }}</span>
-                                        {% endif %}
-                                        {% elif match.participant2 and match.round == 1 %}
-                                        <em class="text-muted">Bye</em>
-                                        {% else %}
-                                        <em class="text-muted">TBD</em>
-                                        {% endif %}
-                                    </span>
-                                    {% if match.score1 %}
-                                    <span class="participant-score">{{ match.score1 }}</span>
-                                    {% endif %}
-                                </div>
-                                <div class="match-vs">vs</div>
-                                <div
-                                    class="match-participant {% if match.winner_id == match.participant2_id %}winner{% endif %}">
-                                    <span class="participant-name">
-                                        {% if match.participant2 %}
-                                        {{ match.participant2.name }}
-                                        {% if match.participant2.manual_seed %}
-                                        <span class="seed-badge">#{{ match.participant2.manual_seed }}</span>
-                                        {% endif %}
-                                        {% elif match.participant1 and match.round == 1 %}
-                                        <em class="text-muted">Bye</em>
-                                        {% else %}
-                                        <em class="text-muted">TBD</em>
-                                        {% endif %}
-                                    </span>
-                                    {% if match.score2 %}
-                                    <span class="participant-score">{{ match.score2 }}</span>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            {% if match.status == 'pending' and match.participant1 and match.participant2 %}
-                            <div class="match-actions">
-                                <button class="btn btn-small btn-primary"
-                                    onclick="openReportModal({{ match.id }}, '{{ match.participant1.name }}', {{ match.participant1.id }}, '{{ match.participant2.name }}', {{ match.participant2.id }})">
-                                    Report Result
-                                </button>
-                            </div>
-                            {% endif %}
                         </div>
                         {% endfor %}
                     </div>
                 </div>
                 {% endfor %}
             </div>
+            {% endmacro %}
+
+            {% if tournament.format == 'double_elimination' %}
+                <!-- WINNERS BRACKET -->
+                <div style="margin-top: 1.5rem; margin-bottom: 3rem;">
+                    <h3 style="margin-bottom: 1rem; color: var(--accent-primary); font-size: 1.5rem; border-left: 4px solid var(--accent-primary); padding-left: 10px;">🏆 Winners Bracket</h3>
+                    {{ render_bracket_tree(winners_rounds) }}
+                </div>
+                
+                <!-- LOSERS BRACKET -->
+                <div style="margin-bottom: 3rem;">
+                    <h3 style="margin-bottom: 1rem; color: var(--accent-secondary); font-size: 1.5rem; border-left: 4px solid var(--accent-secondary); padding-left: 10px;">🥈 Losers Bracket</h3>
+                    {{ render_bracket_tree(losers_rounds) }}
+                </div>
+                
+                <!-- GRAND FINALS -->
+                {% if grand_finals %}
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="margin-bottom: 1rem; color: #fbbf24; font-size: 1.5rem; border-left: 4px solid #fbbf24; padding-left: 10px;">👑 Grand Finals</h3>
+                    <div class="bracket">
+                        <div class="bracket-round" style="min-width: 280px;">
+                            <div class="round-matches" style="justify-content: center; height: 100%;">
+                                {% for match in grand_finals %}
+                                <div class="match-card-wrapper" style="padding: 15px 0;">
+                                    <div class="tennis-match {% if match.status == 'completed' %}tennis-match-completed{% endif %}">
+                                        <div class="tennis-match-header">
+                                            <span>Grand Final {% if match.match_number == 2 %}(Reset Match){% endif %}</span>
+                                            {% if match.status == 'completed' %}
+                                            <span class="match-status-badge">✓ Complete</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="tennis-match-body">
+                                            <!-- Player 1 Row -->
+                                            <div class="tennis-player-row {% if match.winner_id and match.winner_id == match.participant1_id %}winner{% endif %}">
+                                                <div class="tennis-player-info">
+                                                    {% if match.participant1 %}
+                                                        <span class="tennis-player-seed">#{{ match.participant1.manual_seed or match.participant1.seed or 'W' }}</span>
+                                                        <span class="tennis-player-name">{{ match.participant1.name }}</span>
+                                                    {% else %}
+                                                        <span class="tennis-player-name" style="color: var(--text-muted); font-style: italic;">Winners Champ</span>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="tennis-set-scores">
+                                                    {{ render_set_scores(match.score1, tournament.num_sets) }}
+                                                </div>
+                                            </div>
+                                            <!-- Player 2 Row -->
+                                            <div class="tennis-player-row {% if match.winner_id and match.winner_id == match.participant2_id %}winner{% endif %}">
+                                                <div class="tennis-player-info">
+                                                    {% if match.participant2 %}
+                                                        <span class="tennis-player-seed">#{{ match.participant2.manual_seed or match.participant2.seed or 'L' }}</span>
+                                                        <span class="tennis-player-name">{{ match.participant2.name }}</span>
+                                                    {% else %}
+                                                        <span class="tennis-player-name" style="color: var(--text-muted); font-style: italic;">Losers Champ</span>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="tennis-set-scores">
+                                                    {{ render_set_scores(match.score2, tournament.num_sets) }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% if match.status == 'pending' and match.participant1 and match.participant2 %}
+                                        <div class="match-actions">
+                                            <button class="btn btn-small btn-primary btn-report"
+                                                onclick="openReportModal({{ match.id }}, '{{ match.participant1.name }}', {{ match.participant1_id }}, '{{ match.participant2.name }}', {{ match.participant2_id }})">
+                                                Report Result
+                                            </button>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            {% else %}
+                <!-- SINGLE ELIMINATION -->
+                {{ render_bracket_tree(rounds) }}
+            {% endif %}
+            {% endif %}
         </div>
         {% else %}
         <div class="empty-state">
@@ -549,15 +674,35 @@
                         </label>
                     </div>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label" id="score1Label">Score</label>
-                        <input type="text" name="score1" class="form-input" placeholder="Optional">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" id="score2Label">Score</label>
-                        <input type="text" name="score2" class="form-input" placeholder="Optional">
-                    </div>
+                <!-- Tennis Set-by-Set Score Input -->
+                <div class="form-group" style="margin-top: 1.5rem;">
+                    <label class="form-label" style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; display: block;">Set Scores</label>
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 0.5rem;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                <th style="padding: 0.5rem; text-align: left; color: var(--text-secondary);">Set</th>
+                                <th id="p1SetHeader" style="padding: 0.5rem; text-align: left; color: var(--text-secondary);">Player 1</th>
+                                <th id="p2SetHeader" style="padding: 0.5rem; text-align: left; color: var(--text-secondary);">Player 2</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in range(1, (tournament.num_sets or 3) + 1) %}
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                                <td style="padding: 0.75rem 0.5rem; font-weight: bold; color: var(--text-secondary);">Set {{ s }}</td>
+                                <td style="padding: 0.75rem 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                                    <input type="number" name="set{{ s }}_p1" id="set{{ s }}_p1" min="0" class="form-input" style="width: 80px;" oninput="checkTiebreak({{ s }}, {{ tournament.games_per_set or 6 }})">
+                                    <input type="number" name="tb{{ s }}_p1" id="tb{{ s }}_p1" min="0" placeholder="TB Pts" class="form-input" style="width: 90px; display: none;">
+                                </td>
+                                <td style="padding: 0.75rem 0.5rem;">
+                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <input type="number" name="set{{ s }}_p2" id="set{{ s }}_p2" min="0" class="form-input" style="width: 80px;" oninput="checkTiebreak({{ s }}, {{ tournament.games_per_set or 6 }})">
+                                        <input type="number" name="tb{{ s }}_p2" id="tb{{ s }}_p2" min="0" placeholder="TB Pts" class="form-input" style="width: 90px; display: none;">
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
             <div class="modal-footer">
@@ -569,6 +714,29 @@
 </div>
 
 <script>
+    function checkTiebreak(setNum, winThreshold) {
+        const p1Input = document.getElementById(`set${setNum}_p1`);
+        const p2Input = document.getElementById(`set${setNum}_p2`);
+        const tb1Input = document.getElementById(`tb${setNum}_p1`);
+        const tb2Input = document.getElementById(`tb${setNum}_p2`);
+        
+        if (!p1Input || !p2Input) return;
+        
+        const g1 = parseInt(p1Input.value) || 0;
+        const g2 = parseInt(p2Input.value) || 0;
+        
+        // Show tiebreak input if either player has winThreshold + 1 and the other has winThreshold
+        if ((g1 === winThreshold + 1 && g2 === winThreshold) || (g2 === winThreshold + 1 && g1 === winThreshold)) {
+            tb1Input.style.display = 'inline-block';
+            tb2Input.style.display = 'inline-block';
+        } else {
+            tb1Input.style.display = 'none';
+            tb2Input.style.display = 'none';
+            tb1Input.value = '';
+            tb2Input.value = '';
+        }
+    }
+
     function openReportModal(matchId, p1Name, p1Id, p2Name, p2Id) {
         const modal = document.getElementById('reportModal');
         const form = document.getElementById('reportForm');
@@ -577,11 +745,19 @@
 
         document.getElementById('winner1').value = p1Id;
         document.getElementById('winner1Label').textContent = p1Name;
-        document.getElementById('score1Label').textContent = p1Name + ' Score';
+        document.getElementById('p1SetHeader').textContent = p1Name;
 
         document.getElementById('winner2').value = p2Id;
         document.getElementById('winner2Label').textContent = p2Name;
-        document.getElementById('score2Label').textContent = p2Name + ' Score';
+        document.getElementById('p2SetHeader').textContent = p2Name;
+
+        // Reset all tiebreak fields visibility on open
+        for (let s = 1; s <= {{ tournament.num_sets or 3 }}; s++) {
+            const tb1 = document.getElementById(`tb${s}_p1`);
+            const tb2 = document.getElementById(`tb${s}_p2`);
+            if (tb1) tb1.style.display = 'none';
+            if (tb2) tb2.style.display = 'none';
+        }
 
         modal.style.display = 'flex';
     }

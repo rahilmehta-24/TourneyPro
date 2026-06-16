@@ -131,5 +131,46 @@ if 'match_type' not in columns:
 else:
     print("[OK] match_type column already exists")
 
+# Migrate num_sets and games_per_set in tournaments
+cursor.execute("PRAGMA table_info(tournaments)")
+tournaments_columns = [col[1] for col in cursor.fetchall()]
+
+if 'num_sets' not in tournaments_columns:
+    print("Adding num_sets column to tournaments...")
+    cursor.execute("ALTER TABLE tournaments ADD COLUMN num_sets INTEGER DEFAULT 3")
+    conn.commit()
+    print("[OK] Added num_sets column to tournaments")
+else:
+    print("[OK] num_sets column already exists in tournaments")
+
+if 'games_per_set' not in tournaments_columns:
+    print("Adding games_per_set column to tournaments...")
+    cursor.execute("ALTER TABLE tournaments ADD COLUMN games_per_set INTEGER DEFAULT 6")
+    conn.commit()
+    print("[OK] Added games_per_set column to tournaments")
+else:
+    print("[OK] games_per_set column already exists in tournaments")
+
+# Migrate categories table
+print("\n=== Migrating categories table ===")
+cursor.execute("PRAGMA table_info(categories)")
+categories_columns = [col[1] for col in cursor.fetchall()]
+
+if 'num_sets' not in categories_columns:
+    print("Adding num_sets column to categories...")
+    cursor.execute("ALTER TABLE categories ADD COLUMN num_sets INTEGER DEFAULT 3")
+    conn.commit()
+    print("[OK] Added num_sets column to categories")
+else:
+    print("[OK] num_sets column already exists in categories")
+
+if 'games_per_set' not in categories_columns:
+    print("Adding games_per_set column to categories...")
+    cursor.execute("ALTER TABLE categories ADD COLUMN games_per_set INTEGER DEFAULT 6")
+    conn.commit()
+    print("[OK] Added games_per_set column to categories")
+else:
+    print("[OK] games_per_set column already exists in categories")
+
 conn.close()
 print("\n[SUCCESS] Database migration completed successfully!")

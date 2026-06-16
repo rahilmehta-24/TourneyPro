@@ -21,16 +21,27 @@ def create_app(config_class=Config):
 
     with app.app_context():
         db.create_all()
+        # Bootstrap default superadmin if db is empty
+        from app.routes.auth import bootstrap_superadmin
+        bootstrap_superadmin()
 
     # Register Blueprints
     from app.routes.main import main_bp
     from app.routes.tournament import tournament_bp
     from app.routes.category import category_bp
     from app.routes.export import export_bp
+    from app.routes.auth import auth_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(tournament_bp)
     app.register_blueprint(category_bp)
     app.register_blueprint(export_bp)
+    app.register_blueprint(auth_bp)
+
+    # Inject current_user into templates
+    @app.context_processor
+    def inject_user():
+        from app.routes.auth import get_current_user
+        return dict(current_user=get_current_user())
 
     return app

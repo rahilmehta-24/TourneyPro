@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}User Management - TourneyPro Tennis{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header" style="margin-bottom: var(--spacing-lg);">
+        <div>
+            <h1 class="page-title">User Management Dashboard</h1>
+            <p class="page-subtitle">Manage user permissions and roles</p>
+        </div>
+    </div>
+
+    <div class="form-section" style="background: var(--bg-card); padding: var(--spacing-lg); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);">
+        <table class="standings-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+                <tr style="border-bottom: 2px solid rgba(255, 255, 255, 0.1);">
+                    <th style="padding: var(--spacing-sm); color: var(--text-secondary);">Username</th>
+                    <th style="padding: var(--spacing-sm); color: var(--text-secondary);">Email</th>
+                    <th style="padding: var(--spacing-sm); color: var(--text-secondary);">Role</th>
+                    <th style="padding: var(--spacing-sm); color: var(--text-secondary);">Status</th>
+                    <th style="padding: var(--spacing-sm); color: var(--text-secondary); text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); transition: background 0.2s;">
+                    <td style="padding: var(--spacing-sm); font-weight: 600;">{{ user.username }}</td>
+                    <td style="padding: var(--spacing-sm); color: var(--text-secondary);">{{ user.email }}</td>
+                    <td style="padding: var(--spacing-sm);">
+                        <span class="status-badge" style="
+                            padding: 0.25rem 0.5rem; 
+                            border-radius: var(--radius-sm); 
+                            font-size: 0.8rem;
+                            font-weight: 600;
+                            {% if user.role == 'superadmin' %}
+                                background: rgba(239, 68, 68, 0.2); color: var(--accent-danger);
+                            {% elif user.role == 'admin' %}
+                                background: rgba(59, 130, 246, 0.2); color: var(--accent-info);
+                            {% else %}
+                                background: rgba(107, 113, 153, 0.2); color: var(--text-muted);
+                            {% endif %}
+                        ">
+                            {{ user.role.upper() }}
+                        </span>
+                    </td>
+                    <td style="padding: var(--spacing-sm);">
+                        {% if user.admin_requested %}
+                        <span style="color: var(--accent-warning); font-size: 0.9rem; font-weight: 600;">⚠️ Admin Requested</span>
+                        {% else %}
+                        <span style="color: var(--text-muted); font-size: 0.9rem;">No pending request</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: var(--spacing-sm); text-align: right;">
+                        {% if user.role == 'superadmin' %}
+                        <span style="color: var(--text-muted); font-style: italic;">No actions (Superadmin)</span>
+                        {% elif user.role == 'admin' %}
+                        <form method="POST" action="{{ url_for('auth.revoke_admin', user_id=user.id) }}" style="display: inline;">
+                            <button type="submit" class="btn btn-danger btn-small">Revoke Admin</button>
+                        </form>
+                        {% else %}
+                        <form method="POST" action="{{ url_for('auth.grant_admin', user_id=user.id) }}" style="display: inline;">
+                            <button type="submit" class="btn btn-success btn-small" style="background: var(--gradient-success); color: white;">
+                                {% if user.admin_requested %}Approve Request{% else %}Grant Admin{% endif %}
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
