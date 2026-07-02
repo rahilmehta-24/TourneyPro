@@ -1,6 +1,10 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for
-from app.models import db, Player, PlayerTournamentRecord
+from flask import Blueprint, render_template, request, flash, redirect, url_for, make_response
+from app.models import db, Player, PlayerTournamentRecord, Participant
 from sqlalchemy import desc
+from app.routes.auth import login_required, role_required
+from datetime import datetime
+import openpyxl
+from io import BytesIO
 
 leaderboard_bp = Blueprint('leaderboard', __name__, url_prefix='/leaderboard')
 
@@ -101,3 +105,111 @@ def add_points(player_id):
 
     flash(f'Points added for {player.name} successfully!', 'success')
     return redirect(url_for('leaderboard.view_leaderboard', category=player.age_category, gender=player.gender))
+
+@leaderboard_bp.route('/reset', methods=['POST'])
+@login_required
+@role_required('superadmin')
+def reset_leaderboard():
+    PlayerTournamentRecord.query.delete()
+    Player.query.delete()
+    Participant.query.update({'player_id': None})
+    db.session.commit()
+    flash('Leaderboard has been completely reset.', 'success')
+    return redirect(url_for('leaderboard.view_leaderboard'))
+
+@leaderboard_bp.route('/player/<int:player_id>/edit', methods=['POST'])
+@login_required
+@role_required('superadmin')
+def edit_player(player_id):
+    player = Player.query.get_or_404(player_id)
+    player.name = request.form.get('name')
+    player.gender = request.form.get('gender')
+    player.age_category = request.form.get('age_category')
+    db.session.commit()
+    flash(f'Player {player.name} updated successfully.', 'success')
+    return redirect(url_for('leaderboard.view_leaderboard', category=player.age_category, gender=player.gender))
+
+@leaderboard_bp.route('/player/<int:player_id>/delete', methods=['POST'])
+@login_required
+@role_required('superadmin')
+def delete_player(player_id):
+    player = Player.query.get_or_404(player_id)
+    Participant.query.filter_by(player_id=player.id).update({'player_id': None})
+    db.session.delete(player)
+    db.session.commit()
+    flash('Player deleted successfully.', 'success')
+    return redirect(url_for('leaderboard.view_leaderboard'))
+
+@leaderboard_bp.route('/export')
+@login_required
+@role_required('superadmin')
+def export_leaderboard():
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
+    
+    if not start_date_str or not end_date_str:
+        flash('Please select a date range to export.', 'error')
+        return redirect(url_for('leaderboard.view_leaderboard'))
+        
+    try:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+        end_date = end_date.replace(hour=23, minute=59, second=59)
+    except (ValueError, TypeError):
+        flash('Invalid date range provided.', 'error')
+        return redirect(url_for('leaderboard.view_leaderboard'))
+        
+    records = PlayerTournamentRecord.query.filter(
+        PlayerTournamentRecord.date_recorded >= start_date,
+        PlayerTournamentRecord.date_recorded <= end_date
+    ).all()
+    
+    # Group points by player
+    player_stats = {}
+    for r in records:
+        if r.player_id not in player_stats:
+            player = Player.query.get(r.player_id)
+            if not player:
+                continue
+            player_stats[r.player_id] = {
+                'name': player.name,
+                'gender': player.gender,
+                'category': player.age_category,
+                'points': 0
+            }
+        player_stats[r.player_id]['points'] += r.points_earned
+        
+    # Group by sheet (Category + Gender)
+    sheets_data = {}
+    for pid, stats in player_stats.items():
+        sheet_name = f"{stats['category']} {stats['gender']}"
+        if sheet_name not in sheets_data:
+            sheets_data[sheet_name] = []
+        sheets_data[sheet_name].append(stats)
+        
+    wb = openpyxl.Workbook()
+    
+    if not sheets_data:
+        ws = wb.active
+        ws.title = "No Data"
+        ws.append(["No records found in this date range."])
+    else:
+        # Remove default sheet
+        wb.remove(wb.active)
+        for sheet_name, p_list in sheets_data.items():
+            # openpyxl limits sheet names to 31 characters
+            ws = wb.create_sheet(title=sheet_name[:31])
+            ws.append(['Rank', 'Player Name', 'Category', 'Gender', 'Points Earned (In Range)'])
+            # Sort by points desc
+            p_list.sort(key=lambda x: x['points'], reverse=True)
+            for i, p in enumerate(p_list, 1):
+                ws.append([i, p['name'], p['category'], p['gender'], p['points']])
+                
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    response = make_response(output.read())
+    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    response.headers['Content-Disposition'] = f'attachment; filename=Leaderboard_Export_{start_date_str}_to_{end_date_str}.xlsx'
+    return response

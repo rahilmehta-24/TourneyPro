@@ -9,7 +9,12 @@
             <h1>Player Leaderboard</h1>
             <p class="subtitle">Rankings across all categories and genders</p>
         </div>
-        <div>
+        <div style="display: flex; align-items: center;">
+            {% if current_user.is_authenticated and current_user.role == 'superadmin' %}
+            <form method="POST" action="{{ url_for('leaderboard.reset_leaderboard') }}" style="margin-right: 1rem; margin-bottom: 0;" onsubmit="return confirm('WARNING: This will delete ALL players and their tournament points completely! Are you absolutely sure?');">
+                <button type="submit" class="btn" style="background: #ef4444; color: white;">Reset Leaderboard</button>
+            </form>
+            {% endif %}
             <button onclick="document.getElementById('addPlayerModal').style.display='flex'" class="btn btn-primary">
                 + Add New Player
             </button>
@@ -41,6 +46,22 @@
         </form>
     </div>
 
+    {% if current_user.is_authenticated and current_user.role == 'superadmin' %}
+    <div class="export-box" style="background: var(--bg-secondary); padding: 1.5rem; border-radius: var(--radius-lg); margin-bottom: 2rem; border-left: 4px solid #10b981;">
+        <form method="GET" action="{{ url_for('leaderboard.export_leaderboard') }}" style="display: flex; gap: 1rem; width: 100%; align-items: flex-end;">
+            <div class="form-group" style="flex: 1; margin: 0;">
+                <label class="form-label" style="color: #10b981; font-weight: bold;">Export Data (Start Date)</label>
+                <input type="date" name="start_date" class="form-input" required>
+            </div>
+            <div class="form-group" style="flex: 1; margin: 0;">
+                <label class="form-label" style="color: #10b981; font-weight: bold;">End Date</label>
+                <input type="date" name="end_date" class="form-input" required>
+            </div>
+            <button type="submit" class="btn" style="background: #10b981; color: #000; font-weight: bold; height: fit-content; align-self: flex-end;">⬇️ Export to Excel</button>
+        </form>
+    </div>
+    {% endif %}
+
     <!-- Leaderboard Table -->
     <div class="table-container" style="background: var(--bg-secondary); border-radius: var(--radius-lg); overflow: hidden;">
         <table style="width: 100%; border-collapse: collapse; text-align: left;">
@@ -59,7 +80,9 @@
                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
                     <td style="padding: 1rem; font-weight: bold; color: var(--accent-primary);">#{{ loop.index }}</td>
                     <td style="padding: 1rem;">
-                        <div style="font-weight: 500;">{{ player.name }}</div>
+                        <div style="font-weight: 500; cursor: pointer; color: var(--accent-primary); display: inline-flex; align-items: center; gap: 5px;" onclick="togglePlayerDetails({{ player.id }})">
+                            {{ player.name }} <span style="font-size: 0.8rem;">▼</span>
+                        </div>
                         <div style="font-size: 0.85rem; margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px;">
                             {% for record in player.tournament_records %}
                                 {% if record.level in ['State', 'National'] %}
@@ -73,8 +96,33 @@
                     <td style="padding: 1rem; color: var(--text-secondary);">{{ player.age_category }} {{ player.gender }}</td>
                     <td style="padding: 1rem; font-weight: bold; color: var(--accent-secondary);">{{ player.total_points }}</td>
                     <td style="padding: 1rem; color: var(--text-secondary);">{{ player.matches_won }}W - {{ player.matches_lost }}L</td>
-                    <td style="padding: 1rem; text-align: right;">
+                    <td style="padding: 1rem; text-align: right; white-space: nowrap;">
                         <button onclick="openAddPointsModal({{ player.id }}, '{{ player.name }}')" class="btn btn-small btn-secondary">+ Add Points</button>
+                        {% if current_user.is_authenticated and current_user.role == 'superadmin' %}
+                            <button onclick="openEditPlayerModal({{ player.id }}, '{{ player.name|escape }}', '{{ player.gender }}', '{{ player.age_category }}')" class="btn btn-small btn-secondary" style="margin-left: 0.25rem;">✏️ Edit</button>
+                            <form method="POST" action="{{ url_for('leaderboard.delete_player', player_id=player.id) }}" style="display: inline-block; margin-left: 0.25rem; margin-bottom: 0;" onsubmit="return confirm('Are you sure you want to delete {{ player.name|escape }}? This cannot be undone.');">
+                                <button type="submit" class="btn btn-small" style="background: #ef4444; color: white;">🗑️</button>
+                            </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr id="player-details-{{ player.id }}" style="display: none; background: rgba(0,0,0,0.2);">
+                    <td colspan="6" style="padding: 1rem 1rem 1.5rem 3rem;">
+                        <div style="font-size: 0.9rem;">
+                            <strong style="color: var(--accent-primary);">Points Breakdown:</strong>
+                            <ul style="list-style: none; padding: 0; margin-top: 0.75rem; margin-bottom: 0;">
+                                {% for record in player.tournament_records|sort(attribute='date_recorded', reverse=True) %}
+                                <li style="margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px dashed rgba(255,255,255,0.1);">
+                                    - <strong>{{ record.tournament_name }}</strong> 
+                                    <span style="color: var(--text-secondary);">({{ record.level }}, {{ record.round_reached }})</span> : 
+                                    <span style="color: var(--accent-secondary); font-weight: bold;">+{{ record.points_earned }} pts</span>
+                                    <span style="color: var(--text-muted); font-size: 0.8rem; margin-left: 8px;"> ({{ record.date_recorded.strftime('%Y-%m-%d') }})</span>
+                                </li>
+                                {% else %}
+                                <li style="color: var(--text-muted);">No tournament records yet.</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
                     </td>
                 </tr>
                 {% else %}
@@ -84,6 +132,40 @@
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+</div>
+
+<!-- Edit Player Modal (SuperAdmin only) -->
+<div id="editPlayerModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+    <div class="modal-content" style="background: var(--bg-secondary); padding: 2rem; border-radius: var(--radius-lg); width: 100%; max-width: 500px; position: relative;">
+        <span onclick="document.getElementById('editPlayerModal').style.display='none'" style="position: absolute; right: 1.5rem; top: 1.5rem; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</span>
+        <h2 style="margin-bottom: 1.5rem;">Edit Player</h2>
+        <form id="editPlayerForm" method="POST">
+            <div class="form-group">
+                <label class="form-label">Player Name</label>
+                <input type="text" id="editPlayerName" name="name" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Gender</label>
+                <select id="editPlayerGender" name="gender" class="form-input" required>
+                    {% for g in genders %}
+                    <option value="{{ g }}">{{ g }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Category</label>
+                <select id="editPlayerCategory" name="age_category" class="form-input" required>
+                    {% for c in categories %}
+                    <option value="{{ c }}">{{ c }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
+                <button type="button" onclick="document.getElementById('editPlayerModal').style.display='none'" class="btn btn-secondary">Cancel</button>
+                <button type="submit" class="btn btn-primary">Update Player</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -175,6 +257,23 @@
     function closeAddPointsModal() {
         document.getElementById('addPointsModal').style.display = 'none';
         document.getElementById('addPointsForm').reset();
+    }
+
+    function togglePlayerDetails(playerId) {
+        const row = document.getElementById(`player-details-${playerId}`);
+        if (row.style.display === 'none' || row.style.display === '') {
+            row.style.display = 'table-row';
+        } else {
+            row.style.display = 'none';
+        }
+    }
+
+    function openEditPlayerModal(playerId, name, gender, category) {
+        document.getElementById('editPlayerForm').action = `/leaderboard/player/${playerId}/edit`;
+        document.getElementById('editPlayerName').value = name;
+        document.getElementById('editPlayerGender').value = gender;
+        document.getElementById('editPlayerCategory').value = category;
+        document.getElementById('editPlayerModal').style.display = 'flex';
     }
 </script>
 {% endblock %}
