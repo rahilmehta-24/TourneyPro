@@ -17,7 +17,10 @@ def create_app(config_class=Config):
         pass
 
     # Create upload folder
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    try:
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    except OSError:
+        pass
 
     with app.app_context():
         db.create_all()
