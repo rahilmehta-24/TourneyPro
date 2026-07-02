@@ -24,9 +24,10 @@ def create_category(slug):
         max_participants = request.form.get('max_participants', type=int)
 
         # Tennis settings
-        num_sets = None
-        games_per_set = None
+        num_sets = request.form.get('num_sets', type=int)
+        games_per_set = request.form.get('games_per_set', type=int)
         total_games = request.form.get('total_games', type=int)
+        points_to_win = request.form.get('points_to_win', type=int)
 
         # Advanced settings for group stage
         has_group_stage = (format_type == 'group_stage')
@@ -45,6 +46,7 @@ def create_category(slug):
             num_sets=num_sets,
             games_per_set=games_per_set,
             total_games=total_games,
+            points_to_win=points_to_win,
             has_group_stage=has_group_stage,
             num_groups=num_groups,
             teams_per_group=teams_per_group,
@@ -223,6 +225,7 @@ def manage_category(slug, category_id):
                 name = request.form.get('name')
                 max_participants = request.form.get('max_participants', type=int)
                 total_games = request.form.get('total_games', type=int)
+                points_to_win = request.form.get('points_to_win', type=int)
                 max_players_per_team = request.form.get('max_players_per_team', type=int)
                 
                 # Group stage settings
@@ -241,6 +244,7 @@ def manage_category(slug, category_id):
                 category.name = name
                 category.max_participants = max_participants
                 category.total_games = total_games
+                category.points_to_win = points_to_win
                 category.max_players_per_team = max_players_per_team
 
                 # Settings only editable in setup status

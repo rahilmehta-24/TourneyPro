@@ -322,7 +322,7 @@ def report_match_result(slug, match_id):
     try:
         if match.category_id:
             category = Category.query.get(match.category_id)
-            if category and category.total_games:
+            if category and category.format == 'group_stage':
                 # New scoring system based on total games
                 total_games_target = category.total_games
                 g1_val = form_data.get('set1_p1')
@@ -339,6 +339,31 @@ def report_match_result(slug, match_id):
                     
                 if g1 + g2 != total_games_target:
                     raise ValueError(f"Total games must sum to {total_games_target}. You entered {g1} and {g2} (sum: {g1+g2}).")
+                    
+                actual_winner = match.participant1_id if g1 > g2 else match.participant2_id
+                if winner_id != actual_winner:
+                    raise ValueError("Selected winner does not match the scores.")
+                    
+                match.winner_id = winner_id
+                match.score1 = str(g1)
+                match.score2 = str(g2)
+                
+            elif category and category.format == 'round_robin':
+                points_to_win = category.points_to_win or 11
+                g1_val = form_data.get('set1_p1')
+                g2_val = form_data.get('set1_p2')
+                
+                if not g1_val or not g2_val:
+                    raise ValueError("Score is required.")
+                
+                try:
+                    g1 = int(g1_val)
+                    g2 = int(g2_val)
+                except ValueError:
+                    raise ValueError("Score must be integers.")
+                    
+                if g1 < points_to_win and g2 < points_to_win:
+                    raise ValueError(f"One player must reach {points_to_win} points to win.")
                     
                 actual_winner = match.participant1_id if g1 > g2 else match.participant2_id
                 if winner_id != actual_winner:

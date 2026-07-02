@@ -54,6 +54,7 @@ class Category(db.Model):
     allow_lucky_losers = db.Column(db.Boolean, default=False)
     max_players_per_team = db.Column(db.Integer)
     total_games = db.Column(db.Integer)
+    points_to_win = db.Column(db.Integer)
 
     # Relationships
     participants = db.relationship('Participant', backref='category', lazy=True, cascade='all, delete-orphan')

@@ -109,9 +109,30 @@
                         </select>
                     </div>
 
-                    <div class="form-group">
-                        <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Total Games To Play *</label>
-                        <input type="number" id="total_games" name="total_games" class="form-input" min="1" max="50" value="{{ category.total_games or 7 }}" required style="width: 100%;">
+                    <div id="total-games-fields" style="display: {% if category.format == 'group_stage' %}block{% else %}none{% endif %};">
+                        <div class="form-group">
+                            <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Total Games To Play *</label>
+                            <input type="number" id="total_games" name="total_games" class="form-input" min="1" max="50" value="{{ category.total_games or 7 }}" style="width: 100%;">
+                        </div>
+                    </div>
+
+                    <div id="points-to-win-fields" style="display: {% if category.format == 'round_robin' %}block{% else %}none{% endif %};">
+                        <div class="form-group">
+                            <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Points to Win (Match Setting) *</label>
+                            <input type="number" id="points_to_win" name="points_to_win" class="form-input" min="1" max="100" value="{{ category.points_to_win or 11 }}" style="width: 100%;">
+                            <small style="display: block; margin-top: 0.25rem; color: #94a3b8;">Number of points required to win the match (e.g., first to 11)</small>
+                        </div>
+                    </div>
+
+                    <div id="legacy-scoring-fields" style="display: {% if category.format != 'group_stage' %}flex{% else %}none{% endif %}; flex-direction: column; gap: var(--spacing-sm);">
+                        <div class="form-group">
+                            <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Number of Sets</label>
+                            <input type="number" name="num_sets" class="form-input" min="1" max="5" value="{{ category.num_sets or 3 }}" style="width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Games Per Set to Win</label>
+                            <input type="number" name="games_per_set" class="form-input" min="1" max="10" value="{{ category.games_per_set or 6 }}" style="width: 100%;">
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -240,12 +261,43 @@
     function toggleGroupStageFields() {
         const format = document.getElementById('format').value;
         const groupFields = document.getElementById('group-stage-fields');
-        if (groupFields) {
-            if (format === 'group_stage') {
-                groupFields.style.display = 'flex';
-            } else {
-                groupFields.style.display = 'none';
+        const totalGamesFields = document.getElementById('total-games-fields');
+        const legacyScoringFields = document.getElementById('legacy-scoring-fields');
+        const pointsToWinFields = document.getElementById('points-to-win-fields');
+        
+        if (format === 'group_stage') {
+            if (groupFields) groupFields.style.display = 'flex';
+            if (totalGamesFields) {
+                totalGamesFields.style.display = 'block';
+                document.getElementById('total_games').required = true;
             }
+            if (legacyScoringFields) legacyScoringFields.style.display = 'none';
+            if (pointsToWinFields) {
+                pointsToWinFields.style.display = 'none';
+                document.getElementById('points_to_win').required = false;
+            }
+        } else if (format === 'round_robin') {
+            if (groupFields) groupFields.style.display = 'none';
+            if (totalGamesFields) {
+                totalGamesFields.style.display = 'none';
+                document.getElementById('total_games').required = false;
+            }
+            if (legacyScoringFields) legacyScoringFields.style.display = 'none';
+            if (pointsToWinFields) {
+                pointsToWinFields.style.display = 'block';
+                document.getElementById('points_to_win').required = true;
+            }
+        } else {
+            if (groupFields) groupFields.style.display = 'none';
+            if (totalGamesFields) {
+                totalGamesFields.style.display = 'none';
+                document.getElementById('total_games').required = false;
+            }
+            if (pointsToWinFields) {
+                pointsToWinFields.style.display = 'none';
+                document.getElementById('points_to_win').required = false;
+            }
+            if (legacyScoringFields) legacyScoringFields.style.display = 'flex';
         }
     }
 </script>

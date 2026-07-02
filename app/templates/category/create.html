@@ -24,10 +24,31 @@
             </select>
         </div>
 
-        <div class="form-group">
-            <label for="total_games">Total Games To Play (Match Setting) *</label>
-            <input type="number" id="total_games" name="total_games" class="form-input" min="1" max="50" value="7" required>
-            <small>Total number of games played in each match (e.g., if 7, score can be 5-2)</small>
+        <div id="total-games-fields" style="display: none;">
+            <div class="form-group">
+                <label for="total_games">Total Games To Play (Match Setting) *</label>
+                <input type="number" id="total_games" name="total_games" class="form-input" min="1" max="50" value="7">
+                <small>Total number of games played in each match (e.g., if 7, score can be 5-2)</small>
+            </div>
+        </div>
+
+        <div id="points-to-win-fields" style="display: none;">
+            <div class="form-group">
+                <label for="points_to_win">Points to Win (Match Setting) *</label>
+                <input type="number" id="points_to_win" name="points_to_win" class="form-input" min="1" max="100" value="11">
+                <small>Number of points required to win the match (e.g., first to 11)</small>
+            </div>
+        </div>
+
+        <div id="legacy-scoring-fields" style="display: none;">
+            <div class="form-group">
+                <label for="num_sets">Number of Sets *</label>
+                <input type="number" id="num_sets" name="num_sets" class="form-input" min="1" max="5" value="3">
+            </div>
+            <div class="form-group">
+                <label for="games_per_set">Games Per Set to Win *</label>
+                <input type="number" id="games_per_set" name="games_per_set" class="form-input" min="1" max="10" value="6">
+            </div>
         </div>
 
         <div class="form-group">
@@ -93,12 +114,51 @@
     function toggleGroupStageFields() {
         const format = document.getElementById('format').value;
         const groupFields = document.getElementById('group-stage-fields');
+        const totalGamesFields = document.getElementById('total-games-fields');
+        const legacyScoringFields = document.getElementById('legacy-scoring-fields');
+        const pointsToWinFields = document.getElementById('points-to-win-fields');
 
         if (format === 'group_stage') {
-            groupFields.style.display = 'block';
+            if (groupFields) groupFields.style.display = 'block';
+            if (totalGamesFields) {
+                totalGamesFields.style.display = 'block';
+                document.getElementById('total_games').required = true;
+            }
+            if (legacyScoringFields) legacyScoringFields.style.display = 'none';
+            if (pointsToWinFields) {
+                pointsToWinFields.style.display = 'none';
+                document.getElementById('points_to_win').required = false;
+            }
+        } else if (format === 'round_robin') {
+            if (groupFields) groupFields.style.display = 'none';
+            if (totalGamesFields) {
+                totalGamesFields.style.display = 'none';
+                document.getElementById('total_games').required = false;
+            }
+            if (legacyScoringFields) legacyScoringFields.style.display = 'none';
+            if (pointsToWinFields) {
+                pointsToWinFields.style.display = 'block';
+                document.getElementById('points_to_win').required = true;
+            }
+        } else if (format) {
+            if (groupFields) groupFields.style.display = 'none';
+            if (totalGamesFields) {
+                totalGamesFields.style.display = 'none';
+                document.getElementById('total_games').required = false;
+            }
+            if (pointsToWinFields) {
+                pointsToWinFields.style.display = 'none';
+                document.getElementById('points_to_win').required = false;
+            }
+            if (legacyScoringFields) legacyScoringFields.style.display = 'block';
         } else {
-            groupFields.style.display = 'none';
+            if (groupFields) groupFields.style.display = 'none';
+            if (totalGamesFields) totalGamesFields.style.display = 'none';
+            if (pointsToWinFields) pointsToWinFields.style.display = 'none';
+            if (legacyScoringFields) legacyScoringFields.style.display = 'none';
         }
     }
+    // Call once on load
+    toggleGroupStageFields();
 </script>
 {% endblock %}
