@@ -1,7 +1,5 @@
 __pycache__
 instance
-*.txt
 venv
 *.env*
 .DS_Store
-requirements.txt

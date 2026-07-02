@@ -1,0 +1,7 @@
+flask
+flask-sqlalchemy
+xhtml2pdf
+python-slugify
+python-dotenv
+
+gunicorn
