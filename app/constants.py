@@ -17,6 +17,12 @@ TOURNAMENT_FORMATS = {
         'description': 'Round-robin group matches followed by a single elimination knockout bracket for top qualifiers.',
         'icon': '🎪',
         'min_participants': 4
+    },
+    'category': {
+        'name': 'Multiple Categories/Events',
+        'description': 'Tournament separated by age groups, genders, or skill levels.',
+        'icon': '🗂️',
+        'min_participants': 2
     }
 }
 
