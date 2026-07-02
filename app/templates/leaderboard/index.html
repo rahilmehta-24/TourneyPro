@@ -3,6 +3,10 @@
 {% block title %}Leaderboard - TourneyPro{% endblock %}
 
 {% block content %}
+<style>
+    .badge-national { background: #ffd700; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
+    .badge-state { background: #10b981; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
+</style>
 <div class="container">
     <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
         <div>
@@ -10,7 +14,7 @@
             <p class="subtitle">Rankings across all categories and genders</p>
         </div>
         <div style="display: flex; align-items: center;">
-            {% if current_user.is_authenticated and current_user.role == 'superadmin' %}
+            {% if current_user and current_user.role == 'superadmin' %}
             <form method="POST" action="{{ url_for('leaderboard.reset_leaderboard') }}" style="margin-right: 1rem; margin-bottom: 0;" onsubmit="return confirm('WARNING: This will delete ALL players and their tournament points completely! Are you absolutely sure?');">
                 <button type="submit" class="btn" style="background: #ef4444; color: white;">Reset Leaderboard</button>
             </form>
@@ -46,7 +50,7 @@
         </form>
     </div>
 
-    {% if current_user.is_authenticated and current_user.role == 'superadmin' %}
+    {% if current_user and current_user.role == 'superadmin' %}
     <div class="export-box" style="background: var(--bg-secondary); padding: 1.5rem; border-radius: var(--radius-lg); margin-bottom: 2rem; border-left: 4px solid #10b981;">
         <form method="GET" action="{{ url_for('leaderboard.export_leaderboard') }}" style="display: flex; gap: 1rem; width: 100%; align-items: flex-end;">
             <div class="form-group" style="flex: 1; margin: 0;">
@@ -80,13 +84,13 @@
                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
                     <td style="padding: 1rem; font-weight: bold; color: var(--accent-primary);">#{{ loop.index }}</td>
                     <td style="padding: 1rem;">
-                        <div style="font-weight: 500; cursor: pointer; color: var(--accent-primary); display: inline-flex; align-items: center; gap: 5px;" onclick="togglePlayerDetails({{ player.id }})">
+                        <div style="font-weight: 500; cursor: pointer; color: var(--accent-primary); display: inline-flex; align-items: center; gap: 5px;" onclick="togglePlayerDetails('{{ player.id }}')">
                             {{ player.name }} <span style="font-size: 0.8rem;">▼</span>
                         </div>
                         <div style="font-size: 0.85rem; margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px;">
                             {% for record in player.tournament_records %}
                                 {% if record.level in ['State', 'National'] %}
-                                    <span style="background: {% if record.level == 'National' %}#ffd700{% else %}#10b981{% endif %}; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold;" title="{{ record.tournament_name }}">
+                                    <span class="{% if record.level == 'National' %}badge-national{% else %}badge-state{% endif %}" title="{{ record.tournament_name }}">
                                         🏆 {{ record.level }} {{ record.round_reached }}
                                     </span>
                                 {% endif %}
@@ -97,9 +101,9 @@
                     <td style="padding: 1rem; font-weight: bold; color: var(--accent-secondary);">{{ player.total_points }}</td>
                     <td style="padding: 1rem; color: var(--text-secondary);">{{ player.matches_won }}W - {{ player.matches_lost }}L</td>
                     <td style="padding: 1rem; text-align: right; white-space: nowrap;">
-                        <button onclick="openAddPointsModal({{ player.id }}, '{{ player.name }}')" class="btn btn-small btn-secondary">+ Add Points</button>
-                        {% if current_user.is_authenticated and current_user.role == 'superadmin' %}
-                            <button onclick="openEditPlayerModal({{ player.id }}, '{{ player.name|escape }}', '{{ player.gender }}', '{{ player.age_category }}')" class="btn btn-small btn-secondary" style="margin-left: 0.25rem;">✏️ Edit</button>
+                        <button onclick="openAddPointsModal('{{ player.id }}', '{{ player.name }}')" class="btn btn-small btn-secondary">+ Add Points</button>
+                        {% if current_user and current_user.role == 'superadmin' %}
+                            <button onclick="openEditPlayerModal('{{ player.id }}', '{{ player.name|escape }}', '{{ player.gender }}', '{{ player.age_category }}')" class="btn btn-small btn-secondary" style="margin-left: 0.25rem;">✏️ Edit</button>
                             <form method="POST" action="{{ url_for('leaderboard.delete_player', player_id=player.id) }}" style="display: inline-block; margin-left: 0.25rem; margin-bottom: 0;" onsubmit="return confirm('Are you sure you want to delete {{ player.name|escape }}? This cannot be undone.');">
                                 <button type="submit" class="btn btn-small" style="background: #ef4444; color: white;">🗑️</button>
                             </form>

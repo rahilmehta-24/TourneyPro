@@ -11,4 +11,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping Render URL
-        run: curl -s https://tourney-pro-zxye.onrender.com > /dev/null
+        run: curl -s https://tourney-pro-cnt8.onrender.com > /dev/null
