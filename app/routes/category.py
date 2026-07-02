@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from app.models import db, Tournament, Category, Participant, Match, Group
 from app.constants import TOURNAMENT_FORMATS
 from app.algorithms.single_elimination import generate_single_elimination, calculate_final_rankings
-from app.algorithms.double_elimination import generate_double_elimination, calculate_double_elimination_rankings
+from app.algorithms.double_elimination import calculate_double_elimination_rankings
 from app.algorithms.round_robin import calculate_round_robin_standings
 from app.algorithms.group_stage import generate_group_stage, generate_knockout_from_groups, calculate_group_standings
 from app.routes.auth import login_required, role_required

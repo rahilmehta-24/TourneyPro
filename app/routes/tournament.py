@@ -319,49 +319,40 @@ def report_match_result(slug, match_id):
         'tb5_p2': request.form.get('tb5_p2', ''),
     }
 
-    if match.category_id:
-        category = Category.query.get(match.category_id)
-        if category and category.total_games:
-            # New scoring system based on total games
-            total_games_target = category.total_games
-            g1_val = form_data.get('set1_p1')
-            g2_val = form_data.get('set1_p2')
-            
-            if not g1_val or not g2_val:
-                flash("Score is required.", "error")
-                return redirect(request.referrer or url_for('tournament.view_tournament', slug=slug))
-            
-            try:
-                g1 = int(g1_val)
-                g2 = int(g2_val)
-            except ValueError:
-                flash("Score must be integers.", "error")
-                return redirect(request.referrer or url_for('tournament.view_tournament', slug=slug))
+    try:
+        if match.category_id:
+            category = Category.query.get(match.category_id)
+            if category and category.total_games:
+                # New scoring system based on total games
+                total_games_target = category.total_games
+                g1_val = form_data.get('set1_p1')
+                g2_val = form_data.get('set1_p2')
                 
-            if g1 + g2 != total_games_target:
-                flash(f"Total games must sum to {total_games_target}. You entered {g1} and {g2} (sum: {g1+g2}).", "error")
-                return redirect(request.referrer or url_for('tournament.view_tournament', slug=slug))
+                if not g1_val or not g2_val:
+                    raise ValueError("Score is required.")
                 
-            actual_winner = match.participant1_id if g1 > g2 else match.participant2_id
-            if winner_id != actual_winner:
-                flash("Selected winner does not match the scores.", "error")
-                return redirect(request.referrer or url_for('tournament.view_tournament', slug=slug))
+                try:
+                    g1 = int(g1_val)
+                    g2 = int(g2_val)
+                except ValueError:
+                    raise ValueError("Score must be integers.")
+                    
+                if g1 + g2 != total_games_target:
+                    raise ValueError(f"Total games must sum to {total_games_target}. You entered {g1} and {g2} (sum: {g1+g2}).")
+                    
+                actual_winner = match.participant1_id if g1 > g2 else match.participant2_id
+                if winner_id != actual_winner:
+                    raise ValueError("Selected winner does not match the scores.")
+                    
+                match.winner_id = winner_id
+                match.score1 = str(g1)
+                match.score2 = str(g2)
                 
-            match.winner_id = winner_id
-            match.score1 = str(g1)
-            match.score2 = str(g2)
-            
-            # Additional logic for updating bracket is below
-            try:
-                pass # Just passing here to let the rest of the function proceed
-            except Exception:
-                pass
-        else:
-            # Legacy set scoring
-            num_sets = category.num_sets if category and category.num_sets else (tournament.num_sets or 3)
-            games_per_set = category.games_per_set if category and category.games_per_set else (tournament.games_per_set or 6)
+            else:
+                # Legacy set scoring
+                num_sets = category.num_sets if category and category.num_sets else (tournament.num_sets or 3)
+                games_per_set = category.games_per_set if category and category.games_per_set else (tournament.games_per_set or 6)
 
-            try:
                 score1, score2 = validate_and_format_score(
                     winner_id, match.participant1_id, match.participant2_id,
                     num_sets, games_per_set, form_data
@@ -370,15 +361,11 @@ def report_match_result(slug, match_id):
                 match.winner_id = winner_id
                 match.score1 = score1
                 match.score2 = score2
-            except ValueError as e:
-                flash(str(e), 'error')
-                return redirect(request.referrer or url_for('tournament.view_tournament', slug=slug))
-    else:
-        # Fallback for tournaments without categories
-        num_sets = tournament.num_sets or 3
-        games_per_set = tournament.games_per_set or 6
+        else:
+            # Fallback for tournaments without categories
+            num_sets = tournament.num_sets or 3
+            games_per_set = tournament.games_per_set or 6
 
-        try:
             score1, score2 = validate_and_format_score(
                 winner_id, match.participant1_id, match.participant2_id,
                 num_sets, games_per_set, form_data
@@ -387,6 +374,7 @@ def report_match_result(slug, match_id):
             match.winner_id = winner_id
             match.score1 = score1
             match.score2 = score2
+
         match.status = 'completed'
         match.completed_at = datetime.utcnow()
 

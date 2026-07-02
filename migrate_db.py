@@ -1,4 +1,3 @@
-import os
 from sqlalchemy import text
 from app.models import db
 from app import create_app
