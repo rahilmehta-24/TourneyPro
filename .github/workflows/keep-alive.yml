@@ -1,0 +1,14 @@
+name: Keep Render Service Awake
+
+on:
+  schedule:
+    # Runs every 14 minutes
+    - cron: '*/14 * * * *'
+  workflow_dispatch: # Allows manual triggering from the GitHub Actions tab
+
+jobs:
+  ping-website:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render URL
+        run: curl -s https://tourney-pro-zxye.onrender.com > /dev/null
