@@ -51,6 +51,9 @@ class Category(db.Model):
     teams_per_group = db.Column(db.Integer)
     matches_per_team_pair = db.Column(db.Integer, default=1)  # Custom matches between teams in group
     qualifiers_per_group = db.Column(db.Integer)  # How many advance to knockout
+    allow_lucky_losers = db.Column(db.Boolean, default=False)
+    max_players_per_team = db.Column(db.Integer)
+    total_games = db.Column(db.Integer)
 
     # Relationships
     participants = db.relationship('Participant', backref='category', lazy=True, cascade='all, delete-orphan')

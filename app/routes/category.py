@@ -24,28 +24,34 @@ def create_category(slug):
         max_participants = request.form.get('max_participants', type=int)
 
         # Tennis settings
-        num_sets = request.form.get('num_sets', type=int, default=1)
-        games_per_set = request.form.get('games_per_set', type=int, default=6)
+        num_sets = None
+        games_per_set = None
+        total_games = request.form.get('total_games', type=int)
 
-        # Group stage specific fields
-        has_group_stage = format_type == 'group_stage'
+        # Advanced settings for group stage
+        has_group_stage = (format_type == 'group_stage')
         num_groups = request.form.get('num_groups', type=int) if has_group_stage else None
         teams_per_group = request.form.get('teams_per_group', type=int) if has_group_stage else None
-        matches_per_team_pair = request.form.get('matches_per_team_pair', type=int, default=1) if has_group_stage else 1
-        qualifiers_per_group = request.form.get('qualifiers_per_group', type=int) if has_group_stage else None
+        matches_per_team_pair = request.form.get('matches_per_team_pair', type=int, default=1) if has_group_stage else None
+        qualifiers_per_group = request.form.get('qualifiers_per_group', type=int, default=2) if has_group_stage else None
+        allow_lucky_losers = request.form.get('allow_lucky_losers') == 'on' if has_group_stage else False
+        max_players_per_team = request.form.get('max_players_per_team', type=int)
 
         category = Category(
             tournament_id=tournament.id,
             name=name,
             format=format_type,
             max_participants=max_participants,
+            num_sets=num_sets,
+            games_per_set=games_per_set,
+            total_games=total_games,
             has_group_stage=has_group_stage,
             num_groups=num_groups,
             teams_per_group=teams_per_group,
             matches_per_team_pair=matches_per_team_pair,
             qualifiers_per_group=qualifiers_per_group,
-            num_sets=num_sets,
-            games_per_set=games_per_set
+            allow_lucky_losers=allow_lucky_losers,
+            max_players_per_team=max_players_per_team
         )
 
         try:
@@ -153,27 +159,35 @@ def manage_category(slug, category_id):
                 participant_email = request.form.get('participant_email', '')
                 manual_seed = request.form.get('manual_seed', type=int)
 
-                # Check max participants limit
-                if category.max_participants and len(participants) >= category.max_participants:
-                    flash(f'Cannot add participant. Maximum limit of {category.max_participants} reached.', 'error')
+                # Handle comma-separated names
+                names = [n.strip() for n in participant_name.split(',') if n.strip()]
+                
+                # Check max participants limit against multiple additions
+                if category.max_participants and len(participants) + len(names) > category.max_participants:
+                    flash(f'Cannot add participants. Maximum limit of {category.max_participants} would be exceeded.', 'error')
                     return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
 
                 from app.models import Player
-                player_match = Player.query.filter_by(name=participant_name).first()
-                player_id = player_match.id if player_match else None
+                
+                added_names = []
+                for name in names:
+                    player_match = Player.query.filter_by(name=name).first()
+                    player_id = player_match.id if player_match else None
 
-                participant = Participant(
-                    tournament_id=tournament.id,
-                    category_id=category.id,
-                    player_id=player_id,
-                    name=participant_name,
-                    email=participant_email,
-                    manual_seed=manual_seed
-                )
-                db.session.add(participant)
+                    participant = Participant(
+                        tournament_id=tournament.id,
+                        category_id=category.id,
+                        player_id=player_id,
+                        name=name,
+                        email=participant_email if len(names) == 1 else '', # Only apply email if single participant added
+                        manual_seed=manual_seed if len(names) == 1 else None # Only apply seed if single participant
+                    )
+                    db.session.add(participant)
+                    added_names.append(name)
+                    
                 db.session.commit()
 
-                flash(f'Added participant: {participant_name}', 'success')
+                flash(f'Added participants: {", ".join(added_names)}', 'success')
                 return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
 
             elif action == 'start_category':
@@ -185,8 +199,9 @@ def manage_category(slug, category_id):
                         match = Match(**match_data, tournament_id=tournament.id, category_id=category.id)
                         db.session.add(match)
 
-                elif category.format == 'double_elimination':
-                    matches_data = generate_double_elimination(participants_list)
+                elif category.format == 'round_robin':
+                    from app.algorithms.round_robin import generate_round_robin
+                    matches_data = generate_round_robin(participants_list)
                     for match_data in matches_data:
                         match = Match(**match_data, tournament_id=tournament.id, category_id=category.id)
                         db.session.add(match)
@@ -207,6 +222,17 @@ def manage_category(slug, category_id):
             elif action == 'update_settings':
                 name = request.form.get('name')
                 max_participants = request.form.get('max_participants', type=int)
+                total_games = request.form.get('total_games', type=int)
+                max_players_per_team = request.form.get('max_players_per_team', type=int)
+                
+                # Group stage settings
+                has_group_stage = category.format == 'group_stage'
+                if has_group_stage:
+                    category.num_groups = request.form.get('num_groups', type=int)
+                    category.teams_per_group = request.form.get('teams_per_group', type=int)
+                    category.matches_per_team_pair = request.form.get('matches_per_team_pair', type=int, default=1)
+                    category.qualifiers_per_group = request.form.get('qualifiers_per_group', type=int, default=2)
+                    category.allow_lucky_losers = request.form.get('allow_lucky_losers') == 'on'
 
                 if not name:
                     flash('Category name cannot be empty.', 'error')
@@ -214,6 +240,8 @@ def manage_category(slug, category_id):
 
                 category.name = name
                 category.max_participants = max_participants
+                category.total_games = total_games
+                category.max_players_per_team = max_players_per_team
 
                 # Settings only editable in setup status
                 if category.status == 'setup':

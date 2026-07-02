@@ -62,7 +62,8 @@
                     
                     <div class="form-group">
                         <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Player Name *</label>
-                        <input type="text" name="participant_name" class="form-input" placeholder="e.g. Roger Federer" required style="width: 100%;">
+                        <input type="text" name="participant_name" class="form-input" placeholder="e.g. Player 1, Player 2 (comma separated)" required style="width: 100%;">
+                        <small style="display: block; margin-top: 0.5rem; color: #94a3b8;">You can enter multiple names separated by commas.</small>
                     </div>
 
                     <div class="form-group">
@@ -103,23 +104,19 @@
                         <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Format *</label>
                         <select id="format" name="format" class="form-input" required style="width: 100%;" onchange="toggleGroupStageFields()">
                             <option value="single_elimination" {% if category.format == 'single_elimination' %}selected{% endif %}>🏆 Single Elimination (Knockout)</option>
-                            <option value="double_elimination" {% if category.format == 'double_elimination' %}selected{% endif %}>🥇 Double Elimination (Knockout)</option>
                             <option value="group_stage" {% if category.format == 'group_stage' %}selected{% endif %}>🎪 Group Stage + Knockout</option>
+                            <option value="round_robin" {% if category.format == 'round_robin' %}selected{% endif %}>🔄 Round Robin (League)</option>
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Match Format (Sets) *</label>
-                        <select id="num_sets" name="num_sets" class="form-input" required style="width: 100%;">
-                            <option value="1" {% if category.num_sets == 1 %}selected{% endif %}>1 Set</option>
-                            <option value="2" {% if category.num_sets == 2 %}selected{% endif %}>2 Sets</option>
-                            <option value="3" {% if category.num_sets == 3 %}selected{% endif %}>3 Sets (Best of 3)</option>
-                        </select>
+                        <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Total Games To Play *</label>
+                        <input type="number" id="total_games" name="total_games" class="form-input" min="1" max="50" value="{{ category.total_games or 7 }}" required style="width: 100%;">
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Games Per Set *</label>
-                        <input type="number" id="games_per_set" name="games_per_set" class="form-input" min="1" max="25" value="{{ category.games_per_set or 6 }}" required style="width: 100%;">
+                        <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Max Players Per Team</label>
+                        <input type="number" id="max_players_per_team" name="max_players_per_team" class="form-input" min="1" value="{{ category.max_players_per_team or '' }}" placeholder="Unlimited" style="width: 100%;">
                     </div>
 
                     <div id="group-stage-fields" style="display: {% if category.format == 'group_stage' %}flex{% else %}none{% endif %}; flex-direction: column; gap: var(--spacing-sm);">
@@ -138,6 +135,12 @@
                         <div class="form-group">
                             <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Qualifiers Per Group *</label>
                             <input type="number" id="qualifiers_per_group" name="qualifiers_per_group" class="form-input" min="1" value="{{ category.qualifiers_per_group or '' }}" placeholder="e.g. 2" style="width: 100%;">
+                        </div>
+                        <div class="form-group" style="margin-top: 0.5rem;">
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="allow_lucky_losers" id="allow_lucky_losers" style="width: 18px; height: 18px; accent-color: var(--primary);" {% if category.allow_lucky_losers %}checked{% endif %}>
+                                <span style="font-size: 0.9rem; color: var(--text-secondary); font-weight: 500;">Enable Lucky Losers</span>
+                            </label>
                         </div>
                     </div>
                     {% endif %}

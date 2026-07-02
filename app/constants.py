@@ -6,10 +6,10 @@ TOURNAMENT_FORMATS = {
         'icon': '🏆',
         'min_participants': 2
     },
-    'double_elimination': {
-        'name': 'Double Elimination (Knockout)',
-        'description': 'Knockout format where players must lose twice to be eliminated from the tournament.',
-        'icon': '🥇',
+    'round_robin': {
+        'name': 'Round Robin (League)',
+        'description': 'Everyone plays everyone. Rankings are determined by total points/wins.',
+        'icon': '🔄',
         'min_participants': 3
     },
     'group_stage': {

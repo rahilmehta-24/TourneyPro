@@ -389,35 +389,50 @@
                         </label>
                     </div>
                 </div>
-                <!-- Tennis Set-by-Set Score Input -->
+                <!-- Match Score Input -->
                 <div class="form-group" style="margin-top: 1.5rem;">
-                    <label class="form-label" style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; display: block;">Set Scores</label>
-                    <table style="width: 100%; border-collapse: collapse; margin-top: 0.5rem;">
-                        <thead>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
-                                <th style="padding: 0.5rem; text-align: left; color: var(--text-secondary);">Set</th>
-                                <th id="p1SetHeader" style="padding: 0.5rem; text-align: left; color: var(--text-secondary);">Player 1</th>
-                                <th id="p2SetHeader" style="padding: 0.5rem; text-align: left; color: var(--text-secondary);">Player 2</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for s in range(1, (category.num_sets or 3) + 1) %}
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
-                                <td style="padding: 0.75rem 0.5rem; font-weight: bold; color: var(--text-secondary);">Set {{ s }}</td>
-                                <td style="padding: 0.75rem 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
-                                    <input type="number" name="set{{ s }}_p1" id="set{{ s }}_p1" min="0" class="form-input" style="width: 80px;" oninput="checkTiebreak({{ s }}, {{ category.games_per_set or 6 }})">
-                                    <input type="number" name="tb{{ s }}_p1" id="tb{{ s }}_p1" min="0" placeholder="TB Pts" class="form-input" style="width: 90px; display: none;">
-                                </td>
-                                <td style="padding: 0.75rem 0.5rem;">
-                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                        <input type="number" name="set{{ s }}_p2" id="set{{ s }}_p2" min="0" class="form-input" style="width: 80px;" oninput="checkTiebreak({{ s }}, {{ category.games_per_set or 6 }})">
-                                        <input type="number" name="tb{{ s }}_p2" id="tb{{ s }}_p2" min="0" placeholder="TB Pts" class="form-input" style="width: 90px; display: none;">
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                    {% if category.total_games %}
+                        <label class="form-label" style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; display: block;">Total Games Won (Out of {{ category.total_games }})</label>
+                        <div style="display: flex; gap: 2rem; align-items: center; justify-content: center; margin-top: 1rem;">
+                            <div style="display: flex; flex-direction: column; align-items: center;">
+                                <label id="p1SetHeader" style="margin-bottom: 0.5rem; font-weight: 500; color: var(--text-secondary);">Player 1</label>
+                                <input type="number" name="set1_p1" id="set1_p1" min="0" max="{{ category.total_games }}" class="form-input" style="width: 80px; text-align: center; font-size: 1.25rem;">
+                            </div>
+                            <div style="font-size: 1.5rem; font-weight: bold; color: var(--text-muted);">-</div>
+                            <div style="display: flex; flex-direction: column; align-items: center;">
+                                <label id="p2SetHeader" style="margin-bottom: 0.5rem; font-weight: 500; color: var(--text-secondary);">Player 2</label>
+                                <input type="number" name="set1_p2" id="set1_p2" min="0" max="{{ category.total_games }}" class="form-input" style="width: 80px; text-align: center; font-size: 1.25rem;">
+                            </div>
+                        </div>
+                    {% else %}
+                        <label class="form-label" style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; display: block;">Set Scores</label>
+                        <table style="width: 100%; border-collapse: collapse; margin-top: 0.5rem;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                    <th style="padding: 0.5rem; text-align: left; color: var(--text-secondary);">Set</th>
+                                    <th id="p1SetHeader" style="padding: 0.5rem; text-align: left; color: var(--text-secondary);">Player 1</th>
+                                    <th id="p2SetHeader" style="padding: 0.5rem; text-align: left; color: var(--text-secondary);">Player 2</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for s in range(1, (category.num_sets or 3) + 1) %}
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                                    <td style="padding: 0.75rem 0.5rem; font-weight: bold; color: var(--text-secondary);">Set {{ s }}</td>
+                                    <td style="padding: 0.75rem 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                                        <input type="number" name="set{{ s }}_p1" id="set{{ s }}_p1" min="0" class="form-input" style="width: 80px;" oninput="checkTiebreak({{ s }}, {{ category.games_per_set or 6 }})">
+                                        <input type="number" name="tb{{ s }}_p1" id="tb{{ s }}_p1" min="0" placeholder="TB Pts" class="form-input" style="width: 90px; display: none;">
+                                    </td>
+                                    <td style="padding: 0.75rem 0.5rem;">
+                                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                            <input type="number" name="set{{ s }}_p2" id="set{{ s }}_p2" min="0" class="form-input" style="width: 80px;" oninput="checkTiebreak({{ s }}, {{ category.games_per_set or 6 }})">
+                                            <input type="number" name="tb{{ s }}_p2" id="tb{{ s }}_p2" min="0" placeholder="TB Pts" class="form-input" style="width: 90px; display: none;">
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% endif %}
                 </div>
             </div>
             <div class="modal-footer" style="display: flex; gap: 1rem; justify-content: flex-end;">

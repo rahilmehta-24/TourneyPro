@@ -19,23 +19,22 @@
             <select id="format" name="format" class="form-input" required onchange="toggleGroupStageFields()">
                 <option value="">Select a format</option>
                 <option value="single_elimination">🏆 Single Elimination (Knockout)</option>
-                <option value="double_elimination">🥇 Double Elimination (Knockout)</option>
                 <option value="group_stage">🎪 Group Stage + Knockout</option>
+                <option value="round_robin">🔄 Round Robin (League)</option>
             </select>
         </div>
 
         <div class="form-group">
-            <label for="num_sets">Match Format (Sets) *</label>
-            <select id="num_sets" name="num_sets" class="form-input" required>
-                <option value="1" selected>1 Set</option>
-                <option value="2">2 Sets</option>
-                <option value="3">3 Sets (Best of 3)</option>
-            </select>
+            <label for="total_games">Total Games To Play (Match Setting) *</label>
+            <input type="number" id="total_games" name="total_games" class="form-input" min="1" max="50" value="7" required>
+            <small>Total number of games played in each match (e.g., if 7, score can be 5-2)</small>
         </div>
 
         <div class="form-group">
-            <label for="games_per_set">Games Per Set *</label>
-            <input type="number" id="games_per_set" name="games_per_set" class="form-input" min="1" max="25" value="6" required>
+            <label for="max_players_per_team">Max Players Per Team</label>
+            <input type="number" id="max_players_per_team" name="max_players_per_team" class="form-input" min="1"
+                placeholder="Leave empty for unlimited">
+            <small>Optional - set a limit on the number of players per participant/team</small>
         </div>
 
         <div class="form-group">
@@ -71,6 +70,14 @@
                 <input type="number" id="qualifiers_per_group" name="qualifiers_per_group" class="form-input" min="1"
                     placeholder="e.g., 2">
                 <small>How many teams advance to knockout from each group</small>
+            </div>
+
+            <div class="form-group" style="margin-top: 1rem;">
+                <label style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" name="allow_lucky_losers" id="allow_lucky_losers" style="width: 18px; height: 18px; accent-color: var(--primary);">
+                    <span>Enable Lucky Losers</span>
+                </label>
+                <small style="display: block; margin-left: 26px;">If qualified teams < 8, fills the remaining spots with best non-qualifiers.</small>
             </div>
         </div>
 

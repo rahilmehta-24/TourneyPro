@@ -19,12 +19,11 @@ def create_tournament():
         creator_name = request.form.get('creator_name', 'Anonymous')
         description = request.form.get('description', '')
         game_info = request.form.get('game_info', '')
-        format_type = request.form.get('format')
-        max_participants = request.form.get('max_participants', type=int)
-
-        # Tennis settings
-        num_sets = request.form.get('num_sets', type=int, default=1)
-        games_per_set = request.form.get('games_per_set', type=int, default=6)
+        # Set legacy values for backwards compatibility, but do not prompt for them
+        format_type = None
+        max_participants = None
+        num_sets = 1
+        games_per_set = 6
 
         # Generate URL slug
         url_slug = slugify(name)
@@ -44,7 +43,8 @@ def create_tournament():
             format=format_type,
             max_participants=max_participants,
             num_sets=num_sets,
-            games_per_set=games_per_set
+            games_per_set=games_per_set,
+            has_categories=True  # Force categories for all new tournaments
         )
 
         try:
@@ -182,16 +182,29 @@ def manage_tournament(slug):
             if action == 'add_participant':
                 participant_name = request.form.get('participant_name')
                 participant_email = request.form.get('participant_email', '')
-
-                participant = Participant(
-                    tournament_id=tournament.id,
-                    name=participant_name,
-                    email=participant_email
-                )
-                db.session.add(participant)
+                
+                # Handle comma-separated names
+                names = [n.strip() for n in participant_name.split(',') if n.strip()]
+                
+                from app.models import Player
+                added_names = []
+                
+                for name in names:
+                    player_match = Player.query.filter_by(name=name).first()
+                    player_id = player_match.id if player_match else None
+                    
+                    participant = Participant(
+                        tournament_id=tournament.id,
+                        player_id=player_id,
+                        name=name,
+                        email=participant_email if len(names) == 1 else ''
+                    )
+                    db.session.add(participant)
+                    added_names.append(name)
+                    
                 db.session.commit()
 
-                flash(f'Added participant: {participant_name}', 'success')
+                flash(f'Added participants: {", ".join(added_names)}', 'success')
                 return redirect(url_for('tournament.manage_tournament', slug=slug))
 
             elif action == 'delete_participant':
@@ -306,18 +319,74 @@ def report_match_result(slug, match_id):
         'tb5_p2': request.form.get('tb5_p2', ''),
     }
 
-    num_sets = tournament.num_sets or 3
-    games_per_set = tournament.games_per_set or 6
+    if match.category_id:
+        category = Category.query.get(match.category_id)
+        if category and category.total_games:
+            # New scoring system based on total games
+            total_games_target = category.total_games
+            g1_val = form_data.get('set1_p1')
+            g2_val = form_data.get('set1_p2')
+            
+            if not g1_val or not g2_val:
+                flash("Score is required.", "error")
+                return redirect(request.referrer or url_for('tournament.view_tournament', slug=slug))
+            
+            try:
+                g1 = int(g1_val)
+                g2 = int(g2_val)
+            except ValueError:
+                flash("Score must be integers.", "error")
+                return redirect(request.referrer or url_for('tournament.view_tournament', slug=slug))
+                
+            if g1 + g2 != total_games_target:
+                flash(f"Total games must sum to {total_games_target}. You entered {g1} and {g2} (sum: {g1+g2}).", "error")
+                return redirect(request.referrer or url_for('tournament.view_tournament', slug=slug))
+                
+            actual_winner = match.participant1_id if g1 > g2 else match.participant2_id
+            if winner_id != actual_winner:
+                flash("Selected winner does not match the scores.", "error")
+                return redirect(request.referrer or url_for('tournament.view_tournament', slug=slug))
+                
+            match.winner_id = winner_id
+            match.score1 = str(g1)
+            match.score2 = str(g2)
+            
+            # Additional logic for updating bracket is below
+            try:
+                pass # Just passing here to let the rest of the function proceed
+            except Exception:
+                pass
+        else:
+            # Legacy set scoring
+            num_sets = category.num_sets if category and category.num_sets else (tournament.num_sets or 3)
+            games_per_set = category.games_per_set if category and category.games_per_set else (tournament.games_per_set or 6)
 
-    try:
-        score1, score2 = validate_and_format_score(
-            winner_id, match.participant1_id, match.participant2_id,
-            num_sets, games_per_set, form_data
-        )
+            try:
+                score1, score2 = validate_and_format_score(
+                    winner_id, match.participant1_id, match.participant2_id,
+                    num_sets, games_per_set, form_data
+                )
 
-        match.winner_id = winner_id
-        match.score1 = score1
-        match.score2 = score2
+                match.winner_id = winner_id
+                match.score1 = score1
+                match.score2 = score2
+            except ValueError as e:
+                flash(str(e), 'error')
+                return redirect(request.referrer or url_for('tournament.view_tournament', slug=slug))
+    else:
+        # Fallback for tournaments without categories
+        num_sets = tournament.num_sets or 3
+        games_per_set = tournament.games_per_set or 6
+
+        try:
+            score1, score2 = validate_and_format_score(
+                winner_id, match.participant1_id, match.participant2_id,
+                num_sets, games_per_set, form_data
+            )
+
+            match.winner_id = winner_id
+            match.score1 = score1
+            match.score2 = score2
         match.status = 'completed'
         match.completed_at = datetime.utcnow()
 

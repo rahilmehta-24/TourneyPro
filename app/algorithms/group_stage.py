@@ -128,12 +128,28 @@ def get_qualified_participants(category):
     groups = Group.query.filter_by(category_id=category.id).all()
 
     qualified = []
+    non_qualified = []
 
     for group in groups:
         standings = calculate_group_standings(group.id)
         # Take top N from each group
         group_qualifiers = standings[:qualifiers_per_group]
         qualified.extend(group_qualifiers)
+        
+        # Keep track of the rest for potential lucky losers
+        non_qualified.extend(standings[qualifiers_per_group:])
+
+    # Lucky losers logic: if enabled, and total qualifiers < 8, fill up to 8
+    if category.allow_lucky_losers and len(qualified) < 8:
+        # Sort all non_qualified across all groups by best performance
+        non_qualified_sorted = sorted(
+            non_qualified,
+            key=lambda p: (-p.group_points, -p.group_wins, p.group_losses)
+        )
+        
+        slots_to_fill = 8 - len(qualified)
+        lucky_losers = non_qualified_sorted[:slots_to_fill]
+        qualified.extend(lucky_losers)
 
     # Seed qualified participants based on group performance
     # Group winners get better seeds than group runners-up
