@@ -7,20 +7,30 @@ A robust Flask-based web application for managing sports and gaming tournaments.
 - **Tournament Management**
 
   - Create and manage multiple tournaments
-  - Customizable formats (Single/Double Elimination, Round Robin, Group Stage)
-  - Automatic bracket generation
-  - Seeding management
-  - PDF Export of brackets
-- **Categories**
+  - Modern, responsive UI with premium sports styling
+  - Dynamic formatting where different categories can run different formats simultaneously
 
-  - Support for multiple categories per tournament (e.g., Men's, Women's, Doubles)
-  - Independent formats for each category
+- **Formats Supported**
+  
+  - 🏆 Single Elimination (Knockout)
+  - 🎪 Group Stage + Knockout (with Intelligent "Lucky Loser" logic)
+  - 🔄 Round Robin (League)
+  - PDF Export of brackets
+
+- **Categories & Match Settings**
+
+  - Bulk participant registration (comma-separated lists)
+  - Independent match formats for each category (e.g., Men's Singles, Mixed Doubles)
+  - "Total Games" scoring mode (e.g., 6-1, 5-2 valid sums)
+  - Legacy set-based scoring (e.g., Best of 3 sets, 6 games per set)
+
 - **Match Management**
 
   - Interactive bracket view
-  - Match reporting and score tracking
+  - Seamless match reporting and score tracking
   - Automatic progression of winners
   - Leaderboards and statistics
+  - Cross-tab session synchronization (logging out in one tab instantly safely refreshes others)
 
 ## Tech Stack
 

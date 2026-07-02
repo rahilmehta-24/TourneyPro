@@ -80,6 +80,25 @@
     </footer>
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        // Multi-tab session synchronization
+        (function() {
+            const currentUserStr = "{{ current_user.username if current_user else '' }}";
+            
+            // Set the current session state in localStorage on every page load
+            localStorage.setItem('session_user', currentUserStr);
+
+            // Listen for changes made by other tabs
+            window.addEventListener('storage', function(e) {
+                if (e.key === 'session_user') {
+                    if (e.newValue !== currentUserStr) {
+                        // The user session has changed in another tab (logged out or logged in as someone else)
+                        window.location.reload();
+                    }
+                }
+            });
+        })();
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 
