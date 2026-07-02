@@ -189,5 +189,3 @@ class PlayerTournamentRecord(db.Model):
     points_earned = db.Column(db.Float, default=0.0)
     is_manual = db.Column(db.Boolean, default=False)
     date_recorded = db.Column(db.DateTime, default=datetime.utcnow)
-
-

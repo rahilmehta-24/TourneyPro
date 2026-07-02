@@ -44,7 +44,10 @@ def add_player():
     age_category = request.form.get('age_category')
 
     if name and gender and age_category:
-        player = Player(name=name, gender=gender, age_category=age_category)
+        player = Player()
+        player.name = name
+        player.gender = gender
+        player.age_category = age_category
         db.session.add(player)
         db.session.commit()
         flash('Player added successfully!', 'success')
@@ -86,14 +89,13 @@ def add_points(player_id):
 
     pts = base_points.get(round_reached, 0) * multiplier.get(level, 1.0)
 
-    record = PlayerTournamentRecord(
-        player_id=player.id,
-        tournament_name=tournament_name,
-        level=level,
-        round_reached=round_reached,
-        points_earned=pts,
-        is_manual=True
-    )
+    record = PlayerTournamentRecord()
+    record.player_id = player.id
+    record.tournament_name = tournament_name
+    record.level = level
+    record.round_reached = round_reached
+    record.points_earned = pts
+    record.is_manual = True
 
     player.total_points += pts
     player.matches_won += matches_won
