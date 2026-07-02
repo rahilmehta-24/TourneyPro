@@ -46,4 +46,14 @@ def create_app(config_class=Config):
         from app.routes.auth import get_current_user
         return dict(current_user=get_current_user())
 
+    import traceback
+    import logging
+
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        db.session.rollback()
+        logging.error(f"Unhandled Exception: {str(e)}")
+        logging.error(traceback.format_exc())
+        return f"Internal Server Error: {str(e)}<br><br>Traceback:<br><pre>{traceback.format_exc()}</pre>", 500
+
     return app
