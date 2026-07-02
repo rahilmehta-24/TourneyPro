@@ -402,6 +402,10 @@ def report_match_result(slug, match_id):
 
         match.status = 'completed'
         match.completed_at = datetime.utcnow()
+        db.session.commit()
+
+        from app.leaderboard_logic import update_live_player_stats
+        update_live_player_stats(match)
 
         # Update next round match
         if tournament.format == 'single_elimination':

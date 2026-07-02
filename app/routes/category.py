@@ -174,7 +174,13 @@ def manage_category(slug, category_id):
                 added_names = []
                 for name in names:
                     player_match = Player.query.filter_by(name=name).first()
-                    player_id = player_match.id if player_match else None
+                    if not player_match:
+                        # Auto-create global player so they appear on leaderboard instantly
+                        player_match = Player(name=name, gender='Unspecified', age_category='Unspecified')
+                        db.session.add(player_match)
+                        db.session.flush() # flush to get the ID
+
+                    player_id = player_match.id
 
                     participant = Participant(
                         tournament_id=tournament.id,
@@ -446,6 +452,10 @@ def report_category_match_result(slug, category_id, match_id):
         match.score2 = score2
         match.status = 'completed'
         match.completed_at = datetime.utcnow()
+        db.session.commit()
+
+        from app.leaderboard_logic import update_live_player_stats
+        update_live_player_stats(match)
 
         # Update group stage stats if applicable
         if match.match_type == 'group_stage':

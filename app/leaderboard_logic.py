@@ -58,10 +58,32 @@ def assign_leaderboard_points(category):
         )
 
         player.total_points += points
-        player.matches_won += matches_won
-        player.matches_lost += matches_lost
-        player.matches_played += len(matches)
+        # Live stats now handle matches_won/lost/played dynamically
 
         db.session.add(record)
 
+    db.session.commit()
+
+def update_live_player_stats(match):
+    """
+    Called when a match completes to instantly update the global player's 
+    matches won/lost stats and award points for the win.
+    """
+    for participant_id in [match.participant1_id, match.participant2_id]:
+        if not participant_id:
+            continue
+            
+        participant = Participant.query.get(participant_id)
+        if participant and participant.player_id:
+            player = Player.query.get(participant.player_id)
+            if player:
+                player.matches_played += 1
+                if participant.id == match.winner_id:
+                    player.matches_won += 1
+                    player.total_points += 10  # Live match win points
+                else:
+                    player.matches_lost += 1
+                    
+                db.session.add(player)
+    
     db.session.commit()
