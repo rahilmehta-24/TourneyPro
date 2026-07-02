@@ -6,26 +6,26 @@
 }
 
 :root {
-    /* Color Palette - Dark Theme with Vibrant Accents */
-    --bg-primary: #0a0e27;
-    --bg-secondary: #151932;
-    --bg-tertiary: #1e2139;
-    --bg-card: #252a47;
+    /* Color Palette - Sports Theme (Orange/Grey) */
+    --bg-primary: #121212;
+    --bg-secondary: #1e1e1e;
+    --bg-tertiary: #2a2a2a;
+    --bg-card: #252525;
 
     --text-primary: #ffffff;
-    --text-secondary: #b4b9d6;
-    --text-muted: #6b7199;
+    --text-secondary: #a3a3a3;
+    --text-muted: #737373;
 
-    --accent-primary: #6366f1;
-    --accent-primary-hover: #4f46e5;
-    --accent-secondary: #8b5cf6;
+    --accent-primary: #f97316;
+    --accent-primary-hover: #ea580c;
+    --accent-secondary: #f59e0b;
     --accent-success: #10b981;
     --accent-warning: #f59e0b;
     --accent-danger: #ef4444;
     --accent-info: #3b82f6;
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    --gradient-primary: linear-gradient(135deg, #f97316 0%, #f59e0b 100%);
     --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
     --gradient-danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
 
@@ -33,7 +33,7 @@
     --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
     --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-    --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.3);
+    --shadow-glow: 0 0 20px rgba(249, 115, 22, 0.3);
 
     /* Spacing */
     --spacing-xs: 0.5rem;
@@ -268,6 +268,7 @@ h6 {
     background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120"><path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z" opacity=".25" fill="%23ffffff"/></svg>') no-repeat bottom;
     background-size: cover;
     opacity: 0.1;
+    pointer-events: none;
 }
 
 .hero-title {
@@ -289,6 +290,8 @@ h6 {
     gap: var(--spacing-md);
     justify-content: center;
     flex-wrap: wrap;
+    position: relative;
+    z-index: 10;
 }
 
 /* ===== FORMATS GRID ===== */

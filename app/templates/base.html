@@ -26,9 +26,7 @@
                 <a href="{{ url_for('main.tournament_list') }}" class="nav-link">Tournaments</a>
                 
                 {% if current_user %}
-                    {% if current_user.role in ['admin', 'superadmin'] %}
-                        <a href="{{ url_for('tournament.create_tournament') }}" class="btn btn-primary">Create Tournament</a>
-                    {% endif %}
+
                     
                     {% if current_user.role == 'superadmin' %}
                         <a href="{{ url_for('auth.user_management') }}" class="nav-link" style="color: var(--accent-info); font-weight: bold;">User Management</a>
@@ -42,11 +40,11 @@
                     
                     <span style="color: var(--text-secondary); font-size: 0.9rem; border-left: 1px solid rgba(255,255,255,0.1); padding-left: var(--spacing-sm);">
                         👤 <strong>{{ current_user.username }}</strong> 
-                        <span style="font-size: 0.75rem; vertical-align: middle; background: rgba(99, 102, 241, 0.2); color: var(--accent-primary); padding: 2px 6px; border-radius: var(--radius-sm); margin-left: 4px;">
+                        <span style="font-size: 0.75rem; vertical-align: middle; background: rgba(249, 115, 22, 0.2); color: var(--accent-primary); padding: 2px 6px; border-radius: var(--radius-sm); margin-left: 4px;">
                             {{ current_user.role.upper() }}
                         </span>
                     </span>
-                    <a href="{{ url_for('auth.logout') }}" class="btn btn-secondary btn-small">Log Out</a>
+                    <a href="{{ url_for('auth.logout') }}" class="btn btn-small" style="background: transparent; border: 1px solid var(--accent-danger); color: var(--accent-danger); margin-left: var(--spacing-sm);">Log Out</a>
                 {% else %}
                     <a href="{{ url_for('auth.login') }}" class="nav-link">Log In</a>
                     <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Register</a>
