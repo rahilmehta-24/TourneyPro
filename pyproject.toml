@@ -1,0 +1,20 @@
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "__pycache__",
+    "instance",
+]
+
+[tool.ruff.lint]
+# E: pycodestyle errors
+# F: Pyflakes
+# W: pycodestyle warnings
+select = ["E", "F", "W"]
+# Ignore line too long (E501) as Flask apps often have long lines for SQL queries or HTML strings
+# Ignore E711 (== None), F841 (unused var), F821 (undefined name) for legacy compatibility
+# Ignore W291/W293 (trailing whitespace) as they are often in docstrings and annoying to auto-fix safely
+ignore = ["E501", "E711", "F841", "F821", "W291", "W293"]

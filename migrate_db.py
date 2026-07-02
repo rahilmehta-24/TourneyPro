@@ -71,6 +71,14 @@ if 'final_rank' not in columns:
 else:
     print("[OK] final_rank column already exists")
 
+if 'player_id' not in columns:
+    print("Adding player_id column...")
+    cursor.execute("ALTER TABLE participants ADD COLUMN player_id INTEGER")
+    conn.commit()
+    print("[OK] Added player_id column")
+else:
+    print("[OK] player_id column already exists")
+
 if 'group_wins' not in columns:
     print("Adding group_wins column...")
     cursor.execute("ALTER TABLE participants ADD COLUMN group_wins INTEGER DEFAULT 0")

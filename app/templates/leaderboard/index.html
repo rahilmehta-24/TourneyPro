@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Leaderboard - TourneyPro{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <div>
+            <h1>Player Leaderboard</h1>
+            <p class="subtitle">Rankings across all categories and genders</p>
+        </div>
+        <div>
+            <button onclick="document.getElementById('addPlayerModal').style.display='flex'" class="btn btn-primary">
+                + Add New Player
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters" style="background: var(--bg-secondary); padding: 1.5rem; border-radius: var(--radius-lg); margin-bottom: 2rem; display: flex; gap: 1rem; align-items: flex-end;">
+        <form method="GET" action="{{ url_for('leaderboard.view_leaderboard') }}" style="display: flex; gap: 1rem; width: 100%;">
+            <div class="form-group" style="flex: 1; margin: 0;">
+                <label class="form-label">Gender</label>
+                <select name="gender" class="form-input">
+                    <option value="All" {% if current_gender == 'All' %}selected{% endif %}>All</option>
+                    {% for g in genders %}
+                    <option value="{{ g }}" {% if current_gender == g %}selected{% endif %}>{{ g }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group" style="flex: 1; margin: 0;">
+                <label class="form-label">Category</label>
+                <select name="category" class="form-input">
+                    <option value="All" {% if current_category == 'All' %}selected{% endif %}>All</option>
+                    {% for c in categories %}
+                    <option value="{{ c }}" {% if current_category == c %}selected{% endif %}>{{ c }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-secondary" style="height: fit-content; align-self: flex-end;">Filter</button>
+        </form>
+    </div>
+
+    <!-- Leaderboard Table -->
+    <div class="table-container" style="background: var(--bg-secondary); border-radius: var(--radius-lg); overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+                <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <th style="padding: 1rem;">Rank</th>
+                    <th style="padding: 1rem;">Player</th>
+                    <th style="padding: 1rem;">Category</th>
+                    <th style="padding: 1rem;">Points</th>
+                    <th style="padding: 1rem;">Matches (W-L)</th>
+                    <th style="padding: 1rem; text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for player in players %}
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <td style="padding: 1rem; font-weight: bold; color: var(--accent-primary);">#{{ loop.index }}</td>
+                    <td style="padding: 1rem;">
+                        <div style="font-weight: 500;">{{ player.name }}</div>
+                        <div style="font-size: 0.85rem; margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px;">
+                            {% for record in player.tournament_records %}
+                                {% if record.level in ['State', 'National'] %}
+                                    <span style="background: {% if record.level == 'National' %}#ffd700{% else %}#10b981{% endif %}; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold;" title="{{ record.tournament_name }}">
+                                        🏆 {{ record.level }} {{ record.round_reached }}
+                                    </span>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </td>
+                    <td style="padding: 1rem; color: var(--text-secondary);">{{ player.age_category }} {{ player.gender }}</td>
+                    <td style="padding: 1rem; font-weight: bold; color: var(--accent-secondary);">{{ player.total_points }}</td>
+                    <td style="padding: 1rem; color: var(--text-secondary);">{{ player.matches_won }}W - {{ player.matches_lost }}L</td>
+                    <td style="padding: 1rem; text-align: right;">
+                        <button onclick="openAddPointsModal({{ player.id }}, '{{ player.name }}')" class="btn btn-small btn-secondary">+ Add Points</button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="padding: 2rem; text-align: center; color: var(--text-muted);">No players found matching the criteria.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Player Modal -->
+<div id="addPlayerModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+    <div class="modal-content" style="background: var(--bg-secondary); padding: 2rem; border-radius: var(--radius-lg); width: 100%; max-width: 500px; position: relative;">
+        <span onclick="document.getElementById('addPlayerModal').style.display='none'" style="position: absolute; right: 1.5rem; top: 1.5rem; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</span>
+        <h2 style="margin-bottom: 1.5rem;">Add New Player</h2>
+        <form method="POST" action="{{ url_for('leaderboard.add_player') }}">
+            <div class="form-group">
+                <label class="form-label">Player Name</label>
+                <input type="text" name="name" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Gender</label>
+                <select name="gender" class="form-input" required>
+                    {% for g in genders %}
+                    <option value="{{ g }}">{{ g }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Category</label>
+                <select name="age_category" class="form-input" required>
+                    {% for c in categories %}
+                    <option value="{{ c }}">{{ c }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
+                <button type="button" onclick="document.getElementById('addPlayerModal').style.display='none'" class="btn btn-secondary">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Player</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add Points Modal -->
+<div id="addPointsModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+    <div class="modal-content" style="background: var(--bg-secondary); padding: 2rem; border-radius: var(--radius-lg); width: 100%; max-width: 500px; position: relative;">
+        <span onclick="closeAddPointsModal()" style="position: absolute; right: 1.5rem; top: 1.5rem; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</span>
+        <h2 style="margin-bottom: 1.5rem;">Add Special Points <span id="pointsPlayerName" style="color: var(--accent-primary);"></span></h2>
+        <form id="addPointsForm" method="POST">
+            <div class="form-group">
+                <label class="form-label">Tournament Name</label>
+                <input type="text" name="tournament_name" class="form-input" required placeholder="e.g., State Championship 2026">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Level</label>
+                <select name="level" class="form-input" required>
+                    {% for l in levels %}
+                    <option value="{{ l }}">{{ l }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Round Reached</label>
+                <select name="round_reached" class="form-input" required>
+                    {% for r in rounds %}
+                    <option value="{{ r }}">{{ r }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <div class="form-group" style="flex: 1;">
+                    <label class="form-label">Matches Won</label>
+                    <input type="number" name="matches_won" class="form-input" value="0" min="0">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label class="form-label">Matches Lost</label>
+                    <input type="number" name="matches_lost" class="form-input" value="0" min="0">
+                </div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem;">
+                <button type="button" onclick="closeAddPointsModal()" class="btn btn-secondary">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add Points</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openAddPointsModal(playerId, playerName) {
+        document.getElementById('pointsPlayerName').textContent = '- ' + playerName;
+        document.getElementById('addPointsForm').action = `/leaderboard/add_points/${playerId}`;
+        document.getElementById('addPointsModal').style.display = 'flex';
+    }
+
+    function closeAddPointsModal() {
+        document.getElementById('addPointsModal').style.display = 'none';
+        document.getElementById('addPointsForm').reset();
+    }
+</script>
+{% endblock %}

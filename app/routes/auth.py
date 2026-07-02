@@ -39,7 +39,7 @@ def bootstrap_superadmin():
         username = os.environ.get('SUPERADMIN_USERNAME') or 'superadmin'
         password = os.environ.get('SUPERADMIN_PASSWORD') or 'adminpassword'
         email = 'superadmin@tourneypro.com'
-        
+
         superadmin = User(
             username=username,
             email=email,
@@ -54,11 +54,11 @@ def bootstrap_superadmin():
 def login():
     if get_current_user():
         return redirect(url_for('main.index'))
-        
+
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        
+
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
             session['user_id'] = user.id
@@ -67,37 +67,37 @@ def login():
             return redirect(url_for('main.index'))
         else:
             flash('Invalid username or password.', 'error')
-            
+
     return render_template('auth/login.html')
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
     if get_current_user():
         return redirect(url_for('main.index'))
-        
+
     if request.method == 'POST':
         username = request.form.get('username')
         email = request.form.get('email')
         password = request.form.get('password')
-        
+
         # Validation
         if User.query.filter_by(username=username).first():
             flash('Username already exists.', 'error')
             return render_template('auth/register.html')
-            
+
         if User.query.filter_by(email=email).first():
             flash('Email already exists.', 'error')
             return render_template('auth/register.html')
-            
+
         user = User(username=username, email=email, role='user')
         user.set_password(password)
-        
+
         db.session.add(user)
         db.session.commit()
-        
+
         flash('Registration successful! Please log in.', 'success')
         return redirect(url_for('auth.login'))
-        
+
     return render_template('auth/register.html')
 
 @auth_bp.route('/logout')

@@ -15,7 +15,7 @@ def create_app(config_class=Config):
         os.makedirs(os.path.join(app.root_path, '..', 'instance'), exist_ok=True)
     except OSError:
         pass
-        
+
     # Create upload folder
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
@@ -31,12 +31,14 @@ def create_app(config_class=Config):
     from app.routes.category import category_bp
     from app.routes.export import export_bp
     from app.routes.auth import auth_bp
+    from app.routes.leaderboard import leaderboard_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(tournament_bp)
     app.register_blueprint(category_bp)
     app.register_blueprint(export_bp)
     app.register_blueprint(auth_bp)
+    app.register_blueprint(leaderboard_bp)
 
     # Inject current_user into templates
     @app.context_processor
