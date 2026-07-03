@@ -35,7 +35,7 @@
             <div class="tournament-actions">
                 <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug) }}"
                     class="btn btn-secondary btn-small">View Tournament</a>
-                {% if tournament.status == 'setup' %}
+                {% if tournament.status == 'setup' and current_user and current_user.role in ['admin', 'superadmin'] %}
                 <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}"
                     class="btn btn-primary btn-small">Manage</a>
                 {% endif %}
@@ -46,8 +46,10 @@
     {% else %}
     <div class="empty-state">
         <div class="empty-icon">🏆</div>
-        <p>No tournaments yet. Create your first one!</p>
+        <p>No tournaments yet. {% if current_user and current_user.role in ['admin', 'superadmin'] %}Create your first one!{% endif %}</p>
+        {% if current_user and current_user.role in ['admin', 'superadmin'] %}
         <a href="{{ url_for('tournament.create_tournament') }}" class="btn btn-primary mt-3">Create Tournament</a>
+        {% endif %}
     </div>
     {% endif %}
 </div>

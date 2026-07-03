@@ -19,9 +19,11 @@
                 <button type="submit" class="btn" style="background: #ef4444; color: white;">Reset Leaderboard</button>
             </form>
             {% endif %}
+            {% if current_user and current_user.role == 'superadmin' %}
             <button onclick="document.getElementById('addPlayerModal').style.display='flex'" class="btn btn-primary">
                 + Add New Player
             </button>
+            {% endif %}
         </div>
     </div>
 
@@ -101,7 +103,9 @@
                     <td style="padding: 1rem; font-weight: bold; color: var(--accent-secondary);">{{ player.total_points }}</td>
                     <td style="padding: 1rem; color: var(--text-secondary);">{{ player.matches_won }}W - {{ player.matches_lost }}L</td>
                     <td style="padding: 1rem; text-align: right; white-space: nowrap;">
+                        {% if current_user and current_user.role == 'superadmin' %}
                         <button onclick="openAddPointsModal('{{ player.id }}', '{{ player.name }}')" class="btn btn-small btn-secondary">+ Add Points</button>
+                        {% endif %}
                         {% if current_user and current_user.role == 'superadmin' %}
                             <button onclick="openEditPlayerModal('{{ player.id }}', '{{ player.name|escape }}', '{{ player.gender }}', '{{ player.age_category }}')" class="btn btn-small btn-secondary" style="margin-left: 0.25rem;">✏️ Edit</button>
                             <form method="POST" action="{{ url_for('leaderboard.delete_player', player_id=player.id) }}" style="display: inline-block; margin-left: 0.25rem; margin-bottom: 0;" onsubmit="return confirm('Are you sure you want to delete {{ player.name|escape }}? This cannot be undone.');">

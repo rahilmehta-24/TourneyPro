@@ -70,6 +70,7 @@
                     <span class="meta-item">👥 {{ tournament.participants|length }} participants</span>
                     <span class="meta-item">📅 {{ tournament.created_at.strftime('%b %d, %Y') }}</span>
                 </div>
+                {% if current_user and current_user.role in ['admin', 'superadmin'] %}
                 <div class="tournament-actions">
                     <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}"
                         class="btn btn-primary btn-small">Manage</a>
@@ -77,6 +78,7 @@
                         <button type="submit" class="btn btn-danger btn-small" style="padding: 0.4rem 1rem; background: var(--error); border: none; color: white; border-radius: var(--radius-sm); font-weight: 600; cursor: pointer;">Delete</button>
                     </form>
                 </div>
+                {% endif %}
             </div>
             {% endfor %}
         </div>
