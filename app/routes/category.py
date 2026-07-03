@@ -460,6 +460,32 @@ def start_knockout_stage(slug, category_id):
 
     return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
 
+@category_bp.route('/tournaments/<slug>/categories/<int:category_id>/delete', methods=['POST'])
+@login_required
+@role_required('admin', 'superadmin')
+def delete_category(slug, category_id):
+    """Delete a category and all its data"""
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    category = Category.query.get_or_404(category_id)
+    
+    try:
+        from app.models import Match, Group, Participant
+        # Delete all matches
+        Match.query.filter_by(category_id=category.id).delete()
+        # Delete all participants
+        Participant.query.filter_by(category_id=category.id).delete()
+        # Delete all groups
+        Group.query.filter_by(category_id=category.id).delete()
+        
+        db.session.delete(category)
+        db.session.commit()
+        flash(f"Category '{category.name}' deleted successfully.", 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Failed to delete category: {str(e)}", 'error')
+        
+    return redirect(url_for('tournament.view_tournament', slug=slug))
+
 @category_bp.route('/tournaments/<slug>/categories/<int:category_id>/match/<int:match_id>/report', methods=['POST'])
 @login_required
 @role_required('admin', 'superadmin')
