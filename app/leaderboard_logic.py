@@ -29,28 +29,28 @@ def assign_leaderboard_points(category):
             round_reached = 'Participant'
 
             if rank == 1:
-                points = 500
+                points = 650
                 round_reached = 'Winner'
             elif rank == 2:
-                points = 300
+                points = 400
                 round_reached = 'Runner-Up'
             elif rank in [3, 4]:
-                points = 160
+                points = 250
                 round_reached = 'Semi-Final'
             elif rank and rank <= 8:
-                points = 80
+                points = 160
                 round_reached = 'Quarter-Final'
             elif rank and rank <= 16:
-                points = 40
+                points = 100
                 round_reached = 'Round 4'
             elif rank and rank <= 32:
-                points = 20
+                points = 60
                 round_reached = 'Round 3'
             elif rank and rank <= 64:
-                points = 10
+                points = 30
                 round_reached = 'Round 2'
             else:
-                points = 5
+                points = 10
                 round_reached = 'Round 1'
 
             tournament_display_name = category.tournament.name + ' - ' + category.name
