@@ -772,7 +772,6 @@ def update_grid_scores(slug, category_id):
         return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
     
     from app.models import Match
-    from app.algorithms.scoring import calculate_winner
     from datetime import datetime
     
     # Process form data
@@ -811,8 +810,14 @@ def update_grid_scores(slug, category_id):
             match.score1 = score1
             match.score2 = score2
             
-            # Determine winner
-            winner_id = calculate_winner(match, category.format)
+            # Determine winner based on scores
+            if score1 > score2:
+                winner_id = match.participant1_id
+            elif score2 > score1:
+                winner_id = match.participant2_id
+            else:
+                winner_id = None
+                
             if winner_id:
                 match.winner_id = winner_id
                 if match.status != 'completed':
