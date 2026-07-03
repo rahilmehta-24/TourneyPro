@@ -1,4 +1,4 @@
-# TourneyPro - Tournament Manager
+# TourneyPro v1.1 - Tournament Manager
 
 A robust, production-ready Flask-based web application for managing sports and gaming tournaments. This application supports a fully-featured tournament lifecycle including participant management, dynamic bracket generation, and live interactive score reporting.
 
