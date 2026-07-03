@@ -285,6 +285,10 @@ def manage_category(slug, category_id):
                 return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
 
             elif action == 'start_category':
+                if tournament.status not in ['in_progress', 'completed']:
+                    flash('You must start the overall Tournament before you can start individual categories.', 'error')
+                    return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
+                    
                 participants_list = Participant.query.filter_by(category_id=category_id).all()
 
                 if category.format == 'single_elimination':
