@@ -146,7 +146,11 @@
         const pointsToWinFields = document.getElementById('points-to-win-fields');
 
         if (format === 'group_stage') {
-            if (groupFields) groupFields.style.display = 'block';
+            if (groupFields) {
+                groupFields.style.display = 'block';
+                document.getElementById('qualifiers_per_group').closest('.form-group').style.display = 'block';
+                document.getElementById('allow_lucky_losers').closest('.form-group').style.display = 'block';
+            }
             if (totalGamesFields) {
                 totalGamesFields.style.display = 'block';
                 document.getElementById('total_games').required = true;
@@ -157,6 +161,14 @@
                 document.getElementById('points_to_win').required = false;
             }
         } else if (format === 'round_robin') {
+            if (groupFields) {
+                groupFields.style.display = 'block';
+                // Hide qualifiers and lucky losers for pure round robin
+                document.getElementById('qualifiers_per_group').closest('.form-group').style.display = 'none';
+                document.getElementById('allow_lucky_losers').closest('.form-group').style.display = 'none';
+                document.getElementById('num_groups').required = true;
+                document.getElementById('teams_per_group').required = true;
+            }
             if (groupFields) groupFields.style.display = 'none';
             if (totalGamesFields) {
                 totalGamesFields.style.display = 'none';

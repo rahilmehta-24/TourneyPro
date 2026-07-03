@@ -32,7 +32,7 @@ def create_category(slug):
         points_to_win = request.form.get('points_to_win', type=int)
 
         # Advanced settings for group stage
-        has_group_stage = (format_type == 'group_stage')
+        has_group_stage = (format_type in ['group_stage', 'round_robin'])
         num_groups = request.form.get('num_groups', type=int) if has_group_stage else None
         teams_per_group = request.form.get('teams_per_group', type=int) if has_group_stage else None
         matches_per_team_pair = request.form.get('matches_per_team_pair', type=int, default=1) if has_group_stage else None
@@ -174,7 +174,13 @@ def view_category(slug, category_id):
                     'semi_finalists': [s['participant'] for s in standings[2:4]] if len(standings) > 2 else []
                 }
 
+    rr_matches = [m for m in matches if m.match_type == 'round_robin']
+    
+    if category.status == 'setup' and not rr_matches and category.format == 'round_robin' and not category.num_groups:
+        rr_matches = [DummyMatch(**d) for d in dummy_data]
+    
     return render_template('category/view.html',
+                         rr_matches=rr_matches,
                          tournament=tournament,
                          category=category,
                          participants=participants,
@@ -252,11 +258,19 @@ def manage_category(slug, category_id):
                         db.session.add(match)
 
                 elif category.format == 'round_robin':
-                    from app.algorithms.round_robin import generate_round_robin
-                    matches_data = generate_round_robin(participants_list)
-                    for match_data in matches_data:
-                        match = Match(**match_data, tournament_id=tournament.id, category_id=category.id)
-                        db.session.add(match)
+                    if category.num_groups:
+                        from app.algorithms.group_stage import generate_group_stage
+                        matches_data = generate_group_stage(category, participants_list)
+                        for match_data in matches_data:
+                            match_data['match_type'] = 'round_robin' # Keep it as round_robin so standings work
+                            match = Match(**match_data, tournament_id=tournament.id)
+                            db.session.add(match)
+                    else:
+                        from app.algorithms.round_robin import generate_round_robin
+                        matches_data = generate_round_robin(participants_list)
+                        for match_data in matches_data:
+                            match = Match(**match_data, tournament_id=tournament.id, category_id=category.id)
+                            db.session.add(match)
 
                 elif category.format == 'group_stage':
                     matches_data = generate_group_stage(category, participants_list)
@@ -307,7 +321,7 @@ def manage_category(slug, category_id):
                     category.num_sets = num_sets
                     category.games_per_set = games_per_set
 
-                    category.has_group_stage = (format_type == 'group_stage')
+                    category.has_group_stage = (format_type in ['group_stage', 'round_robin'])
                     if category.has_group_stage:
                         category.num_groups = request.form.get('num_groups', type=int)
                         category.teams_per_group = request.form.get('teams_per_group', type=int)
