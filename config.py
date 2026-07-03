@@ -18,6 +18,13 @@ class Config:
     SQLALCHEMY_DATABASE_URI = db_url or \
         'sqlite:///' + os.path.join(basedir, 'instance', 'tournaments.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    if db_url and db_url.startswith('postgresql'):
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            'pool_pre_ping': True,
+            'connect_args': {
+                'prepare_threshold': None
+            }
+        }
     # Upload folder in 'app/static/uploads'
     UPLOAD_FOLDER = os.path.join(basedir, 'app', 'static', 'uploads')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
