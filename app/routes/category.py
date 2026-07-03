@@ -151,7 +151,7 @@ def view_category(slug, category_id):
         groups_data = []
         for group in groups:
             standings = calculate_group_standings(group.id)
-            group_matches = Match.query.filter_by(group_id=group.id, match_type='group_stage').all()
+            group_matches = Match.query.filter(Match.group_id==group.id, Match.match_type.in_(['group_stage', 'round_robin'])).all()
             groups_data.append({
                 'group': group,
                 'standings': standings,

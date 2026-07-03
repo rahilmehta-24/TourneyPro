@@ -85,7 +85,7 @@ def calculate_group_standings(group_id):
         p.group_points = 0
 
     # Calculate wins/losses from matches
-    matches = Match.query.filter_by(group_id=group_id, match_type='group_stage').all()
+    matches = Match.query.filter(Match.group_id==group_id, Match.match_type.in_(['group_stage', 'round_robin'])).all()
 
     for match in matches:
         if match.status == 'completed' and match.winner_id:
