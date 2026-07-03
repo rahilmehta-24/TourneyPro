@@ -11,6 +11,28 @@ from datetime import datetime
 
 category_bp = Blueprint('category', __name__)
 
+def check_category_auto_completion(category):
+    from app.models import Match
+    has_knockout = category.format in ['single_elimination', 'double_elimination'] or \
+                   category.format == 'group_stage' or \
+                   (category.format == 'round_robin' and category.qualifiers_per_group and category.qualifiers_per_group > 0)
+
+    all_matches = Match.query.filter_by(category_id=category.id).all()
+    if not all_matches:
+        return False
+        
+    pending = any(m.status == 'pending' for m in all_matches)
+    if pending:
+        return False
+        
+    if has_knockout:
+        if category.format in ['group_stage', 'round_robin']:
+            knockout_exists = any(m.match_type == 'knockout' or m.bracket_type in ['winners', 'losers', 'grand_finals', 'grand_final', 'third_place'] for m in all_matches)
+            if not knockout_exists:
+                return False
+                
+    return True
+
 @category_bp.route('/tournaments/<slug>/categories/new', methods=['GET', 'POST'])
 @login_required
 @role_required('admin', 'superadmin')
@@ -546,28 +568,6 @@ def delete_category(slug, category_id):
 @category_bp.route('/tournaments/<slug>/categories/<int:category_id>/match/<int:match_id>/report', methods=['POST'])
 @login_required
 @role_required('admin', 'superadmin')
-def check_category_auto_completion(category):
-    from app.models import Match
-    has_knockout = category.format in ['single_elimination', 'double_elimination'] or \
-                   category.format == 'group_stage' or \
-                   (category.format == 'round_robin' and category.qualifiers_per_group and category.qualifiers_per_group > 0)
-
-    all_matches = Match.query.filter_by(category_id=category.id).all()
-    if not all_matches:
-        return False
-        
-    pending = any(m.status == 'pending' for m in all_matches)
-    if pending:
-        return False
-        
-    if has_knockout:
-        if category.format in ['group_stage', 'round_robin']:
-            knockout_exists = any(m.match_type == 'knockout' or m.bracket_type in ['winners', 'losers', 'grand_finals', 'grand_final', 'third_place'] for m in all_matches)
-            if not knockout_exists:
-                return False
-                
-    return True
-
 def report_category_match_result(slug, category_id, match_id):
     """Report match result for category"""
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
