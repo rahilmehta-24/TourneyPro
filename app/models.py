@@ -83,6 +83,7 @@ class Participant(db.Model):
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'))  # Nullable for backward compatibility
     group_id = db.Column(db.Integer, db.ForeignKey('groups.id'))  # For group stage
     player_id = db.Column(db.Integer, db.ForeignKey('players.id')) # Link to global player
+    player2_id = db.Column(db.Integer, db.ForeignKey('players.id')) # Link to global player 2 for Doubles
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120))
     seed = db.Column(db.Integer)  # Auto-assigned seed
@@ -182,7 +183,7 @@ class Player(db.Model):
 
     # Relationships
     tournament_records = db.relationship('PlayerTournamentRecord', backref='player', lazy=True, cascade='all, delete-orphan')
-    participants = db.relationship('Participant', backref='player', lazy=True)
+    participants = db.relationship('Participant', foreign_keys='Participant.player_id', backref='player', lazy=True)
 
 class PlayerTournamentRecord(db.Model):
     __tablename__ = 'player_tournament_records'

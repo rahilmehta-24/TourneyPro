@@ -1,10 +1,12 @@
 from app.formats.single_elimination.logic import SingleEliminationFormat
+from app.formats.doubles_elimination.logic import DoublesEliminationFormat
 from app.formats.double_elimination.logic import DoubleEliminationFormat
 from app.formats.round_robin.logic import RoundRobinFormat
 from app.formats.group_stage.logic import GroupStageFormat
 
 FormatRegistry = {
     'single_elimination': SingleEliminationFormat,
+    'doubles_elimination': DoublesEliminationFormat,
     'double_elimination': DoubleEliminationFormat,
     'round_robin': RoundRobinFormat,
     'group_stage': GroupStageFormat

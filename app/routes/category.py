@@ -258,19 +258,45 @@ def manage_category(slug, category_id):
                 
                 added_names = []
                 for name in names:
-                    player_match = Player.query.filter_by(name=name).first()
-                    if not player_match:
-                        # Auto-create global player so they appear on leaderboard instantly
-                        player_match = Player(name=name, gender=category.gender, age_category=category.age_category)
-                        db.session.add(player_match)
-                        db.session.flush() # flush to get the ID
-
-                    player_id = player_match.id
+                    player_id = None
+                    player2_id = None
+                    
+                    if category.format == 'doubles_elimination' and '&' in name:
+                        p1_name, p2_name = [n.strip() for n in name.split('&', 1)]
+                        
+                        # Process P1
+                        p1_match = Player.query.filter_by(name=p1_name).first()
+                        if not p1_match:
+                            p1_match = Player(name=p1_name, gender=category.gender, age_category=category.age_category)
+                            db.session.add(p1_match)
+                            db.session.flush()
+                        player_id = p1_match.id
+                        
+                        # Process P2
+                        p2_match = Player.query.filter_by(name=p2_name).first()
+                        if not p2_match:
+                            p2_match = Player(name=p2_name, gender=category.gender, age_category=category.age_category)
+                            db.session.add(p2_match)
+                            db.session.flush()
+                        player2_id = p2_match.id
+                        
+                        # Use standardized format for display name
+                        name = f"{p1_name} & {p2_name}"
+                        
+                    else:
+                        player_match = Player.query.filter_by(name=name).first()
+                        if not player_match:
+                            # Auto-create global player so they appear on leaderboard instantly
+                            player_match = Player(name=name, gender=category.gender, age_category=category.age_category)
+                            db.session.add(player_match)
+                            db.session.flush() # flush to get the ID
+                        player_id = player_match.id
 
                     participant = Participant(
                         tournament_id=tournament.id,
                         category_id=category.id,
                         player_id=player_id,
+                        player2_id=player2_id,
                         name=name,
                         email=participant_email if len(names) == 1 else '', # Only apply email if single participant added
                         manual_seed=manual_seed if len(names) == 1 else None # Only apply seed if single participant
