@@ -74,14 +74,49 @@
                         <h4 style="margin-bottom: 0.5rem; font-size: 0.9rem; color: #cbd5e1;">Existing Categories (Click to Manage):</h4>
                         <div style="display: flex; flex-direction: column; gap: 0.5rem;">
                             {% for category in tournament.categories %}
-                            <a href="{{ url_for('category.manage_category', slug=tournament.url_slug, category_id=category.id) }}"
-                                style="padding: 0.5rem 1rem; background: #1e293b; border-radius: 6px; text-decoration: none; color: white; display: flex; justify-content: space-between; align-items: center;">
-                                <span>{{ category.name }}</span>
-                                <span class="tab-badge status-{{ category.status }}" style="font-size: 0.75rem;">{{
-                                    category.status }}</span>
-                            </a>
+                            <div style="padding: 0.5rem 1rem; background: #1e293b; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+                                <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 0.25rem;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="color: white; font-weight: 500;">{{ category.name }}</span>
+                                        <span class="tab-badge status-{{ category.status }}" style="font-size: 0.75rem;">{{ category.status.replace('_', ' ').title() }}</span>
+                                    </div>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <!-- Manage -->
+                                        <a href="{{ url_for('category.manage_category', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-small btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; text-decoration: none;">⚙️ Manage</a>
+                                        
+                                        <!-- Rename -->
+                                        <button type="button" class="btn btn-small" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; background: #334155; color: white; border: none;" onclick="renameCategory({{ category.id }}, '{{ category.name | escape }}')">✏️ Rename</button>
+                                        
+                                        <!-- Delete -->
+                                        <form method="POST" action="{{ url_for('category.delete_category', slug=tournament.url_slug, category_id=category.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to completely delete {{ category.name }}? This is permanent.');">
+                                            <button type="submit" class="btn btn-small" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; background: #b91c1c; color: white; border: none;">🗑️ Delete</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
                             {% endfor %}
                         </div>
+                        
+                        <script>
+                        function renameCategory(categoryId, currentName) {
+                            const newName = prompt("Enter new name for category:", currentName);
+                            if (newName !== null && newName.trim() !== "" && newName !== currentName) {
+                                // Create and submit a form dynamically
+                                const form = document.createElement('form');
+                                form.method = 'POST';
+                                form.action = `/tournaments/{{ tournament.url_slug }}/categories/${categoryId}/rename`;
+                                
+                                const input = document.createElement('input');
+                                input.type = 'hidden';
+                                input.name = 'new_name';
+                                input.value = newName;
+                                
+                                form.appendChild(input);
+                                document.body.appendChild(form);
+                                form.submit();
+                            }
+                        }
+                        </script>
                     </div>
                     {% else %}
                     <p style="color: #64748b; font-style: italic; margin-bottom: 1rem;">No categories yet.</p>

@@ -69,7 +69,7 @@ def create_category(slug):
         except Exception as e:
             db.session.rollback()
             flash(f'Failed to create category: {str(e)}', 'error')
-            return redirect(url_for('tournament.view_tournament', slug=slug))
+            return redirect(request.referrer or url_for('tournament.view_tournament', slug=slug))
 
     return render_template('category/create.html', tournament=tournament, formats=TOURNAMENT_FORMATS)
 
@@ -463,6 +463,25 @@ def start_knockout_stage(slug, category_id):
 @category_bp.route('/tournaments/<slug>/categories/<int:category_id>/delete', methods=['POST'])
 @login_required
 @role_required('admin', 'superadmin')
+
+@category_bp.route('/tournaments/<slug>/categories/<int:category_id>/rename', methods=['POST'])
+@login_required
+@role_required('admin', 'superadmin')
+def rename_category(slug, category_id):
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    category = Category.query.get_or_404(category_id)
+    new_name = request.form.get('new_name')
+    if new_name and new_name.strip():
+        category.name = new_name.strip()
+        db.session.commit()
+        flash(f"Category renamed to '{category.name}'", 'success')
+    else:
+        flash("Invalid category name.", "error")
+    return redirect(request.referrer or url_for('tournament.manage_tournament', slug=slug))
+
+@category_bp.route('/tournaments/<slug>/categories/<int:category_id>/delete', methods=['POST'])
+@login_required
+@role_required('admin', 'superadmin')
 def delete_category(slug, category_id):
     """Delete a category and all its data"""
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
@@ -484,7 +503,7 @@ def delete_category(slug, category_id):
         db.session.rollback()
         flash(f"Failed to delete category: {str(e)}", 'error')
         
-    return redirect(url_for('tournament.view_tournament', slug=slug))
+    return redirect(request.referrer or url_for('tournament.view_tournament', slug=slug))
 
 @category_bp.route('/tournaments/<slug>/categories/<int:category_id>/match/<int:match_id>/report', methods=['POST'])
 @login_required
