@@ -1,7 +1,6 @@
 with open('app/routes/category.py', 'r') as f:
     content = f.read()
 
-import re
 
 helper_func = """def check_category_auto_completion(category):
     from app.models import Match
