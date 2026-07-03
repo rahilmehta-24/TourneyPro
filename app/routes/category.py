@@ -4,7 +4,7 @@ from app.constants import TOURNAMENT_FORMATS
 from app.algorithms.single_elimination import generate_single_elimination, calculate_final_rankings
 from app.algorithms.double_elimination import calculate_double_elimination_rankings
 from app.algorithms.round_robin import calculate_round_robin_standings
-from app.algorithms.group_stage import generate_group_stage, generate_knockout_from_groups, calculate_group_standings
+from app.algorithms.group_stage import generate_knockout_from_groups, calculate_group_standings
 from app.routes.auth import login_required, role_required
 from app.tennis_logic import validate_and_format_score
 from datetime import datetime
