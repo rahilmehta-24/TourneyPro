@@ -23,10 +23,15 @@ def create_app(config_class=Config):
         pass
 
     with app.app_context():
-        db.create_all()
-        # Bootstrap default superadmin if db is empty
-        from app.routes.auth import bootstrap_superadmin
-        bootstrap_superadmin()
+        # In serverless environments, avoid running DB queries on boot to prevent cold-start timeouts
+        if not os.environ.get('VERCEL'):
+            try:
+                db.create_all()
+                from app.routes.auth import bootstrap_superadmin
+                bootstrap_superadmin()
+            except Exception as e:
+                import logging
+                logging.error(f'Error during db.create_all: {e}')
 
     # Register Blueprints
     from app.routes.main import main_bp
