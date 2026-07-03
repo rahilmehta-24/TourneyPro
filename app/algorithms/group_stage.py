@@ -101,10 +101,21 @@ def calculate_group_standings(group_id):
 
             if winner:
                 winner.group_wins += 1
-                winner.group_points += 3  # 3 points for a win
+                try:
+                    s1 = int(match.score1) if match.score1 is not None else 0
+                    s2 = int(match.score2) if match.score2 is not None else 0
+                    winner.group_points += s1 if match.participant1_id == winner.id else s2
+                except (ValueError, TypeError):
+                    winner.group_points += 3  # 3 points for a win
 
             if loser:
                 loser.group_losses += 1
+                try:
+                    s1 = int(match.score1) if match.score1 is not None else 0
+                    s2 = int(match.score2) if match.score2 is not None else 0
+                    loser.group_points += s2 if match.participant1_id == winner.id else s1
+                except (ValueError, TypeError):
+                    pass
 
     db.session.commit()
 

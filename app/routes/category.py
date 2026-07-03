@@ -637,22 +637,10 @@ def report_category_match_result(slug, category_id, match_id):
         from app.leaderboard_logic import update_live_player_stats
         update_live_player_stats(match)
 
-        # Update group stage stats if applicable
-        if match.match_type == 'group_stage':
-            winner = Participant.query.get(winner_id)
-            if winner:
-                winner.group_wins += 1
-                winner.group_points += 3
-
-            # Update loser
-            loser_id = match.participant1_id if match.participant1_id != winner_id else match.participant2_id
-            if loser_id:
-                loser = Participant.query.get(loser_id)
-                if loser:
-                    loser.group_losses += 1
+        # Stats will be recalculated at the end
 
         # Update next round match for knockout
-        elif match.match_type == 'knockout':
+        if match.match_type == 'knockout':
             if category.format in ['single_elimination', 'group_stage', 'round_robin']:
                 next_round = match.round + 1
                 next_match_number = (match.match_number + 1) // 2
@@ -807,6 +795,12 @@ def report_category_match_result(slug, category_id, match_id):
         # Auto-completion removed. Admin must click Finish Tournament.
 
         db.session.commit()
+        
+        # Recalculate group/round-robin stats
+        if category.format in ['group_stage', 'round_robin']:
+            from app.leaderboard_logic import recalculate_all_group_stats
+            recalculate_all_group_stats(category.id)
+            
         flash('Match result reported successfully!', 'success')
     except ValueError as ve:
         db.session.rollback()
@@ -894,6 +888,10 @@ def update_grid_scores(slug, category_id):
 
     db.session.commit()
     
+    # Recalculate group/round-robin stats
+    from app.leaderboard_logic import recalculate_all_group_stats
+    recalculate_all_group_stats(category.id)
+
     # Check if category is finished
     if check_category_auto_completion(category):
         category.status = 'completed'

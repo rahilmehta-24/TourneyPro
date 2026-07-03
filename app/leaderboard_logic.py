@@ -112,3 +112,57 @@ def calculate_combined_round_robin_standings(category_id):
     
     db.session.commit()
     return sorted_participants
+
+def recalculate_all_group_stats(category_id):
+    """
+    Recalculates group_wins, group_losses, and group_points for all participants in a category
+    by tallying up all completed group_stage and round_robin matches.
+    If match scores are numeric (e.g. 11, 5), they are added to group_points.
+    Otherwise (e.g. tennis sets), winner gets 3 points.
+    """
+    participants = Participant.query.filter_by(category_id=category_id).all()
+    
+    # Reset stats
+    for p in participants:
+        p.group_wins = 0
+        p.group_losses = 0
+        p.group_points = 0
+        
+    matches = Match.query.filter(
+        Match.category_id == category_id,
+        Match.match_type.in_(['group_stage', 'round_robin']),
+        Match.status == 'completed'
+    ).all()
+    
+    for match in matches:
+        if not match.winner_id:
+            continue
+            
+        p1 = next((p for p in participants if p.id == match.participant1_id), None)
+        p2 = next((p for p in participants if p.id == match.participant2_id), None)
+        
+        if not p1 or not p2:
+            continue
+            
+        winner = p1 if match.winner_id == p1.id else p2
+        loser = p2 if match.winner_id == p1.id else p1
+        
+        winner.group_wins += 1
+        loser.group_losses += 1
+        
+        # Try to parse scores as integers to accumulate points
+        try:
+            s1 = int(match.score1) if match.score1 is not None else 0
+            s2 = int(match.score2) if match.score2 is not None else 0
+            
+            if winner.id == p1.id:
+                winner.group_points += s1
+                loser.group_points += s2
+            else:
+                winner.group_points += s2
+                loser.group_points += s1
+        except (ValueError, TypeError):
+            # Fallback for standard tennis sets: 3 points for win
+            winner.group_points += 3
+
+    db.session.commit()
