@@ -20,7 +20,10 @@
                 <span class="logo-icon">🏆</span>
                 <span class="logo-text">TourneyPro</span>
             </a>
-            <div class="nav-links" style="display: flex; gap: var(--spacing-md); align-items: center;">
+            <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle menu" style="display: none;">
+                ☰
+            </button>
+            <div class="nav-links" id="navLinks">
                 <a href="{{ url_for('main.index') }}" class="nav-link">Home</a>
                 <a href="{{ url_for('leaderboard.view_leaderboard') }}" class="nav-link">Leaderboard</a>
                 <a href="{{ url_for('main.tournament_list') }}" class="nav-link">Tournaments</a>
@@ -98,6 +101,11 @@
                 }
             });
         })();
+    </script>
+    <script>
+        document.getElementById('mobileMenuBtn').addEventListener('click', function() {
+            document.getElementById('navLinks').classList.toggle('active');
+        });
     </script>
     {% block extra_js %}{% endblock %}
 </body>

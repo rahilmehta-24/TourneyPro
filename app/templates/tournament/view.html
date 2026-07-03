@@ -482,6 +482,23 @@
             {% endmacro %}
 
             {% macro render_bracket_tree(rounds_dict) %}
+            {% set macro_id = range(1, 100000)|random %}
+            <div class="mobile-bracket-tabs">
+                {% set sorted_keys = rounds_dict.keys()|sort %}
+                {% set total_rounds = sorted_keys|max if sorted_keys else 0 %}
+                {% for round_num in sorted_keys %}
+                    {% set round_title %}
+                        {% if round_num == total_rounds %}F
+                        {% elif round_num == total_rounds - 1 %}SF
+                        {% elif round_num == total_rounds - 2 %}QF
+                        {% else %}R{{ round_num }}
+                        {% endif %}
+                    {% endset %}
+                    <button type="button" onclick="document.querySelector('#tourn-bracket-round-{{ macro_id }}-{{ round_num }}').scrollIntoView({behavior: 'smooth', inline: 'start', block: 'nearest'})">
+                        {{ round_title|trim }}
+                    </button>
+                {% endfor %}
+            </div>
             <div class="bracket">
                 {% set sorted_keys = rounds_dict.keys()|sort %}
                 {% for round_num in sorted_keys %}
@@ -489,7 +506,7 @@
                 {% set next_round_key = sorted_keys[loop.index] if not loop.last else none %}
                 {% set next_round_matches = rounds_dict[next_round_key] if next_round_key else none %}
                 {% set has_vertical = next_round_matches and (next_round_matches|length < round_matches|length) %}
-                <div class="bracket-round round-{{ round_num }}">
+                <div class="bracket-round round-{{ round_num }}" id="tourn-bracket-round-{{ macro_id }}-{{ round_num }}">
                     <h3 class="round-title">
                         {% set total_rounds = sorted_keys|max %}
                         {% if round_num == total_rounds %}

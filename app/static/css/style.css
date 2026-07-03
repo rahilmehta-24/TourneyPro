@@ -1292,3 +1292,126 @@ select option {
     border: 1px dashed rgba(255, 255, 255, 0.1);
     font-weight: 400;
 }
+/* ===== MOBILE MENU & RESPONSIVE LAYOUTS ===== */
+@media (max-width: 768px) {
+    /* Navbar adjustments */
+    .mobile-menu-btn {
+        display: block !important;
+        background: none;
+        border: none;
+        color: var(--text-primary);
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 0.5rem;
+    }
+
+    .nav-links {
+        display: none !important;
+        width: 100%;
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 1rem 0;
+    }
+
+    .nav-links.active {
+        display: flex !important;
+    }
+
+    .navbar .container {
+        flex-wrap: wrap;
+    }
+
+    /* Grids stacking */
+    .dashboard-grid, .stats-grid, .form-row {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Tables horizontal scroll */
+    .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        width: 100%;
+    }
+    
+    .leaderboard-table th, .leaderboard-table td {
+        white-space: nowrap;
+    }
+
+    /* Padding & Typography */
+    .container {
+        padding: 1rem;
+    }
+    
+    .hero {
+        padding: 2rem 1rem;
+    }
+    
+    .hero-title {
+        font-size: 2rem;
+    }
+
+    /* Forms */
+    .form-group input, .form-group select {
+        width: 100%;
+    }
+    
+    .btn {
+        min-height: 44px; /* Touch target size */
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Bracket Container Horizontal Scroll */
+    .bracket-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 2rem;
+        width: 100vw;
+        margin-left: -1rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .bracket {
+        flex-direction: row; /* Keep horizontally aligned */
+        min-width: max-content; /* Prevent squishing */
+    }
+}
+
+/* Mobile Tabs for Bracket Navigation */
+.mobile-bracket-tabs {
+    display: none;
+    position: sticky;
+    top: 0;
+    background: var(--bg-card);
+    z-index: 10;
+    padding: 0.5rem;
+    border-radius: var(--radius-sm);
+    margin-bottom: 1rem;
+    overflow-x: auto;
+    white-space: nowrap;
+    box-shadow: var(--shadow-sm);
+}
+
+.mobile-bracket-tabs button {
+    background: var(--bg-tertiary);
+    border: none;
+    color: var(--text-secondary);
+    padding: 0.5rem 1rem;
+    margin-right: 0.5rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.mobile-bracket-tabs button.active {
+    background: var(--accent-primary);
+    color: #fff;
+}
+
+@media (max-width: 768px) {
+    .mobile-bracket-tabs {
+        display: flex;
+    }
+}
