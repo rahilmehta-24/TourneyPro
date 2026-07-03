@@ -144,10 +144,17 @@
         const totalGamesFields = document.getElementById('total-games-fields');
         const legacyScoringFields = document.getElementById('legacy-scoring-fields');
         const pointsToWinFields = document.getElementById('points-to-win-fields');
+        
+        // Reset global fields
+        const maxPlayersField = document.getElementById('max_players_per_team');
+        if (maxPlayersField) maxPlayersField.closest('.form-group').style.display = 'block';
 
         if (format === 'group_stage') {
             if (groupFields) {
                 groupFields.style.display = 'block';
+                document.querySelector('#group-stage-fields h3').innerText = 'Group Stage Configuration';
+                document.querySelector('label[for="teams_per_group"]').innerText = 'Teams Per Group *';
+                document.getElementById('max_players_per_team').closest('.form-group').style.display = 'block';
                 document.getElementById('qualifiers_per_group').closest('.form-group').style.display = 'block';
                 document.getElementById('allow_lucky_losers').closest('.form-group').style.display = 'block';
             }
@@ -163,6 +170,9 @@
         } else if (format === 'round_robin') {
             if (groupFields) {
                 groupFields.style.display = 'block';
+                document.querySelector('#group-stage-fields h3').innerText = 'Round Robin Configuration';
+                document.querySelector('label[for="teams_per_group"]').innerText = 'Players Per Group *';
+                
                 // Hide num_groups because it will be dynamically calculated based on total players
                 document.getElementById('num_groups').closest('.form-group').style.display = 'none';
                 document.getElementById('num_groups').required = false;
@@ -170,7 +180,8 @@
                 document.getElementById('teams_per_group').required = true;
                 document.getElementById('teams_per_group').min = "3";
                 
-                // Hide qualifiers and lucky losers for pure round robin
+                // Hide max players per team, qualifiers and lucky losers for pure round robin
+                document.getElementById('max_players_per_team').closest('.form-group').style.display = 'none';
                 document.getElementById('qualifiers_per_group').closest('.form-group').style.display = 'none';
                 document.getElementById('allow_lucky_losers').closest('.form-group').style.display = 'none';
             }
