@@ -53,9 +53,17 @@ def assign_leaderboard_points(category):
                 points = 5
                 round_reached = 'Round 1'
 
+            tournament_display_name = category.tournament.name + ' - ' + category.name
+            
+            if category.format == 'doubles_elimination' and participant.player2_id:
+                partner_id = participant.player2_id if p_id == participant.player_id else participant.player_id
+                partner = Player.query.get(partner_id)
+                if partner:
+                    tournament_display_name += f" (Partner: {partner.name})"
+
             record = PlayerTournamentRecord(
                 player_id=player.id,
-                tournament_name=category.tournament.name + ' - ' + category.name,
+                tournament_name=tournament_display_name,
                 level='Regular',
                 round_reached=round_reached,
                 points_earned=points,
