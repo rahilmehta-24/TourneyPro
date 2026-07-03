@@ -113,8 +113,8 @@ def add_points(player_id):
 @role_required('superadmin')
 def reset_leaderboard():
     PlayerTournamentRecord.query.delete()
-    Player.query.delete()
     Participant.query.update({'player_id': None})
+    Player.query.delete()
     db.session.commit()
     flash('Leaderboard has been completely reset.', 'success')
     return redirect(url_for('leaderboard.view_leaderboard'))
