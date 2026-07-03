@@ -1,6 +1,7 @@
-from flask import Flask
+from flask import Flask, request
 from config import Config
 from app.models import db
+from flask_compress import Compress
 import os
 
 def create_app(config_class=Config):
@@ -9,6 +10,7 @@ def create_app(config_class=Config):
 
     # Initialize extensions
     db.init_app(app)
+    Compress(app)
 
     # Ensure instance folder exists
     try:
@@ -47,6 +49,15 @@ def create_app(config_class=Config):
     app.register_blueprint(export_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(leaderboard_bp)
+
+
+    # Cache Control Middleware for static assets
+    @app.after_request
+    def add_cache_headers(response):
+        # Cache static files for 1 hour
+        if request.path.startswith('/static/'):
+            response.headers['Cache-Control'] = 'public, max-age=3600'
+        return response
 
     # Inject current_user into templates
     @app.context_processor

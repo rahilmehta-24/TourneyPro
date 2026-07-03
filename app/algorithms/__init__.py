@@ -1,1 +1,0 @@
-# Bracket generation algorithms

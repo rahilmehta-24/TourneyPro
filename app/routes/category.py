@@ -1,10 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from app.models import db, Tournament, Category, Participant, Match, Group
 from app.constants import TOURNAMENT_FORMATS
-from app.algorithms.single_elimination import generate_single_elimination, calculate_final_rankings
-from app.algorithms.double_elimination import calculate_double_elimination_rankings
-from app.algorithms.round_robin import calculate_round_robin_standings
-from app.algorithms.group_stage import generate_knockout_from_groups, calculate_group_standings
+from app.formats import get_format
 from app.routes.auth import login_required, role_required
 from app.tennis_logic import validate_and_format_score
 from datetime import datetime
@@ -139,22 +136,12 @@ def view_category(slug, category_id):
                 self.participant2 = next((p for p in participants if p.id == p2_id), None) if p2_id else None
 
         dummy_data = []
-        if category.format == 'single_elimination':
-            dummy_data = generate_single_elimination(participants)
-        elif category.format == 'double_elimination':
-            from app.algorithms.double_elimination import generate_double_elimination
-            dummy_data = generate_double_elimination(participants, use_manual_seeding=False)
-        elif category.format == 'round_robin':
-            from app.algorithms.round_robin import generate_round_robin
-            dummy_data = generate_round_robin(participants)
-        elif category.format == 'group_stage':
-            from app.algorithms.group_stage import generate_group_stage
-            # Preview for group stage matches
-            if category.num_groups:
-                groups_data, dummy_data = generate_group_stage(participants, category.num_groups)
-                
-
-
+        fmt = get_format(category.format)
+        if fmt:
+            try:
+                dummy_data = fmt.generate(category, participants)
+            except Exception:
+                pass
         matches = [DummyMatch(**d) for d in dummy_data]
 
     # Group matches by round for knockout
@@ -183,10 +170,11 @@ def view_category(slug, category_id):
     # Get group stage data if applicable
     groups_data = None
     if category.has_group_stage:
+        from app.formats.group_stage.logic import GroupStageFormat
         groups = Group.query.filter_by(category_id=category_id).all()
         groups_data = []
         for group in groups:
-            standings = calculate_group_standings(group.id)
+            standings = GroupStageFormat.calculate_group_standings(group.id)
             group_matches = Match.query.filter(Match.group_id==group.id, Match.match_type.in_(['group_stage', 'round_robin'])).all()
             groups_data.append({
                 'group': group,
@@ -197,18 +185,29 @@ def view_category(slug, category_id):
     # Calculate final rankings if tournament is complete
     rankings = None
     if category.status == 'completed':
-        if category.format == 'single_elimination':
-            rankings = calculate_final_rankings(category)
-        elif category.format == 'double_elimination':
-            rankings = calculate_double_elimination_rankings(category)
-        elif category.format == 'round_robin':
-            standings = calculate_round_robin_standings(category_id)
-            if len(standings) >= 2:
-                rankings = {
-                    'winner': standings[0]['participant'],
-                    'runner_up': standings[1]['participant'],
-                    'semi_finalists': [s['participant'] for s in standings[2:4]] if len(standings) > 2 else []
-                }
+        fmt = get_format(category.format)
+        if fmt:
+            # Rankings are stored on the Participant model (final_rank) by calculate_final_rankings
+            # We don't actually need to return them as a dict anymore since view.html can just use participants
+            # But to keep backward compatibility:
+            if category.format == 'round_robin':
+                # Just get the sorted standings
+                Participant.query.filter_by(category_id=category_id).all() # Refresh
+                winners = Participant.query.filter(Participant.category_id==category_id, Participant.final_rank.isnot(None)).order_by(Participant.final_rank).all()
+                if len(winners) >= 2:
+                    rankings = {
+                        'winner': winners[0],
+                        'runner_up': winners[1],
+                        'semi_finalists': winners[2:4] if len(winners) > 2 else []
+                    }
+            else:
+                winners = Participant.query.filter(Participant.category_id==category_id, Participant.final_rank.isnot(None)).order_by(Participant.final_rank).all()
+                if winners:
+                    rankings = {
+                        'winner': winners[0] if len(winners) > 0 else None,
+                        'runner_up': next((p for p in winners if p.final_rank == 2), None),
+                        'semi_finalists': [p for p in winners if p.final_rank == 3]
+                    }
 
     rr_matches = [m for m in matches if m.match_type == 'round_robin']
     
@@ -291,40 +290,27 @@ def manage_category(slug, category_id):
                     
                 participants_list = Participant.query.filter_by(category_id=category_id).all()
 
-                if category.format == 'single_elimination':
-                    matches_data = generate_single_elimination(participants_list)
-                    for match_data in matches_data:
-                        match = Match(**match_data, tournament_id=tournament.id, category_id=category.id)
-                        db.session.add(match)
-
-                elif category.format == 'round_robin':
-                    if category.teams_per_group and category.teams_per_group >= 3:
+                fmt = get_format(category.format)
+                if fmt:
+                    if category.format == 'round_robin' and category.teams_per_group and category.teams_per_group >= 3:
                         import math
                         total_players = len(participants_list)
-                        if total_players > 0:
-                            category.num_groups = math.ceil(total_players / category.teams_per_group)
-                        else:
-                            category.num_groups = 1
-                            
-                        from app.algorithms.group_stage import generate_group_stage
-                        matches_data = generate_group_stage(category, participants_list)
+                        category.num_groups = math.ceil(total_players / category.teams_per_group) if total_players > 0 else 1
+                        
+                        # Generate group stage data but tag as round robin
+                        from app.formats.group_stage.logic import GroupStageFormat
+                        matches_data = GroupStageFormat.generate(category, participants_list)
                         for match_data in matches_data:
                             match_data['match_type'] = 'round_robin'
                             match = Match(**match_data, tournament_id=tournament.id)
                             db.session.add(match)
                     else:
-                        # Fallback for pure round robin if no teams_per_group
-                        from app.algorithms.round_robin import generate_round_robin
-                        matches_data = generate_round_robin(participants_list)
+                        matches_data = fmt.generate(category, participants_list)
                         for match_data in matches_data:
-                            match = Match(**match_data, tournament_id=tournament.id, category_id=category.id)
+                            if 'category_id' not in match_data:
+                                match_data['category_id'] = category.id
+                            match = Match(**match_data, tournament_id=tournament.id)
                             db.session.add(match)
-
-                elif category.format == 'group_stage':
-                    matches_data = generate_group_stage(category, participants_list)
-                    for match_data in matches_data:
-                        match = Match(**match_data, tournament_id=tournament.id)
-                        db.session.add(match)
 
                 category.status = 'in_progress'
                 category.started_at = datetime.utcnow()
@@ -446,12 +432,9 @@ def manage_category(slug, category_id):
                 category.completed_at = datetime.utcnow()
 
                 # Make sure rankings are calculated if not already done
-                if category.format in ['single_elimination', 'group_stage'] or (category.format == 'round_robin' and category.qualifiers_per_group and category.qualifiers_per_group > 0):
-                    from app.algorithms.single_elimination import calculate_final_rankings
-                    calculate_final_rankings(category)
-                elif category.format == 'double_elimination':
-                    from app.algorithms.double_elimination import calculate_double_elimination_rankings
-                    calculate_double_elimination_rankings(category)
+                fmt = get_format(category.format)
+                if fmt:
+                    fmt.calculate_final_rankings(category)
 
                 db.session.commit()
 
@@ -643,158 +626,9 @@ def report_category_match_result(slug, category_id, match_id):
 
         # Stats will be recalculated at the end
 
-        # Update next round match for knockout
-        if match.match_type == 'knockout':
-            if category.format in ['single_elimination', 'group_stage', 'round_robin']:
-                next_round = match.round + 1
-                next_match_number = (match.match_number + 1) // 2
-
-                next_match = Match.query.filter_by(
-                    category_id=category.id,
-                    round=next_round,
-                    match_number=next_match_number,
-                    bracket_type=match.bracket_type
-                ).first()
-
-                if next_match:
-                    if match.match_number % 2 == 1:
-                        next_match.participant1_id = winner_id
-                    else:
-                        next_match.participant2_id = winner_id
-            elif category.format == 'double_elimination':
-                # Double Elimination Progression Logic
-                loser_id = match.participant1_id if match.participant1_id != winner_id else match.participant2_id
-
-                # Fetch winners matches to find num_rounds_winners
-                winners_matches = Match.query.filter_by(category_id=category.id, bracket_type='winners').all()
-                num_rounds_winners = max(m.round for m in winners_matches) if winners_matches else 0
-
-                if match.bracket_type == 'winners':
-                    # 1. Winner advances in Winners
-                    next_round = match.round + 1
-                    next_match_number = (match.match_number + 1) // 2
-
-                    next_match = Match.query.filter_by(
-                        category_id=category.id,
-                        round=next_round,
-                        match_number=next_match_number,
-                        bracket_type='winners'
-                    ).first()
-
-                    if next_match:
-                        if match.match_number % 2 == 1:
-                            next_match.participant1_id = winner_id
-                        else:
-                            next_match.participant2_id = winner_id
-                    else:
-                        # No next winners round match, so this is Winners Final.
-                        # Winner goes to Grand Finals Match 1 as participant1_id
-                        gf_match = Match.query.filter_by(
-                            category_id=category.id,
-                            bracket_type='grand_finals',
-                            match_number=1
-                        ).first()
-                        if gf_match:
-                            gf_match.participant1_id = winner_id
-
-                    # 2. Loser drops to corresponding Losers match
-                    if match.round == 1:
-                        # Winners Rd 1 match M loser goes to Losers Rd 1 match (M - 1) // 2 + 1
-                        target_round = 1
-                        target_match_number = (match.match_number - 1) // 2 + 1
-                        target_match = Match.query.filter_by(
-                            category_id=category.id,
-                            round=target_round,
-                            match_number=target_match_number,
-                            bracket_type='losers'
-                        ).first()
-                        if target_match:
-                            if match.match_number % 2 == 1:
-                                target_match.participant1_id = loser_id
-                            else:
-                                target_match.participant2_id = loser_id
-                    else:
-                        # Winners Rd R > 1 match M loser goes to Losers Rd 2R - 2 match M, as participant1_id
-                        target_round = 2 * match.round - 2
-                        target_match_number = match.match_number
-                        target_match = Match.query.filter_by(
-                            category_id=category.id,
-                            round=target_round,
-                            match_number=target_match_number,
-                            bracket_type='losers'
-                        ).first()
-                        if target_match:
-                            target_match.participant1_id = loser_id
-
-                elif match.bracket_type == 'losers':
-                    # 1. Winner advances in Losers
-                    max_losers_round = 2 * num_rounds_winners - 2 if num_rounds_winners >= 2 else 0
-
-                    if match.round == max_losers_round:
-                        # Winners of Losers Final go to Grand Finals Match 1 as participant2_id
-                        gf_match = Match.query.filter_by(
-                            category_id=category.id,
-                            bracket_type='grand_finals',
-                            match_number=1
-                        ).first()
-                        if gf_match:
-                            gf_match.participant2_id = winner_id
-                    else:
-                        # Advancement within losers bracket
-                        if match.round % 2 == 1:
-                            # Odd round R match M winner goes to round R+1 match M as participant2_id
-                            target_round = match.round + 1
-                            target_match_number = match.match_number
-                            target_match = Match.query.filter_by(
-                                category_id=category.id,
-                                round=target_round,
-                                match_number=target_match_number,
-                                bracket_type='losers'
-                            ).first()
-                            if target_match:
-                                target_match.participant2_id = winner_id
-                        else:
-                            # Even round R match M winner goes to round R+1 match (M+1)//2
-                            target_round = match.round + 1
-                            target_match_number = (match.match_number + 1) // 2
-                            target_match = Match.query.filter_by(
-                                category_id=category.id,
-                                round=target_round,
-                                match_number=target_match_number,
-                                bracket_type='losers'
-                            ).first()
-                            if target_match:
-                                if match.match_number % 2 == 1:
-                                    target_match.participant1_id = winner_id
-                                else:
-                                    target_match.participant2_id = winner_id
-
-                elif match.bracket_type == 'grand_finals':
-                    if match.match_number == 1:
-                        # Grand Finals Match 1
-                        if winner_id == match.participant1_id:
-                            # Undefeated Winners champion won! Complete GF Match 2 with status completed but empty winner.
-                            match2 = Match.query.filter_by(
-                                category_id=category.id,
-                                bracket_type='grand_finals',
-                                match_number=2
-                            ).first()
-                            if match2:
-                                match2.status = 'completed'
-                                match2.score1 = 'N/A'
-                                match2.score2 = 'N/A'
-                                match2.completed_at = datetime.utcnow()
-                        else:
-                            # Losers champion won. Reset match activated!
-                            match2 = Match.query.filter_by(
-                                category_id=category.id,
-                                bracket_type='grand_finals',
-                                match_number=2
-                            ).first()
-                            if match2:
-                                match2.participant1_id = match.participant1_id
-                                match2.participant2_id = match.participant2_id
-                                match2.status = 'pending'
+        fmt = get_format(category.format)
+        if fmt:
+            fmt.advance_match(match, category, winner_id)
 
         # Auto-completion removed. Admin must click Finish Tournament.
 

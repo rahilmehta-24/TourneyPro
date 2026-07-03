@@ -1,21 +1,4 @@
+from app.formats import get_all_formats
+
 # Format definitions for Lawn Tennis
-TOURNAMENT_FORMATS = {
-    'single_elimination': {
-        'name': 'Single Elimination (Knockout)',
-        'description': 'Standard knockout format where a player is eliminated after a single match loss.',
-        'icon': '🏆',
-        'min_participants': 2
-    },
-    'round_robin': {
-        'name': 'Round Robin (League)',
-        'description': 'Everyone plays everyone. Rankings are based on total cumulative points across all matches. Can optionally feed into a knockout bracket.',
-        'icon': '🔄',
-        'min_participants': 3
-    },
-    'group_stage': {
-        'name': 'Group Stage + Knockout (Coming Soon)',
-        'description': 'Round-robin group matches followed by a single elimination knockout bracket for top qualifiers.',
-        'icon': '🎪',
-        'min_participants': 4
-    }
-}
+TOURNAMENT_FORMATS = get_all_formats()

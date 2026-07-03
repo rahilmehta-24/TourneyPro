@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from app.models import db, Tournament, Participant, Match, TournamentSettings
-from app.algorithms.single_elimination import generate_single_elimination
+from app.formats import get_format
 from app.constants import TOURNAMENT_FORMATS
 from app.routes.auth import login_required, role_required
 from app.tennis_logic import validate_and_format_score
@@ -219,7 +219,11 @@ def manage_tournament(slug):
             elif action == 'start_tournament':
                 # Generate bracket based on format
                 if tournament.format == 'single_elimination':
-                    matches_data = generate_single_elimination(participants)
+                    fmt = get_format(tournament.format)
+                    if fmt:
+                        matches_data = fmt.generate(tournament, participants)
+                    else:
+                        matches_data = []
 
                     # Create match records
                     for match_data in matches_data:
