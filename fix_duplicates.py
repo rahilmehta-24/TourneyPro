@@ -1,4 +1,3 @@
-import re
 with open('app/routes/category.py', 'r') as f:
     content = f.read()
 

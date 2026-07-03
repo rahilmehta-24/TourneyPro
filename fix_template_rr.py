@@ -1,4 +1,3 @@
-import re
 with open('app/templates/category/view.html', 'r') as f:
     content = f.read()
 
