@@ -3,3 +3,4 @@ instance
 venv
 *.env*
 .DS_Store
+*.md

@@ -328,6 +328,7 @@
         <div class="group-card">
             <h3>{{ group_info.group.name }}</h3>
 
+            <div class="table-container" style="width: 100%; overflow-x: auto;">
             <table class="standings-table">
                 <thead>
                     <tr>
@@ -350,6 +351,7 @@
                     {% endfor %}
                 </tbody>
             </table>
+            </div>
 
             <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Group Matrix</h4>
             <div style="overflow-x: auto;">
@@ -419,6 +421,7 @@
                         {% endfor %}
                     </tbody>
                 </table>
+            </div>
                 {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status == 'in_progress' %}
                 <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 1rem; margin-bottom: 1rem;">
                     <button type="submit" class="btn btn-primary" title="Save Entries" style="padding: 0.5rem; display: flex; align-items: center; justify-content: center; border-radius: 4px;">
@@ -560,6 +563,7 @@
                                 {% endfor %}
                             </tbody>
                         </table>
+            </div>
                     {% endif %}
                 </div>
             </div>

@@ -8,21 +8,14 @@ TOURNAMENT_FORMATS = {
     },
     'round_robin': {
         'name': 'Round Robin (League)',
-        'description': 'Everyone plays everyone. Rankings are determined by total points/wins.',
+        'description': 'Everyone plays everyone. Rankings are based on total cumulative points across all matches. Can optionally feed into a knockout bracket.',
         'icon': '🔄',
         'min_participants': 3
     },
     'group_stage': {
-        'name': 'Group Stage + Knockout',
+        'name': 'Group Stage + Knockout (Coming Soon)',
         'description': 'Round-robin group matches followed by a single elimination knockout bracket for top qualifiers.',
         'icon': '🎪',
         'min_participants': 4
-    },
-    'category': {
-        'name': 'Multiple Categories/Events',
-        'description': 'Tournament separated by age groups, genders, or skill levels.',
-        'icon': '🗂️',
-        'min_participants': 2
     }
 }
-

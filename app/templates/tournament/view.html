@@ -133,7 +133,7 @@
 
     <!-- OVERALL LEADERBOARD -->
     <div class="overall-leaderboard" style="margin: 2rem 0;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
             <h2 class="section-title" style="margin: 0;">🏆 Overall Leaderboard</h2>
             <div style="min-width: 250px;">
                 <select id="categoryFilter" onchange="filterLeaderboard()" class="form-input"
@@ -219,7 +219,7 @@
     <!-- PLAYER REGISTRY -->
     {% if player_registry %}
     <div class="player-registry" style="margin: 2rem 0;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
             <h2 class="section-title" style="margin: 0;">👥 Player Registry</h2>
             <div style="min-width: 300px;">
                 <input type="text" id="playerSearch" placeholder="Search players..." class="form-input"
