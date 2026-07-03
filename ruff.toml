@@ -1,4 +1,4 @@
-[tool.ruff]
+
 line-length = 100
 target-version = "py312"
 exclude = [
@@ -9,7 +9,7 @@ exclude = [
     "instance",
 ]
 
-[tool.ruff.lint]
+[lint]
 # E: pycodestyle errors
 # F: Pyflakes
 # W: pycodestyle warnings
