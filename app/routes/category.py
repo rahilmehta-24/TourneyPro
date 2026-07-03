@@ -460,10 +460,6 @@ def start_knockout_stage(slug, category_id):
 
     return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
 
-@category_bp.route('/tournaments/<slug>/categories/<int:category_id>/delete', methods=['POST'])
-@login_required
-@role_required('admin', 'superadmin')
-
 @category_bp.route('/tournaments/<slug>/categories/<int:category_id>/rename', methods=['POST'])
 @login_required
 @role_required('admin', 'superadmin')
