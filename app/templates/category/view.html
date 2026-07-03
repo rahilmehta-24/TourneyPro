@@ -113,7 +113,7 @@
                             <td style="font-weight: 600; text-align: left;">{{ row_p.name }}</td>
                             {% for col_p in group_info.standings %}
                             {% if row_p.id == col_p.id %}
-                                <td style="background: rgba(255,255,255,0.05);">-</td>
+                                <td class="empty-cell"></td>
                             {% else %}
                                 {% set ns = namespace(found=false, match=none, is_p1=true) %}
                                 {% for m in group_info.matches %}
@@ -631,6 +631,27 @@
         }
     }
 </script>
+
+
+<style>
+    .round-robin-grid {
+        border-collapse: collapse;
+        width: 100%;
+        margin-bottom: 2rem;
+    }
+    .round-robin-grid th, .round-robin-grid td {
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 10px;
+        text-align: center;
+    }
+    .round-robin-grid th {
+        background-color: rgba(255, 255, 255, 0.05);
+        font-weight: bold;
+    }
+    .round-robin-grid .empty-cell {
+        background-color: rgba(0, 0, 0, 0.2);
+    }
+</style>
 
 <style>
     .winner-section {
