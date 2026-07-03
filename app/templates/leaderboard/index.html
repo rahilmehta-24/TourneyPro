@@ -10,7 +10,10 @@
 <div class="container">
     <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
         <div>
-            <h1>Player Leaderboard</h1>
+            <h1 style="display: flex; align-items: center; gap: 0.5rem;">
+                Player Leaderboard 
+                <span onclick="document.getElementById('pointsModal').style.display='flex'" style="cursor: pointer; font-size: 1.2rem; color: var(--accent-primary);" title="View Points Distribution">ℹ️</span>
+            </h1>
             <p class="subtitle">Rankings across all categories and genders</p>
         </div>
         <div style="display: flex; align-items: center;">
@@ -284,4 +287,58 @@
         document.getElementById('editPlayerModal').style.display = 'flex';
     }
 </script>
+
+    <!-- Points Distribution Modal -->
+    <div id="pointsModal" class="modal-backdrop" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+        <div class="modal-content" style="background: var(--bg-secondary); padding: 2rem; border-radius: var(--radius-lg); width: 100%; max-width: 400px; position: relative;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h2 style="margin: 0;">Tournament Points Distribution</h2>
+                <button type="button" class="close-btn" onclick="document.getElementById('pointsModal').style.display='none'" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+            </div>
+            <div class="modal-body">
+                <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid rgba(255,255,255,0.1);">
+                            <th style="padding: 0.75rem; text-align: left;">Round Reached</th>
+                            <th style="padding: 0.75rem; text-align: right;">Points Awarded</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 0.75rem;">🥇 Winner</td>
+                            <td style="padding: 0.75rem; text-align: right; font-weight: bold; color: var(--accent-secondary);">500</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 0.75rem;">🥈 Runner-Up</td>
+                            <td style="padding: 0.75rem; text-align: right; font-weight: bold; color: var(--accent-secondary);">300</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 0.75rem;">🥉 Semi-Final</td>
+                            <td style="padding: 0.75rem; text-align: right; font-weight: bold; color: var(--accent-secondary);">160</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 0.75rem;">Quarter-Final</td>
+                            <td style="padding: 0.75rem; text-align: right; font-weight: bold; color: var(--accent-secondary);">80</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 0.75rem;">Round 4 (Top 16)</td>
+                            <td style="padding: 0.75rem; text-align: right; font-weight: bold; color: var(--accent-secondary);">40</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 0.75rem;">Round 3 (Top 32)</td>
+                            <td style="padding: 0.75rem; text-align: right; font-weight: bold; color: var(--accent-secondary);">20</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 0.75rem;">Round 2 (Top 64)</td>
+                            <td style="padding: 0.75rem; text-align: right; font-weight: bold; color: var(--accent-secondary);">10</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.75rem;">Round 1 / Participation</td>
+                            <td style="padding: 0.75rem; text-align: right; font-weight: bold; color: var(--accent-secondary);">5</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 {% endblock %}

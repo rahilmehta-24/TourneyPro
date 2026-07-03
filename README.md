@@ -5,7 +5,7 @@ A robust, production-ready Flask-based web application for managing sports and g
 ## Key Features
 
 - **Advanced Tournament Logic**
-  - **Single Elimination (Knockout):** Automatic bracket generation, intelligent Bye placements for non-power-of-2 participant counts, and explicit seeding support.
+  - **Single & Doubles Elimination (Knockout):** Automatic bracket generation, intelligent Bye placements for non-power-of-2 participant counts, and explicit seeding support.
   - **Round Robin (League):** Generates exhaustive grid match-ups. Ranks players based on total cumulative points across all matches. Can dynamically feed the top players into a Knockout Stage.
   - **Multi-Category Architecture:** A single tournament can host dozens of distinct events (e.g., Men's Singles, Under-15s, Mixed Doubles) all running completely different formats independently.
 
