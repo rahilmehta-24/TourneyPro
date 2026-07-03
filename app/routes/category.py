@@ -651,7 +651,7 @@ def report_category_match_result(slug, category_id, match_id):
 
         # Update next round match for knockout
         elif match.match_type == 'knockout':
-            if category.format == 'single_elimination':
+            if category.format in ['single_elimination', 'group_stage', 'round_robin']:
                 next_round = match.round + 1
                 next_match_number = (match.match_number + 1) // 2
 
@@ -808,7 +808,7 @@ def report_category_match_result(slug, category_id, match_id):
             category.completed_at = datetime.utcnow()
 
             # Calculate final rankings and rank participants
-            if category.format == 'single_elimination':
+            if category.format in ['single_elimination', 'group_stage'] or (category.format == 'round_robin' and category.qualifiers_per_group and category.qualifiers_per_group > 0):
                 calculate_final_rankings(category)
             elif category.format == 'double_elimination':
                 calculate_double_elimination_rankings(category)
