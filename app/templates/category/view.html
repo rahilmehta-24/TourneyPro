@@ -179,7 +179,8 @@
         </div>
         {% endfor %}
 
-        {% if category.status == 'in_progress' %}
+        {% set knockout_exists = matches | selectattr('match_type', 'equalto', 'knockout') | list | length > 0 %}
+        {% if category.status == 'in_progress' and not knockout_exists %}
         {% if current_user and current_user.role in ['admin', 'superadmin'] %}
 <form method="POST"
             action="{{ url_for('category.start_knockout_stage', slug=tournament.url_slug, category_id=category.id) }}">
@@ -243,7 +244,7 @@
                         {{ games }}{% if tb %}<sup style="font-size: 0.7em; opacity: 0.8; margin-left: 1px;">{{ tb }}</sup>{% endif %}
                     </span>
                 {% else %}
-                    <span class="tennis-set-box empty">-</span>
+                    <span class="tennis-set-box set-winner">{{ score }}</span>
                 {% endif %}
             {% endfor %}
             {% if set_scores|length < (num_sets or 1) %}
