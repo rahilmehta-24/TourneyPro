@@ -30,7 +30,7 @@
                     <td>{{ participant.name }}</td>
                     <td>
                         <input type="number" name="seed_{{ participant.id }}" class="form-input"
-                            value="{{ participant.manual_seed or '' }}" min="1" placeholder="Enter seed #" required>
+                            value="{{ participant.manual_seed or '' }}" min="1" placeholder="Enter seed #">
                     </td>
                 </tr>
                 {% endfor %}
