@@ -32,7 +32,7 @@
         <h2 class="section-title">Tournament Formats</h2>
         <div class="formats-grid">
             {% for format_key, format_info in formats.items() %}
-            {% if format_key != 'double_elimination' %}
+            {% if format_key not in ['double_elimination', 'doubles_elimination'] %}
             <div class="format-card clickable" onclick="openFormatModal('{{ format_key }}')" style="cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; position: relative;">
                 <div class="format-icon">{{ format_info.icon }}</div>
                 <h3 class="format-name">{{ format_info.name }}</h3>
@@ -86,7 +86,7 @@
 
 <!-- Format Detail Modals -->
 {% for format_key, format_info in formats.items() %}
-{% if format_key != 'double_elimination' %}
+{% if format_key not in ['double_elimination', 'doubles_elimination'] %}
 <div id="modal-{{ format_key }}" class="modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; padding: 1rem;">
     <div class="modal-content" style="background: var(--bg-card); max-width: 500px; width: 100%; border-radius: var(--radius-lg); padding: 2rem; position: relative; border-top: 4px solid var(--accent-primary);">
         <button onclick="closeFormatModal('{{ format_key }}')" style="position: absolute; top: 1rem; right: 1rem; background: transparent; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer; line-height: 1;">&times;</button>
@@ -102,6 +102,7 @@
                     <li>Perfect for fast-paced, high-stakes tournaments.</li>
                     <li>Number of participants determines the number of initial byes.</li>
                     <li>Matches follow standard tennis set scoring.</li>
+                    <li>Supports both <strong>Singles</strong> and <strong>Doubles</strong> match formats.</li>
                 {% elif format_key == 'group_stage' %}
                     <li>Players are divided into pools/groups.</li>
                     <li>Round-robin style: everyone plays everyone in their group.</li>

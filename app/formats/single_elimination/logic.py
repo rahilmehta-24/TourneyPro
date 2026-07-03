@@ -3,8 +3,8 @@ from app.formats.base import TournamentFormat
 from app.models import Match, Participant
 
 class SingleEliminationFormat(TournamentFormat):
-    name = "Single Elimination (Knockout)"
-    description = "Standard knockout format where a player is eliminated after a single match loss."
+    name = "Knockout (Single Elimination)"
+    description = "Classic bracket tournament where losing a match eliminates the participant. Supports both Singles and Doubles formats."
     icon = "🏆"
     min_participants = 2
 

@@ -103,10 +103,26 @@
                     <div class="form-group">
                         <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Format *</label>
                         <select id="format" name="format" class="form-input" required style="width: 100%;" onchange="toggleGroupStageFields()">
-                            <option value="single_elimination" {% if category.format == 'single_elimination' %}selected{% endif %}>🏆 Single Elimination (Knockout)</option>
+                            <option value="single_elimination" {% if category.format in ['single_elimination', 'doubles_elimination'] %}selected{% endif %}>🏆 Knockout (Single Elimination)</option>
                             <option value="group_stage" {% if category.format == 'group_stage' %}selected{% endif %}>🎪 Group Stage + Knockout</option>
                             <option value="round_robin" {% if category.format == 'round_robin' %}selected{% endif %}>🔄 Round Robin (League)</option>
                         </select>
+                    </div>
+
+                    <div id="knockout-subformat-fields" style="display: {% if category.format in ['single_elimination', 'doubles_elimination'] %}block{% else %}none{% endif %};">
+                        <div class="form-group">
+                            <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Match Format *</label>
+                            <div style="display: flex; gap: 1.5rem; margin-top: 0.5rem;">
+                                <label style="display: flex; align-items: center; gap: 8px;">
+                                    <input type="radio" name="sub_format" value="singles" style="width: 18px; height: 18px; accent-color: var(--primary);" {% if category.format != 'doubles_elimination' %}checked{% endif %}>
+                                    <span style="font-size: 0.95rem; font-weight: 500;">Singles</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 8px;">
+                                    <input type="radio" name="sub_format" value="doubles" style="width: 18px; height: 18px; accent-color: var(--primary);" {% if category.format == 'doubles_elimination' %}checked{% endif %}>
+                                    <span style="font-size: 0.95rem; font-weight: 500;">Doubles</span>
+                                </label>
+                            </div>
+                        </div>
                     </div>
 
                     <div id="total-games-fields" style="display: {% if category.format == 'group_stage' %}block{% else %}none{% endif %};">
@@ -264,7 +280,16 @@
         const totalGamesFields = document.getElementById('total-games-fields');
         const legacyScoringFields = document.getElementById('legacy-scoring-fields');
         const pointsToWinFields = document.getElementById('points-to-win-fields');
+        const knockoutSubformatFields = document.getElementById('knockout-subformat-fields');
         
+        // Reset global fields
+        const maxPlayersField = document.getElementById('max_players_per_team');
+        if (maxPlayersField) maxPlayersField.closest('.form-group').style.display = 'block';
+
+        if (knockoutSubformatFields) {
+            knockoutSubformatFields.style.display = (format === 'single_elimination') ? 'block' : 'none';
+        }
+
         if (format === 'group_stage') {
             if (groupFields) groupFields.style.display = 'flex';
             if (totalGamesFields) {

@@ -40,6 +40,10 @@ def create_category(slug):
     if request.method == 'POST':
         name = request.form.get('name')
         format_type = request.form.get('format')
+        if format_type == 'single_elimination':
+            sub_format = request.form.get('sub_format')
+            if sub_format == 'doubles':
+                format_type = 'doubles_elimination'
         max_participants = request.form.get('max_participants', type=int)
         gender = request.form.get('gender', 'Unspecified')
         age_category = request.form.get('age_category', 'Unspecified')
@@ -383,6 +387,10 @@ def manage_category(slug, category_id):
                 # Settings only editable in setup status
                 if category.status == 'setup':
                     format_type = request.form.get('format')
+                    if format_type == 'single_elimination':
+                        sub_format = request.form.get('sub_format')
+                        if sub_format == 'doubles':
+                            format_type = 'doubles_elimination'
                     num_sets = request.form.get('num_sets', type=int, default=1)
                     games_per_set = request.form.get('games_per_set', type=int, default=6)
 
