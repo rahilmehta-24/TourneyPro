@@ -86,3 +86,29 @@ def update_live_player_stats(match):
                 db.session.add(player)
     
     db.session.commit()
+
+def calculate_combined_round_robin_standings(category_id):
+    """
+    For Round Robin categories that do NOT have a knockout stage,
+    the final rankings are determined by taking all participants from all groups,
+    and sorting them by their total group_points, group_wins, and manual_seed.
+    This sets final_rank on the Participant objects.
+    """
+    participants = Participant.query.filter_by(category_id=category_id).all()
+    
+    # Sort participants by points (desc), wins (desc), and seed (asc for priority)
+    sorted_participants = sorted(
+        participants,
+        key=lambda p: (
+            p.group_points or 0,
+            p.group_wins or 0,
+            -(p.manual_seed or 9999)
+        ),
+        reverse=True
+    )
+    
+    for i, p in enumerate(sorted_participants):
+        p.final_rank = i + 1
+    
+    db.session.commit()
+    return sorted_participants

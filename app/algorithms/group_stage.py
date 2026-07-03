@@ -168,7 +168,7 @@ def generate_knockout_from_groups(category):
     Returns:
         List of knockout matches
     """
-    from algorithms.single_elimination import generate_single_elimination
+    from app.algorithms.single_elimination import generate_single_elimination
 
     qualified = get_qualified_participants(category)
 

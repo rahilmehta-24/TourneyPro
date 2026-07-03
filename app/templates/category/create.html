@@ -127,6 +127,14 @@
                 </label>
                 <small style="display: block; margin-left: 26px;">If qualified teams < 8, fills the remaining spots with best non-qualifiers.</small>
             </div>
+
+            <div class="form-group" style="margin-top: 1rem; display: none;" id="rr-knockout-container">
+                <label style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" name="has_knockout_stage" id="has_knockout_stage" style="width: 18px; height: 18px; accent-color: var(--primary);" onchange="toggleRRKnockout()">
+                    <span>Include Knockout Stage</span>
+                </label>
+                <small style="display: block; margin-left: 26px;">If checked, top players will advance to a knockout bracket.</small>
+            </div>
         </div>
 
         <div class="form-actions">
@@ -149,6 +157,9 @@
         const maxPlayersField = document.getElementById('max_players_per_team');
         if (maxPlayersField) maxPlayersField.closest('.form-group').style.display = 'block';
 
+        const rrKnockoutContainer = document.getElementById('rr-knockout-container');
+        if (rrKnockoutContainer) rrKnockoutContainer.style.display = 'none';
+
         if (format === 'group_stage') {
             if (groupFields) {
                 groupFields.style.display = 'block';
@@ -156,7 +167,10 @@
                 document.querySelector('label[for="teams_per_group"]').innerText = 'Teams Per Group *';
                 document.getElementById('max_players_per_team').closest('.form-group').style.display = 'block';
                 document.getElementById('qualifiers_per_group').closest('.form-group').style.display = 'block';
+                document.getElementById('qualifiers_per_group').required = true;
                 document.getElementById('allow_lucky_losers').closest('.form-group').style.display = 'block';
+                document.getElementById('num_groups').closest('.form-group').style.display = 'block';
+                document.getElementById('num_groups').required = true;
             }
             if (totalGamesFields) {
                 totalGamesFields.style.display = 'block';
@@ -180,10 +194,12 @@
                 document.getElementById('teams_per_group').required = true;
                 document.getElementById('teams_per_group').min = "3";
                 
-                // Hide max players per team, qualifiers and lucky losers for pure round robin
+                // Hide max players per team
                 document.getElementById('max_players_per_team').closest('.form-group').style.display = 'none';
-                document.getElementById('qualifiers_per_group').closest('.form-group').style.display = 'none';
-                document.getElementById('allow_lucky_losers').closest('.form-group').style.display = 'none';
+                
+                if (rrKnockoutContainer) rrKnockoutContainer.style.display = 'block';
+                
+                toggleRRKnockout(); // Initial check for RR knockout
             }
             if (totalGamesFields) {
                 totalGamesFields.style.display = 'none';
@@ -210,6 +226,26 @@
             if (totalGamesFields) totalGamesFields.style.display = 'none';
             if (pointsToWinFields) pointsToWinFields.style.display = 'none';
             if (legacyScoringFields) legacyScoringFields.style.display = 'none';
+        }
+    }
+
+    function toggleRRKnockout() {
+        const format = document.getElementById('format').value;
+        if (format !== 'round_robin') return;
+        
+        const hasKnockout = document.getElementById('has_knockout_stage').checked;
+        const qualifiersField = document.getElementById('qualifiers_per_group');
+        const luckyLosersField = document.getElementById('allow_lucky_losers');
+        
+        if (hasKnockout) {
+            qualifiersField.closest('.form-group').style.display = 'block';
+            qualifiersField.required = true;
+            luckyLosersField.closest('.form-group').style.display = 'block';
+        } else {
+            qualifiersField.closest('.form-group').style.display = 'none';
+            qualifiersField.required = false;
+            luckyLosersField.closest('.form-group').style.display = 'none';
+            luckyLosersField.checked = false;
         }
     }
     // Call once on load

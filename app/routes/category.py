@@ -36,8 +36,22 @@ def create_category(slug):
         num_groups = request.form.get('num_groups', type=int) if has_group_stage else None
         teams_per_group = request.form.get('teams_per_group', type=int) if has_group_stage else None
         matches_per_team_pair = request.form.get('matches_per_team_pair', type=int, default=1) if has_group_stage else None
-        qualifiers_per_group = request.form.get('qualifiers_per_group', type=int, default=2) if has_group_stage else None
-        allow_lucky_losers = request.form.get('allow_lucky_losers') == 'on' if has_group_stage else False
+        
+        # Determine qualifiers for knockout stage
+        if format_type == 'group_stage':
+            qualifiers_per_group = request.form.get('qualifiers_per_group', type=int, default=2)
+            allow_lucky_losers = request.form.get('allow_lucky_losers') == 'on'
+        elif format_type == 'round_robin':
+            has_knockout = request.form.get('has_knockout_stage') == 'on'
+            if has_knockout:
+                qualifiers_per_group = request.form.get('qualifiers_per_group', type=int, default=2)
+                allow_lucky_losers = request.form.get('allow_lucky_losers') == 'on'
+            else:
+                qualifiers_per_group = 0
+                allow_lucky_losers = False
+        else:
+            qualifiers_per_group = None
+            allow_lucky_losers = False
         max_players_per_team = request.form.get('max_players_per_team', type=int)
 
         category = Category(
@@ -301,13 +315,22 @@ def manage_category(slug, category_id):
                 max_players_per_team = request.form.get('max_players_per_team', type=int)
                 
                 # Group stage settings
-                has_group_stage = category.format == 'group_stage'
-                if has_group_stage:
+                # Group stage settings
+                if category.format == 'group_stage':
                     category.num_groups = request.form.get('num_groups', type=int)
                     category.teams_per_group = request.form.get('teams_per_group', type=int)
                     category.matches_per_team_pair = request.form.get('matches_per_team_pair', type=int, default=1)
                     category.qualifiers_per_group = request.form.get('qualifiers_per_group', type=int, default=2)
                     category.allow_lucky_losers = request.form.get('allow_lucky_losers') == 'on'
+                elif category.format == 'round_robin':
+                    category.teams_per_group = request.form.get('teams_per_group', type=int)
+                    has_knockout = request.form.get('has_knockout_stage') == 'on'
+                    if has_knockout:
+                        category.qualifiers_per_group = request.form.get('qualifiers_per_group', type=int, default=2)
+                        category.allow_lucky_losers = request.form.get('allow_lucky_losers') == 'on'
+                    else:
+                        category.qualifiers_per_group = 0
+                        category.allow_lucky_losers = False
 
                 if not name:
                     flash('Category name cannot be empty.', 'error')
@@ -334,11 +357,22 @@ def manage_category(slug, category_id):
                         category.num_groups = request.form.get('num_groups', type=int)
                         category.teams_per_group = request.form.get('teams_per_group', type=int)
                         category.matches_per_team_pair = request.form.get('matches_per_team_pair', type=int, default=1)
-                        category.qualifiers_per_group = request.form.get('qualifiers_per_group', type=int)
+                        if format_type == 'group_stage':
+                            category.qualifiers_per_group = request.form.get('qualifiers_per_group', type=int)
+                            category.allow_lucky_losers = request.form.get('allow_lucky_losers') == 'on'
+                        elif format_type == 'round_robin':
+                            has_knockout = request.form.get('has_knockout_stage') == 'on'
+                            if has_knockout:
+                                category.qualifiers_per_group = request.form.get('qualifiers_per_group', type=int)
+                                category.allow_lucky_losers = request.form.get('allow_lucky_losers') == 'on'
+                            else:
+                                category.qualifiers_per_group = 0
+                                category.allow_lucky_losers = False
                     else:
                         category.num_groups = None
                         category.teams_per_group = None
                         category.qualifiers_per_group = None
+                        category.allow_lucky_losers = False
 
                 db.session.commit()
                 flash('Category settings updated successfully!', 'success')
@@ -512,6 +546,28 @@ def delete_category(slug, category_id):
 @category_bp.route('/tournaments/<slug>/categories/<int:category_id>/match/<int:match_id>/report', methods=['POST'])
 @login_required
 @role_required('admin', 'superadmin')
+def check_category_auto_completion(category):
+    from app.models import Match
+    has_knockout = category.format in ['single_elimination', 'double_elimination'] or \
+                   category.format == 'group_stage' or \
+                   (category.format == 'round_robin' and category.qualifiers_per_group and category.qualifiers_per_group > 0)
+
+    all_matches = Match.query.filter_by(category_id=category.id).all()
+    if not all_matches:
+        return False
+        
+    pending = any(m.status == 'pending' for m in all_matches)
+    if pending:
+        return False
+        
+    if has_knockout:
+        if category.format in ['group_stage', 'round_robin']:
+            knockout_exists = any(m.match_type == 'knockout' or m.bracket_type in ['winners', 'losers', 'grand_finals', 'grand_final', 'third_place'] for m in all_matches)
+            if not knockout_exists:
+                return False
+                
+    return True
+
 def report_category_match_result(slug, category_id, match_id):
     """Report match result for category"""
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
@@ -732,8 +788,7 @@ def report_category_match_result(slug, category_id, match_id):
                                 match2.status = 'pending'
 
         # Check if category is completed
-        all_matches = Match.query.filter_by(category_id=category_id).all()
-        if all(m.status == 'completed' for m in all_matches):
+        if check_category_auto_completion(category):
             category.status = 'completed'
             category.completed_at = datetime.utcnow()
 
@@ -742,6 +797,9 @@ def report_category_match_result(slug, category_id, match_id):
                 calculate_final_rankings(category)
             elif category.format == 'double_elimination':
                 calculate_double_elimination_rankings(category)
+            elif category.format == 'round_robin' and (not category.qualifiers_per_group or category.qualifiers_per_group == 0):
+                from app.leaderboard_logic import calculate_combined_round_robin_standings
+                calculate_combined_round_robin_standings(category.id)
 
             db.session.commit()
 
@@ -837,9 +895,12 @@ def update_grid_scores(slug, category_id):
     db.session.commit()
     
     # Check if category is finished
-    pending_matches = Match.query.filter_by(category_id=category.id, status='pending').count()
-    if pending_matches == 0:
+    if check_category_auto_completion(category):
         category.status = 'completed'
+        category.completed_at = datetime.utcnow()
+        if category.format == 'round_robin' and (not category.qualifiers_per_group or category.qualifiers_per_group == 0):
+            from app.leaderboard_logic import calculate_combined_round_robin_standings
+            calculate_combined_round_robin_standings(category.id)
         db.session.commit()
         from app.leaderboard_logic import assign_leaderboard_points
         assign_leaderboard_points(category)
