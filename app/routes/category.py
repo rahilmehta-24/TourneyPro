@@ -837,11 +837,12 @@ def update_grid_scores(slug, category_id):
     db.session.commit()
     
     # Check if category is finished
-    from app.leaderboard_logic import check_category_completion, assign_leaderboard_points
-    check_category_completion(category_id)
-    
-    # Always try to assign points for group stage if it just finished, or recalculate
-    assign_leaderboard_points(category_id)
+    pending_matches = Match.query.filter_by(category_id=category.id, status='pending').count()
+    if pending_matches == 0:
+        category.status = 'completed'
+        db.session.commit()
+        from app.leaderboard_logic import assign_leaderboard_points
+        assign_leaderboard_points(category)
     
     flash(f'Successfully updated {updated_count} matches.', 'success')
     return redirect(url_for('category.view_category', slug=slug, category_id=category_id))

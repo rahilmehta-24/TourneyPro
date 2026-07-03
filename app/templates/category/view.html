@@ -166,25 +166,7 @@
                 </table>
             </div>
 
-            <details>
-                <summary>View Matches</summary>
-                <div class="matches-list">
-                    {% for match in group_info.matches %}
-                    <div class="match-card {% if match.status == 'completed' %}completed{% endif %}">
-                        <span>{{ match.participant1.name if match.participant1 else 'TBD' }}</span>
-                        <span class="vs">vs</span>
-                        <span>{{ match.participant2.name if match.participant2 else 'TBD' }}</span>
-                        {% if match.status == 'completed' %}
-                        <span class="score">{{ match.score1 }} - {{ match.score2 }}</span>
-                        {% else %}
-                        {% if current_user and current_user.role in ['admin', 'superadmin'] %}
-<button onclick="openReportModal({{ match.id }})" class="btn btn-small">Report Result</button>
-{% endif %}
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-                </div>
-            </details>
+            
         </div>
         {% endfor %}
 
