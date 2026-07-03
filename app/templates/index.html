@@ -32,12 +32,14 @@
         <h2 class="section-title">Tournament Formats</h2>
         <div class="formats-grid">
             {% for format_key, format_info in formats.items() %}
+            {% if format_key != 'double_elimination' %}
             <div class="format-card clickable" onclick="openFormatModal('{{ format_key }}')" style="cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; position: relative;">
                 <div class="format-icon">{{ format_info.icon }}</div>
                 <h3 class="format-name">{{ format_info.name }}</h3>
                 <p class="format-description">{{ format_info.description }}</p>
                 <div style="margin-top: 1rem; color: var(--accent-primary); font-size: 0.85rem; font-weight: bold;">View Details &rarr;</div>
             </div>
+            {% endif %}
             {% endfor %}
         </div>
     </section>
@@ -84,6 +86,7 @@
 
 <!-- Format Detail Modals -->
 {% for format_key, format_info in formats.items() %}
+{% if format_key != 'double_elimination' %}
 <div id="modal-{{ format_key }}" class="modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; padding: 1rem;">
     <div class="modal-content" style="background: var(--bg-card); max-width: 500px; width: 100%; border-radius: var(--radius-lg); padding: 2rem; position: relative; border-top: 4px solid var(--accent-primary);">
         <button onclick="closeFormatModal('{{ format_key }}')" style="position: absolute; top: 1rem; right: 1rem; background: transparent; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer; line-height: 1;">&times;</button>
@@ -99,16 +102,15 @@
                     <li>Perfect for fast-paced, high-stakes tournaments.</li>
                     <li>Number of participants determines the number of initial byes.</li>
                     <li>Matches follow standard tennis set scoring.</li>
-                {% elif format_key == 'double_elimination' %}
-                    <li>Players must lose twice to be eliminated.</li>
-                    <li>Features a Winners Bracket and a Losers Bracket.</li>
-                    <li>More forgiving format but takes significantly longer to complete.</li>
-                    <li>Finals require the winners bracket champion to only win once, while the losers bracket champion must win twice.</li>
                 {% elif format_key == 'group_stage' %}
                     <li>Players are divided into pools/groups.</li>
                     <li>Round-robin style: everyone plays everyone in their group.</li>
                     <li>Top performers from each group advance to a Knockout stage.</li>
                     <li>Great for ensuring all players get multiple matches.</li>
+                {% elif format_key == 'round_robin' %}
+                    <li>Every player plays against every other player.</li>
+                    <li>Standings are determined by overall match wins and game score differentials.</li>
+                    <li>Excellent for ensuring maximum playtime for all participants.</li>
                 {% endif %}
             </ul>
         </div>
@@ -116,6 +118,7 @@
         <button onclick="closeFormatModal('{{ format_key }}')" class="btn btn-secondary btn-block">Close</button>
     </div>
 </div>
+{% endif %}
 {% endfor %}
 
 {% endblock %}
