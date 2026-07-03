@@ -78,7 +78,9 @@
                     <th style="padding: 1rem;">Category</th>
                     <th style="padding: 1rem;">Points</th>
                     <th style="padding: 1rem;">Matches (W-L)</th>
+                    {% if current_user and current_user.role == 'superadmin' %}
                     <th style="padding: 1rem; text-align: right;">Actions</th>
+                    {% endif %}
                 </tr>
             </thead>
             <tbody>
@@ -102,20 +104,18 @@
                     <td style="padding: 1rem; color: var(--text-secondary);">{{ player.age_category }} {{ player.gender }}</td>
                     <td style="padding: 1rem; font-weight: bold; color: var(--accent-secondary);">{{ player.total_points }}</td>
                     <td style="padding: 1rem; color: var(--text-secondary);">{{ player.matches_won }}W - {{ player.matches_lost }}L</td>
+                    {% if current_user and current_user.role == 'superadmin' %}
                     <td style="padding: 1rem; text-align: right; white-space: nowrap;">
-                        {% if current_user and current_user.role == 'superadmin' %}
                         <button onclick="openAddPointsModal('{{ player.id }}', '{{ player.name }}')" class="btn btn-small btn-secondary">+ Add Points</button>
-                        {% endif %}
-                        {% if current_user and current_user.role == 'superadmin' %}
-                            <button onclick="openEditPlayerModal('{{ player.id }}', '{{ player.name|escape }}', '{{ player.gender }}', '{{ player.age_category }}')" class="btn btn-small btn-secondary" style="margin-left: 0.25rem;">✏️ Edit</button>
-                            <form method="POST" action="{{ url_for('leaderboard.delete_player', player_id=player.id) }}" style="display: inline-block; margin-left: 0.25rem; margin-bottom: 0;" onsubmit="return confirm('Are you sure you want to delete {{ player.name|escape }}? This cannot be undone.');">
-                                <button type="submit" class="btn btn-small" style="background: #ef4444; color: white;">🗑️</button>
-                            </form>
-                        {% endif %}
+                        <button onclick="openEditPlayerModal('{{ player.id }}', '{{ player.name|escape }}', '{{ player.gender }}', '{{ player.age_category }}')" class="btn btn-small btn-secondary" style="margin-left: 0.25rem;">✏️ Edit</button>
+                        <form method="POST" action="{{ url_for('leaderboard.delete_player', player_id=player.id) }}" style="display: inline-block; margin-left: 0.25rem; margin-bottom: 0;" onsubmit="return confirm('Are you sure you want to delete {{ player.name|escape }}? This cannot be undone.');">
+                            <button type="submit" class="btn btn-small" style="background: #ef4444; color: white;">🗑️</button>
+                        </form>
                     </td>
+                    {% endif %}
                 </tr>
                 <tr id="player-details-{{ player.id }}" style="display: none; background: rgba(0,0,0,0.2);">
-                    <td colspan="6" style="padding: 1rem 1rem 1.5rem 3rem;">
+                    <td colspan="{% if current_user and current_user.role == 'superadmin' %}6{% else %}5{% endif %}" style="padding: 1rem 1rem 1.5rem 3rem;">
                         <div style="font-size: 0.9rem;">
                             <strong style="color: var(--accent-primary);">Points Breakdown:</strong>
                             <ul style="list-style: none; padding: 0; margin-top: 0.75rem; margin-bottom: 0;">
