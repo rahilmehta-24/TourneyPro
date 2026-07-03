@@ -163,12 +163,16 @@
         } else if (format === 'round_robin') {
             if (groupFields) {
                 groupFields.style.display = 'block';
+                // Hide num_groups because it will be dynamically calculated based on total players
+                document.getElementById('num_groups').closest('.form-group').style.display = 'none';
+                document.getElementById('num_groups').required = false;
+                
+                document.getElementById('teams_per_group').required = true;
+                document.getElementById('teams_per_group').min = "3";
+                
                 // Show qualifiers and lucky losers just like group stage
                 document.getElementById('qualifiers_per_group').closest('.form-group').style.display = 'block';
                 document.getElementById('allow_lucky_losers').closest('.form-group').style.display = 'block';
-                
-                document.getElementById('num_groups').required = true;
-                document.getElementById('teams_per_group').required = true;
             }
             if (totalGamesFields) {
                 totalGamesFields.style.display = 'none';

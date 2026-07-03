@@ -258,14 +258,22 @@ def manage_category(slug, category_id):
                         db.session.add(match)
 
                 elif category.format == 'round_robin':
-                    if category.num_groups:
+                    if category.teams_per_group and category.teams_per_group >= 3:
+                        import math
+                        total_players = len(participants_list)
+                        if total_players > 0:
+                            category.num_groups = math.ceil(total_players / category.teams_per_group)
+                        else:
+                            category.num_groups = 1
+                            
                         from app.algorithms.group_stage import generate_group_stage
                         matches_data = generate_group_stage(category, participants_list)
                         for match_data in matches_data:
-                            match_data['match_type'] = 'round_robin' # Keep it as round_robin so standings work
+                            match_data['match_type'] = 'round_robin'
                             match = Match(**match_data, tournament_id=tournament.id)
                             db.session.add(match)
                     else:
+                        # Fallback for pure round robin if no teams_per_group
                         from app.algorithms.round_robin import generate_round_robin
                         matches_data = generate_round_robin(participants_list)
                         for match_data in matches_data:
