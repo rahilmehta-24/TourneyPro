@@ -265,8 +265,8 @@ def manage_category(slug, category_id):
                     player_id = None
                     player2_id = None
                     
-                    if category.format == 'doubles_elimination' and '&' in name:
-                        p1_name, p2_name = [n.strip() for n in name.split('&', 1)]
+                    if category.format == 'doubles_elimination' and '/' in name:
+                        p1_name, p2_name = [n.strip() for n in name.split('/', 1)]
                         
                         # Process P1
                         p1_match = Player.query.filter_by(name=p1_name).first()
@@ -285,7 +285,7 @@ def manage_category(slug, category_id):
                         player2_id = p2_match.id
                         
                         # Use standardized format for display name
-                        name = f"{p1_name} & {p2_name}"
+                        name = f"{p1_name} / {p2_name}"
                         
                     else:
                         player_match = Player.query.filter_by(name=name).first()

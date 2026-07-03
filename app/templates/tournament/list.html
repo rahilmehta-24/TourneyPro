@@ -34,7 +34,7 @@
             </div>
             <div class="tournament-actions">
                 <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug) }}"
-                    class="btn btn-secondary btn-small">View Bracket</a>
+                    class="btn btn-secondary btn-small">View Tournament</a>
                 {% if tournament.status == 'setup' %}
                 <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}"
                     class="btn btn-primary btn-small">Manage</a>

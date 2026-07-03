@@ -61,8 +61,8 @@
                     <input type="hidden" name="action" value="add_participant">
                     
                     <div class="form-group">
-                        <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">{% if category.format == 'doubles_elimination' %}Team Name (Player 1 & Player 2) *{% else %}Player Name *{% endif %}</label>
-                        <input type="text" name="participant_name" class="form-input" placeholder="{% if category.format == 'doubles_elimination' %}e.g. John Doe & Jane Smith{% else %}e.g. Player 1, Player 2 (comma separated){% endif %}" required style="width: 100%;">
+                        <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">{% if category.format == 'doubles_elimination' %}Team Name (Player 1 / Player 2) *{% else %}Player Name *{% endif %}</label>
+                        <input type="text" name="participant_name" class="form-input" placeholder="{% if category.format == 'doubles_elimination' %}e.g. Player 1 / Player 2, Player 3 / Player 4{% else %}e.g. Player 1, Player 2 (comma separated){% endif %}" required style="width: 100%;">
                         <small style="display: block; margin-top: 0.5rem; color: #94a3b8;">You can enter multiple {% if category.format == 'doubles_elimination' %}teams{% else %}names{% endif %} separated by commas.</small>
                     </div>
 
