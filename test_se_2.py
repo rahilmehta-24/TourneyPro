@@ -1,5 +1,5 @@
 from app import create_app
-from app.models import db, Tournament, Category, Participant, Match, Player
+from app.models import db, Category, Participant, Match
 from app.leaderboard_logic import update_live_player_stats
 
 app = create_app()

@@ -1,6 +1,5 @@
 from app import create_app
-from app.models import db, Tournament, Category, Participant, Match, Player
-import logging
+from app.models import Category, Participant, Match
 
 app = create_app()
 with app.app_context():

@@ -217,27 +217,34 @@ def manage_tournament(slug):
                 return redirect(url_for('tournament.manage_tournament', slug=slug))
 
             elif action == 'start_tournament':
-                # Generate bracket based on format
-                if tournament.format == 'single_elimination':
-                    fmt = get_format(tournament.format)
-                    if fmt:
-                        matches_data = fmt.generate(tournament, participants)
-                    else:
-                        matches_data = []
-
-                    # Create match records
-                    for match_data in matches_data:
-                        match = Match(**match_data, tournament_id=tournament.id)
-                        db.session.add(match)
-
+                if tournament.has_categories:
                     tournament.status = 'in_progress'
                     tournament.started_at = datetime.utcnow()
                     db.session.commit()
-
-                    flash('Tournament started! Bracket generated.', 'success')
+                    flash('Tournament started! You can now start individual category brackets.', 'success')
                     return redirect(url_for('tournament.view_tournament', slug=slug))
                 else:
-                    flash(f'Format "{tournament.format}" is not yet implemented. Coming soon!', 'warning')
+                    # Legacy tournament without categories
+                    if tournament.format == 'single_elimination':
+                        fmt = get_format(tournament.format)
+                        if fmt:
+                            matches_data = fmt.generate(tournament, participants)
+                        else:
+                            matches_data = []
+
+                        # Create match records
+                        for match_data in matches_data:
+                            match = Match(**match_data, tournament_id=tournament.id)
+                            db.session.add(match)
+
+                        tournament.status = 'in_progress'
+                        tournament.started_at = datetime.utcnow()
+                        db.session.commit()
+
+                        flash('Tournament started! Bracket generated.', 'success')
+                        return redirect(url_for('tournament.view_tournament', slug=slug))
+                    else:
+                        flash(f'Format "{tournament.format}" is not yet implemented. Coming soon!', 'warning')
 
             elif action == 'reset_tournament':
                 if tournament.status in ['in_progress', 'completed']:
