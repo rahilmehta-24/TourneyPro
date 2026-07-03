@@ -80,7 +80,6 @@ def update_live_player_stats(match):
                 player.matches_played += 1
                 if participant.id == match.winner_id:
                     player.matches_won += 1
-                    player.total_points += 10  # Live match win points
                 else:
                     player.matches_lost += 1
                     

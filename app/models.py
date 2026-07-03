@@ -36,6 +36,8 @@ class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     tournament_id = db.Column(db.Integer, db.ForeignKey('tournaments.id'), nullable=False)
     name = db.Column(db.String(200), nullable=False)  # e.g., "Men's Singles", "Women's Doubles"
+    gender = db.Column(db.String(50), default='Unspecified')
+    age_category = db.Column(db.String(50), default='Unspecified')
     format = db.Column(db.String(50), nullable=False)  # single_elimination, double_elimination, round_robin, group_stage
     status = db.Column(db.String(20), default='setup')  # setup, in_progress, completed
     max_participants = db.Column(db.Integer)

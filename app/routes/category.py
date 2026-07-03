@@ -22,6 +22,8 @@ def create_category(slug):
         name = request.form.get('name')
         format_type = request.form.get('format')
         max_participants = request.form.get('max_participants', type=int)
+        gender = request.form.get('gender', 'Unspecified')
+        age_category = request.form.get('age_category', 'Unspecified')
 
         # Tennis settings
         num_sets = request.form.get('num_sets', type=int)
@@ -41,6 +43,8 @@ def create_category(slug):
         category = Category(
             tournament_id=tournament.id,
             name=name,
+            gender=gender,
+            age_category=age_category,
             format=format_type,
             max_participants=max_participants,
             num_sets=num_sets,
@@ -176,7 +180,7 @@ def manage_category(slug, category_id):
                     player_match = Player.query.filter_by(name=name).first()
                     if not player_match:
                         # Auto-create global player so they appear on leaderboard instantly
-                        player_match = Player(name=name, gender='Unspecified', age_category='Unspecified')
+                        player_match = Player(name=name, gender=category.gender, age_category=category.age_category)
                         db.session.add(player_match)
                         db.session.flush() # flush to get the ID
 

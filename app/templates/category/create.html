@@ -14,6 +14,33 @@
                 placeholder="e.g., Men's Singles, Women's Doubles" required>
         </div>
 
+        <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div>
+                <label for="gender">Gender *</label>
+                <select id="gender" name="gender" class="form-input" required>
+                    <option value="">Select Gender</option>
+                    <option value="Boys">Boys</option>
+                    <option value="Girls">Girls</option>
+                    <option value="Mens">Mens</option>
+                    <option value="Womens">Womens</option>
+                </select>
+                <small>Used for leaderboard filtering</small>
+            </div>
+            <div>
+                <label for="age_category">Age Category *</label>
+                <select id="age_category" name="age_category" class="form-input" required>
+                    <option value="">Select Age</option>
+                    <option value="U8">U8</option>
+                    <option value="U10">U10</option>
+                    <option value="U12">U12</option>
+                    <option value="U14">U14</option>
+                    <option value="U18">U18</option>
+                    <option value="Open">Open</option>
+                </select>
+                <small>Used for leaderboard filtering</small>
+            </div>
+        </div>
+
         <div class="form-group">
             <label for="format">Tournament Format *</label>
             <select id="format" name="format" class="form-input" required onchange="toggleGroupStageFields()">
