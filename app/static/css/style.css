@@ -1415,3 +1415,58 @@ select option {
         display: flex;
     }
 }
+
+/* Standings / Leaderboard Table */
+.standings-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: var(--surface);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.standings-table th {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 1rem;
+    text-align: center;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.standings-table th:nth-child(2) {
+    text-align: left;
+}
+
+.standings-table td {
+    padding: 1rem;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.standings-table td:nth-child(2) {
+    text-align: left;
+    font-weight: 600;
+}
+
+.standings-table tr:last-child td {
+    border-bottom: none;
+}
+
+.standings-table tr:hover td {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.standings-table td:nth-child(1) {
+    color: var(--primary);
+    font-weight: 700;
+}
