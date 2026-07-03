@@ -107,7 +107,9 @@
                         {% if match.status == 'completed' %}
                         <span class="score">{{ match.score1 }} - {{ match.score2 }}</span>
                         {% else %}
-                        <button onclick="openReportModal({{ match.id }})" class="btn btn-small">Report Result</button>
+                        {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+<button onclick="openReportModal({{ match.id }})" class="btn btn-small">Report Result</button>
+{% endif %}
                         {% endif %}
                     </div>
                     {% endfor %}
@@ -117,10 +119,12 @@
         {% endfor %}
 
         {% if category.status == 'in_progress' %}
-        <form method="POST"
+        {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+<form method="POST"
             action="{{ url_for('category.start_knockout_stage', slug=tournament.url_slug, category_id=category.id) }}">
             <button type="submit" class="btn btn-primary btn-large">Start Knockout Stage</button>
         </form>
+{% endif %}
         {% endif %}
     </div>
     {% endif %}
@@ -250,11 +254,13 @@
                             </div>
                         </div>
                         {% if match.status == 'pending' and match.participant1 and match.participant2 %}
-                        <div class="match-actions">
+                        {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+<div class="match-actions">
                             <button
                                 onclick="openReportModal({{ match.id }}, '{{ match.participant1.name }}', {{ match.participant1_id }}, '{{ match.participant2.name }}', {{ match.participant2_id }})"
                                 class="btn-report">Report Result</button>
                         </div>
+{% endif %}
                         {% endif %}
                     </div>
                 </div>
@@ -269,15 +275,18 @@
         <div class="page-header" style="margin-bottom: var(--spacing-md);">
             <h2>Bracket Draws</h2>
             <div class="page-actions">
-                <a href="{{ url_for('category.manage_category', slug=tournament.url_slug, category_id=category.id) }}"
+                {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+<a href="{{ url_for('category.manage_category', slug=tournament.url_slug, category_id=category.id) }}"
                     class="btn btn-secondary">Manage Category</a>
+{% endif %}
                 {% if category.status == 'in_progress' %}
                 {# Check if finals match is complete #}
                 {% set final_round = rounds|length %}
                 {% if final_round in rounds.keys() and rounds[final_round] %}
                 {% set finals_match = rounds[final_round][0] %}
                 {% if finals_match and finals_match.status == 'completed' %}
-                <form method="POST"
+                {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+<form method="POST"
                     action="{{ url_for('category.manage_category', slug=tournament.url_slug, category_id=category.id) }}"
                     style="display: inline;">
                     <input type="hidden" name="action" value="finish_category">
@@ -286,6 +295,7 @@
                         Finish Tournament
                     </button>
                 </form>
+{% endif %}
                 {% endif %}
                 {% endif %}
                 {% endif %}
@@ -352,11 +362,13 @@
                                         </div>
                                     </div>
                                     {% if match.status == 'pending' and match.participant1 and match.participant2 %}
-                                    <div class="match-actions">
+                                    {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+<div class="match-actions">
                                         <button
                                             onclick="openReportModal({{ match.id }}, '{{ match.participant1.name }}', {{ match.participant1_id }}, '{{ match.participant2.name }}', {{ match.participant2_id }})"
                                             class="btn-report">Report Result</button>
                                     </div>
+{% endif %}
                                     {% endif %}
                                 </div>
                             </div>

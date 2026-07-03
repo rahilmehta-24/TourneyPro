@@ -12,9 +12,11 @@
         <div class="page-actions">
             <a href="{{ url_for('main.index') }}" class="btn btn-secondary">← Back to Tournaments</a>
             {% if tournament.status == 'setup' %}
-            <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}"
+            {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+<a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}"
                 class="btn btn-primary">Manage
                 Tournament</a>
+{% endif %}
             {% endif %}
         </div>
     </div>
@@ -30,9 +32,11 @@
         <div class="page-header">
             <h2 class="section-title">Categories</h2>
             <div class="page-actions">
-                <a href="{{ url_for('category.create_category', slug=tournament.url_slug) }}" class="btn btn-primary">
+                {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+<a href="{{ url_for('category.create_category', slug=tournament.url_slug) }}" class="btn btn-primary">
                     ➕ Create Category
                 </a>
+{% endif %}
             </div>
         </div>
 
@@ -390,8 +394,11 @@
         {% if tournament.has_categories %}
         <div class="alert alert-info">
             <span class="alert-icon">ℹ️</span>
-            <span>Tournament not started yet. <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}">Add
-                participants and start the tournament</a> to generate the bracket.</span>
+            <span>Tournament not started yet. {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+{% if current_user and current_user.role in ['admin', 'superadmin'] %}
+<a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}">Add
+                participants and start the tournament</a>
+{% endif %} to generate the bracket.</span>
         </div>
         {% elif matches %}
         <div class="bracket-container">
@@ -400,6 +407,7 @@
                 <div class="page-actions">
                     <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}" class="btn btn-secondary">Manage
                         Tournament</a>
+{% endif %}
                     {% if tournament.status == 'in_progress' %}
                     {# Check if finals match is complete #}
                     {% set final_round = rounds.keys()|max %}
@@ -564,12 +572,14 @@
                                     </div>
                                 </div>
                                 {% if match.status == 'pending' and match.participant1 and match.participant2 %}
-                                <div class="match-actions">
+                                {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+<div class="match-actions">
                                     <button class="btn btn-small btn-primary btn-report"
                                         onclick="openReportModal({{ match.id }}, '{{ match.participant1.name }}', {{ match.participant1.id }}, '{{ match.participant2.name }}', {{ match.participant2_id }})">
                                         Report Result
                                     </button>
                                 </div>
+{% endif %}
                                 {% endif %}
                             </div>
                         </div>
@@ -640,12 +650,14 @@
                                             </div>
                                         </div>
                                         {% if match.status == 'pending' and match.participant1 and match.participant2 %}
-                                        <div class="match-actions">
+                                        {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+<div class="match-actions">
                                             <button class="btn btn-small btn-primary btn-report"
                                                 onclick="openReportModal({{ match.id }}, '{{ match.participant1.name }}', {{ match.participant1_id }}, '{{ match.participant2.name }}', {{ match.participant2_id }})">
                                                 Report Result
                                             </button>
                                         </div>
+{% endif %}
                                         {% endif %}
                                     </div>
                                 </div>
