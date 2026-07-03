@@ -25,36 +25,40 @@
 
     {% if rankings %}
     <!-- WINNER DISPLAY -->
-    <div class="winner-section">
-        <div class="winner-card">
-            <div class="medal gold">🥇</div>
-            <h2>WINNER</h2>
-            <h1 class="winner-name">{{ rankings.winner.name }}</h1>
-            {% if rankings.winner.manual_seed %}
-            <p class="seed-info">Seed #{{ rankings.winner.manual_seed }}</p>
-            {% endif %}
-        </div>
+    <div class="podium-container">
+        <div class="podium-grid">
+            <!-- Winner -->
+            <div class="podium-card winner-card">
+                <div class="podium-icon">🏆</div>
+                <div class="podium-title">Champion</div>
+                <div class="podium-name">{{ rankings.winner.name }}</div>
+                {% if rankings.winner.manual_seed %}
+                <div class="podium-seed">Seed #{{ rankings.winner.manual_seed }}</div>
+                {% endif %}
+            </div>
 
-        {% if rankings.runner_up %}
-        <div class="runner-up-card">
-            <div class="medal silver">🥈</div>
-            <h3>Runner-Up</h3>
-            <h2>{{ rankings.runner_up.name }}</h2>
-            {% if rankings.runner_up.manual_seed %}
-            <p class="seed-info">Seed #{{ rankings.runner_up.manual_seed }}</p>
+            <!-- Runner Up -->
+            {% if rankings.runner_up %}
+            <div class="podium-card runner-up-card">
+                <div class="podium-icon">🥈</div>
+                <div class="podium-title">Runner-Up</div>
+                <div class="podium-name">{{ rankings.runner_up.name }}</div>
+                {% if rankings.runner_up.manual_seed %}
+                <div class="podium-seed">Seed #{{ rankings.runner_up.manual_seed }}</div>
+                {% endif %}
+            </div>
             {% endif %}
         </div>
-        {% endif %}
 
         {% if rankings.semi_finalists %}
         <div class="semi-finalists-section">
-            <h3>🥉 Semi-Finalists</h3>
+            <h3 class="semi-finalists-title">🥉 Semi-Finalists</h3>
             <div class="semi-finalists-grid">
                 {% for sf in rankings.semi_finalists %}
-                <div class="semi-finalist-card">
-                    <h4>{{ sf.name }}</h4>
+                <div class="podium-card semi-finalist-card">
+                    <div class="podium-name" style="font-size: 1.1rem;">{{ sf.name }}</div>
                     {% if sf.manual_seed %}
-                    <p class="seed-info">Seed #{{ sf.manual_seed }}</p>
+                    <div class="podium-seed">Seed #{{ sf.manual_seed }}</div>
                     {% endif %}
                 </div>
                 {% endfor %}
@@ -666,48 +670,85 @@
         text-align: center;
     }
 
-    .winner-card {
-        background: linear-gradient(135deg, #FFD700, #FFA500);
-        padding: 3rem;
-        border-radius: 20px;
+    .podium-container {
+        margin: 2rem 0 3rem;
+        text-align: center;
+    }
+    
+    .podium-grid {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 2rem;
         margin-bottom: 2rem;
-        box-shadow: 0 10px 30px rgba(255, 215, 0, 0.3);
+        flex-wrap: wrap;
     }
 
-    .winner-name {
-        font-size: 3rem;
-        font-weight: bold;
-        margin: 1rem 0;
-    }
-
-    .medal {
-        font-size: 4rem;
-        margin-bottom: 1rem;
-    }
-
-    .runner-up-card {
-        background: linear-gradient(135deg, #C0C0C0, #A8A8A8);
+    .podium-card {
+        background: var(--bg-card);
+        border-radius: var(--radius-lg);
         padding: 2rem;
-        border-radius: 15px;
-        margin-bottom: 2rem;
+        min-width: 250px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
-
-    .semi-finalists-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-        margin-top: 1rem;
+    
+    .winner-card {
+        border-top: 4px solid #FFD700;
+        transform: scale(1.05);
+    }
+    
+    .runner-up-card {
+        border-top: 4px solid #C0C0C0;
     }
 
     .semi-finalist-card {
-        background: linear-gradient(135deg, #CD7F32, #B87333);
-        padding: 1.5rem;
-        border-radius: 10px;
+        border-top: 4px solid #CD7F32;
+        padding: 1rem 1.5rem;
+        min-width: 200px;
     }
 
-    .seed-info {
-        color: rgba(255, 255, 255, 0.8);
+    .podium-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .podium-title {
         font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+    }
+
+    .podium-name {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: var(--text-primary);
+        margin-bottom: 0.25rem;
+    }
+    
+    .winner-card .podium-name {
+        font-size: 1.8rem;
+        color: #FFD700;
+    }
+
+    .podium-seed {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+
+    .semi-finalists-title {
+        font-size: 1.2rem;
+        color: var(--text-secondary);
+        margin-bottom: 1rem;
+    }
+
+    .semi-finalists-grid {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        flex-wrap: wrap;
     }
 </style>
 {% endblock %}
