@@ -527,7 +527,7 @@
                     <div class="round-matches">
                         {% for match in round_matches %}
                         <div class="match-card-wrapper {% if not has_vertical %}no-vertical-connector{% endif %}">
-                            <div class="tennis-match {% if match.status == 'completed' %}tennis-match-completed{% endif %}">
+                            <div class="tennis-match {% if match.status == 'completed' %}tennis-match-completed{% endif %} {% if match.participant1 and match.participant2 %}clickable-match{% endif %}" {% if match.participant1 and match.participant2 %}onclick="openMatchModal({{ match.id }}, '{{ match.status }}', '{{ match.scheduled_time.strftime('%Y-%m-%dT%H:%M') if match.scheduled_time else '' }}', '{{ match.participant1.name|escape if match.participant1 else '' }}', {{ match.participant1_id or 'null' }}, '{{ match.participant2.name|escape if match.participant2 else '' }}', {{ match.participant2_id or 'null' }}, {{ 'true' if current_user and current_user.role in ['admin', 'superadmin'] else 'false' }})" title="Click to view details"{% endif %}>
                                 <div class="tennis-match-header" style="display: flex; align-items: center; justify-content: space-between;">
                                     <span>Match #{{ match.match_number }}</span>
                                     <div style="display: flex; align-items: center; gap: 8px;">
@@ -542,11 +542,7 @@
                                             <span class="match-status-badge badge-pending">📅 To be played</span>
                                         {% endif %}
                                         
-                                        {% if current_user and current_user.role in ['admin', 'superadmin'] and match.status != 'completed' and match.participant1 and match.participant2 %}
-                                            <button type="button" class="manage-match-btn" title="Manage Match" onclick="openMatchModal({{ match.id }}, '{{ match.status }}', '{{ match.scheduled_time.strftime('%Y-%m-%dT%H:%M') if match.scheduled_time else '' }}', '{{ match.participant1.name|escape if match.participant1 else '' }}', {{ match.participant1_id or 'null' }}, '{{ match.participant2.name|escape if match.participant2 else '' }}', {{ match.participant2_id or 'null' }})">
-                                                ⚙️ Manage
-                                            </button>
-                                        {% endif %}
+                                        
                                     </div>
                                 </div>
                                 <div class="tennis-match-body">
@@ -624,7 +620,7 @@
                             <div class="round-matches" style="justify-content: center; height: 100%;">
                                 {% for match in grand_finals %}
                                 <div class="match-card-wrapper" style="padding: 15px 0;">
-                                    <div class="tennis-match {% if match.status == 'completed' %}tennis-match-completed{% endif %}">
+                                    <div class="tennis-match {% if match.status == 'completed' %}tennis-match-completed{% endif %} {% if match.participant1 and match.participant2 %}clickable-match{% endif %}" {% if match.participant1 and match.participant2 %}onclick="openMatchModal({{ match.id }}, '{{ match.status }}', '{{ match.scheduled_time.strftime('%Y-%m-%dT%H:%M') if match.scheduled_time else '' }}', '{{ match.participant1.name|escape if match.participant1 else '' }}', {{ match.participant1_id or 'null' }}, '{{ match.participant2.name|escape if match.participant2 else '' }}', {{ match.participant2_id or 'null' }}, {{ 'true' if current_user and current_user.role in ['admin', 'superadmin'] else 'false' }})" title="Click to view details"{% endif %}>
                                         <div class="tennis-match-header" style="display: flex; align-items: center; justify-content: space-between;">
                                             <span>Grand Final {% if match.match_number == 2 %}(Reset Match){% endif %}</span>
                                             <div style="display: flex; align-items: center; gap: 8px;">
@@ -639,11 +635,7 @@
                                                     <span class="match-status-badge badge-pending">📅 To be played</span>
                                                 {% endif %}
                                                 
-                                                {% if current_user and current_user.role in ['admin', 'superadmin'] and match.status != 'completed' and match.participant1 and match.participant2 %}
-                                                    <button type="button" class="manage-match-btn" title="Manage Match" onclick="openMatchModal({{ match.id }}, '{{ match.status }}', '{{ match.scheduled_time.strftime('%Y-%m-%dT%H:%M') if match.scheduled_time else '' }}', '{{ match.participant1.name|escape if match.participant1 else '' }}', {{ match.participant1_id or 'null' }}, '{{ match.participant2.name|escape if match.participant2 else '' }}', {{ match.participant2_id or 'null' }})">
-                                                        ⚙️ Manage
-                                                    </button>
-                                                {% endif %}
+                                                
                                             </div>
                                         </div>
                                         <div class="tennis-match-body">
@@ -790,7 +782,7 @@ function handleStatusChange(status) {
     }
 }
 
-function openMatchModal(matchId, currentStatus, currentScheduledTime, p1Name, p1Id, p2Name, p2Id) {
+function openMatchModal(matchId, currentStatus, currentScheduledTime, p1Name, p1Id, p2Name, p2Id, isAdmin) {
     currentManageMatchId = matchId;
     document.getElementById('modalMatchId').innerText = matchId;
     
@@ -820,13 +812,32 @@ function openMatchModal(matchId, currentStatus, currentScheduledTime, p1Name, p1
     document.getElementById('winner2').value = p2Id;
     document.getElementById('winner2Label').textContent = p2Name;
     document.getElementById('p2SetHeader').textContent = p2Name;
+    
+    const isReadOnly = (!isAdmin || currentStatus === 'completed');
+    
+    // Apply read-only states
+    statusSelect.disabled = isReadOnly;
+    timeInput.disabled = isReadOnly;
+    document.getElementById('winner1').disabled = isReadOnly;
+    document.getElementById('winner2').disabled = isReadOnly;
+    
+    const saveTimeBtn = document.getElementById('saveTimeBtn');
+    if (saveTimeBtn) saveTimeBtn.style.display = isReadOnly ? 'none' : 'flex';
+    
+    const saveChangesBtn = document.getElementById('saveChangesBtn');
+    if (saveChangesBtn) saveChangesBtn.style.display = isReadOnly ? 'none' : 'block';
 
     const numSets = {{ category.num_sets if category else (tournament.num_sets or 3) }};
     for (let s = 1; s <= numSets; s++) {
         const p1Input = document.getElementById(`set${s}_p1`);
         const p2Input = document.getElementById(`set${s}_p2`);
-        if (p1Input) p1Input.readOnly = false;
-        if (p2Input) p2Input.readOnly = false;
+        if (p1Input) p1Input.disabled = isReadOnly;
+        if (p2Input) p2Input.disabled = isReadOnly;
+        
+        const tbP1 = document.getElementById(`tb${s}_p1`);
+        const tbP2 = document.getElementById(`tb${s}_p2`);
+        if (tbP1) tbP1.disabled = isReadOnly;
+        if (tbP2) tbP2.disabled = isReadOnly;
         
         const tbRow = document.getElementById(`tbRow${s}`);
         if (tbRow) tbRow.style.display = 'none';
@@ -839,6 +850,28 @@ function openMatchModal(matchId, currentStatus, currentScheduledTime, p1Name, p1
 function closeMatchModal() {
     document.getElementById('matchManagementModal').classList.remove('active');
     currentManageMatchId = null;
+}
+
+async function saveDateTimeOnly() {
+    if (!currentManageMatchId) return;
+    const scheduledTime = document.getElementById('modalMatchTime').value;
+    try {
+        const schedRes = await fetch(`/match/${currentManageMatchId}/schedule`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ scheduled_time: scheduledTime })
+        });
+        const schedData = await schedRes.json();
+        if (schedData.success) {
+            // Flash a small checkmark or just reload
+            window.location.reload();
+        } else {
+            alert('Schedule Error: ' + schedData.message);
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Error saving date and time');
+    }
 }
 
 async function saveMatchManagement() {
@@ -860,6 +893,55 @@ async function saveMatchManagement() {
             alert('Schedule Error: ' + schedData.message);
             success = false;
         }
+    } catch (err) {
+        console.error(err);
+        success = false;
+    }
+    
+    if (status === 'pending') {
+        try {
+            const statusRes = await fetch(`/match/${currentManageMatchId}/toggle-status`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'pending' })
+            });
+            const statusData = await statusRes.json();
+            if (!statusData.success) {
+                alert('Status Error: ' + statusData.message);
+                success = false;
+            }
+        } catch (err) {
+            console.error(err);
+            success = false;
+        }
+    } else {
+        if (status === 'completed' && !validateWinnerSelected()) {
+            return;
+        }
+        
+        const form = document.getElementById('reportForm');
+        const formData = new FormData(form);
+        formData.append('action', status === 'completed' ? 'complete_match' : 'live_score');
+        
+        try {
+            const reportRes = await fetch(form.action, {
+                method: 'POST',
+                body: formData
+            });
+            if (!reportRes.ok) {
+                alert('Error updating score.');
+                success = false;
+            }
+        } catch (err) {
+            console.error(err);
+            success = false;
+        }
+    }
+    
+    if (success) {
+        window.location.reload();
+    }
+}
     } catch (err) {
         console.error(err);
         success = false;
@@ -968,9 +1050,12 @@ function checkTiebreak(setNum, winThreshold) {
             </select>
         </div>
         
-        <div class="glass-modal-form-group">
-            <label for="modalMatchTime">Scheduled Time</label>
-            <input type="datetime-local" id="modalMatchTime">
+        <div class="glass-modal-form-group" style="display: flex; gap: 8px; align-items: flex-end;">
+            <div style="flex-grow: 1;">
+                <label for="modalMatchTime">Scheduled Time</label>
+                <input type="datetime-local" id="modalMatchTime" style="width: 100%;">
+            </div>
+            <button type="button" id="saveTimeBtn" class="glass-btn-primary" onclick="saveDateTimeOnly()" style="padding: 0.75rem; height: 42px; display: flex; align-items: center; justify-content: center; margin-bottom: 2px;" title="Save Date & Time">✔️</button>
         </div>
         
         <form id="reportForm" style="display: none; margin-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1.5rem;">
@@ -1026,7 +1111,7 @@ function checkTiebreak(setNum, winThreshold) {
         
         <div class="glass-modal-actions" style="justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
             <button type="button" class="glass-btn-secondary" onclick="closeMatchModal()">Cancel</button>
-            <button type="button" class="glass-btn-primary" onclick="saveMatchManagement()">Save Changes</button>
+            <button type="button" id="saveChangesBtn" class="glass-btn-primary" onclick="saveMatchManagement()">Save Changes</button>
         </div>
     </div>
 </div>
