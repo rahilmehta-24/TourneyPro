@@ -544,15 +544,9 @@
                                         {% endif %}
                                         
                                         {% if current_user and current_user.role in ['admin', 'superadmin'] and match.status != 'completed' and match.participant1 and match.participant2 %}
-                                            <button type="button" title="Schedule Match" onclick="let el = document.getElementById('schedule_input_{{ match.id }}'); el.style.display = el.style.display === 'none' ? 'inline-block' : 'none';" style="background: none; border: none; cursor: pointer; padding: 0; font-size: 1rem;">📅</button>
-                                            <input type="datetime-local" id="schedule_input_{{ match.id }}" 
-                                                   value="{{ match.scheduled_time.strftime('%Y-%m-%dT%H:%M') if match.scheduled_time else '' }}" 
-                                                   onchange="updateMatchSchedule({{ match.id }}, this.value)" 
-                                                   style="display: none; font-size: 0.7rem; padding: 2px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5); color: white;">
-                                            <label style="font-size: 0.75rem; display: flex; align-items: center; gap: 4px; margin: 0; cursor: pointer;">
-                                                <input type="checkbox" onchange="toggleMatchStatus({{ match.id }}, this)" {% if match.status == 'in_progress' %}checked{% endif %}>
-                                                In Progress
-                                            </label>
+                                            <button type="button" class="manage-match-btn" title="Manage Match" onclick="openMatchModal({{ match.id }}, '{{ match.status }}', '{{ match.scheduled_time.strftime('%Y-%m-%dT%H:%M') if match.scheduled_time else '' }}')">
+                                                ⚙️ Manage
+                                            </button>
                                         {% endif %}
                                     </div>
                                 </div>
@@ -648,15 +642,9 @@
                                                 {% endif %}
                                                 
                                                 {% if current_user and current_user.role in ['admin', 'superadmin'] and match.status != 'completed' and match.participant1 and match.participant2 %}
-                                                    <button type="button" title="Schedule Match" onclick="let el = document.getElementById('schedule_input_lr_{{ match.id }}'); el.style.display = el.style.display === 'none' ? 'inline-block' : 'none';" style="background: none; border: none; cursor: pointer; padding: 0; font-size: 1rem;">📅</button>
-                                                    <input type="datetime-local" id="schedule_input_lr_{{ match.id }}" 
-                                                           value="{{ match.scheduled_time.strftime('%Y-%m-%dT%H:%M') if match.scheduled_time else '' }}" 
-                                                           onchange="updateMatchSchedule({{ match.id }}, this.value)" 
-                                                           style="display: none; font-size: 0.7rem; padding: 2px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5); color: white;">
-                                                    <label style="font-size: 0.75rem; display: flex; align-items: center; gap: 4px; margin: 0; cursor: pointer;">
-                                                        <input type="checkbox" onchange="toggleMatchStatus({{ match.id }}, this)" {% if match.status == 'in_progress' %}checked{% endif %}>
-                                                        In Progress
-                                                    </label>
+                                                    <button type="button" class="manage-match-btn" title="Manage Match" onclick="openMatchModal({{ match.id }}, '{{ match.status }}', '{{ match.scheduled_time.strftime('%Y-%m-%dT%H:%M') if match.scheduled_time else '' }}')">
+                                                        ⚙️ Manage
+                                                    </button>
                                                 {% endif %}
                                             </div>
                                         </div>
@@ -925,5 +913,100 @@ async function toggleMatchStatus(matchId, checkbox) {
         checkbox.checked = !checkbox.checked; // Revert
     }
 }
+
+let currentManageMatchId = null;
+
+function openMatchModal(matchId, currentStatus, currentScheduledTime) {
+    currentManageMatchId = matchId;
+    document.getElementById('modalMatchId').innerText = matchId;
+    
+    // Set status
+    const statusSelect = document.getElementById('modalMatchStatus');
+    statusSelect.value = currentStatus || 'pending';
+    
+    // Set time
+    const timeInput = document.getElementById('modalMatchTime');
+    if (currentScheduledTime && currentScheduledTime !== 'None') {
+        timeInput.value = currentScheduledTime;
+    } else {
+        timeInput.value = '';
+    }
+    
+    document.getElementById('matchManagementModal').classList.add('active');
+}
+
+function closeMatchModal() {
+    document.getElementById('matchManagementModal').classList.remove('active');
+    currentManageMatchId = null;
+}
+
+async function saveMatchManagement() {
+    if (!currentManageMatchId) return;
+    
+    const status = document.getElementById('modalMatchStatus').value;
+    const scheduledTime = document.getElementById('modalMatchTime').value;
+    
+    try {
+        let success = true;
+        
+        // 1. Update Schedule
+        const schedRes = await fetch(`/match/${currentManageMatchId}/schedule`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ scheduled_time: scheduledTime })
+        });
+        const schedData = await schedRes.json();
+        if (!schedData.success) {
+            alert('Schedule Error: ' + schedData.message);
+            success = false;
+        }
+        
+        // 2. Update Status
+        const statusRes = await fetch(`/match/${currentManageMatchId}/toggle-status`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: status })
+        });
+        const statusData = await statusRes.json();
+        if (!statusData.success) {
+            alert('Status Error: ' + statusData.message);
+            success = false;
+        }
+        
+        if (success) {
+            window.location.reload();
+        }
+        
+    } catch (err) {
+        console.error('Error saving match management:', err);
+        alert('An error occurred while saving: ' + err.message);
+    }
+}
 </script>
+
+<!-- Match Management Modal -->
+<div id="matchManagementModal" class="glass-modal-overlay" onclick="if(event.target === this) closeMatchModal()">
+    <div class="glass-modal">
+        <h3>Match #<span id="modalMatchId"></span></h3>
+        
+        <div class="glass-modal-form-group">
+            <label for="modalMatchStatus">Match Status</label>
+            <select id="modalMatchStatus">
+                <option value="pending">Pending</option>
+                <option value="in_progress">In Progress</option>
+                <option value="completed">Completed</option>
+            </select>
+        </div>
+        
+        <div class="glass-modal-form-group">
+            <label for="modalMatchTime">Scheduled Time</label>
+            <input type="datetime-local" id="modalMatchTime">
+        </div>
+        
+        <div class="glass-modal-actions">
+            <button class="glass-btn-secondary" onclick="closeMatchModal()">Cancel</button>
+            <button class="glass-btn-primary" onclick="saveMatchManagement()">Save Changes</button>
+        </div>
+    </div>
+</div>
 {% endblock %}

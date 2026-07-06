@@ -1488,3 +1488,141 @@ select option {
     color: var(--primary);
     font-weight: 700;
 }
+
+/* Fix for match header date cutting off */
+.tennis-match-header {
+    flex-wrap: wrap;
+    gap: 4px;
+}
+.match-status-badge {
+    white-space: normal;
+    text-align: right;
+    word-break: break-word;
+}
+
+/* Match Management Modal */
+.glass-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.glass-modal-overlay.active {
+    display: flex;
+    opacity: 1;
+}
+
+.glass-modal {
+    background: rgba(25, 25, 30, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    width: 90%;
+    max-width: 450px;
+    transform: translateY(20px);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    color: var(--text-primary);
+}
+
+.glass-modal-overlay.active .glass-modal {
+    transform: translateY(0);
+}
+
+.glass-modal h3 {
+    margin-top: 0;
+    margin-bottom: var(--spacing-lg);
+    font-size: 1.5rem;
+    color: var(--text-primary);
+}
+
+.glass-modal-form-group {
+    margin-bottom: var(--spacing-md);
+}
+
+.glass-modal-form-group label {
+    display: block;
+    margin-bottom: var(--spacing-sm);
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.glass-modal select,
+.glass-modal input[type="datetime-local"] {
+    width: 100%;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+}
+
+.glass-modal select:focus,
+.glass-modal input[type="datetime-local"]:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(var(--accent-primary-rgb), 0.2);
+}
+
+.glass-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-xl);
+}
+
+.glass-btn-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.glass-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.glass-btn-primary {
+    background: var(--accent-primary);
+    border: none;
+    color: white;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-weight: 600;
+    transition: all var(--transition-base);
+}
+
+.glass-btn-primary:hover {
+    background: var(--accent-secondary);
+}
+
+.manage-match-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-muted);
+    border-radius: var(--radius-sm);
+    padding: 2px 6px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.manage-match-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
