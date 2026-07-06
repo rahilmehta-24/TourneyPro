@@ -728,8 +728,26 @@ select option {
 
 .match-status-badge {
     font-size: 0.75rem;
-    color: var(--accent-success);
     font-weight: 600;
+}
+
+.match-status-badge.badge-completed {
+    color: var(--accent-success);
+}
+
+.match-status-badge.badge-inprogress {
+    color: var(--accent-warning);
+    animation: pulse 2s infinite;
+}
+
+.match-status-badge.badge-pending {
+    color: var(--text-muted);
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { opacity: 1; }
 }
 
 .match-participants {

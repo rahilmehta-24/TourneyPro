@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from app.models import db, Tournament, Participant, Match, TournamentSettings
 from app.formats import get_format
 from app.constants import TOURNAMENT_FORMATS
@@ -447,6 +447,31 @@ def report_match_result(slug, match_id):
         flash(f'Failed to report match result: {str(e)}', 'error')
 
     return redirect(url_for('tournament.view_tournament', slug=slug))
+
+@tournament_bp.route('/match/<int:match_id>/toggle-status', methods=['POST'])
+@login_required
+@role_required('admin', 'superadmin')
+def toggle_match_status(match_id):
+    """Toggle match status between pending and in_progress"""
+    match = Match.query.get_or_404(match_id)
+    
+    if match.status == 'completed':
+        return jsonify({'success': False, 'message': 'Cannot toggle a completed match.'}), 400
+        
+    data = request.get_json()
+    new_status = data.get('status')
+    
+    if new_status not in ['pending', 'in_progress']:
+        return jsonify({'success': False, 'message': 'Invalid status.'}), 400
+        
+    match.status = new_status
+    
+    try:
+        db.session.commit()
+        return jsonify({'success': True, 'status': match.status})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @tournament_bp.route('/tournaments/<slug>/seeding', methods=['GET', 'POST'])
 @login_required
