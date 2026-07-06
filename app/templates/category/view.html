@@ -161,10 +161,19 @@
                                 {% elif match.status == 'in_progress' %}
                                 <span class="match-status-badge badge-inprogress">● In Progress</span>
                                 {% else %}
-                                <span class="match-status-badge badge-pending">To be played</span>
+                                    {% if match.scheduled_time %}
+                                    <span class="match-status-badge badge-pending">📅 {{ match.scheduled_time.strftime('%b %d, %I:%M %p') }}</span>
+                                    {% else %}
+                                    <span class="match-status-badge badge-pending">To be played</span>
+                                    {% endif %}
                                 {% endif %}
                                 
                                 {% if current_user and current_user.role in ['admin', 'superadmin'] and match.status != 'completed' and match.participant1 and match.participant2 %}
+                                    <button type="button" title="Schedule Match" onclick="document.getElementById('schedule_input_{{ match.id }}').style.display='inline-block'" style="background: none; border: none; cursor: pointer; padding: 0; font-size: 1rem;">📅</button>
+                                    <input type="datetime-local" id="schedule_input_{{ match.id }}" 
+                                           value="{{ match.scheduled_time.strftime('%Y-%m-%dT%H:%M') if match.scheduled_time else '' }}" 
+                                           onchange="updateMatchSchedule({{ match.id }}, this.value)" 
+                                           style="display: none; font-size: 0.7rem; padding: 2px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5); color: white;">
                                     <label style="font-size: 0.75rem; display: flex; align-items: center; gap: 4px; margin: 0; cursor: pointer;">
                                         <input type="checkbox" onchange="toggleMatchStatus({{ match.id }}, this)" {% if match.status == 'in_progress' %}checked{% endif %}>
                                         In Progress
@@ -286,10 +295,19 @@
                                             {% elif match.status == 'in_progress' %}
                                             <span class="match-status-badge badge-inprogress">● In Progress</span>
                                             {% else %}
-                                            <span class="match-status-badge badge-pending">To be played</span>
+                                                {% if match.scheduled_time %}
+                                                <span class="match-status-badge badge-pending">📅 {{ match.scheduled_time.strftime('%b %d, %I:%M %p') }}</span>
+                                                {% else %}
+                                                <span class="match-status-badge badge-pending">To be played</span>
+                                                {% endif %}
                                             {% endif %}
                                             
                                             {% if current_user and current_user.role in ['admin', 'superadmin'] and match.status != 'completed' and match.participant1 and match.participant2 %}
+                                                <button type="button" title="Schedule Match" onclick="document.getElementById('schedule_input_lr_{{ match.id }}').style.display='inline-block'" style="background: none; border: none; cursor: pointer; padding: 0; font-size: 1rem;">📅</button>
+                                                <input type="datetime-local" id="schedule_input_lr_{{ match.id }}" 
+                                                       value="{{ match.scheduled_time.strftime('%Y-%m-%dT%H:%M') if match.scheduled_time else '' }}" 
+                                                       onchange="updateMatchSchedule({{ match.id }}, this.value)" 
+                                                       style="display: none; font-size: 0.7rem; padding: 2px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5); color: white;">
                                                 <label style="font-size: 0.75rem; display: flex; align-items: center; gap: 4px; margin: 0; cursor: pointer;">
                                                     <input type="checkbox" onchange="toggleMatchStatus({{ match.id }}, this)" {% if match.status == 'in_progress' %}checked{% endif %}>
                                                     In Progress
@@ -494,14 +512,25 @@
                         {% elif match.status == 'in_progress' %}
                         <span class="match-status-badge badge-inprogress">● In Progress</span>
                         {% else %}
-                        <span class="match-status-badge badge-pending">To be played</span>
+                            {% if match.scheduled_time %}
+                            <span class="match-status-badge badge-pending">📅 {{ match.scheduled_time.strftime('%b %d, %I:%M %p') }}</span>
+                            {% else %}
+                            <span class="match-status-badge badge-pending">To be played</span>
+                            {% endif %}
                         {% endif %}
                     </div>
                     {% if current_user and current_user.role in ['admin', 'superadmin'] and match.status != 'completed' and match.participant1 and match.participant2 %}
-                        <label style="font-size: 0.75rem; display: flex; align-items: center; gap: 4px; margin: 0; cursor: pointer;">
-                            <input type="checkbox" onchange="toggleMatchStatus({{ match.id }}, this)" {% if match.status == 'in_progress' %}checked{% endif %}>
-                            In Progress
-                        </label>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <button type="button" title="Schedule Match" onclick="document.getElementById('schedule_input_rr_{{ match.id }}').style.display='inline-block'" style="background: none; border: none; cursor: pointer; padding: 0; font-size: 1rem;">📅</button>
+                            <input type="datetime-local" id="schedule_input_rr_{{ match.id }}" 
+                                   value="{{ match.scheduled_time.strftime('%Y-%m-%dT%H:%M') if match.scheduled_time else '' }}" 
+                                   onchange="updateMatchSchedule({{ match.id }}, this.value)" 
+                                   style="display: none; font-size: 0.7rem; padding: 2px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5); color: white;">
+                            <label style="font-size: 0.75rem; display: flex; align-items: center; gap: 4px; margin: 0; cursor: pointer;">
+                                <input type="checkbox" onchange="toggleMatchStatus({{ match.id }}, this)" {% if match.status == 'in_progress' %}checked{% endif %}>
+                                In Progress
+                            </label>
+                        </div>
                     {% endif %}
                 </div>
                 <span>{{ match.participant1.name if match.participant1 else 'TBD' }}</span>
@@ -824,6 +853,28 @@ function copyShareLink(url, btn) {
         console.error('Failed to copy: ', err);
         alert("Failed to copy link: " + url);
     });
+}
+
+async function updateMatchSchedule(matchId, dateTimeStr) {
+    try {
+        const response = await fetch(`/match/${matchId}/schedule`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ scheduled_time: dateTimeStr })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    } catch (err) {
+        console.error('Error scheduling match:', err);
+        alert('An error occurred while updating the match schedule.');
+    }
 }
 
 async function toggleMatchStatus(matchId, checkbox) {

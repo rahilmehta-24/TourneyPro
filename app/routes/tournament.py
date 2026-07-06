@@ -480,6 +480,38 @@ def toggle_match_status(match_id):
         db.session.rollback()
         return jsonify({'success': False, 'message': str(e)}), 500
 
+@tournament_bp.route('/match/<int:match_id>/schedule', methods=['POST'])
+@login_required
+@role_required('admin', 'superadmin')
+def schedule_match(match_id):
+    """Set the scheduled time for a match"""
+    match = Match.query.get_or_404(match_id)
+    
+    if match.status == 'completed':
+        return jsonify({'success': False, 'message': 'Cannot schedule a completed match.'}), 400
+        
+    data = request.get_json()
+    scheduled_time_str = data.get('scheduled_time')
+    
+    if scheduled_time_str:
+        try:
+            # Parse datetime from ISO string or HTML datetime-local format
+            match.scheduled_time = datetime.fromisoformat(scheduled_time_str)
+        except ValueError:
+            return jsonify({'success': False, 'message': 'Invalid datetime format.'}), 400
+    else:
+        match.scheduled_time = None
+        
+    try:
+        db.session.commit()
+        return jsonify({
+            'success': True, 
+            'scheduled_time': match.scheduled_time.isoformat() if match.scheduled_time else None
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 @tournament_bp.route('/tournaments/<slug>/seeding', methods=['GET', 'POST'])
 @login_required
 @role_required('admin', 'superadmin')
