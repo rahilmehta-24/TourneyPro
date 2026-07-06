@@ -790,8 +790,11 @@ function validateWinnerSelected() {
         const g1 = parseInt(p1Input.value) || 0;
         const g2 = parseInt(p2Input.value) || 0;
         
-        // Show tiebreak input if either player has winThreshold + 1 and the other has winThreshold
-        if ((g1 === winThreshold + 1 && g2 === winThreshold) || (g2 === winThreshold + 1 && g1 === winThreshold)) {
+        const tbWin = winThreshold === 4 ? 4 : winThreshold + 1;
+        const tbLose = winThreshold === 4 ? 3 : winThreshold;
+        
+        // Show tiebreak input if either player has tbWin and the other has tbLose
+        if ((g1 === tbWin && g2 === tbLose) || (g2 === tbWin && g1 === tbLose)) {
             tb1Input.style.display = 'inline-block';
             tb2Input.style.display = 'inline-block';
         } else {
