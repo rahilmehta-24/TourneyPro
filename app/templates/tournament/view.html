@@ -128,8 +128,12 @@
         {% else %}
         <div class="alert alert-info" style="margin-top: 1rem;">
             <span class="alert-icon">💡</span>
+            {% if current_user and current_user.role in ['admin', 'superadmin'] %}
             <span>No categories yet. Create a category to organize different tournament formats (Single Elimination,
                 Round Robin, etc.)</span>
+            {% else %}
+            <span>No categories yet.</span>
+            {% endif %}
         </div>
         {% endif %}
     </div>
