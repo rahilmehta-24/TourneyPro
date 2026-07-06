@@ -228,8 +228,13 @@
                             <span class="info-value">{{ tournament.created_at.strftime('%b %d, %Y') }}</span>
                         </div>
                         <div class="info-item">
-                            <span class="info-label">URL</span>
-                            <span class="info-value">{{ tournament.url_slug }}</span>
+                            <span class="info-label">Public URL</span>
+                            <span class="info-value" style="display: flex; gap: 0.5rem; align-items: center;">
+                                <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug, _external=True) }}" target="_blank" style="color: var(--accent-primary); word-break: break-all;">
+                                    {{ url_for('tournament.view_tournament', slug=tournament.url_slug, _external=True) }}
+                                </a>
+                                <button onclick="copyShareLink('{{ url_for('tournament.view_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.8rem;">Copy</button>
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -250,4 +255,18 @@
         </div>
     </div>
 </div>
+<script>
+function copyShareLink(url, btn) {
+    navigator.clipboard.writeText(url).then(() => {
+        const originalText = btn.innerText;
+        btn.innerText = 'Copied!';
+        setTimeout(() => {
+            btn.innerText = originalText;
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy: ', err);
+        alert("Failed to copy link: " + url);
+    });
+}
+</script>
 {% endblock %}
