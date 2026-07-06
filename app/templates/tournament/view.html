@@ -942,55 +942,6 @@ async function saveMatchManagement() {
         window.location.reload();
     }
 }
-    } catch (err) {
-        console.error(err);
-        success = false;
-    }
-    
-    if (status === 'pending') {
-        try {
-            const statusRes = await fetch(`/match/${currentManageMatchId}/toggle-status`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: 'pending' })
-            });
-            const statusData = await statusRes.json();
-            if (!statusData.success) {
-                alert('Status Error: ' + statusData.message);
-                success = false;
-            }
-        } catch (err) {
-            console.error(err);
-            success = false;
-        }
-    } else {
-        if (status === 'completed' && !validateWinnerSelected()) {
-            return;
-        }
-        
-        const form = document.getElementById('reportForm');
-        const formData = new FormData(form);
-        formData.append('action', status === 'completed' ? 'complete_match' : 'live_score');
-        
-        try {
-            const reportRes = await fetch(form.action, {
-                method: 'POST',
-                body: formData
-            });
-            if (!reportRes.ok) {
-                alert('Error updating score.');
-                success = false;
-            }
-        } catch (err) {
-            console.error(err);
-            success = false;
-        }
-    }
-    
-    if (success) {
-        window.location.reload();
-    }
-}
 function validateWinnerSelected() {
     const winner1 = document.getElementById('winner1');
     const winner2 = document.getElementById('winner2');
