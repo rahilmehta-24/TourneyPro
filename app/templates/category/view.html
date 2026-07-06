@@ -10,6 +10,7 @@
             <p class="subtitle">{{ tournament.name }} | {{ formats[category.format].name }}</p>
         </div>
         <div class="page-actions">
+            <button onclick="copyShareLink('{{ url_for('category.view_category', slug=tournament.url_slug, category_id=category.id, _external=True) }}', this)" class="btn btn-secondary">🔗 Share Link</button>
             <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug) }}" class="btn btn-secondary">←
                 Back to
                 Tournament</a>
@@ -751,4 +752,19 @@
         flex-wrap: wrap;
     }
 </style>
+
+<script>
+function copyShareLink(url, btn) {
+    navigator.clipboard.writeText(url).then(() => {
+        const originalText = btn.innerText;
+        btn.innerText = '✅ Copied!';
+        setTimeout(() => {
+            btn.innerText = originalText;
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy: ', err);
+        alert("Failed to copy link: " + url);
+    });
+}
+</script>
 {% endblock %}
