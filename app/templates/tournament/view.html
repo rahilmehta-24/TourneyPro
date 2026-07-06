@@ -896,7 +896,7 @@ async function updateMatchSchedule(matchId, dateTimeStr) {
         }
     } catch (err) {
         console.error('Error scheduling match:', err);
-        alert('An error occurred while updating the match schedule.');
+        alert('An error occurred while updating the match schedule: ' + err.message);
     }
 }
 

@@ -495,10 +495,14 @@ def schedule_match(match_id):
     
     if scheduled_time_str:
         try:
-            # Parse datetime from ISO string or HTML datetime-local format
-            match.scheduled_time = datetime.fromisoformat(scheduled_time_str)
+            # First try parsing the custom format they type in
+            match.scheduled_time = datetime.strptime(scheduled_time_str, '%d/%m/%Y %H:%M %p')
         except ValueError:
-            return jsonify({'success': False, 'message': 'Invalid datetime format.'}), 400
+            try:
+                # Fall back to standard ISO string from datetime-local
+                match.scheduled_time = datetime.fromisoformat(scheduled_time_str)
+            except Exception as e:
+                return jsonify({'success': False, 'message': f'Invalid datetime format: {str(e)}'}), 400
     else:
         match.scheduled_time = None
         
