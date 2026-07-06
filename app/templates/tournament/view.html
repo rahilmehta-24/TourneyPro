@@ -581,7 +581,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                {% if match.status == 'pending' and match.participant1 and match.participant2 %}
+                                {% if match.status != 'completed' and match.participant1 and match.participant2 %}
                                 {% if current_user and current_user.role in ['admin', 'superadmin'] %}
 <div class="match-actions">
                                     <button class="btn btn-small btn-primary btn-report"
@@ -672,7 +672,7 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        {% if match.status == 'pending' and match.participant1 and match.participant2 %}
+                                        {% if match.status != 'completed' and match.participant1 and match.participant2 %}
                                         {% if current_user and current_user.role in ['admin', 'superadmin'] %}
 <div class="match-actions">
                                             <button class="btn btn-small btn-primary btn-report"
@@ -717,11 +717,11 @@
                     <label class="form-label">Winner</label>
                     <div class="winner-selector">
                         <label class="winner-option">
-                            <input type="radio" name="winner_id" id="winner1" required>
+                            <input type="radio" name="winner_id" id="winner1">
                             <span class="winner-label" id="winner1Label"></span>
                         </label>
                         <label class="winner-option">
-                            <input type="radio" name="winner_id" id="winner2" required>
+                            <input type="radio" name="winner_id" id="winner2">
                             <span class="winner-label" id="winner2Label"></span>
                         </label>
                     </div>
@@ -757,13 +757,26 @@
                     </table>
                 </div>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 1rem;">
                 <button type="button" class="btn btn-secondary" onclick="closeReportModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary">Submit Result</button>
+                <button type="submit" name="action" value="live_score" class="btn btn-secondary">Save Live Score</button>
+                <button type="submit" name="action" value="complete_match" class="btn btn-primary" onclick="return validateWinnerSelected()">Complete Match</button>
             </div>
         </form>
     </div>
 </div>
+
+<script>
+function validateWinnerSelected() {
+    const winner1 = document.getElementById('winner1');
+    const winner2 = document.getElementById('winner2');
+    if (!winner1.checked && !winner2.checked) {
+        alert("Please select a winner to complete the match.");
+        return false;
+    }
+    return true;
+}
+</script>
 
 <script>
     function checkTiebreak(setNum, winThreshold) {

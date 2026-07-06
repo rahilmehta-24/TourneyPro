@@ -304,7 +304,9 @@ def report_match_result(slug, match_id):
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
     match = Match.query.get_or_404(match_id)
 
-    winner_id = request.form.get('winner_id', type=int)
+    action = request.form.get('action')
+    is_live_update = (action == 'live_score')
+    winner_id = request.form.get('winner_id', type=int) if not is_live_update else None
 
     # Extract set scores from request
     form_data = {
@@ -348,14 +350,14 @@ def report_match_result(slug, match_id):
                 except ValueError:
                     raise ValueError("Score must be integers.")
                     
-                if g1 + g2 != total_games_target:
-                    raise ValueError(f"Total games must sum to {total_games_target}. You entered {g1} and {g2} (sum: {g1+g2}).")
+                if not is_live_update:
+                    if g1 + g2 != total_games_target:
+                        raise ValueError(f"Total games must sum to {total_games_target}. You entered {g1} and {g2} (sum: {g1+g2}).")
+                        
+                    actual_winner = match.participant1_id if g1 > g2 else match.participant2_id
+                    if winner_id != actual_winner:
+                        raise ValueError("Selected winner does not match the scores.")
                     
-                actual_winner = match.participant1_id if g1 > g2 else match.participant2_id
-                if winner_id != actual_winner:
-                    raise ValueError("Selected winner does not match the scores.")
-                    
-                match.winner_id = winner_id
                 match.score1 = str(g1)
                 match.score2 = str(g2)
                 
@@ -373,14 +375,14 @@ def report_match_result(slug, match_id):
                 except ValueError:
                     raise ValueError("Score must be integers.")
                     
-                if g1 < points_to_win and g2 < points_to_win:
-                    raise ValueError(f"One player must reach {points_to_win} points to win.")
+                if not is_live_update:
+                    if g1 < points_to_win and g2 < points_to_win:
+                        raise ValueError(f"One player must reach {points_to_win} points to win.")
+                        
+                    actual_winner = match.participant1_id if g1 > g2 else match.participant2_id
+                    if winner_id != actual_winner:
+                        raise ValueError("Selected winner does not match the scores.")
                     
-                actual_winner = match.participant1_id if g1 > g2 else match.participant2_id
-                if winner_id != actual_winner:
-                    raise ValueError("Selected winner does not match the scores.")
-                    
-                match.winner_id = winner_id
                 match.score1 = str(g1)
                 match.score2 = str(g2)
                 
@@ -391,10 +393,9 @@ def report_match_result(slug, match_id):
 
                 score1, score2 = validate_and_format_score(
                     winner_id, match.participant1_id, match.participant2_id,
-                    num_sets, games_per_set, form_data
+                    num_sets, games_per_set, form_data, is_live_update=is_live_update
                 )
 
-                match.winner_id = winner_id
                 match.score1 = score1
                 match.score2 = score2
         else:
@@ -404,13 +405,19 @@ def report_match_result(slug, match_id):
 
             score1, score2 = validate_and_format_score(
                 winner_id, match.participant1_id, match.participant2_id,
-                num_sets, games_per_set, form_data
+                num_sets, games_per_set, form_data, is_live_update=is_live_update
             )
 
-            match.winner_id = winner_id
             match.score1 = score1
             match.score2 = score2
 
+        if is_live_update:
+            match.status = 'in_progress'
+            db.session.commit()
+            flash('Live score updated successfully.', 'success')
+            return redirect(url_for('tournament.view', slug=slug))
+
+        match.winner_id = winner_id
         match.status = 'completed'
         match.completed_at = datetime.utcnow()
         db.session.commit()

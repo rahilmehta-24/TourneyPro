@@ -598,7 +598,9 @@ def report_category_match_result(slug, category_id, match_id):
     match = Match.query.get_or_404(match_id)
 
     try:
-        winner_id = request.form.get('winner_id', type=int)
+        action = request.form.get('action')
+        is_live_update = (action == 'live_score')
+        winner_id = request.form.get('winner_id', type=int) if not is_live_update else None
 
         # We need num_sets and games_per_set from category
         num_sets = category.num_sets or 3
@@ -635,22 +637,30 @@ def report_category_match_result(slug, category_id, match_id):
             if p1_score is None or p2_score is None:
                 raise ValueError("Scores for both players are required.")
                 
-            if winner_id == match.participant1_id and p1_score <= p2_score:
-                raise ValueError("Winner must have a higher score.")
-            if winner_id == match.participant2_id and p2_score <= p1_score:
-                raise ValueError("Winner must have a higher score.")
+            if not is_live_update:
+                if winner_id == match.participant1_id and p1_score <= p2_score:
+                    raise ValueError("Winner must have a higher score.")
+                if winner_id == match.participant2_id and p2_score <= p1_score:
+                    raise ValueError("Winner must have a higher score.")
                 
             score1 = str(p1_score)
             score2 = str(p2_score)
         else:
             score1, score2 = validate_and_format_score(
                 winner_id, match.participant1_id, match.participant2_id,
-                num_sets, games_per_set, form_data
+                num_sets, games_per_set, form_data, is_live_update=is_live_update
             )
 
-        match.winner_id = winner_id
         match.score1 = score1
         match.score2 = score2
+        
+        if is_live_update:
+            match.status = 'in_progress'
+            db.session.commit()
+            flash('Live score updated successfully.', 'success')
+            return redirect(url_for('category.view', slug=slug, category_id=category.id))
+            
+        match.winner_id = winner_id
         match.status = 'completed'
         match.completed_at = datetime.utcnow()
         db.session.commit()
