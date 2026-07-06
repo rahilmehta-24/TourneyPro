@@ -415,7 +415,7 @@ def report_match_result(slug, match_id):
             match.status = 'in_progress'
             db.session.commit()
             flash('Live score updated successfully.', 'success')
-            return redirect(url_for('tournament.view', slug=slug))
+            return redirect(url_for('tournament.view_tournament', slug=slug))
 
         match.winner_id = winner_id
         match.status = 'completed'
