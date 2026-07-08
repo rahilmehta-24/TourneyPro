@@ -782,12 +782,12 @@ function handleStatusChange(status) {
     const isAdmin = !statusSelect.disabled;
     
     if (scoringSection) {
-        scoringSection.style.display = (status === 'in_progress' || status === 'completed') ? 'block' : 'none';
+        scoringSection.style.display = (isAdmin || status === 'in_progress' || status === 'completed') ? 'block' : 'none';
     }
     
     if (isAdmin) {
         if (savePendingBtn) savePendingBtn.style.display = (status === 'pending') ? 'block' : 'none';
-        if (saveLiveBtn) saveLiveBtn.style.display = (status === 'in_progress') ? 'block' : 'none';
+        if (saveLiveBtn) saveLiveBtn.style.display = (status === 'in_progress' || status === 'pending') ? 'block' : 'none';
         if (completeMatchBtn) completeMatchBtn.style.display = (status === 'completed') ? 'block' : 'none';
     }
 }
@@ -948,7 +948,7 @@ async function saveDateTimeOnly() {
     }
 }
 
-async function saveMatchManagement() {
+async function saveMatchAction(actionType) {
     if (!currentManageMatchId) return;
     
     const status = document.getElementById('modalMatchStatus').value;
@@ -972,7 +972,7 @@ async function saveMatchManagement() {
         success = false;
     }
     
-    if (status === 'pending') {
+    if (actionType === 'pending') {
         try {
             const statusRes = await fetch(`/match/${currentManageMatchId}/toggle-status`, {
                 method: 'POST',
@@ -989,7 +989,7 @@ async function saveMatchManagement() {
             success = false;
         }
     } else {
-        if (status === 'completed' && !validateWinnerSelected()) {
+        if (actionType === 'complete_match' && !validateWinnerSelected()) {
             return;
         }
         
@@ -1136,7 +1136,9 @@ function checkTiebreak(setNum, winThreshold) {
         
         <div class="glass-modal-actions" style="justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
             <button type="button" class="glass-btn-secondary" onclick="closeMatchModal()">Cancel</button>
-            <button type="button" id="saveChangesBtn" class="glass-btn-primary" onclick="saveMatchManagement()">Save Changes</button>
+            <button type="button" id="savePendingBtn" class="glass-btn-primary" onclick="saveMatchAction('pending')">Save Changes</button>
+            <button type="button" id="saveLiveBtn" class="glass-btn-warning" onclick="saveMatchAction('live_score')" style="display: none; background: rgba(234, 179, 8, 0.2); border: 1px solid rgba(234, 179, 8, 0.3); color: #fde047;">Save Live Score</button>
+            <button type="button" id="completeMatchBtn" class="glass-btn-success" onclick="saveMatchAction('complete_match')" style="display: none;">Complete Match</button>
         </div>
     </div>
 </div>
