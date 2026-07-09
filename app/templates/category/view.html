@@ -741,6 +741,14 @@ function openMatchModal(matchId, currentStatus, currentScheduledTime, p1Name, p1
     const statusSelect = document.getElementById('modalMatchStatus');
     statusSelect.value = currentStatus || 'pending';
     
+    const statusText = document.getElementById('modalMatchStatusText');
+    const statusMap = {
+        'pending': 'Pending',
+        'in_progress': 'In Progress',
+        'completed': 'Completed'
+    };
+    if (statusText) statusText.innerText = statusMap[currentStatus || 'pending'];
+    
     const timeInput = document.getElementById('modalMatchTime');
     if (currentScheduledTime && currentScheduledTime !== 'None') {
         timeInput.value = currentScheduledTime;
@@ -768,7 +776,17 @@ function openMatchModal(matchId, currentStatus, currentScheduledTime, p1Name, p1
     const isReadOnly = (!isAdmin || currentStatus === 'completed');
     
     // Apply read-only states
-    statusSelect.disabled = isReadOnly;
+    if (!isAdmin) {
+        if (statusSelect) statusSelect.style.display = 'none';
+        if (statusText) statusText.style.display = 'block';
+    } else {
+        if (statusSelect) {
+            statusSelect.style.display = 'block';
+            statusSelect.disabled = isReadOnly;
+        }
+        if (statusText) statusText.style.display = 'none';
+    }
+    
     timeInput.disabled = isReadOnly;
     document.getElementById('winner1').disabled = isReadOnly;
     document.getElementById('winner2').disabled = isReadOnly;
@@ -1015,6 +1033,7 @@ function checkTiebreak(setNum, winThreshold) {
                 <option value="in_progress">In Progress</option>
                 <option value="completed">Completed</option>
             </select>
+            <div id="modalMatchStatusText" style="display: none; padding: 0.75rem; background: rgba(0,0,0,0.2); border-radius: var(--radius-md); font-weight: 500; font-size: 1.05rem; color: var(--text-primary); border: 1px solid rgba(255,255,255,0.05);"></div>
         </div>
         
         <div class="glass-modal-form-group" style="display: flex; gap: 8px; align-items: flex-end;">
