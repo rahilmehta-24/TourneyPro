@@ -29,11 +29,20 @@ def report_match(match_id):
 
     # Determine action type (pending, live_score, complete_match)
     action_type = data.get('action_type', 'complete_match')
-    match_status = data.get('match_status', 'pending')
     
+    scheduled_time_str = data.get('scheduled_time')
+    if scheduled_time_str:
+        try:
+            match.scheduled_time = datetime.fromisoformat(scheduled_time_str.replace('Z', '+00:00'))
+        except ValueError:
+            pass
+            
     if action_type == 'pending':
         match.status = 'pending'
         match.winner_id = None
+        match.score1 = None
+        match.score2 = None
+        match.completed_at = None
         db.session.commit()
         return jsonify({"success": True, "message": "Match set to pending"}), 200
 

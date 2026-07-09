@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
-import { TextInput, Button, Text, Surface } from 'react-native-paper';
+import { View, StyleSheet, Alert, TextInput as RNTextInput } from 'react-native';
+import { Button, Text, Surface, useTheme } from 'react-native-paper';
 import { AuthContext } from '../navigation/AuthContext';
 import { loginUser } from '../services/api';
 
@@ -10,6 +10,7 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   
   const { login } = useContext(AuthContext);
+  const theme = useTheme();
 
   const handleLogin = async () => {
     if (!username || !password) {
@@ -39,22 +40,23 @@ export default function LoginScreen() {
         <Text variant="headlineMedium" style={styles.title}>TourneyPro</Text>
         <Text variant="bodyMedium" style={styles.subtitle}>Sign in to manage tournaments</Text>
         
-        <TextInput
-          label="Username"
-          value={username}
-          onChangeText={setUsername}
+        <RNTextInput
+          placeholder="Username"
+          placeholderTextColor="#6b7280"
+          onChangeText={(text) => setUsername(text)}
           autoCapitalize="none"
-          mode="outlined"
-          style={styles.input}
+          autoCorrect={false}
+          style={[styles.nativeInput, { borderColor: theme.colors.primary }]}
         />
         
-        <TextInput
-          label="Password"
-          value={password}
-          onChangeText={setPassword}
+        <RNTextInput
+          placeholder="Password"
+          placeholderTextColor="#6b7280"
+          onChangeText={(text) => setPassword(text)}
           secureTextEntry
-          mode="outlined"
-          style={styles.input}
+          autoCapitalize="none"
+          autoCorrect={false}
+          style={[styles.nativeInput, { borderColor: theme.colors.primary }]}
         />
         
         <Button 
@@ -93,8 +95,15 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     opacity: 0.7,
   },
-  input: {
+  nativeInput: {
+    height: 50,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 16,
     marginBottom: 16,
+    color: '#ffffff',
+    backgroundColor: 'transparent',
+    fontSize: 16,
   },
   button: {
     marginTop: 8,

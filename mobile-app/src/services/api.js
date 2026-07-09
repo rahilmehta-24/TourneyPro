@@ -20,7 +20,7 @@ export const fetchMatches = async (categoryId) => {
     return response.json();
 };
 
-export const reportMatch = async (matchId, actionType, status, score1, score2, winnerId, token) => {
+export const reportMatch = async (matchId, actionType, status, score1, score2, winnerId, scheduledTime, token) => {
     const response = await fetch(`${API_BASE_URL}/matches/${matchId}/report`, {
         method: 'POST',
         headers: { 
@@ -32,7 +32,8 @@ export const reportMatch = async (matchId, actionType, status, score1, score2, w
             match_status: status,
             score1,
             score2,
-            winner_id: winnerId
+            winner_id: winnerId,
+            scheduled_time: scheduledTime
         })
     });
     return response.json();
