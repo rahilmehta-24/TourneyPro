@@ -1,4 +1,4 @@
-from flask import request, jsonify
+from flask import jsonify
 from . import api_bp
 from app.models import Tournament, Category
 from app.schemas import tournaments_schema, tournament_schema, category_schema

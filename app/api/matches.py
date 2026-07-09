@@ -2,8 +2,8 @@ from flask import request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from . import api_bp
 from app.models import Match, User, db
-from app.schemas import matches_schema, match_schema
-from app.tennis_logic import update_match_and_advance, parse_tennis_scores, recalculate_group_stats
+from app.schemas import matches_schema
+from app.tennis_logic import update_match_and_advance, recalculate_group_stats
 
 @api_bp.route('/matches/category/<int:category_id>', methods=['GET'])
 def get_matches(category_id):
