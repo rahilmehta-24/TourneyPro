@@ -68,9 +68,14 @@ def create_tournament():
 @tournament_bp.route('/tournaments/<slug>')
 def view_tournament(slug):
     """View tournament bracket"""
-    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    tournament = Tournament.query.options(db.joinedload(Tournament.categories)).filter_by(url_slug=slug).first_or_404()
     participants = Participant.query.filter_by(tournament_id=tournament.id).order_by(Participant.seed).all()
-    matches = Match.query.filter_by(tournament_id=tournament.id).order_by(Match.round, Match.match_number).all()
+    matches = Match.query.options(
+        db.joinedload(Match.participant1),
+        db.joinedload(Match.participant2),
+        db.joinedload(Match.winner),
+        db.joinedload(Match.category)
+    ).filter_by(tournament_id=tournament.id).order_by(Match.round, Match.match_number).all()
 
     # Group matches by round
     rounds = {}
@@ -94,9 +99,10 @@ def view_tournament(slug):
         elif match.bracket_type in ['grand_finals', 'grand_final']:
             grand_finals.append(match)
 
-   # Aggregate player registry data
+    # Aggregate player registry data efficiently
     player_stats = {}
     if tournament.has_categories:
+        # Pre-build stats dictionary from participants
         for category in tournament.categories:
             for participant in category.participants:
                 if participant.name not in player_stats:
@@ -107,40 +113,43 @@ def view_tournament(slug):
                         'total_wins': 0,
                         'placements': []
                     }
-
                 player_stats[participant.name]['categories'].append(category.name)
 
-                # Count matches
-                matches_played = Match.query.filter(
-                    Match.category_id == category.id,
-                    ((Match.participant1_id == participant.id) | (Match.participant2_id == participant.id)),
-                    Match.status == 'completed'
-                ).count()
-                player_stats[participant.name]['total_matches'] += matches_played
+        # Iterate over pre-loaded matches once to count matches and wins
+        for match in matches:
+            if match.status == 'completed' and match.category_id:
+                p1_name = match.participant1.name if match.participant1 else None
+                p2_name = match.participant2.name if match.participant2 else None
+                winner_name = match.winner.name if match.winner else None
 
-                # Count wins
-                wins = Match.query.filter(
-                    Match.category_id == category.id,
-                    Match.winner_id == participant.id
-                ).count()
-                player_stats[participant.name]['total_wins'] += wins
+                if p1_name and p1_name in player_stats:
+                    player_stats[p1_name]['total_matches'] += 1
+                if p2_name and p2_name in player_stats:
+                    player_stats[p2_name]['total_matches'] += 1
+                if winner_name and winner_name in player_stats:
+                    player_stats[winner_name]['total_wins'] += 1
 
-                # Determine placement
-                if category.status == 'completed':
-                    cat_matches = category.matches
-                    if cat_matches:
-                        max_round = max([m.round for m in cat_matches])
-                        finals = [m for m in cat_matches if m.round == max_round]
-                        if finals and finals[0].winner_id == participant.id:
-                            player_stats[participant.name]['placements'].append(('Champion', category.name))
-                        elif finals and participant.id in [finals[0].participant1_id, finals[0].participant2_id]:
-                            player_stats[participant.name]['placements'].append(('Runner-Up', category.name))
-                        elif max_round >= 2:
-                            semis = [m for m in cat_matches if m.round == max_round - 1]
-                            for match in semis:
-                                if participant.id in [match.participant1_id, match.participant2_id] and match.winner_id != participant.id:
-                                    player_stats[participant.name]['placements'].append(('Semi-Finalist', category.name))
-                                    break
+        # Calculate placements
+        for category in tournament.categories:
+            if category.status == 'completed':
+                cat_matches = [m for m in matches if m.category_id == category.id and m.match_type != 'round_robin']
+                if cat_matches:
+                    max_round = max([m.round for m in cat_matches], default=0)
+                    finals = [m for m in cat_matches if m.round == max_round]
+                    semis = [m for m in cat_matches if m.round == max_round - 1] if max_round >= 2 else []
+
+                    for participant in category.participants:
+                        p_name = participant.name
+                        if p_name in player_stats:
+                            if finals and finals[0].winner_id == participant.id:
+                                player_stats[p_name]['placements'].append(('Champion', category.name))
+                            elif finals and participant.id in [finals[0].participant1_id, finals[0].participant2_id]:
+                                player_stats[p_name]['placements'].append(('Runner-Up', category.name))
+                            else:
+                                for sm in semis:
+                                    if participant.id in [sm.participant1_id, sm.participant2_id] and sm.winner_id != participant.id:
+                                        player_stats[p_name]['placements'].append(('Semi-Finalist', category.name))
+                                        break
 
     # Sort registry by wins
     player_registry = sorted(player_stats.values(), key=lambda x: x['total_wins'], reverse=True)

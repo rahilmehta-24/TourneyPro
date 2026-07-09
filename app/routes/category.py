@@ -116,7 +116,11 @@ def view_category(slug, category_id):
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
     category = Category.query.get_or_404(category_id)
     participants = Participant.query.filter_by(category_id=category_id).order_by(Participant.seed).all()
-    matches = Match.query.filter_by(category_id=category_id).order_by(Match.round, Match.match_number).all()
+    matches = Match.query.options(
+        db.joinedload(Match.participant1),
+        db.joinedload(Match.participant2),
+        db.joinedload(Match.winner)
+    ).filter_by(category_id=category_id).order_by(Match.round, Match.match_number).all()
 
     # If tournament is still in setup, generate preview bracket on the fly
     if category.status == 'setup' and not matches and participants:
@@ -179,7 +183,11 @@ def view_category(slug, category_id):
         groups_data = []
         for group in groups:
             standings = GroupStageFormat.calculate_group_standings(group.id)
-            group_matches = Match.query.filter(Match.group_id==group.id, Match.match_type.in_(['group_stage', 'round_robin'])).all()
+            group_matches = Match.query.options(
+                db.joinedload(Match.participant1),
+                db.joinedload(Match.participant2),
+                db.joinedload(Match.winner)
+            ).filter(Match.group_id==group.id, Match.match_type.in_(['group_stage', 'round_robin'])).all()
             groups_data.append({
                 'group': group,
                 'standings': standings,
