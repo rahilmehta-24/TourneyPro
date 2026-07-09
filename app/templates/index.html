@@ -8,7 +8,7 @@
         <h1 class="hero-title">TourneyPro Lawn Tennis</h1>
         <p class="hero-subtitle">Organize and manage tennis tournaments with custom sets, game configurations, and set-by-set validation.</p>
         <div class="hero-actions">
-            {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+            {% if current_user and (current_user.id == tournament.user_id or current_user.role == 'superadmin') %}
             <a href="{{ url_for('tournament.create_tournament') }}" class="btn btn-primary btn-large">
                 <span class="btn-icon">➕</span>
                 Create Tournament
@@ -63,6 +63,15 @@
                     </div>
                 </div>
                 <h3 class="tournament-name">{{ tournament.name }}</h3>
+                {% if tournament.owner %}
+                <p class="tournament-creator" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+                    Created by: <strong>{{ tournament.owner.username }}</strong>
+                </p>
+                {% elif tournament.creator_name %}
+                <p class="tournament-creator" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+                    Created by: <strong>{{ tournament.creator_name }}</strong>
+                </p>
+                {% endif %}
                 {% if tournament.game_info %}
                 <p class="tournament-game">🎮 {{ tournament.game_info }}</p>
                 {% endif %}
@@ -70,7 +79,7 @@
                     <span class="meta-item">👥 {{ tournament.participants|length }} participants</span>
                     <span class="meta-item">📅 {{ tournament.created_at.strftime('%b %d, %Y') }}</span>
                 </div>
-                {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+                {% if current_user and (current_user.id == tournament.user_id or current_user.role == 'superadmin') %}
                 <div class="tournament-actions">
                     <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}"
                         class="btn btn-primary btn-small">Manage</a>

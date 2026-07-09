@@ -32,6 +32,20 @@ def role_required(*roles):
         return decorated_function
     return decorator
 
+def check_tournament_ownership(tournament):
+    user = get_current_user()
+    if not user:
+        abort(401)
+    if user.role != 'superadmin' and tournament.user_id != user.id:
+        abort(403)
+
+def check_player_ownership(player):
+    user = get_current_user()
+    if not user:
+        abort(401)
+    if user.role != 'superadmin' and player.user_id != user.id:
+        abort(403)
+
 def bootstrap_superadmin():
     """Create default superadmin user from environment variables if no users exist"""
     # Check if database has any users
@@ -149,3 +163,42 @@ def revoke_admin(user_id):
         db.session.commit()
         flash(f'Revoked admin privileges from {user.username}.', 'info')
     return redirect(url_for('auth.user_management'))
+
+@auth_bp.route('/profile')
+@login_required
+def profile():
+    user = get_current_user()
+    users = []
+    if user.role == 'superadmin':
+        users = User.query.order_by(User.username).all()
+    return render_template('auth/profile.html', user=user, users=users)
+
+@auth_bp.route('/profile/clear_database', methods=['POST'])
+@login_required
+@role_required('superadmin')
+def clear_user_database():
+    target_user_id = request.form.get('user_id', type=int)
+    if not target_user_id:
+        flash('No user selected.', 'error')
+        return redirect(url_for('auth.profile'))
+        
+    target_user = User.query.get_or_404(target_user_id)
+    
+    from app.models import Tournament, Player
+    
+    try:
+        # Delete user's players
+        Player.query.filter_by(user_id=target_user.id).delete()
+        
+        # Get user's tournaments
+        tournaments = Tournament.query.filter_by(user_id=target_user.id).all()
+        for t in tournaments:
+            db.session.delete(t) # Cascade delete will handle related models
+            
+        db.session.commit()
+        flash(f"Successfully cleared all data for user {target_user.username}.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error clearing data: {str(e)}", "error")
+        
+    return redirect(url_for('auth.profile'))

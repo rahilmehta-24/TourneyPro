@@ -25,6 +25,15 @@
                 </div>
             </div>
             <h3 class="tournament-name">{{ tournament.name }}</h3>
+            {% if tournament.owner %}
+            <p class="tournament-creator" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+                Created by: <strong>{{ tournament.owner.username }}</strong>
+            </p>
+            {% elif tournament.creator_name %}
+            <p class="tournament-creator" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+                Created by: <strong>{{ tournament.creator_name }}</strong>
+            </p>
+            {% endif %}
             {% if tournament.game_info %}
             <p class="tournament-game">🎮 {{ tournament.game_info }}</p>
             {% endif %}
@@ -35,7 +44,7 @@
             <div class="tournament-actions">
                 <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug) }}"
                     class="btn btn-secondary btn-small">View Tournament</a>
-                {% if tournament.status == 'setup' and current_user and current_user.role in ['admin', 'superadmin'] %}
+                {% if current_user and (current_user.id == tournament.user_id or current_user.role == 'superadmin') %}
                 <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}"
                     class="btn btn-primary btn-small">Manage</a>
                 {% endif %}

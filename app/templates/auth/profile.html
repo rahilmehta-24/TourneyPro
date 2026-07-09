@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}User Profile{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header" style="text-align: center; margin-bottom: 2rem;">
+        <h1 class="page-title">Profile</h1>
+        <p class="text-muted">Manage your account information and settings.</p>
+    </div>
+
+    <div class="card" style="max-width: 600px; margin: 0 auto 2rem auto; padding: 2rem;">
+        <h2 style="margin-bottom: 1.5rem;">Account Information</h2>
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <div>
+                <strong>Username:</strong>
+                <span>{{ user.username }}</span>
+            </div>
+            <div>
+                <strong>Email:</strong>
+                <span>{{ user.email }}</span>
+            </div>
+            <div>
+                <strong>Role:</strong>
+                <span class="badge" style="background: var(--accent-primary); color: white; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem; text-transform: uppercase;">
+                    {{ user.role }}
+                </span>
+            </div>
+            <div>
+                <strong>Member Since:</strong>
+                <span>{{ user.created_at.strftime('%B %d, %Y') }}</span>
+            </div>
+        </div>
+    </div>
+
+    {% if user.role == 'superadmin' %}
+    <div class="card" style="max-width: 600px; margin: 0 auto; padding: 2rem; border-top: 4px solid var(--error);">
+        <h2 style="margin-bottom: 1rem; color: var(--error);">Danger Zone: Clear Data</h2>
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+            As a superadmin, you can clear all tournaments, players, and matches for a specific user. This action cannot be undone.
+        </p>
+
+        <form action="{{ url_for('auth.clear_user_database') }}" method="POST" onsubmit="return confirm('WARNING: Are you absolutely sure you want to permanently delete all data for this user? This cannot be undone.');">
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label for="user_id" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Select User</label>
+                <select name="user_id" id="user_id" class="form-control" required style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background-color: var(--bg-card); color: var(--text-primary);">
+                    <option value="" disabled selected>-- Select a User --</option>
+                    {% for u in users %}
+                    <option value="{{ u.id }}">{{ u.username }} ({{ u.email }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-danger" style="background-color: var(--error); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: var(--radius-sm); font-weight: bold; cursor: pointer; width: 100%;">
+                Clear Data for Selected User
+            </button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from app.models import db, Tournament, Category, Participant, Match, Group
 from app.constants import TOURNAMENT_FORMATS
 from app.formats import get_format
-from app.routes.auth import login_required, role_required
+from app.routes.auth import login_required, role_required, check_tournament_ownership
 from app.tennis_logic import validate_and_format_score
 from datetime import datetime
 
@@ -36,6 +36,7 @@ def check_category_auto_completion(category):
 def create_category(slug):
     """Create new category within tournament"""
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
 
     if request.method == 'POST':
         name = request.form.get('name')
@@ -114,6 +115,7 @@ def create_category(slug):
 def view_category(slug, category_id):
     """View category bracket/standings"""
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+
     category = Category.query.get_or_404(category_id)
     participants = Participant.query.filter_by(category_id=category_id).order_by(Participant.seed).all()
     matches = Match.query.options(
@@ -246,6 +248,7 @@ def view_category(slug, category_id):
 def manage_category(slug, category_id):
     """Manage category participants and settings"""
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
     category = Category.query.get_or_404(category_id)
     participants = Participant.query.filter_by(category_id=category_id).order_by(Participant.manual_seed, Participant.seed).all()
 
@@ -502,6 +505,7 @@ def manage_category(slug, category_id):
 def manage_seeding(slug, category_id):
     """Manage manual seeding for participants"""
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
     category = Category.query.get_or_404(category_id)
     participants = Participant.query.filter_by(category_id=category_id).all()
 
@@ -533,6 +537,7 @@ def manage_seeding(slug, category_id):
 def start_knockout_stage(slug, category_id):
     """Transition from group stage to knockout"""
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
     category = Category.query.get_or_404(category_id)
 
     if not category.has_group_stage:
@@ -560,6 +565,7 @@ def start_knockout_stage(slug, category_id):
 @role_required('admin', 'superadmin')
 def rename_category(slug, category_id):
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
     category = Category.query.get_or_404(category_id)
     new_name = request.form.get('new_name')
     if new_name and new_name.strip():
@@ -576,6 +582,7 @@ def rename_category(slug, category_id):
 def delete_category(slug, category_id):
     """Delete a category and all its data"""
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
     category = Category.query.get_or_404(category_id)
     
     try:
@@ -602,6 +609,7 @@ def delete_category(slug, category_id):
 def report_category_match_result(slug, category_id, match_id):
     """Report match result for category"""
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
     category = Category.query.get_or_404(category_id)
     match = Match.query.get_or_404(match_id)
 
@@ -707,6 +715,7 @@ def report_category_match_result(slug, category_id, match_id):
 @role_required('admin', 'superadmin')
 def update_grid_scores(slug, category_id):
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
     category = Category.query.get_or_404(category_id)
     
     if category.status != 'in_progress':

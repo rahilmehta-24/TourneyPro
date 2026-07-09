@@ -7,6 +7,7 @@ class Tournament(db.Model):
     __tablename__ = 'tournaments'
 
     id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     creator_name = db.Column(db.String(100))
     name = db.Column(db.String(200), nullable=False)
     url_slug = db.Column(db.String(200), unique=True, nullable=False)
@@ -160,6 +161,9 @@ class User(db.Model):
     admin_requested = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    tournaments = db.relationship('Tournament', backref='owner', lazy=True)
+    players = db.relationship('Player', backref='owner', lazy=True)
+
     def set_password(self, password):
         from werkzeug.security import generate_password_hash
         self.password_hash = generate_password_hash(password)
@@ -172,6 +176,7 @@ class Player(db.Model):
     __tablename__ = 'players'
 
     id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     name = db.Column(db.String(100), nullable=False)
     gender = db.Column(db.String(20), nullable=False) # e.g. Boys, Girls, Mens, Womens
     age_category = db.Column(db.String(20), nullable=False) # e.g. U8, U10, U12, U14, U18, Open

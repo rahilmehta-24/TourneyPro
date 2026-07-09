@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, make_response
 from app.models import db, Player, PlayerTournamentRecord, Participant
 from sqlalchemy import desc
-from app.routes.auth import login_required, role_required
+from app.routes.auth import login_required, role_required, get_current_user, check_player_ownership
 from datetime import datetime
 import openpyxl
 from io import BytesIO
@@ -38,6 +38,8 @@ def view_leaderboard():
                            levels=levels)
 
 @leaderboard_bp.route('/add_player', methods=['POST'])
+@login_required
+@role_required('admin', 'superadmin')
 def add_player():
     name = request.form.get('name')
     gender = request.form.get('gender')
@@ -45,6 +47,7 @@ def add_player():
 
     if name and gender and age_category:
         player = Player()
+        player.user_id = get_current_user().id
         player.name = name
         player.gender = gender
         player.age_category = age_category
@@ -57,8 +60,11 @@ def add_player():
     return redirect(url_for('leaderboard.view_leaderboard', category=age_category, gender=gender))
 
 @leaderboard_bp.route('/add_points/<int:player_id>', methods=['POST'])
+@login_required
+@role_required('admin', 'superadmin')
 def add_points(player_id):
     player = Player.query.get_or_404(player_id)
+    check_player_ownership(player)
 
     tournament_name = request.form.get('tournament_name')
     level = request.form.get('level', 'Regular')
@@ -121,9 +127,10 @@ def reset_leaderboard():
 
 @leaderboard_bp.route('/player/<int:player_id>/edit', methods=['POST'])
 @login_required
-@role_required('superadmin')
+@role_required('admin', 'superadmin')
 def edit_player(player_id):
     player = Player.query.get_or_404(player_id)
+    check_player_ownership(player)
     player.name = request.form.get('name')
     player.gender = request.form.get('gender')
     player.age_category = request.form.get('age_category')
@@ -133,9 +140,10 @@ def edit_player(player_id):
 
 @leaderboard_bp.route('/player/<int:player_id>/delete', methods=['POST'])
 @login_required
-@role_required('superadmin')
+@role_required('admin', 'superadmin')
 def delete_player(player_id):
     player = Player.query.get_or_404(player_id)
+    check_player_ownership(player)
     Participant.query.filter_by(player_id=player.id).update({'player_id': None})
     db.session.delete(player)
     db.session.commit()

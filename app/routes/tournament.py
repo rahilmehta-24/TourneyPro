@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from app.models import db, Tournament, Participant, Match, TournamentSettings
 from app.formats import get_format
 from app.constants import TOURNAMENT_FORMATS
-from app.routes.auth import login_required, role_required
+from app.routes.auth import login_required, role_required, get_current_user, check_tournament_ownership
 from app.tennis_logic import validate_and_format_score
 from slugify import slugify
 from datetime import datetime
@@ -35,6 +35,7 @@ def create_tournament():
 
         # Create tournament
         tournament = Tournament(
+            user_id=get_current_user().id,
             creator_name=creator_name,
             name=name,
             url_slug=url_slug,
@@ -182,6 +183,8 @@ def view_tournament(slug):
 def manage_tournament(slug):
     """Manage tournament (add participants, start tournament)"""
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
+    
     participants = Participant.query.filter_by(tournament_id=tournament.id).order_by(Participant.seed).all()
 
     if request.method == 'POST':
@@ -311,6 +314,8 @@ def manage_tournament(slug):
 def report_match_result(slug, match_id):
     """Report match result"""
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
+    
     match = Match.query.get_or_404(match_id)
 
     action = request.form.get('action')
@@ -470,6 +475,8 @@ def report_match_result(slug, match_id):
 def toggle_match_status(match_id):
     """Toggle match status between pending and in_progress"""
     match = Match.query.get_or_404(match_id)
+    if match.tournament:
+        check_tournament_ownership(match.tournament)
     
     if match.status == 'completed':
         return jsonify({'success': False, 'message': 'Cannot toggle a completed match.'}), 400
@@ -495,6 +502,8 @@ def toggle_match_status(match_id):
 def schedule_match(match_id):
     """Set the scheduled time for a match"""
     match = Match.query.get_or_404(match_id)
+    if match.tournament:
+        check_tournament_ownership(match.tournament)
     
     if match.status == 'completed':
         return jsonify({'success': False, 'message': 'Cannot schedule a completed match.'}), 400
@@ -531,6 +540,8 @@ def schedule_match(match_id):
 def manage_tournament_seeding(slug):
     """Manage manual seeding for tournament participants"""
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
+    
     participants = Participant.query.filter_by(tournament_id=tournament.id).all()
 
     if request.method == 'POST':
@@ -560,6 +571,7 @@ def manage_tournament_seeding(slug):
 def delete_tournament(slug):
     """Delete tournament"""
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
 
     try:
         db.session.delete(tournament)
