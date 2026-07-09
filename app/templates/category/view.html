@@ -923,32 +923,32 @@ async function saveMatchAction(actionType) {
             console.error(err);
             success = false;
         }
+        if (success) {
+            window.location.reload();
+        }
     } else {
         if (actionType === 'complete_match' && !validateWinnerSelected()) {
             return;
         }
         
         const form = document.getElementById('reportForm');
-        const formData = new FormData(form);
-        formData.append('action', actionType);
         
-        try {
-            const reportRes = await fetch(form.action, {
-                method: 'POST',
-                body: formData
-            });
-            if (!reportRes.ok) {
-                alert('Error updating score.');
-                success = false;
-            }
-        } catch (err) {
-            console.error(err);
-            success = false;
+        // Remove existing action inputs to avoid duplicates
+        const existingAction = form.querySelector('input[name="action"]');
+        if (existingAction) {
+            existingAction.remove();
         }
-    }
-    
-    if (success) {
-        window.location.reload();
+        
+        // Inject the action type
+        const actionInput = document.createElement('input');
+        actionInput.type = 'hidden';
+        actionInput.name = 'action';
+        actionInput.value = actionType;
+        form.appendChild(actionInput);
+        
+        // Submit normally to allow Flask to render flash messages if validation fails
+        form.method = 'POST';
+        form.submit();
     }
 }
 function validateWinnerSelected() {
