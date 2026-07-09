@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
-import { Appbar, Card, Text, Button, useTheme, ActivityIndicator } from 'react-native-paper';
+import { Appbar, Card, Text, Button, useTheme } from 'react-native-paper';
 import { AuthContext } from '../navigation/AuthContext';
 import { fetchTournaments } from '../services/api';
+import SportsLoader from '../components/SportsLoader';
 
 export default function DashboardScreen({ navigation }) {
   const { user, logout } = useContext(AuthContext);
@@ -51,6 +52,10 @@ export default function DashboardScreen({ navigation }) {
     </Card>
   );
 
+  if (loading) {
+    return <SportsLoader />;
+  }
+
   return (
     <View style={styles.container}>
       <Appbar.Header style={{ backgroundColor: theme.colors.surface }}>
@@ -58,26 +63,20 @@ export default function DashboardScreen({ navigation }) {
         <Appbar.Action icon="logout" onPress={logout} />
       </Appbar.Header>
 
-      {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" />
-        </View>
-      ) : (
-        <FlatList
-          data={tournaments}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={renderTournament}
-          contentContainerStyle={styles.list}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />
-          }
-          ListEmptyComponent={
-            <View style={styles.center}>
-              <Text>No tournaments found.</Text>
-            </View>
-          }
-        />
-      )}
+      <FlatList
+        data={tournaments}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={renderTournament}
+        contentContainerStyle={styles.list}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />
+        }
+        ListEmptyComponent={
+          <View style={styles.center}>
+            <Text>No tournaments found.</Text>
+          </View>
+        }
+      />
     </View>
   );
 }

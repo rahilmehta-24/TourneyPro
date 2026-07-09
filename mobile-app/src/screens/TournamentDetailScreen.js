@@ -4,6 +4,7 @@ import { Appbar, Card, Text, useTheme, ActivityIndicator, Button, Modal, Portal,
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { AuthContext } from '../navigation/AuthContext';
 import { fetchMatches, reportMatch } from '../services/api';
+import SportsLoader from '../components/SportsLoader';
 
 export default function TournamentDetailScreen({ route, navigation }) {
   const { tournament } = route.params;
@@ -245,9 +246,7 @@ export default function TournamentDetailScreen({ route, navigation }) {
       </Appbar.Header>
 
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" />
-        </View>
+        <SportsLoader />
       ) : !activeCategoryId ? (
         <View style={styles.center}>
           <Text>No categories in this tournament.</Text>

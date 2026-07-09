@@ -1,0 +1,77 @@
+<div id="sports-loader" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; color: white; font-family: system-ui, -apple-system, sans-serif;">
+    <div class="tennis-animation" style="position: relative; width: 200px; height: 100px; margin-bottom: 2rem;">
+        <!-- Player -->
+        <div style="position: absolute; left: 10px; bottom: 0; font-size: 3rem;">🏃‍♂️</div>
+        <!-- Racket -->
+        <div class="racket-swing" style="position: absolute; left: 45px; bottom: 20px; font-size: 2rem; transform-origin: bottom left;">🏸</div>
+        <!-- Ball -->
+        <div class="ball-fly" style="position: absolute; left: 60px; bottom: 30px; font-size: 1.5rem;">🎾</div>
+    </div>
+    
+    <h3 style="margin-bottom: 1rem; color: var(--accent-primary);">Loading...</h3>
+    <p id="sports-fact" style="max-width: 400px; text-align: center; font-size: 1.1rem; line-height: 1.5; color: #cbd5e1; padding: 0 1rem;"></p>
+</div>
+
+<style>
+@keyframes swing {
+    0% { transform: rotate(-20deg); }
+    50% { transform: rotate(60deg); }
+    100% { transform: rotate(-20deg); }
+}
+
+@keyframes fly {
+    0% { transform: translate(0, 0) scale(1); opacity: 1; }
+    40% { transform: translate(100px, -40px) scale(0.6); opacity: 1; }
+    50% { transform: translate(120px, -20px) scale(0.5); opacity: 0; }
+    100% { transform: translate(0, 0) scale(1); opacity: 0; }
+}
+
+.racket-swing {
+    animation: swing 1.5s infinite ease-in-out;
+}
+
+.ball-fly {
+    animation: fly 1.5s infinite ease-in-out;
+}
+</style>
+
+<script>
+const tennisFacts = [
+    "The longest tennis match in history lasted 11 hours and 5 minutes at Wimbledon in 2010.",
+    "Yellow tennis balls were used at Wimbledon for the first time in 1986.",
+    "Venus and Serena Williams became the first sisters to win Olympic gold medals in tennis.",
+    "The fastest tennis serve on record was hit by Sam Groth at 163.7 mph (263.4 km/h).",
+    "A tennis ball is typically in play for only 20 minutes during a 2.5-hour match.",
+    "The word 'tennis' comes from the French word 'tenez', meaning 'take' or 'receive'.",
+    "Wimbledon is the only Grand Slam tournament played on grass courts.",
+    "Arthur Ashe is the only black man ever to win the singles title at Wimbledon, the US Open, and the Australian Open.",
+    "Steffi Graf is the only player to achieve the Golden Slam (all 4 Grand Slams and Olympic Gold in the same year)."
+];
+
+function showSportsLoader() {
+    const loader = document.getElementById('sports-loader');
+    const factEl = document.getElementById('sports-fact');
+    const randomFact = tennisFacts[Math.floor(Math.random() * tennisFacts.length)];
+    
+    factEl.innerText = randomFact;
+    loader.style.display = 'flex';
+}
+
+function hideSportsLoader() {
+    const loader = document.getElementById('sports-loader');
+    loader.style.display = 'none';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Only intercept form submissions to avoid being obtrusive on every link click
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+        form.addEventListener('submit', (e) => {
+            // Check if form has target blank or is a search form (method GET)
+            if (form.getAttribute('target') !== '_blank' && form.getAttribute('method')?.toUpperCase() !== 'GET') {
+                showSportsLoader();
+            }
+        });
+    });
+});
+</script>
