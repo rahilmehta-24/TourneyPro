@@ -773,16 +773,22 @@ async function toggleMatchStatus(matchId, checkbox) {
 
 let currentManageMatchId = null;
 
+let currentManageMatchIsAdmin = false;
+
 function handleStatusChange(status) {
     const scoringSection = document.getElementById('reportForm');
     const savePendingBtn = document.getElementById('savePendingBtn');
     const saveLiveBtn = document.getElementById('saveLiveBtn');
     const completeMatchBtn = document.getElementById('completeMatchBtn');
     const statusSelect = document.getElementById('modalMatchStatus');
-    const isAdmin = !statusSelect.disabled;
+    const isAdmin = currentManageMatchIsAdmin;
     
     if (scoringSection) {
-        scoringSection.style.display = (isAdmin || status === 'in_progress' || status === 'completed') ? 'block' : 'none';
+        if (!isAdmin) {
+            scoringSection.style.display = 'none';
+        } else {
+            scoringSection.style.display = (status === 'in_progress' || status === 'completed') ? 'block' : 'none';
+        }
     }
     
     if (isAdmin) {
@@ -794,6 +800,7 @@ function handleStatusChange(status) {
 
 function openMatchModal(matchId, currentStatus, currentScheduledTime, p1Name, p1Id, p2Name, p2Id, isAdmin, score1, score2) {
     currentManageMatchId = matchId;
+    currentManageMatchIsAdmin = isAdmin;
     document.getElementById('modalMatchId').innerText = matchId;
     
     const statusSelect = document.getElementById('modalMatchStatus');
