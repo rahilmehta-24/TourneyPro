@@ -1730,3 +1730,18 @@ select option {
     margin-top: 1rem;
     font-style: italic;
 }
+
+/* Mobile adjustments for user info in navbar */
+@media (max-width: 768px) {
+    .nav-user-info {
+        border-left: none !important;
+        padding-left: 0 !important;
+        margin-top: 1rem;
+        border-top: 1px solid rgba(255,255,255,0.1);
+        padding-top: 1rem;
+    }
+    .nav-logout {
+        margin-left: 0 !important;
+        width: fit-content;
+    }
+}

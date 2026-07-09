@@ -52,13 +52,13 @@
                         </form>
                     {% endif %}
                     
-                    <span style="color: var(--text-secondary); font-size: 0.9rem; border-left: 1px solid rgba(255,255,255,0.1); padding-left: var(--spacing-sm);">
+                    <span class="nav-user-info" style="color: var(--text-secondary); font-size: 0.9rem; border-left: 1px solid rgba(255,255,255,0.1); padding-left: var(--spacing-sm);">
                         👤 <a href="{{ url_for('auth.profile') }}" style="color: inherit; text-decoration: none;"><strong>{{ current_user.username }}</strong></a>
                         <span style="font-size: 0.75rem; vertical-align: middle; background: rgba(249, 115, 22, 0.2); color: var(--accent-primary); padding: 2px 6px; border-radius: var(--radius-sm); margin-left: 4px;">
                             {{ current_user.role.upper() }}
                         </span>
                     </span>
-                    <a href="{{ url_for('auth.logout') }}" class="btn btn-small" style="background: transparent; border: 1px solid var(--accent-danger); color: var(--accent-danger); margin-left: var(--spacing-sm);">Log Out</a>
+                    <a href="{{ url_for('auth.logout') }}" class="btn btn-small nav-logout" style="background: transparent; border: 1px solid var(--accent-danger); color: var(--accent-danger); margin-left: var(--spacing-sm);">Log Out</a>
                 {% else %}
                     <a href="{{ url_for('auth.login') }}" class="nav-link">Log In</a>
                     <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Register</a>
