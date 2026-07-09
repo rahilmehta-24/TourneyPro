@@ -2,6 +2,7 @@ from flask import Flask, request
 from config import Config
 from app.models import db
 from flask_compress import Compress
+from flask_jwt_extended import JWTManager
 import os
 
 def create_app(config_class=Config):
@@ -11,6 +12,13 @@ def create_app(config_class=Config):
     # Initialize extensions
     db.init_app(app)
     Compress(app)
+    
+    # Initialize JWT and Marshmallow
+    app.config['JWT_SECRET_KEY'] = app.config.get('SECRET_KEY', 'super-secret')  # Use app secret key for JWT
+    jwt = JWTManager(app)
+    
+    from app.schemas import ma
+    ma.init_app(app)
 
     # Ensure instance folder exists
     try:
@@ -49,6 +57,9 @@ def create_app(config_class=Config):
     app.register_blueprint(export_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(leaderboard_bp)
+    
+    from app.api import api_bp
+    app.register_blueprint(api_bp, url_prefix='/api/v1')
 
 
     # Cache Control Middleware for static assets

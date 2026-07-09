@@ -1,6 +1,6 @@
 # TourneyPro v1.1 - Tournament Manager
 
-A robust, production-ready Flask-based web application for managing sports and gaming tournaments. This application supports a fully-featured tournament lifecycle including participant management, dynamic bracket generation, and live interactive score reporting.
+A robust, production-ready Flask-based web application (and upcoming mobile application) for managing sports and gaming tournaments. This application supports a fully-featured tournament lifecycle including participant management, dynamic bracket generation, and live interactive score reporting.
 
 ## Key Features
 
@@ -13,6 +13,7 @@ A robust, production-ready Flask-based web application for managing sports and g
   - Interactive grid and bracket UI for visualizing live progress.
   - Two distinct scoring modes: "Total Games Scoring" (cumulative numeric points) or "Standard Tennis Set Scoring" (traditional Best-of-3 or Best-of-5 sets with tiebreaks).
   - Admin controls for manual result reporting, progressing winners, and resetting faulty brackets.
+  - *[Upcoming]* Mobile App Companion for on-the-go score reporting by admins and live tracking by fans.
 
 - **Global Player Statistics**
   - Maintains a centralized Player Registry across all tournaments.
@@ -22,20 +23,21 @@ A robust, production-ready Flask-based web application for managing sports and g
 - **Enterprise & Security**
   - PostgreSQL Database backend optimized for relational integrity (Foreign Key enforcement).
   - Role-based Access Control (RBAC): SuperAdmin, Admin, and public viewer segregation.
-  - PDF Export of brackets using `xhtml2pdf`.
+  - REST API (`/api/v1/`) with JWT authentication to support mobile and third-party integrations.
 
 ## Tech Stack
 
 - **Backend**: Python 3, Flask, SQLAlchemy ORM, psycopg2
-- **Database**: PostgreSQL (Production) / SQLite (Development)
-- **Frontend**: HTML5, CSS3, Vanilla JS (No heavyweight frontend frameworks)
-- **Styling**: Custom CSS with CSS Variables, Dark Mode, and modern UI paradigms (Glassmorphism, Gradients, Shadows).
+- **Mobile App**: React Native (Expo)
+- **Frontend (Web)**: HTML5, CSS3, Vanilla JS (No heavyweight frontend frameworks)
+- **Styling (Web)**: Custom CSS with CSS Variables, Dark Mode, and modern UI paradigms (Glassmorphism, Gradients, Shadows).
 
 ## Project Structure
 
 ```
 TourneyPro/
 ├── app/
+│   ├── api/             # JSON REST API endpoints for the mobile application
 │   ├── algorithms/      # Bracket generation algorithms (Single Elim, Round Robin, Group Stage)
 │   ├── routes/          # Flask Blueprints (Auth, Tournament, Category, Match, Leaderboard)
 │   ├── templates/       # Jinja2 HTML Templates
@@ -44,6 +46,7 @@ TourneyPro/
 │   ├── constants.py     # Format definitions and system constants
 │   ├── leaderboard_logic.py # Centralized stats recalculation module
 │   └── __init__.py      # App factory and initialization
+├── mobile-app/          # React Native (Expo) frontend mobile application codebase
 ├── config.py            # Environment Configuration
 ├── run.py               # WSGI Entry point
 ├── RULEBOOK.md          # Comprehensive manual and rules engine
@@ -58,7 +61,7 @@ TourneyPro/
    cd TourneyPro
    ```
 
-2. **Create a virtual environment**
+2. **Create a virtual environment for the Backend**
    ```bash
    python3 -m venv venv
    source venv/bin/activate
@@ -72,11 +75,18 @@ TourneyPro/
 4. **Environment Configuration**
    Configure your `DATABASE_URL` and `SECRET_KEY` in `config.py` or `.env`.
 
-5. **Run the application**
+5. **Run the Backend application**
    ```bash
    python run.py
    ```
    Open your browser and navigate to `http://127.0.0.1:5000`
 
+6. **Run the Mobile Application**
+   ```bash
+   cd mobile-app
+   npm install
+   npx expo start
+   ```
+
 ## Documentation
-Please refer to the [RULEBOOK.md](RULEBOOK.md) file included in the root directory for an exhaustive breakdown of the mathematical algorithms, bracket lifecycle behaviors, and scoring logic that powers the system.
+Please refer to the [RULEBOOK.md](RULEBOOK.md) file included in the root directory for an exhaustive breakdown of the mathematical algorithms, bracket lifecycle behaviors, scoring logic, and mobile-app integration workflows.
