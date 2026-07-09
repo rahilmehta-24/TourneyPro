@@ -8,7 +8,7 @@
         <h1 class="hero-title">TourneyPro Lawn Tennis</h1>
         <p class="hero-subtitle">Organize and manage tennis tournaments with custom sets, game configurations, and set-by-set validation.</p>
         <div class="hero-actions">
-            {% if current_user and (current_user.id == tournament.user_id or current_user.role == 'superadmin') %}
+            {% if current_user and current_user.role in ['admin', 'superadmin'] %}
             <a href="{{ url_for('tournament.create_tournament') }}" class="btn btn-primary btn-large">
                 <span class="btn-icon">➕</span>
                 Create Tournament
