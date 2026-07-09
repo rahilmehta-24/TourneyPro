@@ -3,7 +3,9 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from . import api_bp
 from app.models import Match, User, db
 from app.schemas import matches_schema
-from app.tennis_logic import update_match_and_advance, recalculate_group_stats
+from app.formats import get_format
+from app.leaderboard_logic import update_live_player_stats, recalculate_all_group_stats
+from datetime import datetime
 
 @api_bp.route('/matches/category/<int:category_id>', methods=['GET'])
 def get_matches(category_id):
@@ -60,12 +62,19 @@ def report_match(match_id):
                 
             match.winner_id = winner_id
             match.status = 'completed'
+            match.completed_at = datetime.utcnow()
             db.session.commit()
             
-            # Use shared logic to advance the bracket
-            update_match_and_advance(match)
-            if match.group_id:
-                recalculate_group_stats(match.group_id)
+            update_live_player_stats(match)
+
+            fmt = get_format(match.category.format)
+            if fmt:
+                fmt.advance_match(match, match.category, winner_id)
+            
+            db.session.commit()
+
+            if match.category.format in ['group_stage', 'round_robin']:
+                recalculate_all_group_stats(match.category_id)
                 
             return jsonify({"success": True, "message": "Match completed"}), 200
 

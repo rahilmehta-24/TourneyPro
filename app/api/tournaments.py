@@ -19,7 +19,7 @@ def get_tournament_by_slug(slug):
         "tournament": tournament_schema.dump(tournament)
     }), 200
 
-@api_bp.route('/tournaments/<slug बॉर्डर>/categories/<int:category_id>', methods=['GET'])
+@api_bp.route('/tournaments/<slug>/categories/<int:category_id>', methods=['GET'])
 def get_category_details(slug, category_id):
     category = Category.query.get_or_404(category_id)
     return jsonify({
