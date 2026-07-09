@@ -32,6 +32,7 @@ export default function TournamentDetailScreen({ route, navigation }) {
   const [score1, setScore1] = useState('');
   const [score2, setScore2] = useState('');
   const [winnerId, setWinnerId] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   
   // Date Time Picker State
   const [date, setDate] = useState(new Date());
@@ -153,6 +154,7 @@ export default function TournamentDetailScreen({ route, navigation }) {
       actionType = 'live_score';
     }
 
+    setSubmitting(true);
     try {
       const scheduledTimeISO = isScheduled ? date.toISOString() : null;
       
@@ -176,6 +178,8 @@ export default function TournamentDetailScreen({ route, navigation }) {
       }
     } catch (error) {
       Alert.alert('Network Error', 'Failed to submit score');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -273,105 +277,109 @@ export default function TournamentDetailScreen({ route, navigation }) {
           onDismiss={() => setModalVisible(false)} 
           contentContainerStyle={styles.modal}
         >
-          {selectedMatch && (
-            <FlatList
-              data={[{ key: 'form' }]}
-              showsVerticalScrollIndicator={false}
-              renderItem={() => (
-                <View>
-                  <Text variant="titleLarge" style={{marginBottom: 16}}>Edit Match</Text>
-                  
-                  <Text style={{marginBottom: 8}}>Match Status:</Text>
-                  <SegmentedButtons
-                    value={status}
-                    onValueChange={setStatus}
-                    style={{marginBottom: 20}}
-                    buttons={[
-                      { value: 'pending', label: 'Pending' },
-                      { value: 'in_progress', label: 'Live' },
-                      { value: 'completed', label: 'Finished' },
-                    ]}
-                  />
-
-                  <Text style={{marginBottom: 8}}>Schedule Time:</Text>
-                  <View style={{flexDirection: 'row', alignItems: 'center', marginBottom: 20}}>
-                    {isScheduled ? (
-                      <View style={{flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'}}>
-                        <Text style={{flex: 1}}>{date.toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'})}</Text>
-                        <Button mode="text" onPress={() => setShowDatePicker(true)}>Date</Button>
-                        <Button mode="text" onPress={() => setShowTimePicker(true)}>Time</Button>
-                        <Button mode="text" textColor={theme.colors.error} onPress={clearSchedule}>Clear</Button>
-                      </View>
-                    ) : (
-                      <Button mode="outlined" style={{flex: 1}} onPress={() => setShowDatePicker(true)}>
-                        Set Schedule
-                      </Button>
-                    )}
-                  </View>
-
-                  {(showDatePicker || showTimePicker) && (
-                    <DateTimePicker
-                      value={date}
-                      mode={showDatePicker ? 'date' : 'time'}
-                      is24Hour={true}
-                      display="default"
-                      onChange={showDatePicker ? onChangeDate : onChangeTime}
+          {submitting ? (
+            <SportsLoader />
+          ) : (
+            selectedMatch && (
+              <FlatList
+                data={[{ key: 'form' }]}
+                showsVerticalScrollIndicator={false}
+                renderItem={() => (
+                  <View>
+                    <Text variant="titleLarge" style={{marginBottom: 16}}>Edit Match</Text>
+                    
+                    <Text style={{marginBottom: 8}}>Match Status:</Text>
+                    <SegmentedButtons
+                      value={status}
+                      onValueChange={setStatus}
+                      style={{marginBottom: 20}}
+                      buttons={[
+                        { value: 'pending', label: 'Pending' },
+                        { value: 'in_progress', label: 'Live' },
+                        { value: 'completed', label: 'Finished' },
+                      ]}
                     />
-                  )}
 
-                  {status !== 'pending' && (
-                    <>
-                      <Text>{selectedMatch.participant1?.name || 'Player 1'} Score:</Text>
-                      <TextInput
-                        value={score1}
-                        onChangeText={setScore1}
-                        mode="outlined"
-                        style={styles.input}
-                      />
-
-                      <Text>{selectedMatch.participant2?.name || 'Player 2'} Score:</Text>
-                      <TextInput
-                        value={score2}
-                        onChangeText={setScore2}
-                        mode="outlined"
-                        style={styles.input}
-                      />
-                    </>
-                  )}
-
-                  {status === 'completed' && (
-                    <>
-                      <Text style={{marginBottom: 8, marginTop: 8}}>Select Winner:</Text>
-                      <View style={{flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24}}>
-                        <Button 
-                          mode={winnerId === (selectedMatch.participant1?.id?.toString()) ? "contained" : "outlined"}
-                          onPress={() => setWinnerId(selectedMatch.participant1?.id?.toString())}
-                          style={{flex: 1, marginRight: 4}}
-                          disabled={!selectedMatch.participant1}
-                        >
-                          {selectedMatch.participant1?.name || 'TBD'}
+                    <Text style={{marginBottom: 8}}>Schedule Time:</Text>
+                    <View style={{flexDirection: 'row', alignItems: 'center', marginBottom: 20}}>
+                      {isScheduled ? (
+                        <View style={{flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'}}>
+                          <Text style={{flex: 1}}>{date.toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'})}</Text>
+                          <Button mode="text" onPress={() => setShowDatePicker(true)}>Date</Button>
+                          <Button mode="text" onPress={() => setShowTimePicker(true)}>Time</Button>
+                          <Button mode="text" textColor={theme.colors.error} onPress={clearSchedule}>Clear</Button>
+                        </View>
+                      ) : (
+                        <Button mode="outlined" style={{flex: 1}} onPress={() => setShowDatePicker(true)}>
+                          Set Schedule
                         </Button>
-                        <Button 
-                          mode={winnerId === (selectedMatch.participant2?.id?.toString()) ? "contained" : "outlined"}
-                          onPress={() => setWinnerId(selectedMatch.participant2?.id?.toString())}
-                          style={{flex: 1, marginLeft: 4}}
-                          disabled={!selectedMatch.participant2}
-                        >
-                          {selectedMatch.participant2?.name || 'TBD'}
-                        </Button>
-                      </View>
-                    </>
-                  )}
+                      )}
+                    </View>
 
-                  <Button mode="contained" onPress={handleSubmitScore} style={styles.button}>
-                    Save Match
-                  </Button>
-                  <Button mode="text" onPress={() => setModalVisible(false)} style={{marginBottom: 16}}>
-                    Cancel
-                  </Button>
-                </View>
-              )}
-            />
+                    {(showDatePicker || showTimePicker) && (
+                      <DateTimePicker
+                        value={date}
+                        mode={showDatePicker ? 'date' : 'time'}
+                        is24Hour={true}
+                        display="default"
+                        onChange={showDatePicker ? onChangeDate : onChangeTime}
+                      />
+                    )}
+
+                    {status !== 'pending' && (
+                      <>
+                        <Text>{selectedMatch.participant1?.name || 'Player 1'} Score:</Text>
+                        <TextInput
+                          value={score1}
+                          onChangeText={setScore1}
+                          mode="outlined"
+                          style={styles.input}
+                        />
+
+                        <Text>{selectedMatch.participant2?.name || 'Player 2'} Score:</Text>
+                        <TextInput
+                          value={score2}
+                          onChangeText={setScore2}
+                          mode="outlined"
+                          style={styles.input}
+                        />
+                      </>
+                    )}
+
+                    {status === 'completed' && (
+                      <>
+                        <Text style={{marginBottom: 8, marginTop: 8}}>Select Winner:</Text>
+                        <View style={{flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24}}>
+                          <Button 
+                            mode={winnerId === (selectedMatch.participant1?.id?.toString()) ? "contained" : "outlined"}
+                            onPress={() => setWinnerId(selectedMatch.participant1?.id?.toString())}
+                            style={{flex: 1, marginRight: 4}}
+                            disabled={!selectedMatch.participant1}
+                          >
+                            {selectedMatch.participant1?.name || 'TBD'}
+                          </Button>
+                          <Button 
+                            mode={winnerId === (selectedMatch.participant2?.id?.toString()) ? "contained" : "outlined"}
+                            onPress={() => setWinnerId(selectedMatch.participant2?.id?.toString())}
+                            style={{flex: 1, marginLeft: 4}}
+                            disabled={!selectedMatch.participant2}
+                          >
+                            {selectedMatch.participant2?.name || 'TBD'}
+                          </Button>
+                        </View>
+                      </>
+                    )}
+
+                    <Button mode="contained" onPress={handleSubmitScore} style={styles.button}>
+                      Save Match
+                    </Button>
+                    <Button mode="text" onPress={() => setModalVisible(false)} style={{marginBottom: 16}}>
+                      Cancel
+                    </Button>
+                  </View>
+                )}
+              />
+            )
           )}
         </Modal>
       </Portal>
