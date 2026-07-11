@@ -376,7 +376,7 @@
 
             <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Group Matrix</h4>
             <div style="overflow-x: auto;">
-                {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status == 'in_progress' %}
+                {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] %}
                 <form method="POST" action="{{ url_for('category.update_grid_scores', slug=tournament.url_slug, category_id=category.id) }}">
                 {% endif %}
                 <table class="standings-table round-robin-grid" style="text-align: center;">
@@ -411,7 +411,7 @@
                                 
                                 <td style="padding: 4px;">
                                 {% if ns.found %}
-                                    {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status == 'in_progress' and ns.match.id %}
+                                    {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] and ns.match.id %}
                                         <div style="display: flex; justify-content: center; align-items: center;">
                                             <input type="number" name="match_{{ ns.match.id }}_p{% if ns.is_p1 %}1{% else %}2{% endif %}" 
                                                    value="{{ ns.match.score1 if (ns.is_p1 and ns.match.score1 is not none) else (ns.match.score2 if not ns.is_p1 and ns.match.score2 is not none else '') }}" 
@@ -439,7 +439,7 @@
                     </tbody>
                 </table>
             </div>
-                {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status == 'in_progress' %}
+                {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] %}
                 <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 1rem; margin-bottom: 1rem;">
                     <button type="submit" class="btn btn-primary" title="Save Entries" style="padding: 0.5rem; display: flex; align-items: center; justify-content: center; border-radius: 4px;">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -500,7 +500,7 @@
                     {% endif %}
                 </span>
                 {% else %}
-                {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status == 'in_progress' %}
+                {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] %}
                 <button onclick="openReportModal({{ match.id or 0 }})" class="btn btn-small">Report Result</button>
                 {% endif %}
                 {% endif %}
@@ -730,7 +730,7 @@ function handleStatusChange(status) {
         if (!isAdmin) {
             scoringSection.style.display = 'none';
         } else {
-            scoringSection.style.display = (status === 'in_progress' || status === 'completed') ? 'block' : 'none';
+            scoringSection.style.display = 'block'; // Always show for admins so they can punch scores
         }
     }
     

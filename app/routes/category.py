@@ -613,6 +613,10 @@ def report_category_match_result(slug, category_id, match_id):
     category = Category.query.get_or_404(category_id)
     match = Match.query.get_or_404(match_id)
 
+    if category.status == 'upcoming':
+        category.status = 'in_progress'
+        category.started_at = datetime.utcnow()
+
     try:
         action = request.form.get('action')
         is_live_update = (action == 'live_score')
@@ -718,12 +722,12 @@ def update_grid_scores(slug, category_id):
     check_tournament_ownership(tournament)
     category = Category.query.get_or_404(category_id)
     
-    if category.status != 'in_progress':
-        flash('Cannot update scores unless category is in progress.', 'error')
-        return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
+    if category.status == 'upcoming':
+        category.status = 'in_progress'
+        category.started_at = datetime.utcnow()
+        # Will commit at the end
     
     from app.models import Match
-    from datetime import datetime
     
     # Process form data
     # Expected format: match_{id}_p1, match_{id}_p2
