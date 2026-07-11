@@ -25,13 +25,30 @@ class GroupStageFormat(TournamentFormat):
 
         participants_sorted = sorted(participants, key=lambda p: p.manual_seed or p.seed or 999)
 
-        for i, participant in enumerate(participants_sorted):
-            round_num = i // num_groups
-            if round_num % 2 == 0:
-                group_index = i % num_groups
-            else:
-                group_index = (num_groups - 1) - (i % num_groups)
-            participant.group_id = groups[group_index].id
+        num_participants = len(participants_sorted)
+        if num_groups > 0:
+            base_size = num_participants // num_groups
+            remainder = num_participants % num_groups
+            target_sizes = [base_size + (1 if idx < remainder else 0) for idx in range(num_groups)]
+            
+            group_counts = [0] * num_groups
+            
+            snake_order = []
+            for round_num in range(num_participants):
+                if round_num % 2 == 0:
+                    snake_order.extend(range(num_groups))
+                else:
+                    snake_order.extend(reversed(range(num_groups)))
+                    
+            snake_idx = 0
+            for participant in participants_sorted:
+                while True:
+                    candidate_group = snake_order[snake_idx]
+                    snake_idx += 1
+                    if group_counts[candidate_group] < target_sizes[candidate_group]:
+                        participant.group_id = groups[candidate_group].id
+                        group_counts[candidate_group] += 1
+                        break
 
         db.session.commit()
 
