@@ -467,7 +467,7 @@
     {% endif %}
 
     
-    {% if not groups_data and category.format == 'round_robin' %}
+    {% if not groups_data and category.format in ['round_robin', 'doubles_round_robin'] %}
     <div class="groups-section">
         <h2>Round Robin Matches</h2>
         <div class="matches-list">

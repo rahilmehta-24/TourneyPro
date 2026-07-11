@@ -12,7 +12,7 @@ def check_category_auto_completion(category):
     from app.models import Match
     has_knockout = category.format in ['single_elimination', 'double_elimination'] or \
                    category.format == 'group_stage' or \
-                   (category.format == 'round_robin' and category.qualifiers_per_group and category.qualifiers_per_group > 0)
+                   (category.format in ['round_robin', 'doubles_round_robin'] and category.qualifiers_per_group and category.qualifiers_per_group > 0)
 
     all_matches = Match.query.filter_by(category_id=category.id).all()
     if not all_matches:
@@ -23,7 +23,7 @@ def check_category_auto_completion(category):
         return False
         
     if has_knockout:
-        if category.format in ['group_stage', 'round_robin']:
+        if category.format in ['group_stage', 'round_robin', 'doubles_round_robin']:
             knockout_exists = any(m.match_type == 'knockout' or m.bracket_type in ['winners', 'losers', 'grand_finals', 'grand_final', 'third_place'] for m in all_matches)
             if not knockout_exists:
                 return False
@@ -60,7 +60,7 @@ def create_category(slug):
         points_to_win = request.form.get('points_to_win', type=int)
 
         # Advanced settings for group stage
-        has_group_stage = (format_type in ['group_stage', 'round_robin'])
+        has_group_stage = (format_type in ['group_stage', 'round_robin', 'doubles_round_robin'])
         num_groups = request.form.get('num_groups', type=int) if has_group_stage else None
         teams_per_group = request.form.get('teams_per_group', type=int) if has_group_stage else None
         matches_per_team_pair = request.form.get('matches_per_team_pair', type=int, default=1) if has_group_stage else None
@@ -193,7 +193,7 @@ def view_category(slug, category_id):
                 db.joinedload(Match.participant1),
                 db.joinedload(Match.participant2),
                 db.joinedload(Match.winner)
-            ).filter(Match.group_id==group.id, Match.match_type.in_(['group_stage', 'round_robin'])).all()
+            ).filter(Match.group_id==group.id, Match.match_type.in_(['group_stage', 'round_robin', 'doubles_round_robin'])).all()
             groups_data.append({
                 'group': group,
                 'standings': standings,
@@ -208,7 +208,7 @@ def view_category(slug, category_id):
             # Rankings are stored on the Participant model (final_rank) by calculate_final_rankings
             # We don't actually need to return them as a dict anymore since view.html can just use participants
             # But to keep backward compatibility:
-            if category.format == 'round_robin':
+            if category.format in ['round_robin', 'doubles_round_robin']:
                 # Just get the sorted standings
                 Participant.query.filter_by(category_id=category_id).all() # Refresh
                 winners = Participant.query.filter(Participant.category_id==category_id, Participant.final_rank.isnot(None)).order_by(Participant.final_rank).all()
@@ -229,7 +229,7 @@ def view_category(slug, category_id):
 
     rr_matches = [m for m in matches if m.match_type == 'round_robin']
     
-    if category.status == 'setup' and not rr_matches and category.format == 'round_robin' and not category.num_groups:
+    if category.status == 'setup' and not rr_matches and category.format in ['round_robin', 'doubles_round_robin'] and not category.num_groups:
         rr_matches = [DummyMatch(**d) for d in dummy_data]
     
     return render_template('category/view.html',
@@ -379,7 +379,7 @@ def manage_category(slug, category_id):
                     category.matches_per_team_pair = request.form.get('matches_per_team_pair', type=int, default=1)
                     category.qualifiers_per_group = request.form.get('qualifiers_per_group', type=int, default=2)
                     category.allow_lucky_losers = request.form.get('allow_lucky_losers') == 'on'
-                elif category.format == 'round_robin':
+                elif category.format in ['round_robin', 'doubles_round_robin']:
                     category.teams_per_group = request.form.get('teams_per_group', type=int)
                     has_knockout = request.form.get('has_knockout_stage') == 'on'
                     if has_knockout:
@@ -417,7 +417,7 @@ def manage_category(slug, category_id):
                     category.num_sets = num_sets
                     category.games_per_set = games_per_set
 
-                    category.has_group_stage = (format_type in ['group_stage', 'round_robin'])
+                    category.has_group_stage = (format_type in ['group_stage', 'round_robin', 'doubles_round_robin'])
                     if category.has_group_stage:
                         category.num_groups = request.form.get('num_groups', type=int)
                         category.teams_per_group = request.form.get('teams_per_group', type=int)
@@ -658,7 +658,7 @@ def report_category_match_result(slug, category_id, match_id):
         }
 
         # Validate and format score
-        if category.format == 'round_robin' or (category.format == 'group_stage' and category.total_games):
+        if category.format in ['round_robin', 'doubles_round_robin'] or (category.format == 'group_stage' and category.total_games):
             p1_score = request.form.get('set1_p1', type=int)
             p2_score = request.form.get('set1_p2', type=int)
             
@@ -707,7 +707,7 @@ def report_category_match_result(slug, category_id, match_id):
         db.session.commit()
         
         # Recalculate group/round-robin stats
-        if category.format in ['group_stage', 'round_robin']:
+        if category.format in ['group_stage', 'round_robin', 'doubles_round_robin']:
             from app.leaderboard_logic import recalculate_all_group_stats
             recalculate_all_group_stats(category.id)
             
@@ -807,7 +807,7 @@ def update_grid_scores(slug, category_id):
     if check_category_auto_completion(category):
         category.status = 'completed'
         category.completed_at = datetime.utcnow()
-        if category.format == 'round_robin' and (not category.qualifiers_per_group or category.qualifiers_per_group == 0):
+        if category.format in ['round_robin', 'doubles_round_robin'] and (not category.qualifiers_per_group or category.qualifiers_per_group == 0):
             from app.leaderboard_logic import calculate_combined_round_robin_standings
             calculate_combined_round_robin_standings(category.id)
         db.session.commit()
