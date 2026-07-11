@@ -414,8 +414,18 @@ def report_match_result(slug, match_id):
                     raise ValueError("Score must be integers.")
                     
                 if not is_live_update:
-                    if g1 < points_to_win and g2 < points_to_win:
+                    winning_score = max(g1, g2)
+                    losing_score = min(g1, g2)
+                    
+                    if winning_score < points_to_win:
                         raise ValueError(f"One player must reach {points_to_win} points to win.")
+                        
+                    diff = winning_score - losing_score
+                    if diff < 2:
+                        raise ValueError("A player must win by a difference of at least 2 points.")
+                        
+                    if winning_score > points_to_win and diff > 2:
+                        raise ValueError(f"Invalid score. When extending past {points_to_win} points, the match ends as soon as a 2-point difference is reached.")
                         
                     actual_winner = match.participant1_id if g1 > g2 else match.participant2_id
                     if winner_id != actual_winner:

@@ -701,6 +701,20 @@ def report_category_match_result(slug, category_id, match_id):
                     raise ValueError("Winner must have a higher score.")
                 if winner_id == match.participant2_id and p2_score <= p1_score:
                     raise ValueError("Winner must have a higher score.")
+                    
+                winning_score = max(p1_score, p2_score)
+                losing_score = min(p1_score, p2_score)
+                
+                if winning_score < points_to_win:
+                    raise ValueError(f"One player must reach {points_to_win} points to win.")
+                    
+                diff = winning_score - losing_score
+                if diff < 2:
+                    raise ValueError("A player must win by a difference of at least 2 points.")
+                
+                # If extending past points_to_win (e.g. 12-10 in an 11-point game), diff must be exactly 2
+                if winning_score > points_to_win and diff > 2:
+                    raise ValueError(f"Invalid score. When extending past {points_to_win} points, the match ends as soon as a 2-point difference is reached.")
                 
             score1 = str(p1_score)
             score2 = str(p2_score)
