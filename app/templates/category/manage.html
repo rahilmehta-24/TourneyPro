@@ -255,7 +255,9 @@
 
                     <form method="POST" style="display: inline;">
                         <input type="hidden" name="action" value="start_category">
-                        <button type="submit" class="btn btn-primary" style="background: var(--gradient-success); border: none; font-weight: 700; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); padding: 0.65rem 1.5rem;" {% if participants|length < 2 or tournament.status not in ['in_progress', 'completed'] %}disabled title="{% if tournament.status not in ['in_progress', 'completed'] %}Start the overall tournament first!{% else %}Need at least 2 participants.{% endif %}"{% endif %}>
+                        <button type="submit" class="btn btn-primary" style="background: var(--gradient-success); border: none; font-weight: 700; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); padding: 0.65rem 1.5rem;" 
+{% if participants|length < 2 %}disabled title="Need at least 2 participants."{% endif %} 
+onclick="{% if tournament.status not in ['in_progress', 'completed'] %}return confirm('The overall tournament has not started yet. Do you want to start the tournament and this category bracket now?');{% endif %}">
                             🚀 Start Category Bracket
                         </button>
                     </form>
