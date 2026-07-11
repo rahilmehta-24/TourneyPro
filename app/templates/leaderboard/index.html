@@ -158,7 +158,7 @@
             </div>
             <div class="form-group">
                 <label class="form-label">Gender</label>
-                <select id="editPlayerGender" name="gender" class="form-input" required>
+                <select id="editPlayerGender" name="gender" class="form-input" required onchange="toggleAgeCategory(this, 'editPlayerCategory')">
                     {% for g in genders %}
                     <option value="{{ g }}">{{ g }}</option>
                     {% endfor %}
@@ -192,7 +192,7 @@
             </div>
             <div class="form-group">
                 <label class="form-label">Gender</label>
-                <select name="gender" class="form-input" required>
+                <select name="gender" class="form-input" required onchange="toggleAgeCategory(this, 'addPlayerCategory')">
                     {% for g in genders %}
                     <option value="{{ g }}">{{ g }}</option>
                     {% endfor %}
@@ -200,7 +200,7 @@
             </div>
             <div class="form-group">
                 <label class="form-label">Category</label>
-                <select name="age_category" class="form-input" required>
+                <select id="addPlayerCategory" name="age_category" class="form-input" required>
                     {% for c in categories %}
                     <option value="{{ c }}">{{ c }}</option>
                     {% endfor %}
@@ -282,9 +282,25 @@
     function openEditPlayerModal(playerId, name, gender, category) {
         document.getElementById('editPlayerForm').action = `/leaderboard/player/${playerId}/edit`;
         document.getElementById('editPlayerName').value = name;
-        document.getElementById('editPlayerGender').value = gender;
+        const genderSelect = document.getElementById('editPlayerGender');
+        genderSelect.value = gender;
         document.getElementById('editPlayerCategory').value = category;
+        toggleAgeCategory(genderSelect, 'editPlayerCategory');
         document.getElementById('editPlayerModal').style.display = 'flex';
+    }
+
+    function toggleAgeCategory(genderSelect, categoryId) {
+        const categorySelect = document.getElementById(categoryId);
+        if (!categorySelect) return;
+        const categoryGroup = categorySelect.closest('.form-group');
+        if (genderSelect.value === 'Mix') {
+            categoryGroup.style.display = 'none';
+            categorySelect.required = false;
+            categorySelect.value = 'Open';
+        } else {
+            categoryGroup.style.display = 'block';
+            categorySelect.required = true;
+        }
     }
 </script>
 

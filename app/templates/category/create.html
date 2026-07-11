@@ -17,7 +17,7 @@
         <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
             <div>
                 <label for="gender">Gender *</label>
-                <select id="gender" name="gender" class="form-input" required>
+                <select id="gender" name="gender" class="form-input" required onchange="toggleAgeCategory(this, 'age_category')">
                     <option value="">Select Gender</option>
                     <option value="Boys">Boys</option>
                     <option value="Girls">Girls</option>
@@ -268,7 +268,22 @@
             luckyLosersField.checked = false;
         }
     }
+    function toggleAgeCategory(genderSelect, categoryId) {
+        const categorySelect = document.getElementById(categoryId);
+        if (!categorySelect) return;
+        const categoryGroup = categorySelect.closest('.form-group') || categorySelect.parentElement;
+        if (genderSelect.value === 'Mix') {
+            categoryGroup.style.display = 'none';
+            categorySelect.required = false;
+            categorySelect.value = 'Open';
+        } else {
+            categoryGroup.style.display = 'block';
+            categorySelect.required = true;
+        }
+    }
+
     // Call once on load
     toggleGroupStageFields();
+    toggleAgeCategory(document.getElementById('gender'), 'age_category');
 </script>
 {% endblock %}
