@@ -388,7 +388,7 @@
                             <td style="font-weight: 600; text-align: left;">{{ row_p.name }}</td>
                             {% for col_p in group_info.standings %}
                             {% if row_p.id == col_p.id %}
-                                <td class="empty-cell"></td>
+                                <td class="empty-cell" style="background: rgba(255,255,255,0.05); color: var(--text-muted); font-weight: bold; font-size: 1.2rem;">X</td>
                             {% else %}
                                 {% set ns = namespace(found=false, match=none, is_p1=true) %}
                                 {% for m in group_info.matches %}
@@ -406,14 +406,10 @@
                                 <td style="padding: 4px;">
                                 {% if ns.found %}
                                     {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status == 'in_progress' and ns.match.id %}
-                                        <div style="display: flex; justify-content: center; align-items: center; gap: 4px;">
+                                        <div style="display: flex; justify-content: center; align-items: center;">
                                             <input type="number" name="match_{{ ns.match.id }}_p{% if ns.is_p1 %}1{% else %}2{% endif %}" 
                                                    value="{{ ns.match.score1 if (ns.is_p1 and ns.match.score1 is not none) else (ns.match.score2 if not ns.is_p1 and ns.match.score2 is not none else '') }}" 
-                                                   style="width: 45px; text-align: center; padding: 2px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.3); color: white; border-radius: 4px;" min="0">
-                                            <span>-</span>
-                                            <input type="number" name="match_{{ ns.match.id }}_p{% if ns.is_p1 %}2{% else %}1{% endif %}" 
-                                                   value="{{ ns.match.score2 if (ns.is_p1 and ns.match.score2 is not none) else (ns.match.score1 if not ns.is_p1 and ns.match.score1 is not none else '') }}" 
-                                                   style="width: 45px; text-align: center; padding: 2px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.3); color: white; border-radius: 4px;" min="0">
+                                                   style="width: 60px; text-align: center; padding: 4px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.3); color: white; border-radius: 4px;" min="0" placeholder="-">
                                         </div>
                                     {% else %}
                                         {% if ns.match.status == 'completed' %}

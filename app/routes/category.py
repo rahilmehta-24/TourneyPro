@@ -758,8 +758,8 @@ def update_grid_scores(slug, category_id):
         
         # Only update if both scores are provided, or if they were previously completed and now being updated
         if score1 is not None and score2 is not None:
-            match.score1 = score1
-            match.score2 = score2
+            match.score1 = str(score1)
+            match.score2 = str(score2)
             
             # Determine winner based on scores
             if score1 > score2:
