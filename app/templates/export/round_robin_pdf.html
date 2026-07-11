@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>{{ tournament.name }} - {{ category.name }}</title>
+    <style>
+        @page { size: A4 portrait; margin: 1cm; }
+        body { font-family: Helvetica, sans-serif; font-size: 11px; }
+        .header { text-align: center; margin-bottom: 20px; }
+        h1 { margin: 0; font-size: 20px; }
+        h2 { margin: 5px 0; font-size: 16px; font-weight: normal; }
+        h3 { margin-top: 20px; font-size: 14px; color: #333; border-bottom: 1px solid #ccc; padding-bottom: 3px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+        th { background-color: #f2f2f2; font-weight: bold; }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ tournament.name }}</h1>
+        <h2>{{ category.name }} - Standings & Matches</h2>
+    </div>
+
+    {% for group in groups_data %}
+        <h3>{{ group.name }} - Standings</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th class="text-center" width="5%">Rank</th>
+                    <th width="35%">Player</th>
+                    <th class="text-center" width="10%">Played</th>
+                    <th class="text-center" width="10%">Won</th>
+                    <th class="text-center" width="10%">Lost</th>
+                    <th class="text-center" width="10%">For</th>
+                    <th class="text-center" width="10%">Against</th>
+                    <th class="text-center" width="10%">Diff</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in group.standings %}
+                <tr>
+                    <td class="text-center">{{ loop.index }}</td>
+                    <td>{{ p.name }}</td>
+                    <td class="text-center">{{ p.matches_played }}</td>
+                    <td class="text-center">{{ p.matches_won }}</td>
+                    <td class="text-center">{{ p.matches_lost }}</td>
+                    <td class="text-center">{{ p.points_for }}</td>
+                    <td class="text-center">{{ p.points_against }}</td>
+                    <td class="text-center">{{ p.points_difference }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h3>{{ group.name }} - Matches</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th class="text-center" width="10%">Round</th>
+                    <th width="35%">Player 1</th>
+                    <th class="text-center" width="20%">Score</th>
+                    <th width="35%">Player 2</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for match in group.matches %}
+                <tr>
+                    <td class="text-center">{{ match.round }}</td>
+                    <td {% if match.winner_id == match.participant1_id %}style="font-weight: bold;"{% endif %}>
+                        {{ match.participant1.name if match.participant1 else 'TBD' }}
+                    </td>
+                    <td class="text-center">
+                        {% if match.score1 or match.score2 %}
+                            {{ match.score1 or '0' }} - {{ match.score2 or '0' }}
+                        {% else %}
+                            Pending
+                        {% endif %}
+                    </td>
+                    <td {% if match.winner_id == match.participant2_id %}style="font-weight: bold;"{% endif %}>
+                        {{ match.participant2.name if match.participant2 else 'TBD' }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endfor %}
+
+    <div style="margin-top: 30px; font-size: 9px; color: #777; text-align: center;">
+        Generated on {{ now.strftime('%Y-%m-%d %H:%M') }} by TourneyPro
+    </div>
+</body>
+</html>

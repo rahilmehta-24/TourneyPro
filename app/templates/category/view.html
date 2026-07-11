@@ -16,6 +16,12 @@
                 Tournament</a>
             <a href="{{ url_for('export.export_category_pdf', slug=tournament.url_slug, category_id=category.id) }}"
                 class="btn btn-primary" target="_blank">🖨️ Export PDF</a>
+            <a href="{{ url_for('export.export_matches_csv', slug=tournament.url_slug, category_id=category.id) }}"
+                class="btn btn-primary" target="_blank">📄 Matches CSV</a>
+            {% if category.format in ['round_robin', 'group_stage'] %}
+            <a href="{{ url_for('export.export_standings_csv', slug=tournament.url_slug, category_id=category.id) }}"
+                class="btn btn-primary" target="_blank">📊 Standings CSV</a>
+            {% endif %}
         </div>
     </div>
 
