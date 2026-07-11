@@ -347,8 +347,28 @@ def report_match_result(slug, match_id):
     }
 
     try:
+        # Process overrides
+        scoring_format_override = request.form.get('scoring_format')
+        if scoring_format_override:
+            match.scoring_format = scoring_format_override
+            
+        num_sets_override = request.form.get('num_sets', type=int)
+        if num_sets_override:
+            match.num_sets = num_sets_override
+            
+        games_per_set_override = request.form.get('games_per_set', type=int)
+        if games_per_set_override:
+            match.games_per_set = games_per_set_override
+            
+        points_to_win_override = request.form.get('points_to_win', type=int)
+        if points_to_win_override:
+            match.points_to_win = points_to_win_override
+            
         if match.category_id:
             category = Category.query.get(match.category_id)
+            
+            scoring_format = match.scoring_format or (category.scoring_format if category else 'games')
+            
             if category and category.format == 'group_stage':
                 # New scoring system based on total games
                 total_games_target = category.total_games
@@ -375,10 +395,14 @@ def report_match_result(slug, match_id):
                 match.score1 = str(g1)
                 match.score2 = str(g2)
                 
-            elif category and category.format == 'round_robin':
-                points_to_win = category.points_to_win or 11
-                g1_val = form_data.get('set1_p1')
-                g2_val = form_data.get('set1_p2')
+            elif scoring_format == 'points' or (category and category.format in ['round_robin', 'doubles_round_robin']):
+                points_to_win = match.points_to_win or (category.points_to_win if category else 11)
+                if scoring_format == 'points':
+                    g1_val = request.form.get('points_p1')
+                    g2_val = request.form.get('points_p2')
+                else:
+                    g1_val = form_data.get('set1_p1')
+                    g2_val = form_data.get('set1_p2')
                 
                 if not g1_val or not g2_val:
                     raise ValueError("Score is required.")
@@ -402,8 +426,8 @@ def report_match_result(slug, match_id):
                 
             else:
                 # Legacy set scoring
-                num_sets = category.num_sets if category and category.num_sets else (tournament.num_sets or 3)
-                games_per_set = category.games_per_set if category and category.games_per_set else (tournament.games_per_set or 6)
+                num_sets = match.num_sets or (category.num_sets if category and category.num_sets else (tournament.num_sets or 3))
+                games_per_set = match.games_per_set or (category.games_per_set if category and category.games_per_set else (tournament.games_per_set or 6))
 
                 score1, score2 = validate_and_format_score(
                     winner_id, match.participant1_id, match.participant2_id,

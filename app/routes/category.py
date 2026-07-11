@@ -54,6 +54,7 @@ def create_category(slug):
         age_category = request.form.get('age_category', 'Unspecified')
 
         # Tennis settings
+        scoring_format = request.form.get('scoring_format', 'games')
         num_sets = request.form.get('num_sets', type=int)
         games_per_set = request.form.get('games_per_set', type=int)
         total_games = request.form.get('total_games', type=int)
@@ -92,6 +93,7 @@ def create_category(slug):
             num_sets=num_sets,
             games_per_set=games_per_set,
             total_games=total_games,
+            scoring_format=scoring_format,
             points_to_win=points_to_win,
             has_group_stage=has_group_stage,
             num_groups=num_groups,
@@ -370,9 +372,9 @@ def manage_category(slug, category_id):
                 max_participants = request.form.get('max_participants', type=int)
                 total_games = request.form.get('total_games', type=int)
                 points_to_win = request.form.get('points_to_win', type=int)
+                scoring_format = request.form.get('scoring_format', 'games')
                 max_players_per_team = request.form.get('max_players_per_team', type=int)
                 
-                # Group stage settings
                 # Group stage settings
                 if category.format == 'group_stage':
                     category.num_groups = request.form.get('num_groups', type=int)
@@ -397,6 +399,7 @@ def manage_category(slug, category_id):
                 category.name = name
                 category.max_participants = max_participants
                 category.total_games = total_games
+                category.scoring_format = scoring_format
                 category.points_to_win = points_to_win
                 category.max_players_per_team = max_players_per_team
 
@@ -631,9 +634,28 @@ def report_category_match_result(slug, category_id, match_id):
         is_live_update = (action == 'live_score')
         winner_id = request.form.get('winner_id', type=int) if not is_live_update else None
 
-        # We need num_sets and games_per_set from category
-        num_sets = category.num_sets or 3
-        games_per_set = category.games_per_set or 6
+        # Process overrides
+        scoring_format_override = request.form.get('scoring_format')
+        if scoring_format_override:
+            match.scoring_format = scoring_format_override
+            
+        num_sets_override = request.form.get('num_sets', type=int)
+        if num_sets_override:
+            match.num_sets = num_sets_override
+            
+        games_per_set_override = request.form.get('games_per_set', type=int)
+        if games_per_set_override:
+            match.games_per_set = games_per_set_override
+            
+        points_to_win_override = request.form.get('points_to_win', type=int)
+        if points_to_win_override:
+            match.points_to_win = points_to_win_override
+            
+        # We need scoring configuration from match or category
+        scoring_format = match.scoring_format or category.scoring_format or 'games'
+        num_sets = match.num_sets or category.num_sets or 3
+        games_per_set = match.games_per_set or category.games_per_set or 6
+        points_to_win = match.points_to_win or category.points_to_win or 11
 
         form_data = {
             'set1_p1': request.form.get('set1_p1', ''),
@@ -659,12 +681,20 @@ def report_category_match_result(slug, category_id, match_id):
         }
 
         # Validate and format score
-        if category.format in ['round_robin', 'doubles_round_robin'] or (category.format == 'group_stage' and category.total_games):
-            p1_score = request.form.get('set1_p1', type=int)
-            p2_score = request.form.get('set1_p2', type=int)
+        if scoring_format == 'points' or category.format in ['round_robin', 'doubles_round_robin'] or (category.format == 'group_stage' and category.total_games):
+            if scoring_format == 'points':
+                p1_score = request.form.get('points_p1', type=int)
+                p2_score = request.form.get('points_p2', type=int)
+            else:
+                p1_score = request.form.get('set1_p1', type=int)
+                p2_score = request.form.get('set1_p2', type=int)
             
             if p1_score is None or p2_score is None:
-                raise ValueError("Scores for both players are required.")
+                if is_live_update:
+                    p1_score = p1_score or 0
+                    p2_score = p2_score or 0
+                else:
+                    raise ValueError("Scores for both players are required.")
                 
             if not is_live_update:
                 if winner_id == match.participant1_id and p1_score <= p2_score:

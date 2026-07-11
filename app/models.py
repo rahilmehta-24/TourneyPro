@@ -57,6 +57,7 @@ class Category(db.Model):
     allow_lucky_losers = db.Column(db.Boolean, default=False)
     max_players_per_team = db.Column(db.Integer)
     total_games = db.Column(db.Integer)
+    scoring_format = db.Column(db.String(20), default='games') # 'games' or 'points'
     points_to_win = db.Column(db.Integer)
 
     # Relationships
@@ -119,6 +120,12 @@ class Match(db.Model):
     status = db.Column(db.String(20), default='pending')  # pending, in_progress, completed
     scheduled_time = db.Column(db.DateTime)
     completed_at = db.Column(db.DateTime)
+    
+    # Match-specific scoring overrides (only for knockout)
+    scoring_format = db.Column(db.String(20)) # 'games', 'points', or None to inherit
+    num_sets = db.Column(db.Integer)
+    games_per_set = db.Column(db.Integer)
+    points_to_win = db.Column(db.Integer)
 
     # Relationships for participants
     participant1 = db.relationship('Participant', foreign_keys=[participant1_id], backref='matches_as_p1')

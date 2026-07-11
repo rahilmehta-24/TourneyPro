@@ -158,7 +158,7 @@
             <div class="round-matches">
                 {% for match in round_matches %}
                 <div class="match-card-wrapper {% if not has_vertical %}no-vertical-connector{% endif %}">
-                    <div class="tennis-match {% if match.status == 'completed' %}tennis-match-completed{% endif %} {% if match.participant1 and match.participant2 %}clickable-match{% endif %}" {% if match.participant1 and match.participant2 %}onclick="openMatchModal({{ match.id }}, '{{ match.status }}', '{{ match.scheduled_time.strftime('%Y-%m-%dT%H:%M') if match.scheduled_time else '' }}', '{{ match.participant1.name|escape if match.participant1 else '' }}', {{ match.participant1_id or 'null' }}, '{{ match.participant2.name|escape if match.participant2 else '' }}', {{ match.participant2_id or 'null' }}, {{ 'true' if current_user and current_user.role in ['admin', 'superadmin'] else 'false' }}, '{{ match.score1 or '' }}', '{{ match.score2 or '' }}')" title="Click to view details"{% endif %}>
+                    <div class="tennis-match {% if match.status == 'completed' %}tennis-match-completed{% endif %} {% if match.participant1 and match.participant2 %}clickable-match{% endif %}" {% if match.participant1 and match.participant2 %}onclick="openMatchModal({{ match.id }}, '{{ match.status }}', '{{ match.scheduled_time.strftime('%Y-%m-%dT%H:%M') if match.scheduled_time else '' }}', '{{ match.participant1.name|escape if match.participant1 else '' }}', {{ match.participant1_id or 'null' }}, '{{ match.participant2.name|escape if match.participant2 else '' }}', {{ match.participant2_id or 'null' }}, {{ 'true' if current_user and current_user.role in ['admin', 'superadmin'] else 'false' }}, '{{ match.score1 or '' }}', '{{ match.score2 or '' }}', '{{ match.scoring_format or '' }}', '{{ match.num_sets or '' }}', '{{ match.games_per_set or '' }}', '{{ match.points_to_win or '' }}')" title="Click to view details"{% endif %}>
                         <div class="tennis-match-header" style="display: flex; align-items: center; justify-content: space-between;">
                             <span>Match #{{ match.match_number }}</span>
                             <div style="display: flex; align-items: center; gap: 8px;">
@@ -275,7 +275,7 @@
                         <div class="round-matches" style="justify-content: center; height: 100%;">
                             {% for match in grand_finals %}
                             <div class="match-card-wrapper" style="padding: 15px 0;">
-                                <div class="tennis-match {% if match.status == 'completed' %}tennis-match-completed{% endif %} {% if match.participant1 and match.participant2 %}clickable-match{% endif %}" {% if match.participant1 and match.participant2 %}onclick="openMatchModal({{ match.id }}, '{{ match.status }}', '{{ match.scheduled_time.strftime('%Y-%m-%dT%H:%M') if match.scheduled_time else '' }}', '{{ match.participant1.name|escape if match.participant1 else '' }}', {{ match.participant1_id or 'null' }}, '{{ match.participant2.name|escape if match.participant2 else '' }}', {{ match.participant2_id or 'null' }}, {{ 'true' if current_user and current_user.role in ['admin', 'superadmin'] else 'false' }}, '{{ match.score1 or '' }}', '{{ match.score2 or '' }}')" title="Click to view details"{% endif %}>
+                                <div class="tennis-match {% if match.status == 'completed' %}tennis-match-completed{% endif %} {% if match.participant1 and match.participant2 %}clickable-match{% endif %}" {% if match.participant1 and match.participant2 %}onclick="openMatchModal({{ match.id }}, '{{ match.status }}', '{{ match.scheduled_time.strftime('%Y-%m-%dT%H:%M') if match.scheduled_time else '' }}', '{{ match.participant1.name|escape if match.participant1 else '' }}', {{ match.participant1_id or 'null' }}, '{{ match.participant2.name|escape if match.participant2 else '' }}', {{ match.participant2_id or 'null' }}, {{ 'true' if current_user and current_user.role in ['admin', 'superadmin'] else 'false' }}, '{{ match.score1 or '' }}', '{{ match.score2 or '' }}', '{{ match.scoring_format or '' }}', '{{ match.num_sets or '' }}', '{{ match.games_per_set or '' }}', '{{ match.points_to_win or '' }}')" title="Click to view details"{% endif %}>
                                     <div class="tennis-match-header" style="display: flex; align-items: center; justify-content: space-between;">
                                         <span>Grand Final {% if match.match_number == 2 %}(Reset Match){% endif %}</span>
                                         <div style="display: flex; align-items: center; gap: 8px;">
@@ -485,7 +485,7 @@
         <h2>Round Robin Matches</h2>
         <div class="matches-list">
             {% for match in rr_matches %}
-            <div class="match-card {% if match.status == 'completed' %}completed{% endif %} {% if match.participant1 and match.participant2 %}clickable-match{% endif %}" {% if match.participant1 and match.participant2 %}onclick="openMatchModal({{ match.id }}, '{{ match.status }}', '{{ match.scheduled_time.strftime('%Y-%m-%dT%H:%M') if match.scheduled_time else '' }}', '{{ match.participant1.name|escape if match.participant1 else '' }}', {{ match.participant1_id or 'null' }}, '{{ match.participant2.name|escape if match.participant2 else '' }}', {{ match.participant2_id or 'null' }}, {{ 'true' if current_user and current_user.role in ['admin', 'superadmin'] else 'false' }}, '{{ match.score1 or '' }}', '{{ match.score2 or '' }}')" title="Click to view details"{% endif %}>
+            <div class="match-card {% if match.status == 'completed' %}completed{% endif %} {% if match.participant1 and match.participant2 %}clickable-match{% endif %}" {% if match.participant1 and match.participant2 %}onclick="openMatchModal({{ match.id }}, '{{ match.status }}', '{{ match.scheduled_time.strftime('%Y-%m-%dT%H:%M') if match.scheduled_time else '' }}', '{{ match.participant1.name|escape if match.participant1 else '' }}', {{ match.participant1_id or 'null' }}, '{{ match.participant2.name|escape if match.participant2 else '' }}', {{ match.participant2_id or 'null' }}, {{ 'true' if current_user and current_user.role in ['admin', 'superadmin'] else 'false' }}, '{{ match.score1 or '' }}', '{{ match.score2 or '' }}', '{{ match.scoring_format or '' }}', '{{ match.num_sets or '' }}', '{{ match.games_per_set or '' }}', '{{ match.points_to_win or '' }}')" title="Click to view details"{% endif %}>
                 <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 0.5rem;">
                     <div style="display: flex; align-items: center; gap: 8px;">
                         {% if match.scheduled_time %}
@@ -664,6 +664,33 @@
 </style>
 
 <script>
+
+function toggleModalMatchFormat() {
+    const format = document.getElementById('modalMatchFormat').value;
+    if (format === 'points') {
+        document.getElementById('modalPointsFields').style.display = 'block';
+        document.getElementById('modalGamesFields').style.display = 'none';
+        document.getElementById('modalSetsTable').style.display = 'none';
+        document.getElementById('modalPointsScore').style.display = 'block';
+    } else {
+        document.getElementById('modalPointsFields').style.display = 'none';
+        document.getElementById('modalGamesFields').style.display = 'grid';
+        document.getElementById('modalSetsTable').style.display = 'table';
+        document.getElementById('modalPointsScore').style.display = 'none';
+        updateVisibleSets(document.getElementById('modalMatchNumSets').value || {{ category.num_sets if category else (tournament.num_sets or 3) }});
+    }
+}
+
+function updateVisibleSets(numSets) {
+    if (!numSets) numSets = {{ category.num_sets if category else (tournament.num_sets or 3) }};
+    for (let s = 1; s <= 5; s++) {
+        const row = document.getElementById('setRow' + s);
+        if (row) {
+            row.style.display = (s <= numSets) ? 'table-row' : 'none';
+        }
+    }
+}
+
 function copyShareLink(url, btn) {
     navigator.clipboard.writeText(url).then(() => {
         const originalText = btn.innerText;
@@ -754,7 +781,7 @@ function handleStatusChange(status) {
     }
 }
 
-function openMatchModal(matchId, currentStatus, currentScheduledTime, p1Name, p1Id, p2Name, p2Id, isAdmin, score1, score2) {
+function openMatchModal(matchId, currentStatus, currentScheduledTime, p1Name, p1Id, p2Name, p2Id, isAdmin, score1, score2, matchFormat, matchNumSets, matchGamesPerSet, matchPointsToWin) {
     currentManageMatchId = matchId;
     currentManageMatchIsAdmin = isAdmin;
     document.getElementById('modalMatchId').innerText = matchId;
@@ -792,7 +819,7 @@ function openMatchModal(matchId, currentStatus, currentScheduledTime, p1Name, p1
 
     document.getElementById('winner2').value = p2Id;
     document.getElementById('winner2Label').textContent = p2Name;
-    document.getElementById('p2SetHeader').textContent = p2Name;
+    document.getElementById('p2SetHeader').textContent = p2Name; document.getElementById('p1PointsHeader').textContent = p1Name; document.getElementById('p2PointsHeader').textContent = p2Name;
     
     const isReadOnly = (!isAdmin || currentStatus === 'completed');
     
@@ -825,7 +852,7 @@ function openMatchModal(matchId, currentStatus, currentScheduledTime, p1Name, p1
         if (completeMatchBtn) completeMatchBtn.style.display = 'none';
     }
 
-    const numSets = {{ category.num_sets if category else (tournament.num_sets or 3) }};
+    const numSets = 5; // Use max 5 sets for UI generation
     for (let s = 1; s <= numSets; s++) {
         const p1Input = document.getElementById(`set${s}_p1`);
         const p2Input = document.getElementById(`set${s}_p2`);
@@ -857,7 +884,12 @@ function openMatchModal(matchId, currentStatus, currentScheduledTime, p1Name, p1
         if (tbRow) tbRow.style.display = 'none';
     }
     
-    if (score1) {
+    
+    if (score1 && document.getElementById('modalMatchFormat').value === 'points') {
+        document.getElementById('points_p1').value = score1;
+        document.getElementById('points_p2').value = score2;
+    } else if (score1) {
+
         const s1Parts = score1.split(', ');
         const s2Parts = (score2 || '').split(', ');
         
@@ -1065,7 +1097,36 @@ function checkTiebreak(setNum, winThreshold) {
             <button type="button" id="saveTimeBtn" class="glass-btn-primary" onclick="saveDateTimeOnly()" style="padding: 0.75rem; height: 42px; display: flex; align-items: center; justify-content: center; margin-bottom: 2px;" title="Save Date & Time">✔️</button>
         </div>
         
+        
         <form id="reportForm" style="display: none; margin-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1.5rem;">
+            
+            <div class="glass-modal-form-group" style="margin-bottom: 1.5rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: var(--radius-md);">
+                <label style="font-weight: 600; margin-bottom: 0.5rem; display: block; color: var(--text-primary);">Match Scoring Override (Optional)</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label style="font-size: 0.85rem; color: var(--text-secondary);">Scoring Format</label>
+                        <select id="modalMatchFormat" name="scoring_format" style="width: 100%; padding: 0.5rem; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.5); color: white;" onchange="toggleModalMatchFormat()">
+                            <option value="games">Games (Sets & Games)</option>
+                            <option value="points">Points (Single Target)</option>
+                        </select>
+                    </div>
+                    <div id="modalPointsFields" style="display: none;">
+                        <label style="font-size: 0.85rem; color: var(--text-secondary);">Points to Win</label>
+                        <input type="number" id="modalMatchPointsToWin" name="points_to_win" style="width: 100%; padding: 0.5rem; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.5); color: white;">
+                    </div>
+                    <div id="modalGamesFields" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; grid-column: span 2;">
+                        <div>
+                            <label style="font-size: 0.85rem; color: var(--text-secondary);">Num Sets</label>
+                            <input type="number" id="modalMatchNumSets" name="num_sets" max="5" style="width: 100%; padding: 0.5rem; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.5); color: white;" onchange="updateVisibleSets(this.value)">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.85rem; color: var(--text-secondary);">Games Per Set</label>
+                            <input type="number" id="modalMatchGamesPerSet" name="games_per_set" style="width: 100%; padding: 0.5rem; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.5); color: white;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="form-group" style="margin-bottom: 1.5rem;">
                 <label class="form-label" style="display: block; margin-bottom: 1rem; font-weight: 600; font-size: 1.1rem;">Select Winner (If Completed)</label>
                 <div class="winner-options" style="display: flex; flex-direction: column; gap: 1rem;">
@@ -1081,7 +1142,24 @@ function checkTiebreak(setNum, winThreshold) {
             </div>
             
             <label class="form-label" style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; display: block;">Set Scores</label>
-            <table style="width: 100%; border-collapse: collapse; margin-top: 0.5rem;">
+            
+            <div id="modalPointsScore" style="display: none; margin-top: 1rem;">
+                <label class="form-label" style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; display: block;">Points Score</label>
+                <div style="display: flex; gap: 1rem; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: var(--radius-md);">
+                    <div style="text-align: center;">
+                        <span id="p1PointsHeader" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">P1</span>
+                        <input type="number" id="points_p1" name="points_p1" style="width: 80px; padding: 0.5rem; text-align: center; font-size: 1.2rem;">
+                    </div>
+                    <span style="font-weight: bold; font-size: 1.2rem;">-</span>
+                    <div style="text-align: center;">
+                        <span id="p2PointsHeader" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">P2</span>
+                        <input type="number" id="points_p2" name="points_p2" style="width: 80px; padding: 0.5rem; text-align: center; font-size: 1.2rem;">
+                    </div>
+                </div>
+            </div>
+            
+            <table id="modalSetsTable" style="width: 100%; border-collapse: collapse; margin-top: 0.5rem;">
+
                 <thead>
                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                         <th style="padding: 0.5rem; text-align: left; color: var(--text-secondary);">Set</th>
@@ -1090,10 +1168,10 @@ function checkTiebreak(setNum, winThreshold) {
                     </tr>
                 </thead>
                 <tbody>
-                    {% set num_sets_val = category.num_sets if category else (tournament.num_sets or 3) %}
+                    
                     {% set games_per_set_val = category.games_per_set if category else (tournament.games_per_set or 6) %}
-                    {% for s in range(1, num_sets_val + 1) %}
-                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                    {% for s in range(1, 6) %}
+                    <tr id="setRow{{ s }}" style="border-bottom: 1px solid rgba(255,255,255,0.02);">
                         <td style="padding: 0.75rem 0.5rem; font-weight: bold; color: var(--text-secondary);">Set {{ s }}</td>
                         <td style="padding: 0.75rem 0.5rem; text-align: center;">
                             <input type="number" name="set{{ s }}_p1" id="set{{ s }}_p1" min="0" class="form-input" style="width: 60px; text-align:center; padding: 4px;" oninput="checkTiebreak({{ s }}, {{ games_per_set_val }})">

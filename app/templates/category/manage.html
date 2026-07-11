@@ -125,6 +125,14 @@
                         </div>
                     </div>
 
+                    <div class="form-group">
+                        <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Scoring Format *</label>
+                        <select id="scoring_format" name="scoring_format" class="form-input" required style="width: 100%;" onchange="toggleScoringFields()">
+                            <option value="games" {% if category.scoring_format == 'games' %}selected{% endif %}>Games (Sets & Games)</option>
+                            <option value="points" {% if category.scoring_format == 'points' %}selected{% endif %}>Points (Single Target)</option>
+                        </select>
+                    </div>
+
                     <div id="total-games-fields" style="display: {% if category.format == 'group_stage' %}block{% else %}none{% endif %};">
                         <div class="form-group">
                             <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Total Games To Play *</label>
@@ -276,12 +284,30 @@ onclick="{% if tournament.status not in ['in_progress', 'completed'] %}return co
 </div>
 
 <script>
+    function toggleScoringFields() {
+        const scoringFormat = document.getElementById('scoring_format').value;
+        const legacyScoringFields = document.getElementById('legacy-scoring-fields');
+        const pointsToWinFields = document.getElementById('points-to-win-fields');
+
+        if (scoringFormat === 'points') {
+            if (legacyScoringFields) legacyScoringFields.style.display = 'none';
+            if (pointsToWinFields) {
+                pointsToWinFields.style.display = 'block';
+                document.getElementById('points_to_win').required = true;
+            }
+        } else {
+            if (legacyScoringFields) legacyScoringFields.style.display = 'flex';
+            if (pointsToWinFields) {
+                pointsToWinFields.style.display = 'none';
+                document.getElementById('points_to_win').required = false;
+            }
+        }
+    }
+
     function toggleGroupStageFields() {
         const format = document.getElementById('format').value;
         const groupFields = document.getElementById('group-stage-fields');
         const totalGamesFields = document.getElementById('total-games-fields');
-        const legacyScoringFields = document.getElementById('legacy-scoring-fields');
-        const pointsToWinFields = document.getElementById('points-to-win-fields');
         const knockoutSubformatFields = document.getElementById('knockout-subformat-fields');
         
         // Reset global fields
@@ -308,11 +334,6 @@ onclick="{% if tournament.status not in ['in_progress', 'completed'] %}return co
                 totalGamesFields.style.display = 'block';
                 document.getElementById('total_games').required = true;
             }
-            if (legacyScoringFields) legacyScoringFields.style.display = 'none';
-            if (pointsToWinFields) {
-                pointsToWinFields.style.display = 'none';
-                document.getElementById('points_to_win').required = false;
-            }
         } else if (format === 'round_robin') {
             if (groupFields) {
                 groupFields.style.display = 'flex';
@@ -331,23 +352,19 @@ onclick="{% if tournament.status not in ['in_progress', 'completed'] %}return co
                 totalGamesFields.style.display = 'none';
                 document.getElementById('total_games').required = false;
             }
-            if (legacyScoringFields) legacyScoringFields.style.display = 'none';
-            if (pointsToWinFields) {
-                pointsToWinFields.style.display = 'block';
-                document.getElementById('points_to_win').required = true;
-            }
         } else {
             if (groupFields) groupFields.style.display = 'none';
             if (totalGamesFields) {
                 totalGamesFields.style.display = 'none';
                 document.getElementById('total_games').required = false;
             }
-            if (pointsToWinFields) {
-                pointsToWinFields.style.display = 'none';
-                document.getElementById('points_to_win').required = false;
-            }
-            if (legacyScoringFields) legacyScoringFields.style.display = 'flex';
         }
     }
+    
+    // Initialize state on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        if (document.getElementById('scoring_format')) toggleScoringFields();
+        if (document.getElementById('format')) toggleGroupStageFields();
+    });
 </script>
 {% endblock %}
