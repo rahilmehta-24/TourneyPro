@@ -340,7 +340,8 @@ def manage_category(slug, category_id):
                     if category.format in ['round_robin', 'doubles_round_robin'] and category.teams_per_group and category.teams_per_group >= 3:
                         import math
                         total_players = len(participants_list)
-                        category.num_groups = math.ceil(total_players / category.teams_per_group) if total_players > 0 else 1
+                        if not category.num_groups:
+                            category.num_groups = math.ceil(total_players / category.teams_per_group) if total_players > 0 else 1
                         
                         # Generate group stage data but tag as round robin
                         from app.formats.group_stage.logic import GroupStageFormat

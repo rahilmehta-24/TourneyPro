@@ -56,11 +56,11 @@
             <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Match Format *</label>
             <div style="display: flex; gap: 1.5rem; margin-top: 0.5rem;">
                 <label style="display: flex; align-items: center; gap: 8px;">
-                    <input type="radio" name="sub_format" value="singles" style="width: 18px; height: 18px; accent-color: var(--primary);" checked>
+                    <input type="radio" name="sub_format" value="singles" style="width: 18px; height: 18px; accent-color: var(--primary);" onchange="toggleGroupStageFields()" checked>
                     <span style="font-size: 0.95rem; font-weight: 500;">Singles</span>
                 </label>
                 <label style="display: flex; align-items: center; gap: 8px;">
-                    <input type="radio" name="sub_format" value="doubles" style="width: 18px; height: 18px; accent-color: var(--primary);">
+                    <input type="radio" name="sub_format" value="doubles" style="width: 18px; height: 18px; accent-color: var(--primary);" onchange="toggleGroupStageFields()">
                     <span style="font-size: 0.95rem; font-weight: 500;">Doubles</span>
                 </label>
             </div>
@@ -205,10 +205,11 @@
             if (groupFields) {
                 groupFields.style.display = 'block';
                 document.querySelector('#group-stage-fields h3').innerText = 'Round Robin Configuration';
-                document.querySelector('label[for="teams_per_group"]').innerText = 'Players Per Group *';
+                const subFormat = document.querySelector('input[name="sub_format"]:checked');
+                document.querySelector('label[for="teams_per_group"]').innerText = (subFormat && subFormat.value === 'doubles') ? 'Teams Per Group *' : 'Players Per Group *';
                 
-                // Hide num_groups because it will be dynamically calculated based on total players
-                document.getElementById('num_groups').closest('.form-group').style.display = 'none';
+                // Show num_groups for manual override (optional)
+                document.getElementById('num_groups').closest('.form-group').style.display = 'block';
                 document.getElementById('num_groups').required = false;
                 
                 document.getElementById('teams_per_group').required = true;

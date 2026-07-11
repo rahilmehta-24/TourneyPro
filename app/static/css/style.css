@@ -1752,13 +1752,15 @@ select option {
     width: 100%;
 }
 .round-robin-grid th {
-    text-align: center;
+    text-align: center !important;
     vertical-align: middle;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 .round-robin-grid td {
-    text-align: center;
+    text-align: center !important;
     vertical-align: middle;
     padding: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 .round-robin-grid .score-input {
     width: 45px;
@@ -1778,4 +1780,7 @@ select option {
     background: rgba(255, 255, 255, 0.05);
     color: var(--text-muted);
     font-weight: bold;
+    display: table-cell;
+    vertical-align: middle;
+    text-align: center;
 }

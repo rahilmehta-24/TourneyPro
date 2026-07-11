@@ -114,11 +114,11 @@
                             <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Match Format *</label>
                             <div style="display: flex; gap: 1.5rem; margin-top: 0.5rem;">
                                 <label style="display: flex; align-items: center; gap: 8px;">
-                                    <input type="radio" name="sub_format" value="singles" style="width: 18px; height: 18px; accent-color: var(--primary);" {% if category.format not in ['doubles_elimination', 'doubles_round_robin'] %}checked{% endif %}>
+                                    <input type="radio" name="sub_format" value="singles" style="width: 18px; height: 18px; accent-color: var(--primary);" onchange="toggleGroupStageFields()" {% if category.format not in ['doubles_elimination', 'doubles_round_robin'] %}checked{% endif %}>
                                     <span style="font-size: 0.95rem; font-weight: 500;">Singles</span>
                                 </label>
                                 <label style="display: flex; align-items: center; gap: 8px;">
-                                    <input type="radio" name="sub_format" value="doubles" style="width: 18px; height: 18px; accent-color: var(--primary);" {% if category.format in ['doubles_elimination', 'doubles_round_robin'] %}checked{% endif %}>
+                                    <input type="radio" name="sub_format" value="doubles" style="width: 18px; height: 18px; accent-color: var(--primary);" onchange="toggleGroupStageFields()" {% if category.format in ['doubles_elimination', 'doubles_round_robin'] %}checked{% endif %}>
                                     <span style="font-size: 0.95rem; font-weight: 500;">Doubles</span>
                                 </label>
                             </div>
@@ -156,7 +156,7 @@
                         <input type="number" id="max_players_per_team" name="max_players_per_team" class="form-input" min="1" value="{{ category.max_players_per_team or '' }}" placeholder="Unlimited" style="width: 100%;">
                     </div>
 
-                    <div id="group-stage-fields" style="display: {% if category.format == 'group_stage' %}flex{% else %}none{% endif %}; flex-direction: column; gap: var(--spacing-sm);">
+                    <div id="group-stage-fields" style="display: {% if category.format in ['group_stage', 'round_robin', 'doubles_round_robin'] %}flex{% else %}none{% endif %}; flex-direction: column; gap: var(--spacing-sm);">
                         <div class="form-group" style="margin-top: var(--spacing-xs);">
                             <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Number of Groups *</label>
                             <input type="number" id="num_groups" name="num_groups" class="form-input" min="2" value="{{ category.num_groups or '' }}" placeholder="e.g. 2, 4" style="width: 100%;">
@@ -293,7 +293,17 @@ onclick="{% if tournament.status not in ['in_progress', 'completed'] %}return co
         }
 
         if (format === 'group_stage') {
-            if (groupFields) groupFields.style.display = 'flex';
+            if (groupFields) {
+                groupFields.style.display = 'flex';
+                const label = groupFields.querySelector('label[for="teams_per_group"]');
+                if (label) label.innerText = 'Teams Per Group *';
+                document.getElementById('num_groups').closest('.form-group').style.display = 'block';
+                document.getElementById('num_groups').required = true;
+                
+                document.getElementById('max_players_per_team').closest('.form-group').style.display = 'block';
+                document.getElementById('qualifiers_per_group').closest('.form-group').style.display = 'block';
+                document.getElementById('allow_lucky_losers').closest('.form-group').style.display = 'block';
+            }
             if (totalGamesFields) {
                 totalGamesFields.style.display = 'block';
                 document.getElementById('total_games').required = true;
@@ -304,7 +314,19 @@ onclick="{% if tournament.status not in ['in_progress', 'completed'] %}return co
                 document.getElementById('points_to_win').required = false;
             }
         } else if (format === 'round_robin') {
-            if (groupFields) groupFields.style.display = 'none';
+            if (groupFields) {
+                groupFields.style.display = 'flex';
+                const label = groupFields.querySelector('label[for="teams_per_group"]');
+                const subFormat = document.querySelector('input[name="sub_format"]:checked');
+                if (label) label.innerText = (subFormat && subFormat.value === 'doubles') ? 'Teams Per Group *' : 'Players Per Group *';
+                
+                document.getElementById('num_groups').closest('.form-group').style.display = 'block';
+                document.getElementById('num_groups').required = false;
+                
+                document.getElementById('max_players_per_team').closest('.form-group').style.display = 'none';
+                document.getElementById('qualifiers_per_group').closest('.form-group').style.display = 'block';
+                document.getElementById('allow_lucky_losers').closest('.form-group').style.display = 'block';
+            }
             if (totalGamesFields) {
                 totalGamesFields.style.display = 'none';
                 document.getElementById('total_games').required = false;
