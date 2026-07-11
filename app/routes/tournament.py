@@ -1,3 +1,4 @@
+from app.extensions import socketio
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from app.models import db, Tournament, Participant, Match, TournamentSettings
 from app.formats import get_format
@@ -462,7 +463,7 @@ def report_match_result(slug, match_id):
         if is_live_update:
             match.status = 'in_progress'
             db.session.commit()
-            flash('Live score updated successfully.', 'success')
+        flash('Live score updated successfully.', 'success')
             return redirect(url_for('tournament.view_tournament', slug=slug))
 
         match.winner_id = winner_id
@@ -493,6 +494,8 @@ def report_match_result(slug, match_id):
                     next_match.participant2_id = winner_id
 
         db.session.commit()
+        
+            
         flash('Match result reported successfully!', 'success')
     except ValueError as ve:
         db.session.rollback()

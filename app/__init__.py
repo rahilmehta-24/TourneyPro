@@ -13,6 +13,8 @@ def create_app(config_class=Config):
     db.init_app(app)
     Compress(app)
     
+    
+    
     # Initialize JWT and Marshmallow
     app.config['JWT_SECRET_KEY'] = app.config.get('SECRET_KEY', 'super-secret')  # Use app secret key for JWT
     jwt = JWTManager(app)
@@ -57,6 +59,8 @@ def create_app(config_class=Config):
     app.register_blueprint(export_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(leaderboard_bp)
+    
+    
     
     from app.api import api_bp
     app.register_blueprint(api_bp, url_prefix='/api/v1')

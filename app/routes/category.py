@@ -1,3 +1,4 @@
+from app.extensions import socketio
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from app.models import db, Tournament, Category, Participant, Match, Group
 from app.constants import TOURNAMENT_FORMATS
@@ -730,7 +731,7 @@ def report_category_match_result(slug, category_id, match_id):
         if is_live_update:
             match.status = 'in_progress'
             db.session.commit()
-            flash('Live score updated successfully.', 'success')
+        flash('Live score updated successfully.', 'success')
             return redirect(url_for('category.view_category', slug=slug, category_id=category.id))
             
         match.winner_id = winner_id
@@ -755,6 +756,7 @@ def report_category_match_result(slug, category_id, match_id):
         if category.format in ['group_stage', 'round_robin', 'doubles_round_robin']:
             from app.leaderboard_logic import recalculate_all_group_stats
             recalculate_all_group_stats(category.id)
+        
             
         flash('Match result reported successfully!', 'success')
     except ValueError as ve:

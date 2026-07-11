@@ -1,6 +1,63 @@
 {% extends "base.html" %}
 
-{% block title %}{{ category.name }} - {{ tournament.name }}{% endblock %}
+{% block title %}{{ category.name }} - {{ tournament.name }}
+<script>
+    // Live Score Updates using Short Polling (Serverless Compatible)
+    document.addEventListener('DOMContentLoaded', () => {
+        let isFetching = false;
+        
+        function fetchLiveUpdate() {
+            if (isFetching) return;
+            isFetching = true;
+            
+            fetch(window.location.href)
+                .then(res => res.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    
+                    let changed = false;
+                    
+                    // Check brackets
+                    const currentBrackets = document.querySelectorAll('.knockout-bracket');
+                    const newBrackets = doc.querySelectorAll('.knockout-bracket');
+                    currentBrackets.forEach((el, index) => {
+                        if (newBrackets[index] && el.innerHTML !== newBrackets[index].innerHTML) {
+                            el.innerHTML = newBrackets[index].innerHTML;
+                            el.classList.add('live-updated');
+                            setTimeout(() => el.classList.remove('live-updated'), 2000);
+                            changed = true;
+                        }
+                    });
+                    
+                    // Check groups
+                    const currentGroups = document.getElementById('groups-section');
+                    const newGroups = doc.getElementById('groups-section');
+                    if (currentGroups && newGroups && currentGroups.innerHTML !== newGroups.innerHTML) {
+                        currentGroups.innerHTML = newGroups.innerHTML;
+                        currentGroups.classList.add('live-updated');
+                        setTimeout(() => currentGroups.classList.remove('live-updated'), 2000);
+                        changed = true;
+                    }
+                    
+                    if (changed) {
+                        console.log("Polled updates applied.");
+                    }
+                    
+                    isFetching = false;
+                })
+                .catch(err => {
+                    console.error('Failed to fetch live update', err);
+                    isFetching = false;
+                });
+        }
+
+        // Poll every 10 seconds
+        setInterval(fetchLiveUpdate, 10000);
+    });
+</script>
+
+{% endblock %}
 
 {% block content %}
 <div class="container">
@@ -342,7 +399,7 @@
     {% endif %}
     {% if groups_data %}
     <!-- GROUP STAGE VIEW -->
-    <div class="groups-section">
+    <div id="groups-section" class="groups-section">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <h2>Group Stage</h2>
             {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] %}
@@ -481,7 +538,7 @@
 
     
     {% if not groups_data and category.format in ['round_robin', 'doubles_round_robin'] %}
-    <div class="groups-section">
+    <div id="groups-section" class="groups-section">
         <h2>Round Robin Matches</h2>
         <div class="matches-list">
             {% for match in rr_matches %}
@@ -1202,4 +1259,61 @@ function checkTiebreak(setNum, winThreshold) {
         </div>
     </div>
 </div>
+
+<script>
+    // Live Score Updates using Short Polling (Serverless Compatible)
+    document.addEventListener('DOMContentLoaded', () => {
+        let isFetching = false;
+        
+        function fetchLiveUpdate() {
+            if (isFetching) return;
+            isFetching = true;
+            
+            fetch(window.location.href)
+                .then(res => res.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    
+                    let changed = false;
+                    
+                    // Check brackets
+                    const currentBrackets = document.querySelectorAll('.knockout-bracket');
+                    const newBrackets = doc.querySelectorAll('.knockout-bracket');
+                    currentBrackets.forEach((el, index) => {
+                        if (newBrackets[index] && el.innerHTML !== newBrackets[index].innerHTML) {
+                            el.innerHTML = newBrackets[index].innerHTML;
+                            el.classList.add('live-updated');
+                            setTimeout(() => el.classList.remove('live-updated'), 2000);
+                            changed = true;
+                        }
+                    });
+                    
+                    // Check groups
+                    const currentGroups = document.getElementById('groups-section');
+                    const newGroups = doc.getElementById('groups-section');
+                    if (currentGroups && newGroups && currentGroups.innerHTML !== newGroups.innerHTML) {
+                        currentGroups.innerHTML = newGroups.innerHTML;
+                        currentGroups.classList.add('live-updated');
+                        setTimeout(() => currentGroups.classList.remove('live-updated'), 2000);
+                        changed = true;
+                    }
+                    
+                    if (changed) {
+                        console.log("Polled updates applied.");
+                    }
+                    
+                    isFetching = false;
+                })
+                .catch(err => {
+                    console.error('Failed to fetch live update', err);
+                    isFetching = false;
+                });
+        }
+
+        // Poll every 10 seconds
+        setInterval(fetchLiveUpdate, 10000);
+    });
+</script>
+
 {% endblock %}
