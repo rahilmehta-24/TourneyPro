@@ -382,16 +382,16 @@
                 <table class="standings-table round-robin-grid" style="text-align: center;">
                     <thead>
                         <tr>
-                            <th>vs</th>
+                            <th style="text-align: center;">vs</th>
                             {% for p in group_info.standings %}
-                            <th style="min-width: 80px;" title="{{ p.name }}">{{ p.name[:3] | upper }}</th>
+                            <th style="min-width: 100px; text-align: center;" title="{{ p.name }}">{{ p.name }}</th>
                             {% endfor %}
                         </tr>
                     </thead>
                     <tbody>
                         {% for row_p in group_info.standings %}
                         <tr>
-                            <td style="font-weight: 600; text-align: left;">{{ row_p.name }}</td>
+                            <td style="font-weight: 600; text-align: center;">{{ row_p.name }}</td>
                             {% for col_p in group_info.standings %}
                             {% if row_p.id == col_p.id %}
                                 <td class="empty-cell" style="background: rgba(255,255,255,0.05); color: var(--text-muted); font-weight: bold; font-size: 1.2rem;">X</td>
