@@ -29,7 +29,24 @@ class GroupStageFormat(TournamentFormat):
         if num_groups > 0:
             base_size = num_participants // num_groups
             remainder = num_participants % num_groups
-            target_sizes = [base_size + (1 if idx < remainder else 0) for idx in range(num_groups)]
+            
+            # Distribute evenly but cap at teams_per_group
+            target_sizes = []
+            for idx in range(num_groups):
+                size = base_size + (1 if idx < remainder else 0)
+                if teams_per_group and size > teams_per_group:
+                    size = teams_per_group
+                target_sizes.append(size)
+            
+            # If after capping, we have extra space and remaining participants, 
+            # distribute the excess to groups that haven't reached teams_per_group yet
+            total_capacity = sum(target_sizes)
+            if total_capacity < num_participants and teams_per_group:
+                # We have more participants than the current target sizes allow.
+                # Fill up remaining groups until they hit teams_per_group
+                for idx in range(num_groups):
+                    while target_sizes[idx] < teams_per_group and sum(target_sizes) < num_participants:
+                        target_sizes[idx] += 1
             
             group_counts = [0] * num_groups
             
@@ -41,13 +58,21 @@ class GroupStageFormat(TournamentFormat):
                     snake_order.extend(reversed(range(num_groups)))
                     
             snake_idx = 0
+            assigned_count = 0
+            total_capacity = sum(target_sizes)
+            
             for participant in participants_sorted:
-                while True:
+                if assigned_count >= total_capacity:
+                    # Tournament capacity reached, remaining participants are left unassigned
+                    break
+                    
+                while snake_idx < len(snake_order):
                     candidate_group = snake_order[snake_idx]
                     snake_idx += 1
                     if group_counts[candidate_group] < target_sizes[candidate_group]:
                         participant.group_id = groups[candidate_group].id
                         group_counts[candidate_group] += 1
+                        assigned_count += 1
                         break
 
         db.session.commit()

@@ -374,11 +374,11 @@
             </table>
             </div>
 
+            {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] %}
+            <form method="POST" action="{{ url_for('category.update_grid_scores', slug=tournament.url_slug, category_id=category.id) }}">
+            {% endif %}
             <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Group Matrix</h4>
             <div style="overflow-x: auto;">
-                {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] %}
-                <form method="POST" action="{{ url_for('category.update_grid_scores', slug=tournament.url_slug, category_id=category.id) }}">
-                {% endif %}
                 <table class="standings-table round-robin-grid" style="text-align: center;">
                     <thead>
                         <tr>
