@@ -22,7 +22,7 @@ def view_leaderboard():
     players = query.order_by(desc(Player.total_points)).all()
 
     categories = ['U8', 'U10', 'U12', 'U14', 'U18', 'Open']
-    genders = ['Boys', 'Girls', 'Mens', 'Womens']
+    genders = ['Boys', 'Girls', 'Mens', 'Womens', 'Mix']
 
     # Map rounds for dropdown
     rounds = ['Round 1', 'Round 2', 'Round 3', 'Round 4', 'Quarter-Final', 'Semi-Final', 'Runner-Up', 'Winner']
