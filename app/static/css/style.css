@@ -1745,3 +1745,37 @@ select option {
         width: fit-content;
     }
 }
+
+/* ===== ROUND ROBIN GRID ===== */
+.round-robin-grid {
+    table-layout: fixed;
+    width: 100%;
+}
+.round-robin-grid th {
+    text-align: center;
+    vertical-align: middle;
+}
+.round-robin-grid td {
+    text-align: center;
+    vertical-align: middle;
+    padding: 10px;
+}
+.round-robin-grid .score-input {
+    width: 45px;
+    text-align: center;
+    padding: 0.25rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--text-primary);
+    border-radius: var(--radius-sm);
+}
+.round-robin-grid .score-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+.empty-cell {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-muted);
+    font-weight: bold;
+}

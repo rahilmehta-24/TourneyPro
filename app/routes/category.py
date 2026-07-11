@@ -45,6 +45,10 @@ def create_category(slug):
             sub_format = request.form.get('sub_format')
             if sub_format == 'doubles':
                 format_type = 'doubles_elimination'
+        elif format_type == 'round_robin':
+            sub_format = request.form.get('sub_format')
+            if sub_format == 'doubles':
+                format_type = 'doubles_round_robin'
         max_participants = request.form.get('max_participants', type=int)
         gender = request.form.get('gender', 'Unspecified')
         age_category = request.form.get('age_category', 'Unspecified')
@@ -333,7 +337,7 @@ def manage_category(slug, category_id):
 
                 fmt = get_format(category.format)
                 if fmt:
-                    if category.format == 'round_robin' and category.teams_per_group and category.teams_per_group >= 3:
+                    if category.format in ['round_robin', 'doubles_round_robin'] and category.teams_per_group and category.teams_per_group >= 3:
                         import math
                         total_players = len(participants_list)
                         category.num_groups = math.ceil(total_players / category.teams_per_group) if total_players > 0 else 1
@@ -402,6 +406,10 @@ def manage_category(slug, category_id):
                         sub_format = request.form.get('sub_format')
                         if sub_format == 'doubles':
                             format_type = 'doubles_elimination'
+                    elif format_type == 'round_robin':
+                        sub_format = request.form.get('sub_format')
+                        if sub_format == 'doubles':
+                            format_type = 'doubles_round_robin'
                     num_sets = request.form.get('num_sets', type=int, default=1)
                     games_per_set = request.form.get('games_per_set', type=int, default=6)
 
