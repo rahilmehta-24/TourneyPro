@@ -670,12 +670,12 @@ function toggleModalMatchFormat() {
     if (format === 'points') {
         document.getElementById('modalPointsFields').style.display = 'block';
         document.getElementById('modalGamesFields').style.display = 'none';
-        document.getElementById('modalSetsTable').style.display = 'none';
+        document.getElementById('modalSetsTable').style.display = 'none'; document.getElementById('modalSetsLabel').style.display = 'none';
         document.getElementById('modalPointsScore').style.display = 'block';
     } else {
         document.getElementById('modalPointsFields').style.display = 'none';
         document.getElementById('modalGamesFields').style.display = 'grid';
-        document.getElementById('modalSetsTable').style.display = 'table';
+        document.getElementById('modalSetsTable').style.display = 'table'; document.getElementById('modalSetsLabel').style.display = 'block';
         document.getElementById('modalPointsScore').style.display = 'none';
         updateVisibleSets(document.getElementById('modalMatchNumSets').value || {{ category.num_sets if category else (tournament.num_sets or 3) }});
     }
@@ -1141,7 +1141,7 @@ function checkTiebreak(setNum, winThreshold) {
                 </div>
             </div>
             
-            <label class="form-label" style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; display: block;">Set Scores</label>
+            <label id="modalSetsLabel" class="form-label" style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; display: block;">Set Scores</label>
             
             <div id="modalPointsScore" style="display: none; margin-top: 1rem;">
                 <label class="form-label" style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; display: block;">Points Score</label>
