@@ -1,16 +1,36 @@
 // Auto-dismiss flash messages after 5 seconds
-document.addEventListener('DOMContentLoaded', function() {
-    const flashMessages = document.querySelectorAll('.flash');
+function initFlashes() {
+    const flashMessages = document.querySelectorAll('.flash:not(.initialized)');
     
     flashMessages.forEach(function(flash) {
-        setTimeout(function() {
-            flash.style.animation = 'slideOut 0.3s ease forwards';
-            setTimeout(function() {
-                flash.remove();
-            }, 300);
+        flash.classList.add('initialized');
+        
+        // Auto-dismiss
+        const timeoutId = setTimeout(function() {
+            dismissFlash(flash);
         }, 5000);
+        
+        // Close button
+        const closeBtn = flash.querySelector('.flash-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', function() {
+                clearTimeout(timeoutId);
+                dismissFlash(flash);
+            });
+        }
     });
-});
+}
+
+function dismissFlash(flash) {
+    flash.style.animation = 'slideOut 0.3s ease forwards';
+    setTimeout(function() {
+        flash.remove();
+    }, 300);
+}
+
+document.addEventListener('DOMContentLoaded', initFlashes);
+document.addEventListener('turbo:load', initFlashes);
+
 
 // Add slide out animation
 const style = document.createElement('style');

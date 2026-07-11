@@ -32,9 +32,11 @@
 </style>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const globalLoader = document.getElementById('global-loader');
-        const factText = document.getElementById('sports-fact');
+    (function() {
+        // Prevent registering multiple global listeners when Turbo re-evaluates the script
+        if (window._loaderInitialized) return;
+        window._loaderInitialized = true;
+
         const facts = [
             "The longest tennis match in history took 11 hours and 5 minutes over three days.",
             "Yellow tennis balls were introduced in 1972 to be more visible on color TV.",
@@ -49,8 +51,12 @@
         ];
         
         function showLoader() {
-            const randomFact = facts[Math.floor(Math.random() * facts.length)];
+            // Re-fetch the elements from the current DOM in case Turbo replaced them
+            const globalLoader = document.getElementById('global-loader');
+            const factText = document.getElementById('sports-fact');
+            
             if (factText) {
+                const randomFact = facts[Math.floor(Math.random() * facts.length)];
                 factText.textContent = "Did you know? " + randomFact;
             }
             if (globalLoader) {
@@ -60,6 +66,7 @@
         }
         
         function hideLoader() {
+            const globalLoader = document.getElementById('global-loader');
             if (globalLoader) {
                 globalLoader.classList.remove('active');
                 setTimeout(() => {
@@ -68,17 +75,15 @@
             }
         }
         
-        // Listen to normal form submissions
-        document.querySelectorAll('form').forEach(form => {
-            form.addEventListener('submit', function(e) {
-                // Ignore forms that open in new tab (like exports)
-                if (form.target !== '_blank') {
-                    showLoader();
-                }
-            });
+        // Listen to normal form submissions across the document via delegation
+        document.addEventListener('submit', function(e) {
+            const form = e.target;
+            if (form.tagName === 'FORM' && form.target !== '_blank') {
+                showLoader();
+            }
         });
         
-        // Listen to turbo actions if present
+        // Listen to turbo actions
         document.addEventListener('turbo:click', showLoader);
         document.addEventListener('turbo:submit-start', showLoader);
         document.addEventListener('turbo:load', hideLoader);
@@ -90,5 +95,5 @@
                 hideLoader();
             }
         });
-    });
+    })();
 </script>
