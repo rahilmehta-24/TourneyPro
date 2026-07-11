@@ -1104,24 +1104,24 @@ function checkTiebreak(setNum, winThreshold) {
                 <label style="font-weight: 600; margin-bottom: 0.5rem; display: block; color: var(--text-primary);">Match Scoring Override (Optional)</label>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <div>
-                        <label style="font-size: 0.85rem; color: var(--text-secondary);">Scoring Format</label>
-                        <select id="modalMatchFormat" name="scoring_format" style="width: 100%; padding: 0.5rem; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.5); color: white;" onchange="toggleModalMatchFormat()">
+                        <label class="form-label" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem; display: block;">Scoring Format</label>
+                        <select id="modalMatchFormat" name="scoring_format" class="form-input" style="width: 100%;" onchange="toggleModalMatchFormat()">
                             <option value="games">Games (Sets & Games)</option>
                             <option value="points">Points (Single Target)</option>
                         </select>
                     </div>
                     <div id="modalPointsFields" style="display: none;">
-                        <label style="font-size: 0.85rem; color: var(--text-secondary);">Points to Win</label>
-                        <input type="number" id="modalMatchPointsToWin" name="points_to_win" style="width: 100%; padding: 0.5rem; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.5); color: white;">
+                        <label class="form-label" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem; display: block;">Points to Win</label>
+                        <input type="number" id="modalMatchPointsToWin" name="points_to_win" class="form-input" style="width: 100%;">
                     </div>
                     <div id="modalGamesFields" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; grid-column: span 2;">
                         <div>
-                            <label style="font-size: 0.85rem; color: var(--text-secondary);">Num Sets</label>
-                            <input type="number" id="modalMatchNumSets" name="num_sets" max="5" style="width: 100%; padding: 0.5rem; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.5); color: white;" onchange="updateVisibleSets(this.value)">
+                            <label class="form-label" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem; display: block;">Num Sets</label>
+                            <input type="number" id="modalMatchNumSets" name="num_sets" max="5" class="form-input" style="width: 100%;" onchange="updateVisibleSets(this.value)">
                         </div>
                         <div>
-                            <label style="font-size: 0.85rem; color: var(--text-secondary);">Games Per Set</label>
-                            <input type="number" id="modalMatchGamesPerSet" name="games_per_set" style="width: 100%; padding: 0.5rem; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.5); color: white;">
+                            <label class="form-label" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem; display: block;">Games Per Set</label>
+                            <input type="number" id="modalMatchGamesPerSet" name="games_per_set" class="form-input" style="width: 100%;">
                         </div>
                     </div>
                 </div>
@@ -1148,12 +1148,12 @@ function checkTiebreak(setNum, winThreshold) {
                 <div style="display: flex; gap: 1rem; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: var(--radius-md);">
                     <div style="text-align: center;">
                         <span id="p1PointsHeader" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">P1</span>
-                        <input type="number" id="points_p1" name="points_p1" style="width: 80px; padding: 0.5rem; text-align: center; font-size: 1.2rem;">
+                        <input type="number" id="points_p1" name="points_p1" class="form-input" style="width: 80px; text-align: center; font-size: 1.2rem; padding: 0.5rem;">
                     </div>
                     <span style="font-weight: bold; font-size: 1.2rem;">-</span>
                     <div style="text-align: center;">
                         <span id="p2PointsHeader" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">P2</span>
-                        <input type="number" id="points_p2" name="points_p2" style="width: 80px; padding: 0.5rem; text-align: center; font-size: 1.2rem;">
+                        <input type="number" id="points_p2" name="points_p2" class="form-input" style="width: 80px; text-align: center; font-size: 1.2rem; padding: 0.5rem;">
                     </div>
                 </div>
             </div>
