@@ -271,7 +271,7 @@
     function toggleAgeCategory(genderSelect, categoryId) {
         const categorySelect = document.getElementById(categoryId);
         if (!categorySelect) return;
-        const categoryGroup = categorySelect.closest('.form-group') || categorySelect.parentElement;
+        const categoryGroup = categorySelect.parentElement;
         if (genderSelect.value === 'Mix') {
             categoryGroup.style.display = 'none';
             categorySelect.required = false;
