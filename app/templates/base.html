@@ -15,14 +15,6 @@
     {% block extra_css %}{% endblock %}
 </head>
 
-<body>
-    <!-- Global Loader -->
-    <div id="global-loader" class="loader-overlay" style="display: none;">
-        <div class="loader-content glass-panel">
-            <div class="loader-spinner"></div>
-            <h3 class="loader-title">Loading...</h3>
-            <p id="sports-fact" class="loader-fact">Did you know? Tennis originally used the palm of the hand instead of a racket.</p>
-        </div>
     </div>
 
     <nav class="navbar">
@@ -120,40 +112,6 @@
 
         // Global Loader and Sports Facts Logic for Turbo.js
         const sportsFacts = [
-            "The longest tennis match in history took 11 hours and 5 minutes over three days.",
-            "Yellow tennis balls were introduced in 1972 to be more visible on color TV.",
-            "The fastest tennis serve ever recorded was 163.7 mph (263.4 km/h) by Sam Groth.",
-            "Wimbledon is the only major tennis tournament still played on grass.",
-            "A 'Grand Slam' means winning all four major tournaments in a single calendar year.",
-            "The term 'Love' in tennis scoring likely comes from the French word 'l'oeuf' meaning egg (zero).",
-            "The shortest tennis match on record lasted only 20 minutes.",
-            "Venus Williams holds the record for the fastest serve by a woman at 129 mph.",
-            "Tennis was originally played with the palm of the hand, a game called 'Jeu de paume'.",
-            "Over 54,000 tennis balls are used during the Wimbledon tournament each year."
-        ];
-
-        const loader = document.getElementById('global-loader');
-        const factElement = document.getElementById('sports-fact');
-
-        document.addEventListener('turbo:click', function() {
-            // Show loader
-            const randomFact = sportsFacts[Math.floor(Math.random() * sportsFacts.length)];
-            factElement.textContent = "Did you know? " + randomFact;
-            loader.style.display = 'flex';
-            // Small delay to allow CSS transitions
-            setTimeout(() => loader.classList.add('active'), 10);
-        });
-
-        document.addEventListener('turbo:load', function() {
-            // Hide loader
-            loader.classList.remove('active');
-            setTimeout(() => {
-                loader.style.display = 'none';
-            }, 300); // Wait for fade out transition
-        });
-        
-        // Also hide if a form submission completes or fails (turbo:submit-end)
-        document.addEventListener('turbo:submit-end', function() {
             loader.classList.remove('active');
             setTimeout(() => {
                 loader.style.display = 'none';

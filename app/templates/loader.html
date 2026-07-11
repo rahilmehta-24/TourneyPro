@@ -1,77 +1,94 @@
-<div id="sports-loader" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; color: white; font-family: system-ui, -apple-system, sans-serif;">
-    <div class="tennis-animation" style="position: relative; width: 200px; height: 100px; margin-bottom: 2rem;">
-        <!-- Player -->
-        <div style="position: absolute; left: 10px; bottom: 0; font-size: 3rem;">🏃‍♂️</div>
-        <!-- Racket -->
-        <div class="racket-swing" style="position: absolute; left: 45px; bottom: 20px; font-size: 2rem; transform-origin: bottom left;">🏸</div>
-        <!-- Ball -->
-        <div class="ball-fly" style="position: absolute; left: 60px; bottom: 30px; font-size: 1.5rem;">🎾</div>
+<div id="global-loader" class="loader-overlay" style="display: none;">
+    <div class="loader-content glass-panel" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; max-width: 400px; text-align: center;">
+        <div class="tennis-animation" style="position: relative; width: 120px; height: 120px; margin-bottom: 20px;">
+            <!-- Tennis Player Silhouette -->
+            <svg viewBox="0 0 64 64" width="80" height="80" style="position: absolute; bottom: 0; left: 10px;">
+                <path d="M 32 4 C 29.8 4 28 5.8 28 8 C 28 10.2 29.8 12 32 12 C 34.2 12 36 10.2 36 8 C 36 5.8 34.2 4 32 4 Z M 32 14 C 28 14 26 16 24 20 L 20 30 L 24 32 L 27 24 L 29 36 L 22 52 L 26 54 L 32 42 L 38 54 L 42 52 L 35 36 L 37 24 L 46 16 L 44 12 C 40 16 36 14 32 14 Z" fill="var(--primary)" />
+                <!-- Racquet -->
+                <path d="M 46 16 L 54 8 M 54 8 C 52 4 58 -2 62 2 C 66 6 60 12 54 8 Z" stroke="var(--accent-blue)" stroke-width="2" fill="none" />
+                <line x1="56" y1="6" x2="60" y2="4" stroke="var(--accent-blue)" stroke-width="0.5" />
+                <line x1="57" y1="8" x2="61" y2="6" stroke="var(--accent-blue)" stroke-width="0.5" />
+                <line x1="58" y1="10" x2="62" y2="8" stroke="var(--accent-blue)" stroke-width="0.5" />
+            </svg>
+            <!-- Animated Ball -->
+            <div class="tennis-ball-anim" style="position: absolute; width: 12px; height: 12px; background: #ccff00; border-radius: 50%; box-shadow: 0 0 5px rgba(204,255,0,0.8);"></div>
+        </div>
+        <h3 class="loader-title" style="margin-bottom: 10px; font-weight: 700; letter-spacing: 1px;">Loading...</h3>
+        <p id="sports-fact" class="loader-fact" style="font-size: 0.9rem; color: var(--text-muted); font-style: italic; line-height: 1.4;"></p>
     </div>
-    
-    <h3 style="margin-bottom: 1rem; color: var(--accent-primary);">Loading...</h3>
-    <p id="sports-fact" style="max-width: 400px; text-align: center; font-size: 1.1rem; line-height: 1.5; color: #cbd5e1; padding: 0 1rem;"></p>
 </div>
-
 <style>
-@keyframes swing {
-    0% { transform: rotate(-20deg); }
-    50% { transform: rotate(60deg); }
-    100% { transform: rotate(-20deg); }
+@keyframes ball-hit {
+    0% { transform: translate(-50px, -20px); opacity: 0; }
+    20% { transform: translate(-20px, 40px); opacity: 1; }
+    40% { transform: translate(30px, 10px); }
+    50% { transform: translate(50px, -10px); }
+    80% { transform: translate(120px, 40px); opacity: 1; }
+    100% { transform: translate(150px, 60px); opacity: 0; }
 }
-
-@keyframes fly {
-    0% { transform: translate(0, 0) scale(1); opacity: 1; }
-    40% { transform: translate(100px, -40px) scale(0.6); opacity: 1; }
-    50% { transform: translate(120px, -20px) scale(0.5); opacity: 0; }
-    100% { transform: translate(0, 0) scale(1); opacity: 0; }
-}
-
-.racket-swing {
-    animation: swing 1.5s infinite ease-in-out;
-}
-
-.ball-fly {
-    animation: fly 1.5s infinite ease-in-out;
+.tennis-ball-anim {
+    animation: ball-hit 1.5s infinite linear;
 }
 </style>
 
 <script>
-const tennisFacts = [
-    "The longest tennis match in history lasted 11 hours and 5 minutes at Wimbledon in 2010.",
-    "Yellow tennis balls were used at Wimbledon for the first time in 1986.",
-    "Venus and Serena Williams became the first sisters to win Olympic gold medals in tennis.",
-    "The fastest tennis serve on record was hit by Sam Groth at 163.7 mph (263.4 km/h).",
-    "A tennis ball is typically in play for only 20 minutes during a 2.5-hour match.",
-    "The word 'tennis' comes from the French word 'tenez', meaning 'take' or 'receive'.",
-    "Wimbledon is the only Grand Slam tournament played on grass courts.",
-    "Arthur Ashe is the only black man ever to win the singles title at Wimbledon, the US Open, and the Australian Open.",
-    "Steffi Graf is the only player to achieve the Golden Slam (all 4 Grand Slams and Olympic Gold in the same year)."
-];
-
-function showSportsLoader() {
-    const loader = document.getElementById('sports-loader');
-    const factEl = document.getElementById('sports-fact');
-    const randomFact = tennisFacts[Math.floor(Math.random() * tennisFacts.length)];
-    
-    factEl.innerText = randomFact;
-    loader.style.display = 'flex';
-}
-
-function hideSportsLoader() {
-    const loader = document.getElementById('sports-loader');
-    loader.style.display = 'none';
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    // Only intercept form submissions to avoid being obtrusive on every link click
-    const forms = document.querySelectorAll('form');
-    forms.forEach(form => {
-        form.addEventListener('submit', (e) => {
-            // Check if form has target blank or is a search form (method GET)
-            if (form.getAttribute('target') !== '_blank' && form.getAttribute('method')?.toUpperCase() !== 'GET') {
-                showSportsLoader();
+    document.addEventListener('DOMContentLoaded', function() {
+        const globalLoader = document.getElementById('global-loader');
+        const factText = document.getElementById('sports-fact');
+        const facts = [
+            "The longest tennis match in history took 11 hours and 5 minutes over three days.",
+            "Yellow tennis balls were introduced in 1972 to be more visible on color TV.",
+            "The fastest tennis serve ever recorded was 163.7 mph (263.4 km/h) by Sam Groth.",
+            "Wimbledon is the only major tennis tournament still played on grass.",
+            "A 'Grand Slam' means winning all four major tournaments in a single calendar year.",
+            "The term 'Love' in tennis scoring likely comes from the French word 'l'oeuf' meaning egg (zero).",
+            "The shortest tennis match on record lasted only 20 minutes.",
+            "Venus Williams holds the record for the fastest serve by a woman at 129 mph.",
+            "Tennis was originally played with the palm of the hand, a game called 'Jeu de paume'.",
+            "Over 54,000 tennis balls are used during the Wimbledon tournament each year."
+        ];
+        
+        function showLoader() {
+            const randomFact = facts[Math.floor(Math.random() * facts.length)];
+            if (factText) {
+                factText.textContent = "Did you know? " + randomFact;
+            }
+            if (globalLoader) {
+                globalLoader.style.display = 'flex';
+                setTimeout(() => globalLoader.classList.add('active'), 10);
+            }
+        }
+        
+        function hideLoader() {
+            if (globalLoader) {
+                globalLoader.classList.remove('active');
+                setTimeout(() => {
+                    globalLoader.style.display = 'none';
+                }, 300);
+            }
+        }
+        
+        // Listen to normal form submissions
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                // Ignore forms that open in new tab (like exports)
+                if (form.target !== '_blank') {
+                    showLoader();
+                }
+            });
+        });
+        
+        // Listen to turbo actions if present
+        document.addEventListener('turbo:click', showLoader);
+        document.addEventListener('turbo:submit-start', showLoader);
+        document.addEventListener('turbo:load', hideLoader);
+        document.addEventListener('turbo:submit-end', hideLoader);
+        
+        // Handle window pageshow for back/forward cache
+        window.addEventListener('pageshow', function(e) {
+            if (e.persisted) {
+                hideLoader();
             }
         });
     });
-});
 </script>
