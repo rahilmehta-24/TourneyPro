@@ -418,9 +418,9 @@
                                     {% else %}
                                         {% if ns.match.status == 'completed' %}
                                             {% if ns.is_p1 %}
-                                                <span style="{% if ns.match.winner_id == row_p.id %}color: var(--primary); font-weight: bold;{% endif %}">{{ ns.match.score1 }} - {{ ns.match.score2 }}</span>
+                                                <span style="{% if ns.match.winner_id == row_p.id %}color: var(--primary); font-weight: bold;{% endif %}">{{ ns.match.score1 | format_tennis_score | safe }}</span>
                                             {% else %}
-                                                <span style="{% if ns.match.winner_id == row_p.id %}color: var(--primary); font-weight: bold;{% endif %}">{{ ns.match.score2 }} - {{ ns.match.score1 }}</span>
+                                                <span style="{% if ns.match.winner_id == row_p.id %}color: var(--primary); font-weight: bold;{% endif %}">{{ ns.match.score2 | format_tennis_score | safe }}</span>
                                             {% endif %}
                                         {% else %}
                                             <span style="color: var(--text-muted); font-size: 0.85rem;">Pending</span>
@@ -490,7 +490,13 @@
                 <span class="vs">vs</span>
                 <span>{{ match.participant2.name if match.participant2 else 'TBD' }}</span>
                 {% if match.status == 'completed' %}
-                <span class="score">{{ match.score1 }} - {{ match.score2 }}</span>
+                <span class="score">
+                    {% if match.winner_id == match.participant1_id %}
+                        {{ match.score1 | format_tennis_score | safe }}
+                    {% else %}
+                        {{ match.score2 | format_tennis_score | safe }}
+                    {% endif %}
+                </span>
                 {% else %}
                 {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status == 'in_progress' %}
                 <button onclick="openReportModal({{ match.id or 0 }})" class="btn btn-small">Report Result</button>

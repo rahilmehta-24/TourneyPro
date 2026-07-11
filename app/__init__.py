@@ -61,6 +61,12 @@ def create_app(config_class=Config):
     from app.api import api_bp
     app.register_blueprint(api_bp, url_prefix='/api/v1')
 
+    @app.template_filter('format_tennis_score')
+    def format_tennis_score(score_str):
+        if not score_str:
+            return ""
+        import re
+        return re.sub(r'\((\d+)\)', r'<sup>\1</sup>', score_str)
 
     # Cache Control Middleware for static assets
     @app.after_request
