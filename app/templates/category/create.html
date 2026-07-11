@@ -177,7 +177,7 @@
         
         const knockoutSubformatFields = document.getElementById('knockout-subformat-fields');
         if (knockoutSubformatFields) {
-            knockoutSubformatFields.style.display = (format === 'single_elimination') ? 'block' : 'none';
+            knockoutSubformatFields.style.display = (format === 'single_elimination' || format === 'round_robin') ? 'block' : 'none';
         }
 
         if (format === 'group_stage') {
