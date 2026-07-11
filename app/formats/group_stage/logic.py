@@ -30,23 +30,22 @@ class GroupStageFormat(TournamentFormat):
             base_size = num_participants // num_groups
             remainder = num_participants % num_groups
             
-            # Distribute evenly but cap at teams_per_group
+            # Pack sequentially based on teams_per_group
             target_sizes = []
+            remaining = num_participants
             for idx in range(num_groups):
-                size = base_size + (1 if idx < remainder else 0)
-                if teams_per_group and size > teams_per_group:
-                    size = teams_per_group
-                target_sizes.append(size)
-            
-            # If after capping, we have extra space and remaining participants, 
-            # distribute the excess to groups that haven't reached teams_per_group yet
-            total_capacity = sum(target_sizes)
-            if total_capacity < num_participants and teams_per_group:
-                # We have more participants than the current target sizes allow.
-                # Fill up remaining groups until they hit teams_per_group
-                for idx in range(num_groups):
-                    while target_sizes[idx] < teams_per_group and sum(target_sizes) < num_participants:
-                        target_sizes[idx] += 1
+                if teams_per_group:
+                    if remaining >= teams_per_group:
+                        target_sizes.append(teams_per_group)
+                        remaining -= teams_per_group
+                    else:
+                        target_sizes.append(remaining)
+                        remaining = 0
+                else:
+                    # If teams_per_group is not set, fall back to even distribution
+                    size = base_size + (1 if idx < remainder else 0)
+                    target_sizes.append(size)
+                    remaining -= size
             
             group_counts = [0] * num_groups
             
@@ -77,10 +76,20 @@ class GroupStageFormat(TournamentFormat):
 
         db.session.commit()
 
+        # Delete empty groups
+        active_groups = []
+        for group in groups:
+            group_participants = [p for p in participants if p.group_id == group.id]
+            if len(group_participants) == 0:
+                db.session.delete(group)
+            else:
+                active_groups.append(group)
+        db.session.commit()
+
         matches = []
         match_number = 1
 
-        for group in groups:
+        for group in active_groups:
             group_participants = [p for p in participants if p.group_id == group.id]
 
             for i in range(len(group_participants)):

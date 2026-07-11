@@ -1,0 +1,121 @@
+        {% endif %}
+    </div>
+    {% endif %}
+    {% if groups_data %}
+    <!-- GROUP STAGE VIEW -->
+    <div class="groups-section">
+        <h2>Group Stage</h2>
+
+        {% for group_info in groups_data %}
+        <div class="group-card">
+            <h3>{{ group_info.group.name }}</h3>
+
+            <div class="table-container" style="width: 100%; overflow-x: auto;">
+            <table class="standings-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Participant</th>
+                        <th>W</th>
+                        <th>L</th>
+                        <th>Pts</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for participant in group_info.standings %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ participant.name }}</td>
+                        <td>{{ participant.group_wins }}</td>
+                        <td>{{ participant.group_losses }}</td>
+                        <td>{{ participant.group_points }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            </div>
+
+            {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] %}
+            <form method="POST" action="{{ url_for('category.update_grid_scores', slug=tournament.url_slug, category_id=category.id) }}">
+            {% endif %}
+            <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Group Matrix</h4>
+            <div style="overflow-x: auto;">
+                <table class="standings-table round-robin-grid" style="text-align: center;">
+                    <thead>
+                        <tr>
+                            <th style="text-align: center;">vs</th>
+                            {% for p in group_info.standings %}
+                            <th style="min-width: 100px; text-align: center;" title="{{ p.name }}">{{ p.name }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row_p in group_info.standings %}
+                        <tr>
+                            <td style="font-weight: 600; text-align: center;">{{ row_p.name }}</td>
+                            {% for col_p in group_info.standings %}
+                            {% if row_p.id == col_p.id %}
+                                <td class="empty-cell" style="background: rgba(255,255,255,0.05); color: var(--text-muted); font-weight: bold; font-size: 1.2rem;">X</td>
+                            {% else %}
+                                {% set ns = namespace(found=false, match=none, is_p1=true) %}
+                                {% for m in group_info.matches %}
+                                    {% if m.participant1_id == row_p.id and m.participant2_id == col_p.id %}
+                                        {% set ns.found = true %}
+                                        {% set ns.match = m %}
+                                        {% set ns.is_p1 = true %}
+                                    {% elif m.participant1_id == col_p.id and m.participant2_id == row_p.id %}
+                                        {% set ns.found = true %}
+                                        {% set ns.match = m %}
+                                        {% set ns.is_p1 = false %}
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                <td style="padding: 4px;">
+                                {% if ns.found %}
+                                    {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] and ns.match.id %}
+                                        <div style="display: flex; justify-content: center; align-items: center;">
+                                            <input type="number" name="match_{{ ns.match.id }}_p{% if ns.is_p1 %}1{% else %}2{% endif %}" 
+                                                   value="{{ ns.match.score1 if (ns.is_p1 and ns.match.score1 is not none) else (ns.match.score2 if not ns.is_p1 and ns.match.score2 is not none else '') }}" 
+                                                   style="width: 60px; text-align: center; padding: 4px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.3); color: white; border-radius: 4px;" min="0" placeholder="-">
+                                        </div>
+                                    {% else %}
+                                        {% if ns.match.status == 'completed' %}
+                                            {% if ns.is_p1 %}
+                                                <span style="{% if ns.match.winner_id == row_p.id %}color: var(--primary); font-weight: bold;{% endif %}">{{ ns.match.score1 | format_tennis_score | safe }}</span>
+                                            {% else %}
+                                                <span style="{% if ns.match.winner_id == row_p.id %}color: var(--primary); font-weight: bold;{% endif %}">{{ ns.match.score2 | format_tennis_score | safe }}</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span style="color: var(--text-muted); font-size: 0.85rem;">Pending</span>
+                                        {% endif %}
+                                    {% endif %}
+                                {% else %}
+                                    -
+                                {% endif %}
+                                </td>
+                            {% endif %}
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+                {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] %}
+                <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 1rem; margin-bottom: 1rem;">
+                    <button type="submit" class="btn btn-primary" title="Save Entries" style="padding: 0.5rem; display: flex; align-items: center; justify-content: center; border-radius: 4px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </button>
+                    <button type="reset" class="btn" title="Undo Entries" style="padding: 0.5rem; display: flex; align-items: center; justify-content: center; border-radius: 4px; background: rgba(255,255,255,0.1);">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path></svg>
+                    </button>
+                </div>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+
+        {% set knockout_exists = matches | selectattr('match_type', 'equalto', 'knockout') | list | length > 0 %}
+        {% if category.status == 'in_progress' and not knockout_exists %}
+        {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+<form method="POST"

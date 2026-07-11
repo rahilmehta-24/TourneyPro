@@ -343,7 +343,21 @@
     {% if groups_data %}
     <!-- GROUP STAGE VIEW -->
     <div class="groups-section">
-        <h2>Group Stage</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2>Group Stage</h2>
+            {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] %}
+            <div style="display: flex; gap: 8px;">
+                <button type="submit" form="group-matrix-form" class="btn btn-primary" title="Save Entries" style="padding: 0.5rem 1rem; display: flex; align-items: center; gap: 8px; border-radius: 4px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    Save All Grid Scores
+                </button>
+            </div>
+            {% endif %}
+        </div>
+        
+        {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] %}
+        <form id="group-matrix-form" method="POST" action="{{ url_for('category.update_grid_scores', slug=tournament.url_slug, category_id=category.id) }}">
+        {% endif %}
 
         {% for group_info in groups_data %}
         <div class="group-card">
@@ -374,9 +388,6 @@
             </table>
             </div>
 
-            {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] %}
-            <form method="POST" action="{{ url_for('category.update_grid_scores', slug=tournament.url_slug, category_id=category.id) }}">
-            {% endif %}
             <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Group Matrix</h4>
             <div style="overflow-x: auto;">
                 <table class="standings-table round-robin-grid" style="text-align: center;">
@@ -439,20 +450,22 @@
                     </tbody>
                 </table>
             </div>
-                {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] %}
-                <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 1rem; margin-bottom: 1rem;">
-                    <button type="submit" class="btn btn-primary" title="Save Entries" style="padding: 0.5rem; display: flex; align-items: center; justify-content: center; border-radius: 4px;">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    </button>
-                    <button type="reset" class="btn" title="Undo Entries" style="padding: 0.5rem; display: flex; align-items: center; justify-content: center; border-radius: 4px; background: rgba(255,255,255,0.1);">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path></svg>
-                    </button>
-                </div>
-                </form>
-                {% endif %}
-            </div>
         </div>
         {% endfor %}
+        
+        {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] %}
+        <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.5rem; margin-bottom: 1rem;">
+            <button type="submit" form="group-matrix-form" class="btn btn-primary" title="Save Entries" style="padding: 0.75rem 1.5rem; display: flex; align-items: center; gap: 8px; border-radius: 4px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                Save All Grid Scores
+            </button>
+            <button type="reset" form="group-matrix-form" class="btn" title="Undo Entries" style="padding: 0.75rem 1.5rem; display: flex; align-items: center; gap: 8px; border-radius: 4px; background: rgba(255,255,255,0.1);">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path></svg>
+                Undo Changes
+            </button>
+        </div>
+        </form>
+        {% endif %}
 
         {% set knockout_exists = matches | selectattr('match_type', 'equalto', 'knockout') | list | length > 0 %}
         {% if category.status == 'in_progress' and not knockout_exists %}
