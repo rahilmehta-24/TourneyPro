@@ -875,7 +875,7 @@ function openMatchModal(matchId, currentStatus, currentScheduledTime, p1Name, p1
         if (completeMatchBtn) completeMatchBtn.style.display = 'none';
     }
 
-    const numSets = {{ category.num_sets if category else (tournament.num_sets or 3) }};
+    const numSets = {{ category.num_sets or tournament.num_sets or 3 }};
     for (let s = 1; s <= numSets; s++) {
         const p1Input = document.getElementById(`set${s}_p1`);
         const p2Input = document.getElementById(`set${s}_p2`);
