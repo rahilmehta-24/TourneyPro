@@ -44,19 +44,7 @@
         </div>
     </section>
 
-    {% if tournaments %}
-    <section class="recent-tournaments">
-        <h2 class="section-title">Recent Tournaments</h2>
-        <div class="tournament-list">
-            {% for tournament in tournaments %}
-            <div class="tournament-card">
-                <div class="tournament-header">
-                    <div class="tournament-format-badge">
-                        {% if tournament.format %}
-                            {{ formats[tournament.format].icon }} {{ formats[tournament.format].name }}
-                        {% else %}
-                            🗂️ Multi-Category
-                        {% endif %}
+    
                     </div>
                     <div class="tournament-status status-{{ tournament.status }}">
                         {{ tournament.status.replace('_', ' ').title() }}

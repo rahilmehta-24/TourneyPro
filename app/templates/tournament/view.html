@@ -1,61 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ tournament.name }} - Bracket
-<script>
-    // Live Score Updates using Short Polling (Serverless Compatible)
-    document.addEventListener('DOMContentLoaded', () => {
-        let isFetching = false;
-        
-        function fetchLiveUpdate() {
-            if (isFetching) return;
-            isFetching = true;
-            
-            fetch(window.location.href)
-                .then(res => res.text())
-                .then(html => {
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(html, 'text/html');
-                    
-                    let changed = false;
-                    
-                    // Check brackets
-                    const currentBrackets = document.querySelectorAll('.knockout-bracket');
-                    const newBrackets = doc.querySelectorAll('.knockout-bracket');
-                    currentBrackets.forEach((el, index) => {
-                        if (newBrackets[index] && el.innerHTML !== newBrackets[index].innerHTML) {
-                            el.innerHTML = newBrackets[index].innerHTML;
-                            el.classList.add('live-updated');
-                            setTimeout(() => el.classList.remove('live-updated'), 2000);
-                            changed = true;
-                        }
-                    });
-                    
-                    // Check groups
-                    const currentGroups = document.getElementById('groups-section');
-                    const newGroups = doc.getElementById('groups-section');
-                    if (currentGroups && newGroups && currentGroups.innerHTML !== newGroups.innerHTML) {
-                        currentGroups.innerHTML = newGroups.innerHTML;
-                        currentGroups.classList.add('live-updated');
-                        setTimeout(() => currentGroups.classList.remove('live-updated'), 2000);
-                        changed = true;
-                    }
-                    
-                    if (changed) {
-                        console.log("Polled updates applied.");
-                    }
-                    
-                    isFetching = false;
-                })
-                .catch(err => {
-                    console.error('Failed to fetch live update', err);
-                    isFetching = false;
-                });
-        }
-
-        // Poll every 10 seconds
-        setInterval(fetchLiveUpdate, 10000);
-    });
-</script>
+{% block title %}{{ tournament.name }} - Bracket{% endblock %}
 
 {% endblock %}
 
@@ -1235,7 +1180,9 @@ function checkTiebreak(setNum, winThreshold) {
             if (isFetching) return;
             isFetching = true;
             
-            fetch(window.location.href)
+            const ts = new Date().getTime();
+            const fetchUrl = window.location.href + (window.location.href.includes('?') ? '&' : '?') + 't=' + ts;
+            fetch(fetchUrl, { cache: 'no-store' })
                 .then(res => res.text())
                 .then(html => {
                     const parser = new DOMParser();
