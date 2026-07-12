@@ -4,6 +4,7 @@
 
 
 {% block content %}
+<style>.category-card-hover:hover { transform: translateY(-3px) !important; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1) !important; }</style>
 <div class="container">
     <div class="page-header">
         <div>
@@ -47,12 +48,12 @@
             style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
             {% for category in tournament.categories %}
             <div class="category-card"
-                style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-radius: 12px; padding: 1.5rem; border: 1px solid #334155; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 1.5rem; border: 1px solid var(--border-color); transition: transform 0.2s, box-shadow 0.2s;" class="category-card-hover">
                 <!-- Category Header -->
                 <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
                     <div>
-                        <h3 style="margin: 0; font-size: 1.25rem; color: white;">{{ category.name }}</h3>
-                        <p style="margin: 0.25rem 0 0 0; color: #94a3b8; font-size: 0.875rem;">
+                        <h3 style="margin: 0; font-size: 1.25rem; color: var(--text-primary); font-weight: 600;">{{ category.name }}</h3>
+                        <p style="margin: 0.25rem 0 0 0; color: var(--text-muted); font-size: 0.875rem;">
                             {{ formats[category.format].icon }} {{ formats[category.format].name }}
                         </p>
                     </div>
@@ -64,16 +65,16 @@
 
                 <!-- Category Stats -->
                 <div
-                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; padding: 1rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px;">
                     <div>
-                        <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.25rem;">Participants</div>
-                        <div style="font-size: 1.5rem; font-weight: bold; color: white;">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Participants</div>
+                        <div style="font-size: 1.5rem; font-weight: bold; color: var(--text-primary);">
                             {{ category.participants|length }}
                         </div>
                     </div>
                     <div>
-                        <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.25rem;">Matches</div>
-                        <div style="font-size: 1.5rem; font-weight: bold; color: white;">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Matches</div>
+                        <div style="font-size: 1.5rem; font-weight: bold; color: var(--text-primary);">
                             {% set completed_matches = category.matches|selectattr('status', 'equalto',
                             'completed')|list|length %}
                             {% set total_matches = category.matches|length %}
@@ -86,12 +87,12 @@
                 {% set progress = (completed_matches / total_matches * 100)|int if total_matches > 0 else 0 %}
                 <div style="margin: 1rem 0;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                        <span style="font-size: 0.75rem; color: #94a3b8;">Progress</span>
-                        <span style="font-size: 0.75rem; color: white; font-weight: 600;">{{ progress }}%</span>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">Progress</span>
+                        <span style="font-size: 0.75rem; color: var(--text-primary); font-weight: 600;">{{ progress }}%</span>
                     </div>
-                    <div style="width: 100%; height: 8px; background: #1e293b; border-radius: 10px; overflow: hidden;">
+                    <div style="width: 100%; height: 8px; background: var(--bg-secondary); border-radius: 10px; overflow: hidden;">
                         <div
-                            style="width: {{ progress }}%; height: 100%; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); transition: width 0.3s ease;">
+                            style="width: {{ progress }}%; height: 100%; background: var(--gradient-primary); transition: width 0.3s ease;">
                         </div>
                     </div>
                 </div>
@@ -101,10 +102,10 @@
                 
                 {% if finals_match and finals_match.winner %}
                 <div
-                    style="margin: 1rem 0; padding: 1rem; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 8px;">
-                    <div style="font-size: 0.75rem; color: rgba(255,255,255,0.8); margin-bottom: 0.25rem;">🏆 Winner
+                    style="margin: 1rem 0; padding: 1rem; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 8px;">
+                    <div style="font-size: 0.75rem; color: var(--success); margin-bottom: 0.25rem;">🏆 Winner
                     </div>
-                    <div style="font-size: 1.125rem; font-weight: bold; color: white;">{{ finals_match.winner.name }}
+                    <div style="font-size: 1.125rem; font-weight: bold; color: var(--text-primary);">{{ finals_match.winner.name }}
                     </div>
                 </div>
                 {% endif %}
@@ -162,15 +163,15 @@
             
 
             <div data-category="{{ category.id }}" class="category-leaderboard-card"
-                style="min-width: 250px; background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid rgba(255,255,255,0.1); overflow: hidden;">
+                style="min-width: 250px; background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border-color); overflow: hidden;">
                 <div style="background: var(--gradient-primary); padding: 1rem; text-align: center;">
-                    <h3 style="margin: 0; color: white; font-size: 1.125rem; font-weight: 700;">{{ category.name }}</h3>
+                    <h3 style="margin: 0; color: var(--text-primary); font-size: 1.125rem; font-weight: 700;">{{ category.name }}</h3>
                 </div>
 
                 <div style="padding: 0;">
                     {% set winner = category.participants | selectattr('final_rank', 'equalto', 1) | first %}
                     {% if winner %}
-                    <div style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <div style="border-bottom: 1px solid var(--border-color);">
                         <div style="padding: 0.75rem 1rem; background: rgba(255,215,0,0.1); border-left: 3px solid #FFD700;">
                             <div style="font-weight: 700; font-size: 0.875rem; color: #FFD700; margin-bottom: 0.25rem;">
                                 🥇 CHAMPION</div>
@@ -181,7 +182,7 @@
 
                     {% set runner_up = category.participants | selectattr('final_rank', 'equalto', 2) | first %}
                     {% if runner_up %}
-                    <div style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <div style="border-bottom: 1px solid var(--border-color);">
                         <div style="padding: 0.75rem 1rem; background: rgba(192,192,192,0.1); border-left: 3px solid #C0C0C0;">
                             <div style="font-weight: 700; font-size: 0.875rem; color: #C0C0C0; margin-bottom: 0.25rem;">
                                 🥈 RUNNER-UP</div>
@@ -239,19 +240,19 @@
         <div
             style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
             <div
-                style="background: var(--bg-card); padding: 1.5rem; border-radius: var(--radius-lg); border: 1px solid rgba(255,255,255,0.1);">
+                style="background: var(--bg-card); padding: 1.5rem; border-radius: var(--radius-lg); border: 1px solid var(--border-color);">
                 <div style="font-size: 2rem; font-weight: 700; color: var(--primary);">{{ player_registry|length }}
                 </div>
                 <div style="color: var(--text-secondary); font-size: 0.875rem;">Total Players</div>
             </div>
             <div
-                style="background: var(--bg-card); padding: 1.5rem; border-radius: var(--radius-lg); border: 1px solid rgba(255,255,255,0.1);">
+                style="background: var(--bg-card); padding: 1.5rem; border-radius: var(--radius-lg); border: 1px solid var(--border-color);">
                 <div style="font-size: 2rem; font-weight: 700; color: var(--primary);">{{
                     tournament.categories|selectattr('status', 'equalto', 'completed')|list|length }}</div>
                 <div style="color: var(--text-secondary); font-size: 0.875rem;">Completed Categories</div>
             </div>
             <div
-                style="background: var(--bg-card); padding: 1.5rem; border-radius: var(--radius-lg); border: 1px solid rgba(255,255,255,0.1);">
+                style="background: var(--bg-card); padding: 1.5rem; border-radius: var(--radius-lg); border: 1px solid var(--border-color);">
                 <div style="font-size: 2rem; font-weight: 700; color: var(--primary);">{{
                     player_registry|sum(attribute='total_matches') }}</div>
                 <div style="color: var(--text-secondary); font-size: 0.875rem;">Total Matches</div>
@@ -260,11 +261,11 @@
 
         <!-- Player Table -->
         <div
-            style="background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid rgba(255,255,255,0.1); overflow: hidden;">
+            style="background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border-color); overflow: hidden;">
             <div style="overflow-x: auto;">
                 <table id="playerTable" style="width: 100%; border-collapse: collapse;">
                     <thead>
-                        <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid var(--border-color);">
                             <th style="padding: 1rem; text-align: left; font-weight: 600; color: var(--text-secondary); cursor: pointer;"
                                 onclick="sortTable(0)">Player Name ↕</th>
                             <th
@@ -284,13 +285,13 @@
                     <tbody>
                         {% for player in player_registry %}
                         <tr class="player-row"
-                            style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;">
+                            style="border-bottom: 1px solid var(--border-color); transition: background 0.2s;">
                             <td style="padding: 1rem; font-weight: 600; color: var(--text-primary);">{{ player.name }}
                             </td>
                             <td style="padding: 1rem;">
                                 {% for cat in player.categories %}
                                 <span
-                                    style="display: inline-block; background: rgba(124,58,237,0.2); color: #a78bfa; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; margin-right: 0.5rem; margin-bottom: 0.25rem;">{{
+                                    style="display: inline-block; background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border-color); padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; margin-right: 0.5rem; margin-bottom: 0.25rem;">{{
                                     cat }}</span>
                                 {% endfor %}
                             </td>
@@ -435,11 +436,11 @@
                 <div
                     style="font-size: 1.2rem; color: rgba(255,255,255,0.9); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 2px; font-weight: 600;">
                     🏆 Tournament Champion 🏆</div>
-                <div style="font-size: 2.5rem; color: white; font-weight: bold; text-shadow: 0 2px 10px rgba(0,0,0,0.3);">{{
+                <div style="font-size: 2.5rem; color: var(--text-primary); font-weight: bold; text-shadow: 0 2px 10px rgba(0,0,0,0.3);">{{
                     finals_match.winner.name
                 }}</div>
                 {% if finals_match.winner.manual_seed %}
-                <div style="font-size: 1rem; color: rgba(255,255,255,0.8); margin-top: 0.5rem;">Seed #{{
+                <div style="font-size: 1rem; color: var(--success); margin-top: 0.5rem;">Seed #{{
                     finals_match.winner.manual_seed
                 }}</div>
                 {% endif %}
@@ -1089,7 +1090,7 @@ function checkTiebreak(setNum, winThreshold) {
 
 <div id="matchManagementModal" class="glass-modal-overlay" onclick="if(event.target === this) closeMatchModal()">
     <div class="glass-modal" style="max-height: 90vh; overflow-y: auto;">
-        <span class="close" onclick="closeMatchModal()" style="position: absolute; top: 1rem; right: 1rem; font-size: 2rem; cursor: pointer; color: #94a3b8;">&times;</span>
+        <span class="close" onclick="closeMatchModal()" style="position: absolute; top: 1rem; right: 1rem; font-size: 2rem; cursor: pointer; color: var(--text-muted);">&times;</span>
         <h3>Match #<span id="modalMatchId"></span></h3>
         
         <div class="glass-modal-form-group">
@@ -1099,7 +1100,7 @@ function checkTiebreak(setNum, winThreshold) {
                 <option value="in_progress">In Progress</option>
                 <option value="completed">Completed</option>
             </select>
-            <div id="modalMatchStatusText" style="display: none; padding: 0.75rem; background: rgba(0,0,0,0.2); border-radius: var(--radius-md); font-weight: 500; font-size: 1.05rem; color: var(--text-primary); border: 1px solid rgba(255,255,255,0.05);"></div>
+            <div id="modalMatchStatusText" style="display: none; padding: 0.75rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); font-weight: 500; font-size: 1.05rem; color: var(--text-primary); border: 1px solid rgba(255,255,255,0.05);"></div>
         </div>
         
         <div class="glass-modal-form-group" style="display: flex; gap: 8px; align-items: flex-end;">
@@ -1128,7 +1129,7 @@ function checkTiebreak(setNum, winThreshold) {
             <label class="form-label" style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; display: block;">Set Scores</label>
             <table style="width: 100%; border-collapse: collapse; margin-top: 0.5rem;">
                 <thead>
-                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <tr style="border-bottom: 1px solid var(--border-color);">
                         <th style="padding: 0.5rem; text-align: left; color: var(--text-secondary);">Set</th>
                         <th id="p1SetHeader" style="padding: 0.5rem; text-align: center; color: var(--text-secondary);">Player 1</th>
                         <th id="p2SetHeader" style="padding: 0.5rem; text-align: center; color: var(--text-secondary);">Player 2</th>
