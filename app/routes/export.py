@@ -1,85 +1,52 @@
+from flask import Blueprint, make_response, abort, redirect, url_for
+from app.models import Tournament, Category, Match, Group
 import csv
 import io
-from flask import Blueprint, render_template, make_response, abort
-from app.models import Tournament, Category, Match, Group
-from datetime import datetime
-from xhtml2pdf import pisa
-from io import BytesIO
 
 export_bp = Blueprint('export', __name__)
 
+def get_category_winners(category):
+    winners = []
+    if category.status != 'completed':
+        return winners
+        
+    if category.format in ['round_robin', 'group_stage']:
+        if category.format == 'group_stage':
+            return []
+        else:
+            standings = category.get_standings()
+            if len(standings) > 0:
+                winners.append({'place': '1st', 'name': standings[0].name})
+            if len(standings) > 1:
+                winners.append({'place': '2nd', 'name': standings[1].name})
+            if len(standings) > 2:
+                winners.append({'place': '3rd', 'name': standings[2].name})
+    else:
+        matches = Match.query.filter_by(category_id=category.id).all()
+        if not matches:
+            return winners
+            
+        max_round = max([m.round for m in matches])
+        final_matches = [m for m in matches if m.round == max_round]
+        final_match = sorted(final_matches, key=lambda m: m.match_number, reverse=True)[0]
+        
+        if final_match and final_match.winner_id:
+            p1 = final_match.participant1
+            p2 = final_match.participant2
+            
+            if final_match.winner_id == p1.id:
+                winners.append({'place': '1st', 'name': p1.name})
+                winners.append({'place': '2nd', 'name': p2.name if p2 else 'Unknown'})
+            else:
+                winners.append({'place': '1st', 'name': p2.name if p2 else 'Unknown'})
+                winners.append({'place': '2nd', 'name': p1.name})
+                
+    return winners
+
 @export_bp.route('/tournaments/<slug>/category/<int:category_id>/export_pdf')
 def export_category_pdf(slug, category_id):
-    slug = slug.strip()  # Clean slug
-    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
-    category = Category.query.get_or_404(category_id)
-
-    # Verify category belongs to tournament
-    if category.tournament_id != tournament.id:
-        abort(404)
-
-    if category.format in ['round_robin', 'group_stage']:
-        # Fetch group standings and matches for round robin
-        groups_data = []
-        if category.format == 'group_stage':
-            groups = Group.query.filter_by(category_id=category.id).order_by(Group.name).all()
-            for group in groups:
-                standings = group.get_standings()
-                group_matches = Match.query.filter_by(group_id=group.id).order_by(Match.round, Match.match_number).all()
-                groups_data.append({
-                    'name': group.name,
-                    'standings': standings,
-                    'matches': group_matches
-                })
-        else:
-            # Round robin is just one big group effectively
-            standings = category.get_standings()
-            matches = Match.query.filter_by(category_id=category.id).order_by(Match.round, Match.match_number).all()
-            groups_data.append({
-                'name': 'Round Robin',
-                'standings': standings,
-                'matches': matches
-            })
-            
-        html_out = render_template('export/round_robin_pdf.html',
-                             tournament=tournament,
-                             category=category,
-                             groups_data=groups_data,
-                             now=datetime.now())
-    else:
-        # Group matches by round for bracket
-        rounds = {}
-        for match in category.matches:
-            if match.round not in rounds:
-                rounds[match.round] = []
-            rounds[match.round].append(match)
-
-        # Sort matches within rounds
-        for r in rounds:
-            rounds[r].sort(key=lambda x: x.match_number)
-
-        # Render HTML for PDF
-        html_out = render_template('export/bracket_pdf.html',
-                                 tournament=tournament,
-                                 category=category,
-                                 rounds=rounds,
-                                 now=datetime.now())
-
-    # Generate PDF
-    pdf_buffer = BytesIO()
-    pisa_status = pisa.CreatePDF(html_out, dest=pdf_buffer)
-
-    if pisa_status.err:
-        return 'PDF generation error', 500
-
-    pdf_buffer.seek(0)
-
-    # Create response
-    response = make_response(pdf_buffer.read())
-    response.headers['Content-Type'] = 'application/pdf'
-    response.headers['Content-Disposition'] = f'attachment; filename="{tournament.name}_{category.name}_Report.pdf"'
-
-    return response
+    # Simply redirect to the view page with export=1 flag
+    return redirect(url_for('category.view_category', slug=slug, category_id=category_id, export=1))
 
 @export_bp.route('/tournaments/<slug>/category/<int:category_id>/export_matches_csv')
 def export_matches_csv(slug, category_id):
@@ -93,7 +60,6 @@ def export_matches_csv(slug, category_id):
     si = io.StringIO()
     writer = csv.writer(si)
     
-    # Matches Export
     writer.writerow(['Round', 'Match Number', 'Status', 'Player 1', 'Player 2', 'Score', 'Winner'])
     
     matches = Match.query.filter_by(category_id=category.id).order_by(Match.round, Match.match_number).all()
@@ -101,7 +67,6 @@ def export_matches_csv(slug, category_id):
         p1_name = match.participant1.name if match.participant1 else 'TBD'
         p2_name = match.participant2.name if match.participant2 else 'TBD'
         
-        # Combine score
         score = ""
         if match.score1 or match.score2:
             score = f"{match.score1 or '0'} - {match.score2 or '0'}"

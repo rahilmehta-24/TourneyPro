@@ -10,7 +10,7 @@
             <h1>{{ category.name }}</h1>
             <p class="subtitle">{{ tournament.name }} | {{ formats[category.format].name }}</p>
         </div>
-        <div class="page-actions">
+        <div class="page-actions" {% if is_export %}style="display: none;"{% endif %}>
             <button onclick="copyShareLink('{{ url_for('category.view_category', slug=tournament.url_slug, category_id=category.id, _external=True) }}', this)" class="btn btn-secondary">🔗 Share Link</button>
             <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug) }}" class="btn btn-secondary">←
                 Back to
@@ -226,7 +226,7 @@
     <div class="bracket-section">
         <div class="page-header" style="margin-bottom: var(--spacing-md);">
             <h2>Bracket Draws</h2>
-            <div class="page-actions">
+            <div class="page-actions" {% if is_export %}style="display: none;"{% endif %}>
                 {% if current_user and current_user.role in ['admin', 'superadmin'] %}
 <a href="{{ url_for('category.manage_category', slug=tournament.url_slug, category_id=category.id) }}"
                     class="btn btn-secondary">Manage Category</a>

@@ -5,6 +5,7 @@ from app.formats import get_format
 from app.routes.auth import login_required, role_required, check_tournament_ownership
 from app.tennis_logic import validate_and_format_score
 from datetime import datetime
+from app.routes.export import get_category_winners
 
 category_bp = Blueprint('category', __name__)
 
@@ -234,7 +235,12 @@ def view_category(slug, category_id):
     if category.status == 'setup' and not rr_matches and category.format in ['round_robin', 'doubles_round_robin'] and not category.num_groups:
         rr_matches = [DummyMatch(**d) for d in dummy_data]
     
+    is_export = request.args.get('export') == '1'
+    winners = get_category_winners(category) if is_export else []
+    
     return render_template('category/view.html',
+                         is_export=is_export,
+                         winners=winners,
                          rr_matches=rr_matches,
                          tournament=tournament,
                          category=category,
