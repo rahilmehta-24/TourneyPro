@@ -334,10 +334,16 @@
         // Search functionality (Event Delegation to support Turbo)
         document.addEventListener('input', function(e) {
             if (e.target && e.target.id === 'playerSearch') {
-                const filter = e.target.value.toUpperCase();
+                const filter = e.target.value.trim().toUpperCase();
                 const table = document.getElementById('playerTable');
                 if (!table) return;
                 const rows = table.querySelectorAll('tbody tr.player-row');
+
+                if (filter.length > 0 && filter.length < 3) {
+                    // Show all players until 3 characters are entered
+                    rows.forEach(row => { row.style.display = ''; });
+                    return;
+                }
 
                 rows.forEach(row => {
                     const nameCell = row.cells[0];
