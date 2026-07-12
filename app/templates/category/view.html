@@ -678,12 +678,12 @@ function toggleModalMatchFormat() {
         document.getElementById('modalGamesFields').style.display = 'grid';
         document.getElementById('modalSetsTable').style.display = 'table'; document.getElementById('modalSetsLabel').style.display = 'block';
         document.getElementById('modalPointsScore').style.display = 'none';
-        updateVisibleSets(document.getElementById('modalMatchNumSets').value || {{ category.num_sets or tournament.num_sets or 3 }});
+        updateVisibleSets(document.getElementById('modalMatchNumSets').value || {{ (category.num_sets if category else None) or tournament.num_sets or 3 }});
     }
 }
 
 function updateVisibleSets(numSets) {
-    if (!numSets) numSets = {{ category.num_sets or tournament.num_sets or 3 }};
+    if (!numSets) numSets = {{ (category.num_sets if category else None) or tournament.num_sets or 3 }};
     for (let s = 1; s <= 5; s++) {
         const row = document.getElementById('setRow' + s);
         if (row) {
