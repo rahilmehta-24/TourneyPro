@@ -45,42 +45,6 @@
     </section>
 
     
-                    </div>
-                    <div class="tournament-status status-{{ tournament.status }}">
-                        {{ tournament.status.replace('_', ' ').title() }}
-                    </div>
-                </div>
-                <h3 class="tournament-name">{{ tournament.name }}</h3>
-                {% if tournament.owner %}
-                <p class="tournament-creator" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">
-                    Created by: <strong>{{ tournament.owner.username }}</strong>
-                </p>
-                {% elif tournament.creator_name %}
-                <p class="tournament-creator" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">
-                    Created by: <strong>{{ tournament.creator_name }}</strong>
-                </p>
-                {% endif %}
-                {% if tournament.game_info %}
-                <p class="tournament-game">🎮 {{ tournament.game_info }}</p>
-                {% endif %}
-                <div class="tournament-meta">
-                    <span class="meta-item">👥 {{ tournament.participants|length }} participants</span>
-                    <span class="meta-item">📅 {{ tournament.created_at.strftime('%b %d, %Y') }}</span>
-                </div>
-                {% if current_user and (current_user.id == tournament.user_id or current_user.role == 'superadmin') %}
-                <div class="tournament-actions">
-                    <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}"
-                        class="btn btn-primary btn-small">Manage</a>
-                    <form action="{{ url_for('tournament.delete_tournament', slug=tournament.url_slug) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this tournament? This cannot be undone.');">
-                        <button type="submit" class="btn btn-danger btn-small" style="padding: 0.4rem 1rem; background: var(--error); border: none; color: white; border-radius: var(--radius-sm); font-weight: 600; cursor: pointer;">Delete</button>
-                    </form>
-                </div>
-                {% endif %}
-            </div>
-            {% endfor %}
-        </div>
-    </section>
-    {% endif %}
 </div>
 
 <!-- Format Detail Modals -->
