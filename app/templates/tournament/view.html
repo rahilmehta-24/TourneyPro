@@ -331,29 +331,27 @@
     </div>
 
     <script>
-        // Search functionality
-        (function () {
-            const searchInput = document.getElementById('playerSearch');
-            if (searchInput) {
-                searchInput.addEventListener('input', function () {
-                    const filter = this.value.toUpperCase();
-                    const table = document.getElementById('playerTable');
-                    const rows = table.querySelectorAll('tbody tr.player-row');
+        // Search functionality (Event Delegation to support Turbo)
+        document.addEventListener('input', function(e) {
+            if (e.target && e.target.id === 'playerSearch') {
+                const filter = e.target.value.toUpperCase();
+                const table = document.getElementById('playerTable');
+                if (!table) return;
+                const rows = table.querySelectorAll('tbody tr.player-row');
 
-                    rows.forEach(row => {
-                        const nameCell = row.cells[0]; // First cell is name
-                        if (nameCell) {
-                            const txtValue = nameCell.textContent || nameCell.innerText;
-                            if (txtValue.toUpperCase().indexOf(filter) > -1) {
-                                row.style.display = '';
-                            } else {
-                                row.style.display = 'none';
-                            }
+                rows.forEach(row => {
+                    const nameCell = row.cells[0];
+                    if (nameCell) {
+                        const txtValue = nameCell.textContent || nameCell.innerText;
+                        if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                            row.style.display = '';
+                        } else {
+                            row.style.display = 'none';
                         }
-                    });
+                    }
                 });
             }
-        })();
+        });
 
         // Sort table functionality
         function sortTable(columnIndex) {
