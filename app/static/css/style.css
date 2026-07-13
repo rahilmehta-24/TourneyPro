@@ -1945,6 +1945,12 @@ body.pdf-export-mode .bracket-round:not(:first-child) .tennis-match::before {
 }
 
 @media print {
+    /* Ensure bracket always starts on a new page after headers/podiums */
+    .bracket-wrapper {
+        break-before: page;
+        page-break-before: always;
+    }
+
     /* Prevent bracket from being cut off horizontally */
     .bracket-wrapper, .bracket-container {
         overflow: visible !important;

@@ -34,13 +34,11 @@
                     catBlock.className = 'category-export-block page-break';
                     catBlock.innerHTML = page.innerHTML;
                     
-                    // Add page break logic after podium if this is the first page of the category
-                    if (index === 0) {
-                        const podium = catBlock.querySelector('.podium-container');
-                        if (podium) {
-                            podium.classList.add('page-break');
-                        }
-                    } else {
+                    // Add page break logic: CSS will handle break-before for bracket wrapper
+                    // but we ensure each category splits on a new page natively.
+                    catBlock.classList.add('page-break');
+                    
+                    if (index > 0) {
                         // Remove podium and header from subsequent split pages of the same category
                         const podium = catBlock.querySelector('.podium-container');
                         if (podium) podium.remove();
