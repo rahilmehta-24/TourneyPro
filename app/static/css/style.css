@@ -1935,6 +1935,6 @@ body.pdf-export-mode .bracket-round:not(:first-child) .tennis-match::before {
     
     /* Optional: scale down the bracket slightly so it fits better on landscape A4 */
     .bracket {
-        zoom: 0.8;
+        zoom: 0.6;
     }
 }
