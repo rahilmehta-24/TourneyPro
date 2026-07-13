@@ -735,7 +735,7 @@
         gap: 1rem;
         flex-wrap: wrap;
     }
-.clickable-match {
+    .clickable-match {
         cursor: pointer;
         transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
     }
@@ -743,6 +743,71 @@
         transform: translateY(-2px);
         box-shadow: 0 10px 25px rgba(0,0,0,0.3);
         border-color: rgba(255,255,255,0.2);
+    }
+
+    /* --- PDF EXPORT PRINT STYLES --- */
+    body.pdf-export-mode {
+        background: #ffffff !important;
+        color: #000000 !important;
+    }
+    
+    body.pdf-export-mode * {
+        color: #000000 !important;
+        border-color: #bbbbbb !important;
+    }
+    
+    body.pdf-export-mode .tennis-match {
+        background: #ffffff !important;
+        border: 1px solid #777 !important;
+        box-shadow: none !important;
+    }
+    
+    body.pdf-export-mode .tennis-match-header {
+        background: #eef2f6 !important;
+        border-bottom: 1px solid #ccc !important;
+    }
+    
+    body.pdf-export-mode .tennis-player-row {
+        background: #ffffff !important;
+    }
+    
+    body.pdf-export-mode .tennis-player-row.winner::before {
+        background: #000000 !important;
+    }
+    
+    body.pdf-export-mode .tennis-set-box {
+        background: #ffffff !important;
+        border: 1px solid #999 !important;
+    }
+
+    body.pdf-export-mode .match-card-wrapper::after,
+    body.pdf-export-mode .match-card-wrapper::before,
+    body.pdf-export-mode .tennis-match::before {
+        background: #666 !important;
+    }
+
+    body.pdf-export-mode .podium-card {
+        background: #ffffff !important;
+        border: 1px solid #ccc !important;
+        box-shadow: none !important;
+    }
+    
+    body.pdf-export-mode .podium-seed {
+        background: #eee !important;
+    }
+    
+    body.pdf-export-mode .page-title,
+    body.pdf-export-mode h2,
+    body.pdf-export-mode h3 {
+        color: #000000 !important;
+    }
+    
+    /* Ensure bracket connector pseudo-elements print clearly */
+    body.pdf-export-mode .match-card-wrapper::after, 
+    body.pdf-export-mode .match-card-wrapper::before, 
+    body.pdf-export-mode .bracket-round:not(:first-child) .tennis-match::before {
+        background: #333 !important;
+        z-index: 10 !important;
     }
 </style>
 
@@ -1410,19 +1475,25 @@ function checkTiebreak(setNum, winThreshold) {
 
             const element = document.querySelector('.container');
             
+            // Calculate the maximum width needed to capture the entire bracket
+            let maxWidth = window.innerWidth;
+            const bracketContainer = document.querySelector('.bracket-container');
+            if (bracketContainer) {
+                maxWidth = Math.max(maxWidth, bracketContainer.scrollWidth + 100);
+            }
+
             // Adjust options for landscape A4 to fit brackets nicely
             const opt = {
                 margin:       0.2,
                 filename:     '{{ tournament.name }}_{{ category.name }}_Export.pdf',
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, scrollY: 0 },
+                html2canvas:  { scale: 2, useCORS: true, scrollY: 0, windowWidth: maxWidth },
                 jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' },
                 pagebreak:    { mode: 'css', after: '.podium-container' }
             };
 
-            // Temporarily set body background to white for the export (improves readability)
-            const originalBg = document.body.style.background;
-            document.body.style.background = '#ffffff';
+            // Add pdf-export-mode class to override dark mode styles to printable black & white
+            document.body.classList.add('pdf-export-mode');
 
             html2pdf().set(opt).from(element).save().then(() => {
                 // Restore all styles and UI elements
@@ -1433,7 +1504,12 @@ function checkTiebreak(setNum, winThreshold) {
                 scrollContainers.forEach((container, idx) => {
                     container.style.overflowX = originalOverflows[idx];
                 });
-                document.body.style.background = originalBg;
+                document.body.classList.remove('pdf-export-mode');
+            }).catch(err => {
+                document.body.classList.remove('pdf-export-mode');
+                if (actions) actions.style.display = 'flex';
+                if (navbar) navbar.style.display = 'flex';
+                if (footer) footer.style.display = 'block';
             });
         }
     </script>
