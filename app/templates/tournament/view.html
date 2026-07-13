@@ -1270,7 +1270,7 @@ function checkTiebreak(setNum, winThreshold) {
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
                 
-                const content = doc.querySelector('.container');
+                const content = doc.querySelector('main .container');
                 if (content) {
                     const catBlock = document.createElement('div');
                     catBlock.className = 'category-export-block';
