@@ -1,12 +1,13 @@
 from app.models import db, AuditLog
-from flask_login import current_user
+from app.routes.auth import get_current_user
 import json
 
 def log_audit(action_type, target_id=None, target_name=None, reason=None, explanation=None, details=None):
     """
     Logs a sensitive action to the AuditLog.
     """
-    if not current_user.is_authenticated:
+    current_user = get_current_user()
+    if not current_user:
         return
         
     details_str = None
