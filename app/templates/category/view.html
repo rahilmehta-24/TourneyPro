@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "print_layout.html" if is_export else "base.html" %}
 
 {% block title %}{{ category.name }} - {{ tournament.name }}{% endblock %}
 
@@ -93,7 +93,7 @@
         </div>
         <div class="page-actions header-actions" {% if is_export %}style="display: none;"{% endif %}>
             <div class="action-group primary-actions">
-                <a href="#" onclick="downloadExportPDF(); return false;" class="btn btn-primary">
+                <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=category.id, export='1') }}" target="_blank" class="btn btn-primary">
                     🖨️ Export PDF
                 </a>
                 <button onclick="copyShareLink('{{ url_for('category.view_category', slug=tournament.url_slug, category_id=category.id, _external=True) }}', this)" class="btn btn-secondary">
@@ -1400,65 +1400,6 @@ function checkTiebreak(setNum, winThreshold) {
 </script>
 
 
-    <!-- Include html2pdf.js for Client-Side PDF Export -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script>
-        function downloadExportPDF() {
-            // Hide UI elements not meant for the PDF
-            const actions = document.querySelector('.page-actions');
-            if (actions) actions.style.display = 'none';
-            const navbar = document.querySelector('.navbar');
-            if (navbar) navbar.style.display = 'none';
-            const footer = document.querySelector('.footer');
-            if (footer) footer.style.display = 'none';
 
-            // Store original overflow styles to restore later
-            const scrollContainers = document.querySelectorAll('.table-container, div[style*="overflow-x: auto"]');
-            const originalOverflows = [];
-            scrollContainers.forEach(container => {
-                originalOverflows.push(container.style.overflowX);
-                container.style.overflowX = 'visible';
-            });
-
-            const element = document.getElementById('category-export-content') || document.querySelector('.main-content .container');
-            
-            // Calculate the maximum width needed to capture the entire bracket
-            let maxWidth = window.innerWidth;
-            const bracketContainer = document.querySelector('.bracket-container');
-            if (bracketContainer) {
-                maxWidth = Math.max(maxWidth, bracketContainer.scrollWidth + 100);
-            }
-
-            // Adjust options for landscape A4 to fit brackets nicely
-            const opt = {
-                margin:       0.2,
-                filename:     '{{ tournament.name }}_{{ category.name }}_Export.pdf',
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, scrollY: 0, windowWidth: maxWidth },
-                jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' },
-                pagebreak:    { mode: 'css', after: '.podium-container' }
-            };
-
-            // Add pdf-export-mode class to override dark mode styles to printable black & white
-            document.body.classList.add('pdf-export-mode');
-
-            html2pdf().set(opt).from(element).save().then(() => {
-                // Restore all styles and UI elements
-                if (actions) actions.style.display = 'flex';
-                if (navbar) navbar.style.display = 'flex';
-                if (footer) footer.style.display = 'block';
-                
-                scrollContainers.forEach((container, idx) => {
-                    container.style.overflowX = originalOverflows[idx];
-                });
-                document.body.classList.remove('pdf-export-mode');
-            }).catch(err => {
-                document.body.classList.remove('pdf-export-mode');
-                if (actions) actions.style.display = 'flex';
-                if (navbar) navbar.style.display = 'flex';
-                if (footer) footer.style.display = 'block';
-            });
-        }
-    </script>
 
 {% endblock %}

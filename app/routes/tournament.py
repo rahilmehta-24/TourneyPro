@@ -178,6 +178,13 @@ def view_tournament(slug):
                          player_registry=player_registry,
                          formats=TOURNAMENT_FORMATS)
 
+@tournament_bp.route('/tournaments/<slug>/print')
+def print_tournament(slug):
+    """Print tournament bracket and standings"""
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    return render_template('tournament/print.html', tournament=tournament)
+
+
 @tournament_bp.route('/tournaments/<slug>/manage', methods=['GET', 'POST'])
 @login_required
 @role_required('admin', 'superadmin')

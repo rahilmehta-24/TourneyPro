@@ -1,0 +1,51 @@
+{% extends "print_layout.html" %}
+
+{% block content %}
+<div id="loading" style="text-align: center; padding: 50px; font-size: 20px;">
+    ⏳ Loading entire tournament data for printing. Please wait...
+</div>
+<div id="tournament-content"></div>
+
+<script>
+    // Prevent the default onload print from print_layout.html from firing prematurely
+    window.onload = async function() {
+        const categories = [
+            {% for cat in tournament.categories %}
+            { id: '{{ cat.id }}' },
+            {% endfor %}
+        ];
+        
+        const container = document.getElementById('tournament-content');
+        
+        for (const cat of categories) {
+            const res = await fetch(`/tournaments/{{ tournament.url_slug }}/categories/${cat.id}?export=1`);
+            const html = await res.text();
+            
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            const content = doc.getElementById('category-export-content') || doc.querySelector('.main-content .container');
+            if (content) {
+                const catBlock = document.createElement('div');
+                catBlock.className = 'category-export-block page-break';
+                catBlock.innerHTML = content.innerHTML;
+                
+                // Add page break logic after podium
+                const podium = catBlock.querySelector('.podium-container');
+                if (podium) {
+                    podium.classList.add('page-break');
+                }
+                
+                container.appendChild(catBlock);
+            }
+        }
+        
+        document.getElementById('loading').style.display = 'none';
+        
+        // Let CSS settle and trigger native print
+        setTimeout(() => {
+            window.print();
+        }, 500);
+    }
+</script>
+{% endblock %}

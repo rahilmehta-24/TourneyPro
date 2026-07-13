@@ -14,7 +14,7 @@
         <div class="page-actions">
             <button onclick="copyShareLink('{{ url_for('tournament.view_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-secondary">🔗 Share Link</button>
             {% if tournament.categories %}
-            <button onclick="downloadTournamentPDF()" class="btn btn-primary" id="btnExportTournament">🖨️ Export PDF</button>
+            <a href="{{ url_for('tournament.print_tournament', slug=tournament.url_slug) }}" target="_blank" class="btn btn-primary" id="btnExportTournament">🖨️ Export PDF</a>
             {% endif %}
             <a href="{{ url_for('main.index') }}" class="btn btn-secondary">← Back to Tournaments</a>
             {% if tournament.status == 'setup' %}
@@ -1235,88 +1235,5 @@ function checkTiebreak(setNum, winThreshold) {
         setInterval(fetchLiveUpdate, 10000);
     });
 </script>
-
-    <!-- Include html2pdf.js for Client-Side PDF Export -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script>
-    async function downloadTournamentPDF() {
-        const btn = document.getElementById('btnExportTournament');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '⏳ Generating PDF...';
-        btn.disabled = true;
-
-        try {
-            const categories = [
-                {% for cat in tournament.categories %}
-                { id: '{{ cat.id }}', name: '{{ cat.name }}' },
-                {% endfor %}
-            ];
-
-            // Create a hidden container to stitch all category views
-            const container = document.createElement('div');
-            container.id = 'tournament-export-container';
-            // Important: keep it in DOM and within viewport coordinates so html2canvas computes sizes
-            container.style.position = 'absolute';
-            container.style.left = '0';
-            container.style.top = '0';
-            container.style.width = '100%';
-            container.style.zIndex = '-9999';
-            container.style.opacity = '0.01'; // extremely transparent but still renderable
-            document.body.appendChild(container);
-
-            let maxWidth = window.innerWidth;
-
-            for (const cat of categories) {
-                const res = await fetch(`/tournaments/{{ tournament.url_slug }}/categories/${cat.id}?export=1`);
-                const html = await res.text();
-                
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                
-                const content = doc.getElementById('category-export-content') || doc.querySelector('.main-content .container');
-                if (content) {
-                    const catBlock = document.createElement('div');
-                    catBlock.className = 'category-export-block';
-                    catBlock.innerHTML = content.innerHTML;
-                    
-                    // Force page breaks after podiums AND brackets for proper multi-page
-                    // The CSS class "html2pdf__page-break" or custom selectors can be used
-                    container.appendChild(catBlock);
-
-                    const bracket = catBlock.querySelector('.bracket-container');
-                    if (bracket) {
-                        maxWidth = Math.max(maxWidth, bracket.scrollWidth + 100);
-                    }
-                }
-            }
-
-            // Provide options for html2pdf
-            const opt = {
-                margin:       0.2,
-                filename:     '{{ tournament.name }}_Full_Export.pdf',
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, scrollY: 0, windowWidth: maxWidth },
-                jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' },
-                pagebreak:    { mode: 'css', after: ['.podium-container', '.category-export-block'] }
-            };
-
-            // Switch body to print mode so components render black/white nicely
-            document.body.classList.add('pdf-export-mode');
-            
-            await html2pdf().set(opt).from(container).save();
-            
-            // Cleanup
-            document.body.removeChild(container);
-
-        } catch (e) {
-            console.error("Tournament Export failed:", e);
-            alert("Failed to export the tournament PDF.");
-        } finally {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-            document.body.classList.remove('pdf-export-mode');
-        }
-    }
-    </script>
 
 {% endblock %}

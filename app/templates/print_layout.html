@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Print - Tournament Platform{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <style>
+        /* Force explicit white background and black text on all elements by default for printing */
+        body { background: #ffffff !important; color: #000000 !important; }
+        
+        /* Hide UI components completely */
+        .page-actions, .header-actions, .navbar, .footer, .btn, .flash-messages, .mobile-menu-btn, .no-print { 
+            display: none !important; 
+        }
+        
+        @media print {
+            @page {
+                size: A4 landscape;
+                margin: 10mm;
+            }
+            body {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .page-break {
+                break-after: page;
+            }
+        }
+    </style>
+</head>
+<body class="pdf-export-mode" onload="window.print()">
+    <main class="main-content" style="padding-top: 0;">
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>
