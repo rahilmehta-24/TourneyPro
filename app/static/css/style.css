@@ -1878,8 +1878,8 @@ body.pdf-export-mode .tennis-match {
 }
 
 body.pdf-export-mode .tennis-match-header {
-    background: #eef2f6 !important;
-    border-bottom: 1px solid #ccc !important;
+    background: transparent !important;
+    border-bottom: 1px solid #777 !important;
 }
 
 body.pdf-export-mode .tennis-player-row {
@@ -1908,7 +1908,8 @@ body.pdf-export-mode .podium-card {
 }
 
 body.pdf-export-mode .podium-seed {
-    background: #eee !important;
+    background: transparent !important;
+    border: 1px solid #777 !important;
 }
 
 body.pdf-export-mode .page-title,
