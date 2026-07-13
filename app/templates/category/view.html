@@ -76,7 +76,7 @@
         }
     </style>
 
-<div class="container">
+<div class="container" id="category-export-content">
     <div class="page-header modern-header">
         <div class="header-content">
             <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug) }}" class="back-link">
@@ -1420,7 +1420,7 @@ function checkTiebreak(setNum, winThreshold) {
                 container.style.overflowX = 'visible';
             });
 
-            const element = document.querySelector('main .container');
+            const element = document.getElementById('category-export-content') || document.querySelector('.main-content .container');
             
             // Calculate the maximum width needed to capture the entire bracket
             let maxWidth = window.innerWidth;

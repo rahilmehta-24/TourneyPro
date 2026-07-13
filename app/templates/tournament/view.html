@@ -1255,10 +1255,13 @@ function checkTiebreak(setNum, winThreshold) {
             // Create a hidden container to stitch all category views
             const container = document.createElement('div');
             container.id = 'tournament-export-container';
-            // Important: keep it in DOM but off-screen so html2canvas computes sizes
+            // Important: keep it in DOM and within viewport coordinates so html2canvas computes sizes
             container.style.position = 'absolute';
-            container.style.left = '-9999px';
+            container.style.left = '0';
             container.style.top = '0';
+            container.style.width = '100%';
+            container.style.zIndex = '-9999';
+            container.style.opacity = '0.01'; // extremely transparent but still renderable
             document.body.appendChild(container);
 
             let maxWidth = window.innerWidth;
@@ -1270,7 +1273,7 @@ function checkTiebreak(setNum, winThreshold) {
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
                 
-                const content = doc.querySelector('main .container');
+                const content = doc.getElementById('category-export-content') || doc.querySelector('.main-content .container');
                 if (content) {
                     const catBlock = document.createElement('div');
                     catBlock.className = 'category-export-block';
