@@ -1871,6 +1871,13 @@ body.pdf-export-mode * {
     border-color: #bbbbbb !important;
 }
 
+body.pdf-export-mode .mobile-bracket-tabs,
+body.pdf-export-mode .meta-row,
+body.pdf-export-mode .back-link,
+body.pdf-export-mode .header-actions {
+    display: none !important;
+}
+
 body.pdf-export-mode .tennis-match {
     background: #ffffff !important;
     border: 1px solid #777 !important;
