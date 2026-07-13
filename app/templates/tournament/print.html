@@ -41,11 +41,13 @@
                             podium.classList.add('page-break');
                         }
                     } else {
-                        // Remove podium from subsequent split pages of the same category
+                        // Remove podium and header from subsequent split pages of the same category
                         const podium = catBlock.querySelector('.podium-container');
                         if (podium) podium.remove();
                         const winnerSec = catBlock.querySelector('.winner-section');
                         if (winnerSec) winnerSec.remove();
+                        const modHeader = catBlock.querySelector('.modern-header');
+                        if (modHeader) modHeader.remove();
                     }
                     
                     container.appendChild(catBlock);

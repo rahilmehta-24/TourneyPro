@@ -1878,6 +1878,17 @@ body.pdf-export-mode .header-actions {
     display: none !important;
 }
 
+body.pdf-export-mode .modern-header {
+    background: transparent !important;
+    box-shadow: none !important;
+    border-color: #333 !important;
+}
+
+body.pdf-export-mode .modern-header h1 {
+    font-weight: bold !important;
+    color: #000000 !important;
+}
+
 body.pdf-export-mode .tennis-match {
     background: #ffffff !important;
     border: 1px solid #777 !important;

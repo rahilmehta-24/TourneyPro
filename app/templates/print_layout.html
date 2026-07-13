@@ -171,12 +171,14 @@
                     // Insert paginated parts
                     paginated.forEach((page, index) => {
                         page.classList.add('page-break');
-                        // Remove podium from pages other than page 1
+                        // Remove podium and header from pages other than page 1
                         if (index > 0) {
                             const podium = page.querySelector('.podium-container');
                             if (podium) podium.remove();
                             const winnerSec = page.querySelector('.winner-section');
                             if (winnerSec) winnerSec.remove();
+                            const modHeader = page.querySelector('.modern-header');
+                            if (modHeader) modHeader.remove();
                         }
                         parent.appendChild(page);
                     });
