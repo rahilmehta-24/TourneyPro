@@ -117,6 +117,13 @@ function initAuditInterceptor() {
             
             modal.style.display = 'flex';
             
+            // Ensure loader is hidden so it doesn't block the UI behind the modal
+            const loader = document.getElementById('global-loader');
+            if (loader) {
+                loader.classList.remove('active');
+                loader.style.display = 'none';
+            }
+            
             // Configure modal
             const formActionSpan = document.getElementById('auditModalActionName');
             if (formActionSpan && form.dataset.auditAction) {
