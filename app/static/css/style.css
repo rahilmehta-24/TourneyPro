@@ -1924,3 +1924,17 @@ body.pdf-export-mode .bracket-round:not(:first-child) .tennis-match::before {
     background: #333 !important;
     z-index: 10 !important;
 }
+
+@media print {
+    /* Prevent bracket from being cut off horizontally */
+    .bracket-wrapper, .bracket-container {
+        overflow: visible !important;
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+    
+    /* Optional: scale down the bracket slightly so it fits better on landscape A4 */
+    .bracket {
+        zoom: 0.8;
+    }
+}
