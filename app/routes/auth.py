@@ -202,3 +202,13 @@ def clear_user_database():
         flash(f"Error clearing data: {str(e)}", "error")
         
     return redirect(url_for('auth.profile'))
+
+
+@auth_bp.route('/admin/audit-logs')
+@login_required
+@role_required('superadmin')
+def view_audit_logs():
+    page = request.args.get('page', 1, type=int)
+    # Paginate descending so newest are first
+    pagination = AuditLog.query.order_by(AuditLog.created_at.desc()).paginate(page=page, per_page=50, error_out=False)
+    return render_template('auth/audit_logs.html', pagination=pagination)

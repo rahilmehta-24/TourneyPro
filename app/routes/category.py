@@ -457,6 +457,20 @@ def manage_category(slug, category_id):
                 participant_id = request.form.get('participant_id', type=int)
                 participant = Participant.query.get(participant_id)
                 if participant:
+                    from app.utils.audit import log_audit
+                    reason = request.form.get('audit_reason')
+                    explanation = request.form.get('audit_explanation', '')
+                    if not reason:
+                        flash("Audit validation failed: Reason required to delete a participant.", "error")
+                        return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
+                        
+                    log_audit(
+                        action_type='delete_participant',
+                        target_id=participant.id,
+                        target_name=participant.name,
+                        reason=reason,
+                        explanation=explanation
+                    )
                     db.session.delete(participant)
                     db.session.commit()
                     flash(f'Removed participant: {participant.name}', 'info')
@@ -464,6 +478,24 @@ def manage_category(slug, category_id):
 
             elif action == 'reset_category':
                 if category.status in ['in_progress', 'completed']:
+                    from app.utils.audit import log_audit
+                    reason = request.form.get('audit_reason')
+                    explanation = request.form.get('audit_explanation', '')
+                    if not reason:
+                        flash("Audit validation failed: Reason required to reset a category.", "error")
+                        return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
+                    if len(explanation.strip()) < 20:
+                        flash("Audit validation failed: A detailed explanation (minimum 20 characters) is required for high-risk actions.", "error")
+                        return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
+                        
+                    log_audit(
+                        action_type='reset_category',
+                        target_id=category.id,
+                        target_name=f"Category Bracket: {category.name}",
+                        reason=reason,
+                        explanation=explanation
+                    )
+                    
                     # Delete matches
                     Match.query.filter_by(category_id=category_id).delete()
 
@@ -603,8 +635,28 @@ def delete_category(slug, category_id):
     check_tournament_ownership(tournament)
     category = Category.query.get_or_404(category_id)
     
+    # Audit Validation
+    from app.utils.audit import log_audit
+    reason = request.form.get('audit_reason')
+    explanation = request.form.get('audit_explanation', '')
+    if not reason:
+        flash("Audit validation failed: Reason required to delete a category.", "error")
+        return redirect(request.referrer or url_for('tournament.view_tournament', slug=slug))
+    if len(explanation.strip()) < 20:
+        flash("Audit validation failed: A detailed explanation (minimum 20 characters) is required for high-risk actions.", "error")
+        return redirect(request.referrer or url_for('tournament.view_tournament', slug=slug))
+    
     try:
         from app.models import Match, Group, Participant
+        # Log Audit
+        log_audit(
+            action_type='delete_category',
+            target_id=category.id,
+            target_name=category.name,
+            reason=reason,
+            explanation=explanation
+        )
+
         # Delete all matches
         Match.query.filter_by(category_id=category.id).delete()
         # Delete all participants
@@ -639,6 +691,26 @@ def report_category_match_result(slug, category_id, match_id):
         action = request.form.get('action')
         is_live_update = (action == 'live_score')
         winner_id = request.form.get('winner_id', type=int) if not is_live_update else None
+        
+        # Audit Validation if match was already completed
+        if match.status == 'completed':
+            from app.utils.audit import log_audit
+            reason = request.form.get('audit_reason')
+            explanation = request.form.get('audit_explanation', '')
+            if not reason:
+                flash("Audit validation failed: Reason required to modify a completed match.", "error")
+                return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
+            if len(explanation.strip()) < 20:
+                flash("Audit validation failed: A detailed explanation (minimum 20 characters) is required for high-risk actions.", "error")
+                return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
+                
+            log_audit(
+                action_type='modify_match',
+                target_id=match.id,
+                target_name=f"Match {match.match_number} ({match.participant1.name if match.participant1 else 'TBD'} vs {match.participant2.name if match.participant2 else 'TBD'})",
+                reason=reason,
+                explanation=explanation
+            )
 
         # Process overrides
         scoring_format_override = request.form.get('scoring_format')

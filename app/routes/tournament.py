@@ -1,3 +1,4 @@
+from app.utils.audit import log_audit
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from app.models import db, Tournament, Participant, Match, TournamentSettings
 from app.formats import get_format
@@ -223,6 +224,19 @@ def manage_tournament(slug):
                 participant_id = request.form.get('participant_id', type=int)
                 participant = Participant.query.get(participant_id)
                 if participant:
+                    reason = request.form.get('audit_reason')
+                    explanation = request.form.get('audit_explanation', '')
+                    if not reason:
+                        flash("Audit validation failed: Reason required to delete a participant.", "error")
+                        return redirect(url_for('tournament.manage_tournament', slug=slug))
+                        
+                    log_audit(
+                        action_type='delete_participant',
+                        target_id=participant.id,
+                        target_name=participant.name,
+                        reason=reason,
+                        explanation=explanation
+                    )
                     db.session.delete(participant)
                     db.session.commit()
                     flash(f'Removed participant: {participant.name}', 'info')
@@ -260,6 +274,23 @@ def manage_tournament(slug):
 
             elif action == 'reset_tournament':
                 if tournament.status in ['in_progress', 'completed']:
+                    reason = request.form.get('audit_reason')
+                    explanation = request.form.get('audit_explanation', '')
+                    if not reason:
+                        flash("Audit validation failed: Reason required to reset a tournament.", "error")
+                        return redirect(url_for('tournament.manage_tournament', slug=slug))
+                    if len(explanation.strip()) < 20:
+                        flash("Audit validation failed: A detailed explanation (minimum 20 characters) is required for high-risk actions.", "error")
+                        return redirect(url_for('tournament.manage_tournament', slug=slug))
+                        
+                    log_audit(
+                        action_type='reset_tournament',
+                        target_id=tournament.id,
+                        target_name=f"Tournament Bracket: {tournament.name}",
+                        reason=reason,
+                        explanation=explanation
+                    )
+                    
                     # Delete matches
                     Match.query.filter_by(tournament_id=tournament.id).delete()
 
@@ -608,8 +639,26 @@ def delete_tournament(slug):
     """Delete tournament"""
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
     check_tournament_ownership(tournament)
+    
+    # Audit Validation
+    reason = request.form.get('audit_reason')
+    explanation = request.form.get('audit_explanation', '')
+    if not reason:
+        flash("Audit validation failed: Reason required to delete a tournament.", "error")
+        return redirect(url_for('tournament.manage_tournament', slug=slug))
+    if len(explanation.strip()) < 20:
+        flash("Audit validation failed: A detailed explanation (minimum 20 characters) is required for high-risk actions.", "error")
+        return redirect(url_for('tournament.manage_tournament', slug=slug))
 
     try:
+        
+        log_audit(
+            action_type='delete_tournament',
+            target_id=tournament.id,
+            target_name=tournament.name,
+            reason=reason,
+            explanation=explanation
+        )
         db.session.delete(tournament)
         db.session.commit()
         flash('Tournament deleted successfully!', 'info')

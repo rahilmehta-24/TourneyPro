@@ -231,7 +231,50 @@
             }, 300);
         });
     </script>
-    {% block extra_js %}{% endblock %}
+    
+    <!-- Global Audit Validation Modal -->
+    <div id="globalAuditModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+        <div style="background: var(--bg-card); padding: 2rem; border-radius: var(--radius-lg); width: 90%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+            <h3 style="margin-top: 0; color: var(--accent-danger); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1.5rem;">⚠️ Security Check Required</h3>
+            <p style="margin-bottom: 1.5rem; color: var(--text-secondary); font-size: 0.95rem;">
+                You are about to perform a sensitive action: <strong id="auditModalActionName" style="color: var(--text-primary);">Modify Data</strong>. 
+                <br><br>To ensure tournament integrity, please provide a reason. This will be recorded in the audit logs.
+            </p>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label for="auditReasonSelect" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Reason:</label>
+                <select id="auditReasonSelect" class="form-input" style="width: 100%;">
+                    <option value="">-- Select a Reason --</option>
+                    <option value="Setup Mistake / Accidental Creation">Setup Mistake / Accidental Creation</option>
+                    <option value="Duplicate Entry">Duplicate Entry</option>
+                    <option value="Player Withdrawal">Player Withdrawal</option>
+                    <option value="Player Injury / Medical Withdrawal">Player Injury / Medical Withdrawal</option>
+                    <option value="Player Disqualification">Player Disqualification</option>
+                    <option value="Tournament Cancellation">Tournament Cancellation</option>
+                    <option value="Match Result Correction">Match Result Correction</option>
+                    <option value="Score Entry Mistake">Score Entry Mistake</option>
+                    <option value="Name Spelling Correction">Name Spelling Correction</option>
+                    <option value="Ranking/Seeding Correction">Ranking/Seeding Correction</option>
+                    <option value="Administrative Decision">Administrative Decision</option>
+                    <option value="Data Migration / System Correction">Data Migration / System Correction</option>
+                    <option value="Other (Mandatory Explanation)">Other (Mandatory Explanation)</option>
+                </select>
+            </div>
+            
+            <div id="auditExplanationContainer" style="display: none; margin-bottom: 1.5rem;">
+                <label for="auditExplanationInput" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Detailed Explanation:</label>
+                <textarea id="auditExplanationInput" class="form-input" style="width: 100%; min-height: 80px;" placeholder="Please provide additional details..."></textarea>
+                <small id="auditExplanationHelp" style="color: var(--text-muted); display: block; margin-top: 0.3rem;">Minimum 20 characters required for high-risk actions.</small>
+            </div>
+            
+            <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+                <button type="button" id="auditModalCancelBtn" class="btn btn-secondary">Cancel</button>
+                <button type="button" id="auditModalConfirmBtn" class="btn btn-danger">Confirm & Continue</button>
+            </div>
+        </div>
+    </div>
+
+{% block extra_js %}{% endblock %}
 {% include "loader.html" %}
 </body>
 

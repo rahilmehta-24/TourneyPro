@@ -208,3 +208,18 @@ class PlayerTournamentRecord(db.Model):
     points_earned = db.Column(db.Float, default=0.0)
     is_manual = db.Column(db.Boolean, default=False)
     date_recorded = db.Column(db.DateTime, default=datetime.utcnow)
+
+class AuditLog(db.Model):
+    __tablename__ = 'audit_logs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    action_type = db.Column(db.String(100), nullable=False)
+    target_id = db.Column(db.Integer)
+    target_name = db.Column(db.String(200))
+    reason = db.Column(db.String(100), nullable=False)
+    explanation = db.Column(db.Text)
+    details = db.Column(db.Text) # JSON diffs or additional metadata
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref='audit_logs', lazy=True)

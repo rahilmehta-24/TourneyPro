@@ -44,7 +44,7 @@
             <div class="card" style="background: var(--bg-card); border-radius: var(--radius-lg); padding: var(--spacing-md); box-shadow: var(--shadow-md); border: 1px solid rgba(239, 68, 68, 0.1); border-left: 4px solid var(--accent-danger);">
                 <h3 style="margin-bottom: var(--spacing-xs); font-size: 1.15rem; color: var(--accent-danger);">⚠️ Stop Bracket Play</h3>
                 <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: var(--spacing-sm);">Stopping the category will delete all matches and results generated so far. You can then edit settings and add/remove players.</p>
-                <form method="POST" onsubmit="return confirm('Are you sure you want to stop play in this category? This will permanently delete all matches and reported scores.');">
+                <form method="POST" class="requires-high-risk-audit" data-audit-action="Reset Category" onsubmit="return confirm('Are you sure you want to stop play in this category? This will permanently delete all matches and reported scores.');">
                     <input type="hidden" name="action" value="reset_category">
                     <button type="submit" class="btn btn-danger" style="background: var(--gradient-danger); border: none; font-weight: 600; padding: 0.65rem 1rem; font-size: 0.9rem; width: 100%;">
                         Stop and Reset to Setup
@@ -232,7 +232,7 @@
                                     <td style="padding: 0.75rem; color: var(--text-secondary); font-size: 0.9rem;">{{ participant.email or '-' }}</td>
                                     {% if category.status == 'setup' %}
                                     <td style="padding: 0.75rem; text-align: right;">
-                                        <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to remove {{ participant.name }}?');">
+                                        <form method="POST" style="display: inline;" class="requires-audit" data-audit-action="Delete Participant" onsubmit="return confirm('Are you sure you want to remove {{ participant.name }}?');">
                                             <input type="hidden" name="action" value="delete_participant">
                                             <input type="hidden" name="participant_id" value="{{ participant.id }}">
                                             <button type="submit" style="background: none; border: none; color: var(--accent-danger); cursor: pointer; font-weight: 600; font-size: 0.85rem; padding: 0;">

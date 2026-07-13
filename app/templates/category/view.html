@@ -896,6 +896,17 @@ function openMatchModal(matchId, currentStatus, currentScheduledTime, p1Name, p1
         form.action = `/tournaments/${slug}/match/${matchId}/report`;
     }
 
+    // AUDIT LOGIC: If editing a completed match, it requires audit validation
+    if (currentStatus === 'completed') {
+        form.classList.add('requires-audit');
+        form.setAttribute('data-audit-action', `Modify Match ${matchId}`);
+    } else {
+        form.classList.remove('requires-audit');
+        form.removeAttribute('data-audit-action');
+        form.removeAttribute('data-audit-reason-field');
+        form.removeAttribute('data-audit-explanation-field');
+    }
+
     document.getElementById('winner1').value = p1Id;
     document.getElementById('winner1Label').textContent = p1Name;
     document.getElementById('p1SetHeader').textContent = p1Name;

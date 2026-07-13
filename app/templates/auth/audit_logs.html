@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}System Audit Logs{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header modern-header">
+        <div class="header-content">
+            <a href="{{ url_for('auth.user_management') }}" class="back-link">
+                ← Back to User Management
+            </a>
+            <div class="title-wrapper">
+                <h1>🛡️ System Audit Logs</h1>
+            </div>
+            <div class="meta-row">
+                <span class="meta-item">Tracking sensitive actions and modifications across the platform</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body" style="padding: 0; overflow-x: auto;">
+            {% if pagination.items %}
+                <table class="table" style="width: 100%; text-align: left; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--border-color); background: rgba(0,0,0,0.2);">
+                            <th style="padding: 1rem;">Timestamp</th>
+                            <th style="padding: 1rem;">User</th>
+                            <th style="padding: 1rem;">Action</th>
+                            <th style="padding: 1rem;">Target</th>
+                            <th style="padding: 1rem;">Reason / Explanation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in pagination.items %}
+                            <tr style="border-bottom: 1px solid var(--border-color);">
+                                <td style="padding: 1rem; color: var(--text-muted); font-size: 0.9rem; white-space: nowrap;">
+                                    {{ log.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                </td>
+                                <td style="padding: 1rem;">
+                                    <strong>{{ log.user.username }}</strong>
+                                </td>
+                                <td style="padding: 1rem;">
+                                    <span style="background: rgba(249, 115, 22, 0.2); color: #fb923c; padding: 0.2rem 0.5rem; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: bold;">
+                                        {{ log.action_type }}
+                                    </span>
+                                </td>
+                                <td style="padding: 1rem;">
+                                    {% if log.target_name %}
+                                        {{ log.target_name }}
+                                        <div style="font-size: 0.8rem; color: var(--text-muted);">ID: {{ log.target_id }}</div>
+                                    {% else %}
+                                        ID: {{ log.target_id }}
+                                    {% endif %}
+                                </td>
+                                <td style="padding: 1rem;">
+                                    <div style="font-weight: 600; color: var(--accent-primary);">{{ log.reason }}</div>
+                                    {% if log.explanation %}
+                                        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.3rem; background: rgba(255,255,255,0.03); padding: 0.5rem; border-radius: 4px; border-left: 2px solid var(--accent-info);">
+                                            "{{ log.explanation }}"
+                                        </div>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                
+                <!-- Pagination -->
+                {% if pagination.pages > 1 %}
+                <div style="padding: 1rem; display: flex; justify-content: center; gap: 0.5rem;">
+                    {% if pagination.has_prev %}
+                        <a href="{{ url_for('auth.view_audit_logs', page=pagination.prev_num) }}" class="btn btn-secondary btn-small">Previous</a>
+                    {% endif %}
+                    
+                    <span style="padding: 0.5rem; color: var(--text-muted);">Page {{ pagination.page }} of {{ pagination.pages }}</span>
+                    
+                    {% if pagination.has_next %}
+                        <a href="{{ url_for('auth.view_audit_logs', page=pagination.next_num) }}" class="btn btn-secondary btn-small">Next</a>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+            {% else %}
+                <div style="padding: 3rem; text-align: center; color: var(--text-muted);">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">📋</div>
+                    <h3>No Audit Logs Found</h3>
+                    <p>No sensitive actions have been recorded yet.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
