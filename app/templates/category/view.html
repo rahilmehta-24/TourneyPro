@@ -4,30 +4,113 @@
 
 
 {% block content %}
-<div class="container">
-    <div class="page-header">
-        <div>
-            <h1>{{ category.name }}</h1>
-            <p class="subtitle">{{ tournament.name }} | {{ formats[category.format].name }}</p>
-        </div>
-        <div class="page-actions" {% if is_export %}style="display: none;"{% endif %}>
-            <button onclick="copyShareLink('{{ url_for('category.view_category', slug=tournament.url_slug, category_id=category.id, _external=True) }}', this)" class="btn btn-secondary">🔗 Share Link</button>
-            <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug) }}" class="btn btn-secondary">←
-                Back to
-                Tournament</a>
-            <a href="#" onclick="downloadExportPDF(); return false;" class="btn btn-primary">🖨️ Export PDF</a>
-            <a href="{{ url_for('export.export_matches_csv', slug=tournament.url_slug, category_id=category.id) }}"
-                class="btn btn-primary" target="_blank">📄 Matches CSV</a>
-            {% if category.format in ['round_robin', 'group_stage'] %}
-            <a href="{{ url_for('export.export_standings_csv', slug=tournament.url_slug, category_id=category.id) }}"
-                class="btn btn-primary" target="_blank">📊 Standings CSV</a>
-            {% endif %}
-        </div>
-    </div>
+    <style>
+        .modern-header {
+            align-items: center;
+            border-bottom: 1px solid var(--border-color, #333);
+            padding-bottom: 1.5rem;
+            margin-bottom: 2rem;
+            background: var(--bg-card);
+            padding: 2rem;
+            border-radius: var(--radius-lg);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .header-content {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .back-link {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            display: inline-block;
+            transition: color 0.2s;
+            margin-bottom: 0.5rem;
+        }
+        .back-link:hover {
+            color: var(--primary-color);
+        }
+        .title-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .title-wrapper h1 {
+            margin: 0;
+            font-size: 2.2rem;
+        }
+        .meta-row {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-top: 0.2rem;
+        }
+        .header-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.8rem;
+        }
+        .action-group {
+            display: flex;
+            gap: 0.8rem;
+        }
+        
+        @media (max-width: 768px) {
+            .modern-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1.5rem;
+            }
+            .header-actions {
+                align-items: stretch;
+                width: 100%;
+            }
+            .action-group {
+                flex-direction: column;
+                width: 100%;
+            }
+        }
+    </style>
 
-    <div class="category-status">
-        <span class="status-badge status-{{ category.status }}">{{ category.status.replace('_', ' ').title() }}</span>
-        <span>{{ participants|length }} Participants</span>
+<div class="container">
+    <div class="page-header modern-header">
+        <div class="header-content">
+            <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug) }}" class="back-link">
+                ← Back to {{ tournament.name }}
+            </a>
+            <div class="title-wrapper">
+                <h1>{{ category.name }}</h1>
+                <span class="status-badge status-{{ category.status }}">{{ category.status.replace('_', ' ').title() }}</span>
+            </div>
+            <div class="meta-row">
+                <span class="meta-item">🏅 {{ formats[category.format].name }}</span>
+                <span class="meta-item">👥 {{ participants|length }} Participants</span>
+            </div>
+        </div>
+        <div class="page-actions header-actions" {% if is_export %}style="display: none;"{% endif %}>
+            <div class="action-group primary-actions">
+                <a href="#" onclick="downloadExportPDF(); return false;" class="btn btn-primary">
+                    🖨️ Export PDF
+                </a>
+                <button onclick="copyShareLink('{{ url_for('category.view_category', slug=tournament.url_slug, category_id=category.id, _external=True) }}', this)" class="btn btn-secondary">
+                    🔗 Share Link
+                </button>
+            </div>
+            <div class="action-group secondary-actions">
+                <a href="{{ url_for('export.export_matches_csv', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-small btn-secondary" target="_blank">
+                    📄 Matches CSV
+                </a>
+                {% if category.format in ['round_robin', 'group_stage'] %}
+                <a href="{{ url_for('export.export_standings_csv', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-small btn-secondary" target="_blank">
+                    📊 Standings CSV
+                </a>
+                {% endif %}
+            </div>
+        </div>
     </div>
 
     {% if rankings %}

@@ -22,47 +22,149 @@
             animation: flashUpdate 2s ease-out;
         }
     </style>
-</head>
+
+        <style>
+            /* Modern Navbar Enhancements */
+            .modern-navbar {
+                padding: 1rem 0;
+            }
+            .navbar-container {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 2rem;
+            }
+            .nav-links-main {
+                display: flex;
+                align-items: center;
+                gap: 1.5rem;
+                flex: 1;
+                justify-content: center;
+            }
+            .nav-user-actions {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+            }
+            .user-profile-badge {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                padding: 0.4rem 0.8rem;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: var(--radius-md);
+                border: 1px solid rgba(255,255,255,0.1);
+            }
+            .user-name {
+                color: var(--text-primary);
+                text-decoration: none;
+                font-weight: 600;
+                font-size: 0.9rem;
+            }
+            .role-badge {
+                font-size: 0.7rem;
+                font-weight: bold;
+                padding: 0.2rem 0.5rem;
+                border-radius: var(--radius-sm);
+                letter-spacing: 0.5px;
+            }
+            .role-superadmin { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+            .role-admin { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+            .role-user { background: rgba(249, 115, 22, 0.2); color: #fb923c; }
+            
+            .admin-link {
+                color: #60a5fa !important;
+                font-weight: 600;
+            }
+            
+            .btn-danger-outline {
+                background: transparent;
+                border: 1px solid var(--accent-danger);
+                color: var(--accent-danger);
+                transition: all 0.2s;
+            }
+            .btn-danger-outline:hover {
+                background: var(--accent-danger);
+                color: white;
+            }
+            .btn-outline {
+                background: transparent;
+                border: 1px solid var(--border-color);
+                color: var(--text-secondary);
+            }
+            .btn-outline:hover {
+                background: rgba(255,255,255,0.1);
+                color: var(--text-primary);
+            }
+            .login-link {
+                margin-right: 0.5rem;
+            }
+            
+            @media (max-width: 900px) {
+                .navbar-container {
+                    flex-wrap: wrap;
+                }
+                .nav-links-main, .nav-user-actions {
+                    display: none;
+                    width: 100%;
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 1rem;
+                }
+                .nav-links-main.active, .nav-user-actions.active {
+                    display: flex;
+                }
+                .mobile-menu-btn {
+                    display: block !important;
+                }
+            }
+        </style>
+        </head>
 
     </div>
 
-    <nav class="navbar">
-        <div class="container">
+    <nav class="navbar modern-navbar">
+        <div class="container navbar-container">
+            <!-- Logo (Left) -->
             <a href="{{ url_for('main.index') }}" class="logo">
                 <span class="logo-icon">🏆</span>
                 <span class="logo-text">TourneyPro</span>
             </a>
-            <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle menu" style="display: none;">
+
+            <!-- Mobile Toggle -->
+            <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle menu">
                 ☰
             </button>
-            <div class="nav-links" id="navLinks">
+
+            <!-- Main Links (Center) -->
+            <div class="nav-links-main" id="navLinksMain">
                 <a href="{{ url_for('main.index') }}" class="nav-link">Home</a>
                 <a href="{{ url_for('leaderboard.view_leaderboard') }}" class="nav-link">Leaderboard</a>
                 <a href="{{ url_for('main.tournament_list') }}" class="nav-link">Tournaments</a>
-                
-                {% if current_user %}
+                {% if current_user and current_user.role == 'superadmin' %}
+                    <a href="{{ url_for('auth.user_management') }}" class="nav-link admin-link">User Management</a>
+                {% endif %}
+            </div>
 
-                    
-                    {% if current_user.role == 'superadmin' %}
-                        <a href="{{ url_for('auth.user_management') }}" class="nav-link" style="color: var(--accent-info); font-weight: bold;">User Management</a>
-                    {% elif current_user.role == 'user' %}
-                        <form method="POST" action="{{ url_for('auth.request_admin') }}" style="display: inline;">
-                            <button type="submit" class="btn btn-secondary btn-small" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;">
-                                {% if current_user.admin_requested %}Cancel Admin Request{% else %}Request Admin Role{% endif %}
+            <!-- User Actions (Right) -->
+            <div class="nav-user-actions" id="navUserActions">
+                {% if current_user %}
+                    {% if current_user.role == 'user' %}
+                        <form method="POST" action="{{ url_for('auth.request_admin') }}" class="inline-form" style="margin: 0;">
+                            <button type="submit" class="btn btn-outline btn-small request-btn">
+                                {% if current_user.admin_requested %}Cancel Request{% else %}Request Admin{% endif %}
                             </button>
                         </form>
                     {% endif %}
                     
-                    <span class="nav-user-info" style="color: var(--text-secondary); font-size: 0.9rem; border-left: 1px solid rgba(255,255,255,0.1); padding-left: var(--spacing-sm);">
-                        👤 <a href="{{ url_for('auth.profile') }}" style="color: inherit; text-decoration: none;"><strong>{{ current_user.username }}</strong></a>
-                        <span style="font-size: 0.75rem; vertical-align: middle; background: rgba(249, 115, 22, 0.2); color: var(--accent-primary); padding: 2px 6px; border-radius: var(--radius-sm); margin-left: 4px;">
-                            {{ current_user.role.upper() }}
-                        </span>
-                    </span>
-                    <a href="{{ url_for('auth.logout') }}" class="btn btn-small nav-logout" style="background: transparent; border: 1px solid var(--accent-danger); color: var(--accent-danger); margin-left: var(--spacing-sm);">Log Out</a>
+                    <div class="user-profile-badge">
+                        <a href="{{ url_for('auth.profile') }}" class="user-name">👤 {{ current_user.username }}</a>
+                        <span class="role-badge role-{{ current_user.role }}">{{ current_user.role.upper() }}</span>
+                    </div>
+                    <a href="{{ url_for('auth.logout') }}" class="btn btn-small btn-danger-outline">Log Out</a>
                 {% else %}
-                    <a href="{{ url_for('auth.login') }}" class="nav-link">Log In</a>
-                    <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Register</a>
+                    <a href="{{ url_for('auth.login') }}" class="nav-link login-link">Log In</a>
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-small">Register</a>
                 {% endif %}
             </div>
         </div>
@@ -117,7 +219,8 @@
     </script>
     <script>
         document.getElementById('mobileMenuBtn').addEventListener('click', function() {
-            document.getElementById('navLinks').classList.toggle('active');
+            document.getElementById('navLinksMain').classList.toggle('active');
+            document.getElementById('navUserActions').classList.toggle('active');
         });
 
         // Global Loader and Sports Facts Logic for Turbo.js
