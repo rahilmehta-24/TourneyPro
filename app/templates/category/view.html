@@ -1,57 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ category.name }} - {{ tournament.name }}
-    <!-- Include html2pdf.js for Client-Side PDF Export -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script>
-        function downloadExportPDF() {
-            // Hide UI elements not meant for the PDF
-            const actions = document.querySelector('.page-actions');
-            if (actions) actions.style.display = 'none';
-            const navbar = document.querySelector('.navbar');
-            if (navbar) navbar.style.display = 'none';
-            const footer = document.querySelector('.footer');
-            if (footer) footer.style.display = 'none';
-
-            // Store original overflow styles to restore later
-            const scrollContainers = document.querySelectorAll('.table-container, div[style*="overflow-x: auto"]');
-            const originalOverflows = [];
-            scrollContainers.forEach(container => {
-                originalOverflows.push(container.style.overflowX);
-                container.style.overflowX = 'visible';
-            });
-
-            const element = document.querySelector('.container');
-            
-            // Adjust options for landscape A4 to fit brackets nicely
-            const opt = {
-                margin:       0.2,
-                filename:     '{{ tournament.name }}_{{ category.name }}_Export.pdf',
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, scrollY: 0 },
-                jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' },
-                pagebreak:    { mode: 'css', after: '.podium-container' }
-            };
-
-            // Temporarily set body background to white for the export (improves readability)
-            const originalBg = document.body.style.background;
-            document.body.style.background = '#ffffff';
-
-            html2pdf().set(opt).from(element).save().then(() => {
-                // Restore all styles and UI elements
-                if (actions) actions.style.display = 'flex';
-                if (navbar) navbar.style.display = 'flex';
-                if (footer) footer.style.display = 'block';
-                
-                scrollContainers.forEach((container, idx) => {
-                    container.style.overflowX = originalOverflows[idx];
-                });
-                document.body.style.background = originalBg;
-            });
-        }
-    </script>
-
-{% endblock %}
+{% block title %}{{ category.name }} - {{ tournament.name }}{% endblock %}
 
 
 {% block content %}
