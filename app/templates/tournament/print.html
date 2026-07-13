@@ -7,8 +7,8 @@
 <div id="tournament-content"></div>
 
 <script>
-    // Prevent the default onload print from print_layout.html from firing prematurely
-    window.onload = async function() {
+    // Define custom print loader to intercept the default print_layout.html onload
+    async function customPrintLoader() {
         const categories = [
             {% for cat in tournament.categories %}
             { id: '{{ cat.id }}' },
@@ -26,17 +26,30 @@
             
             const content = doc.getElementById('category-export-content') || doc.querySelector('.main-content .container');
             if (content) {
-                const catBlock = document.createElement('div');
-                catBlock.className = 'category-export-block page-break';
-                catBlock.innerHTML = content.innerHTML;
+                // Pass the single category container through the pagination engine
+                const paginatedPages = paginateBracket(content);
                 
-                // Add page break logic after podium
-                const podium = catBlock.querySelector('.podium-container');
-                if (podium) {
-                    podium.classList.add('page-break');
-                }
-                
-                container.appendChild(catBlock);
+                paginatedPages.forEach((page, index) => {
+                    const catBlock = document.createElement('div');
+                    catBlock.className = 'category-export-block page-break';
+                    catBlock.innerHTML = page.innerHTML;
+                    
+                    // Add page break logic after podium if this is the first page of the category
+                    if (index === 0) {
+                        const podium = catBlock.querySelector('.podium-container');
+                        if (podium) {
+                            podium.classList.add('page-break');
+                        }
+                    } else {
+                        // Remove podium from subsequent split pages of the same category
+                        const podium = catBlock.querySelector('.podium-container');
+                        if (podium) podium.remove();
+                        const winnerSec = catBlock.querySelector('.winner-section');
+                        if (winnerSec) winnerSec.remove();
+                    }
+                    
+                    container.appendChild(catBlock);
+                });
             }
         }
         

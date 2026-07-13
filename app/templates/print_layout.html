@@ -30,10 +30,167 @@
             .page-break {
                 break-after: page;
             }
+            .bracket-round.first-visible-round .tennis-match::before {
+                display: none !important;
+            }
         }
     </style>
+    
+    <script>
+        /**
+         * Dynamically splits a massive bracket into printable pages
+         * @param {HTMLElement} container - The DOM element containing the .bracket
+         * @returns {HTMLElement[]} - An array of paginated DOM elements
+         */
+        function paginateBracket(container) {
+            const bracket = container.querySelector('.bracket');
+            if (!bracket) return [container];
+
+            const rounds = Array.from(bracket.querySelectorAll('.bracket-round'));
+            if (rounds.length === 0) return [container];
+
+            const r1Matches = rounds[0].querySelectorAll('.match-card-wrapper').length;
+            const totalRounds = rounds.length;
+
+            let pages = [];
+
+            // A draw of 64 players has 32 matches in R1. That's too big for one page.
+            if (r1Matches > 16) {
+                // Determine where to break horizontally (usually Quarterfinals)
+                // If totalRounds=6 (64-draw), break at 3 (so QF is the start of the "Finals" page)
+                const splitRoundIndex = Math.max(0, totalRounds - 3);
+
+                // Page 1: Top Half
+                const topHalf = container.cloneNode(true);
+                const topRounds = topHalf.querySelectorAll('.bracket-round');
+                for (let i = 0; i < topRounds.length; i++) {
+                    if (i >= splitRoundIndex) {
+                        topRounds[i].style.display = 'none';
+                        continue;
+                    }
+                    const matches = topRounds[i].querySelectorAll('.match-card-wrapper');
+                    const half = Math.ceil(matches.length / 2);
+                    for (let j = half; j < matches.length; j++) {
+                        matches[j].style.display = 'none';
+                    }
+                }
+                
+                // Add a title to differentiate
+                const topTitle = document.createElement('h3');
+                topTitle.innerText = "Top Half Bracket";
+                topTitle.style.textAlign = 'center';
+                topTitle.style.marginBottom = '20px';
+                topHalf.insertBefore(topTitle, topHalf.firstChild);
+                pages.push(topHalf);
+
+                // Page 2: Bottom Half
+                const bottomHalf = container.cloneNode(true);
+                const botRounds = bottomHalf.querySelectorAll('.bracket-round');
+                for (let i = 0; i < botRounds.length; i++) {
+                    if (i >= splitRoundIndex) {
+                        botRounds[i].style.display = 'none';
+                        continue;
+                    }
+                    const matches = botRounds[i].querySelectorAll('.match-card-wrapper');
+                    const half = Math.ceil(matches.length / 2);
+                    for (let j = 0; j < half; j++) {
+                        matches[j].style.display = 'none';
+                    }
+                }
+                const botTitle = document.createElement('h3');
+                botTitle.innerText = "Bottom Half Bracket";
+                botTitle.style.textAlign = 'center';
+                botTitle.style.marginBottom = '20px';
+                bottomHalf.insertBefore(botTitle, bottomHalf.firstChild);
+                pages.push(bottomHalf);
+
+                // Page 3: Finals (Quarterfinals -> Finals)
+                const finalsPage = container.cloneNode(true);
+                const finRounds = finalsPage.querySelectorAll('.bracket-round');
+                for (let i = 0; i < finRounds.length; i++) {
+                    if (i < splitRoundIndex) {
+                        finRounds[i].style.display = 'none';
+                    }
+                }
+                // Hide incoming connectors for the first visible round
+                const firstVisible = finRounds[splitRoundIndex];
+                if (firstVisible) {
+                    firstVisible.classList.add('first-visible-round');
+                }
+                
+                const finTitle = document.createElement('h3');
+                finTitle.innerText = "Final Stages";
+                finTitle.style.textAlign = 'center';
+                finTitle.style.marginBottom = '20px';
+                finalsPage.insertBefore(finTitle, finalsPage.firstChild);
+                pages.push(finalsPage);
+                
+            } else if (totalRounds > 6) {
+                // Horizontal Split Only (e.g., very long draw but not vertically massive)
+                const leftPage = container.cloneNode(true);
+                const leftRounds = leftPage.querySelectorAll('.bracket-round');
+                for (let i = 4; i < leftRounds.length; i++) {
+                    leftRounds[i].style.display = 'none';
+                }
+                pages.push(leftPage);
+
+                const rightPage = container.cloneNode(true);
+                const rightRounds = rightPage.querySelectorAll('.bracket-round');
+                for (let i = 0; i < 4; i++) {
+                    rightRounds[i].style.display = 'none';
+                }
+                if (rightRounds[4]) {
+                    rightRounds[4].classList.add('first-visible-round');
+                }
+                pages.push(rightPage);
+                
+            } else {
+                // Fits perfectly
+                pages.push(container.cloneNode(true));
+            }
+
+            return pages;
+        }
+
+        window.onload = function() {
+            // If the view defines a custom loader (like full tournament), use it
+            if (typeof customPrintLoader === 'function') {
+                customPrintLoader();
+                return;
+            }
+
+            // Otherwise, automatically paginate the single category bracket
+            const container = document.getElementById('category-export-content') || document.querySelector('.main-content .container');
+            if (container) {
+                const paginated = paginateBracket(container);
+                if (paginated.length > 1) {
+                    const parent = container.parentNode;
+                    // Remove original container
+                    container.remove();
+                    
+                    // Insert paginated parts
+                    paginated.forEach((page, index) => {
+                        page.classList.add('page-break');
+                        // Remove podium from pages other than page 1
+                        if (index > 0) {
+                            const podium = page.querySelector('.podium-container');
+                            if (podium) podium.remove();
+                            const winnerSec = page.querySelector('.winner-section');
+                            if (winnerSec) winnerSec.remove();
+                        }
+                        parent.appendChild(page);
+                    });
+                }
+            }
+            
+            // Allow CSS rendering to catch up before printing
+            setTimeout(() => {
+                window.print();
+            }, 500);
+        };
+    </script>
 </head>
-<body class="pdf-export-mode" onload="window.print()">
+<body class="pdf-export-mode" id="print-body">
     <main class="main-content" style="padding-top: 0;">
         {% block content %}{% endblock %}
     </main>
