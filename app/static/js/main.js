@@ -97,132 +97,146 @@ function createFlashContainer() {
 
 // --- GLOBAL AUDIT VALIDATION INTERCEPTOR ---
 function initAuditInterceptor() {
+    window._globalAuditSubmitHandler = function(e) {
+        const form = e.target;
+        // Verify it actually requires audit just in case
+        if (!form.classList.contains('requires-audit') && !form.classList.contains('requires-high-risk-audit')) {
+            return; // let it submit normally
+        }
+        
+        e.preventDefault();
+        
+        const isHighRisk = form.classList.contains('requires-high-risk-audit');
+        
+        // Show modal
+        const modal = document.getElementById('globalAuditModal');
+        if (!modal) {
+            console.error("Global audit modal not found in DOM");
+            form.submit(); // fallback
+            return;
+        }
+        
+        modal.style.display = 'flex';
+        
+        // Ensure loader is hidden so it doesn't block the UI behind the modal
+        const loader = document.getElementById('global-loader');
+        if (loader) {
+            loader.classList.remove('active');
+            loader.style.display = 'none';
+        }
+        
+        // Configure modal
+        const formActionSpan = document.getElementById('auditModalActionName');
+        if (formActionSpan && form.dataset.auditAction) {
+            formActionSpan.textContent = form.dataset.auditAction;
+        }
+        
+        const explanationContainer = document.getElementById('auditExplanationContainer');
+        const explanationInput = document.getElementById('auditExplanationInput');
+        const reasonSelect = document.getElementById('auditReasonSelect');
+        
+        reasonSelect.value = "";
+        explanationInput.value = "";
+        explanationInput.removeAttribute('required');
+        explanationInput.minLength = 0;
+        
+        if (isHighRisk) {
+            explanationContainer.style.display = 'block';
+            explanationInput.setAttribute('required', 'required');
+            explanationInput.minLength = 20;
+            document.getElementById('auditExplanationHelp').textContent = "Minimum 20 characters required for high-risk actions.";
+        } else {
+            explanationContainer.style.display = 'none';
+        }
+        
+        // Handle Reason Selection changes
+        const onReasonChange = function() {
+            if (reasonSelect.value === 'Other (Mandatory Explanation)') {
+                explanationContainer.style.display = 'block';
+                explanationInput.setAttribute('required', 'required');
+                explanationInput.minLength = 10;
+                document.getElementById('auditExplanationHelp').textContent = "Please provide details (minimum 10 characters).";
+            } else if (!isHighRisk) {
+                explanationContainer.style.display = 'none';
+                explanationInput.removeAttribute('required');
+                explanationInput.minLength = 0;
+            }
+        };
+        reasonSelect.removeEventListener('change', window._auditReasonChangeHandler);
+        window._auditReasonChangeHandler = onReasonChange;
+        reasonSelect.addEventListener('change', onReasonChange);
+        
+        // Handle Submit
+        const confirmBtn = document.getElementById('auditModalConfirmBtn');
+        const onConfirm = function() {
+            if (!reasonSelect.value) {
+                alert("Please select a reason.");
+                return;
+            }
+            
+            if (explanationInput.hasAttribute('required') && explanationInput.value.length < explanationInput.minLength) {
+                alert("Please provide a longer explanation (minimum " + explanationInput.minLength + " characters).");
+                return;
+            }
+            
+            // Add hidden inputs to form
+            let reasonInput = form.querySelector('input[name="audit_reason"]');
+            if (!reasonInput) {
+                reasonInput = document.createElement('input');
+                reasonInput.type = 'hidden';
+                reasonInput.name = 'audit_reason';
+                form.appendChild(reasonInput);
+            }
+            reasonInput.value = reasonSelect.value;
+            
+            let expInput = form.querySelector('input[name="audit_explanation"]');
+            if (!expInput) {
+                expInput = document.createElement('input');
+                expInput.type = 'hidden';
+                expInput.name = 'audit_explanation';
+                form.appendChild(expInput);
+            }
+            expInput.value = explanationInput.value;
+            
+            modal.style.display = 'none';
+            
+            // Remove listeners to avoid memory leaks
+            confirmBtn.removeEventListener('click', window._auditConfirmHandler);
+            cancelBtn.removeEventListener('click', window._auditCancelHandler);
+            
+            // Actually submit the form
+            form.submit();
+        };
+        
+        if (window._auditConfirmHandler) {
+            confirmBtn.removeEventListener('click', window._auditConfirmHandler);
+        }
+        window._auditConfirmHandler = onConfirm;
+        confirmBtn.addEventListener('click', onConfirm);
+        
+        // Handle Cancel
+        const cancelBtn = document.getElementById('auditModalCancelBtn');
+        const onCancel = function() {
+            modal.style.display = 'none';
+            confirmBtn.removeEventListener('click', window._auditConfirmHandler);
+            cancelBtn.removeEventListener('click', window._auditCancelHandler);
+        };
+        
+        if (window._auditCancelHandler) {
+            cancelBtn.removeEventListener('click', window._auditCancelHandler);
+        }
+        window._auditCancelHandler = onCancel;
+        cancelBtn.addEventListener('click', onCancel);
+    };
+
     const auditForms = document.querySelectorAll('.requires-audit, .requires-high-risk-audit');
     auditForms.forEach(form => {
         if (form.dataset.auditBound) return;
         form.dataset.auditBound = "true";
-
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const isHighRisk = form.classList.contains('requires-high-risk-audit');
-            
-            // Show modal
-            const modal = document.getElementById('globalAuditModal');
-            if (!modal) {
-                console.error("Global audit modal not found in DOM");
-                form.submit(); // fallback
-                return;
-            }
-            
-            modal.style.display = 'flex';
-            
-            // Ensure loader is hidden so it doesn't block the UI behind the modal
-            const loader = document.getElementById('global-loader');
-            if (loader) {
-                loader.classList.remove('active');
-                loader.style.display = 'none';
-            }
-            
-            // Configure modal
-            const formActionSpan = document.getElementById('auditModalActionName');
-            if (formActionSpan && form.dataset.auditAction) {
-                formActionSpan.textContent = form.dataset.auditAction;
-            }
-            
-            const explanationContainer = document.getElementById('auditExplanationContainer');
-            const explanationInput = document.getElementById('auditExplanationInput');
-            const reasonSelect = document.getElementById('auditReasonSelect');
-            
-            reasonSelect.value = "";
-            explanationInput.value = "";
-            explanationInput.removeAttribute('required');
-            explanationInput.minLength = 0;
-            
-            if (isHighRisk) {
-                explanationContainer.style.display = 'block';
-                explanationInput.setAttribute('required', 'required');
-                explanationInput.minLength = 20;
-                document.getElementById('auditExplanationHelp').textContent = "Minimum 20 characters required for high-risk actions.";
-            } else {
-                explanationContainer.style.display = 'none';
-            }
-            
-            // Handle Reason Selection changes
-            const onReasonChange = function() {
-                if (reasonSelect.value === 'Other (Mandatory Explanation)') {
-                    explanationContainer.style.display = 'block';
-                    explanationInput.setAttribute('required', 'required');
-                    explanationInput.minLength = 10;
-                    document.getElementById('auditExplanationHelp').textContent = "Please provide details (minimum 10 characters).";
-                } else if (!isHighRisk) {
-                    explanationContainer.style.display = 'none';
-                    explanationInput.removeAttribute('required');
-                    explanationInput.minLength = 0;
-                }
-            };
-            reasonSelect.removeEventListener('change', window._auditReasonChangeHandler);
-            window._auditReasonChangeHandler = onReasonChange;
-            reasonSelect.addEventListener('change', onReasonChange);
-            
-            // Handle Submit
-            const confirmBtn = document.getElementById('auditModalConfirmBtn');
-            const onConfirm = function() {
-                if (!reasonSelect.value) {
-                    alert("Please select a reason.");
-                    return;
-                }
-                
-                if (explanationInput.hasAttribute('required') && explanationInput.value.length < explanationInput.minLength) {
-                    alert("Please provide a longer explanation (minimum " + explanationInput.minLength + " characters).");
-                    return;
-                }
-                
-                // Add hidden inputs to form
-                let reasonInput = form.querySelector('input[name="audit_reason"]');
-                if (!reasonInput) {
-                    reasonInput = document.createElement('input');
-                    reasonInput.type = 'hidden';
-                    reasonInput.name = 'audit_reason';
-                    form.appendChild(reasonInput);
-                }
-                reasonInput.value = reasonSelect.value;
-                
-                let expInput = form.querySelector('input[name="audit_explanation"]');
-                if (!expInput) {
-                    expInput = document.createElement('input');
-                    expInput.type = 'hidden';
-                    expInput.name = 'audit_explanation';
-                    form.appendChild(expInput);
-                }
-                expInput.value = explanationInput.value;
-                
-                modal.style.display = 'none';
-                
-                // Remove listeners to avoid memory leaks
-                confirmBtn.removeEventListener('click', window._auditConfirmHandler);
-                cancelBtn.removeEventListener('click', window._auditCancelHandler);
-                
-                // Actually submit the form
-                form.submit();
-            };
-            confirmBtn.removeEventListener('click', window._auditConfirmHandler);
-            window._auditConfirmHandler = onConfirm;
-            confirmBtn.addEventListener('click', onConfirm);
-            
-            // Handle Cancel
-            const cancelBtn = document.getElementById('auditModalCancelBtn');
-            const onCancel = function() {
-                modal.style.display = 'none';
-                confirmBtn.removeEventListener('click', window._auditConfirmHandler);
-                cancelBtn.removeEventListener('click', window._auditCancelHandler);
-            };
-            cancelBtn.removeEventListener('click', window._auditCancelHandler);
-            window._auditCancelHandler = onCancel;
-            cancelBtn.addEventListener('click', onCancel);
-        });
+        form.addEventListener('submit', window._globalAuditSubmitHandler);
     });
 }
 
-document.addEventListener('DOMContentLoaded', initAuditInterceptor);
-document.addEventListener('turbo:load', initAuditInterceptor);
+document.addEventListener("DOMContentLoaded", function() {
+    initAuditInterceptor();
+});

@@ -963,10 +963,15 @@ function openMatchModal(matchId, currentStatus, currentScheduledTime, p1Name, p1
 
     // AUDIT LOGIC: If editing a completed match, it requires audit validation
     if (currentStatus === 'completed') {
-        form.classList.add('requires-audit');
+        form.classList.add('requires-high-risk-audit');
         form.setAttribute('data-audit-action', `Modify Match ${matchId}`);
+        // Re-bind audit listener since class was added dynamically
+        if (!form.dataset.auditBound) {
+            form.dataset.auditBound = "true";
+            form.addEventListener('submit', window._globalAuditSubmitHandler);
+        }
     } else {
-        form.classList.remove('requires-audit');
+        form.classList.remove('requires-high-risk-audit');
         form.removeAttribute('data-audit-action');
         form.removeAttribute('data-audit-reason-field');
         form.removeAttribute('data-audit-explanation-field');
@@ -1217,7 +1222,13 @@ async function saveMatchAction(actionType) {
         
         // Submit normally to allow Flask to render flash messages if validation fails
         form.method = 'POST';
-        form.submit();
+        
+        // Use requestSubmit instead of submit() so the global audit event listener catches it
+        if (form.requestSubmit) {
+            form.requestSubmit();
+        } else {
+            form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        }
     }
 }
 function validateWinnerSelected() {
