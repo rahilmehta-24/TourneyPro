@@ -1859,3 +1859,68 @@ select option {
     vertical-align: middle;
     text-align: center;
 }
+
+/* --- PDF EXPORT PRINT STYLES --- */
+body.pdf-export-mode {
+    background: #ffffff !important;
+    color: #000000 !important;
+}
+
+body.pdf-export-mode * {
+    color: #000000 !important;
+    border-color: #bbbbbb !important;
+}
+
+body.pdf-export-mode .tennis-match {
+    background: #ffffff !important;
+    border: 1px solid #777 !important;
+    box-shadow: none !important;
+}
+
+body.pdf-export-mode .tennis-match-header {
+    background: #eef2f6 !important;
+    border-bottom: 1px solid #ccc !important;
+}
+
+body.pdf-export-mode .tennis-player-row {
+    background: #ffffff !important;
+}
+
+body.pdf-export-mode .tennis-player-row.winner::before {
+    background: #000000 !important;
+}
+
+body.pdf-export-mode .tennis-set-box {
+    background: #ffffff !important;
+    border: 1px solid #999 !important;
+}
+
+body.pdf-export-mode .match-card-wrapper::after,
+body.pdf-export-mode .match-card-wrapper::before,
+body.pdf-export-mode .tennis-match::before {
+    background: #666 !important;
+}
+
+body.pdf-export-mode .podium-card {
+    background: #ffffff !important;
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+}
+
+body.pdf-export-mode .podium-seed {
+    background: #eee !important;
+}
+
+body.pdf-export-mode .page-title,
+body.pdf-export-mode h2,
+body.pdf-export-mode h3 {
+    color: #000000 !important;
+}
+
+/* Ensure bracket connector pseudo-elements print clearly */
+body.pdf-export-mode .match-card-wrapper::after, 
+body.pdf-export-mode .match-card-wrapper::before, 
+body.pdf-export-mode .bracket-round:not(:first-child) .tennis-match::before {
+    background: #333 !important;
+    z-index: 10 !important;
+}
