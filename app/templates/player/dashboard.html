@@ -50,19 +50,19 @@
                             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
                                 <div>
                                     <label class="form-label">Registration No.</label>
-                                    <input type="text" class="form-input" value="{{ player.registration_no or 'N/A' }}" disabled style="opacity: 0.7; cursor: not-allowed;">
+                                    <input type="text" class="form-input" value="{{ player.registration_no or 'N/A' }}" disabled style="color: var(--text-primary, #ffffff); background-color: rgba(255,255,255,0.1); cursor: not-allowed;">
                                 </div>
                                 <div>
                                     <label class="form-label">Date of Registration</label>
-                                    <input type="date" class="form-input" value="{{ player.registration_date.strftime('%Y-%m-%d') if player.registration_date else '' }}" disabled style="opacity: 0.7; cursor: not-allowed;">
+                                    <input type="date" class="form-input" value="{{ player.registration_date.strftime('%Y-%m-%d') if player.registration_date else '' }}" disabled style="color: var(--text-primary, #ffffff); background-color: rgba(255,255,255,0.1); cursor: not-allowed;">
                                 </div>
                                 <div>
                                     <label class="form-label">Registration Validity</label>
-                                    <input type="date" class="form-input" value="{{ player.registration_validity.strftime('%Y-%m-%d') if player.registration_validity else '' }}" disabled style="opacity: 0.7; cursor: not-allowed;">
+                                    <input type="date" class="form-input" value="{{ player.registration_validity.strftime('%Y-%m-%d') if player.registration_validity else '' }}" disabled style="color: var(--text-primary, #ffffff); background-color: rgba(255,255,255,0.1); cursor: not-allowed;">
                                 </div>
                                 <div>
                                     <label class="form-label">Current Status</label>
-                                    <input type="text" class="form-input" value="{{ player.current_status or 'Active' }}" disabled style="opacity: 0.7; cursor: not-allowed;">
+                                    <input type="text" class="form-input" value="{{ player.current_status or 'Active' }}" disabled style="color: var(--text-primary, #ffffff); background-color: rgba(255,255,255,0.1); cursor: not-allowed;">
                                 </div>
                             </div>
                         </div>
