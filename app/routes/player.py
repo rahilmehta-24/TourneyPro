@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for
-from flask_login import login_required, current_user
+from app.routes.auth import login_required, get_current_user
 from app.models import Player, db
 
 player_bp = Blueprint('player', __name__)
@@ -14,6 +14,7 @@ def view_player(player_id):
 def dashboard():
     # If the user doesn't have a linked player profile, they can create one or we can manage their multiple profiles
     # For now, let's assume a 1-to-many relationship, and the dashboard lists all players they manage
+    current_user = get_current_user()
     players = Player.query.filter_by(user_id=current_user.id).all()
     
     if request.method == 'POST':
