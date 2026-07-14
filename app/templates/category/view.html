@@ -1056,25 +1056,39 @@ function openMatchModal(matchId, currentStatus, currentScheduledTime, p1Name, p1
                 s1Val = s1Val.split('(')[0];
             }
             
-            let s2Val = s2Parts[i] || '';
-            let tb2 = null;
-            if (s2Val.includes('(')) {
-                tb2 = s2Val.split('(')[1].replace(')', '');
-                s2Val = s2Val.split('(')[0];
+            let p1Games = s1Val;
+            let p2Games = "";
+            if (s1Val.includes('-')) {
+                p1Games = s1Val.split('-')[0];
+                p2Games = s1Val.split('-')[1];
+            } else {
+                p2Games = s2Parts[i] || '';
+                if (p2Games.includes('(')) p2Games = p2Games.split('(')[0];
+                if (p2Games.includes('-')) p2Games = p2Games.split('-')[0];
             }
             
             const p1Input = document.getElementById(`set${s}_p1`);
             const p2Input = document.getElementById(`set${s}_p2`);
-            if (p1Input) p1Input.value = s1Val;
-            if (p2Input) p2Input.value = s2Val;
+            if (p1Input) p1Input.value = p1Games;
+            if (p2Input) p2Input.value = p2Games;
             
-            if ((tb1 !== null || tb2 !== null) && tb1 !== '' && tb2 !== '') {
+            if (tb1 !== null && tb1 !== '') {
                 const tbRow = document.getElementById(`tbRow${s}`);
                 if (tbRow) tbRow.style.display = 'table-row';
                 const tb1Input = document.getElementById(`tb${s}_p1`);
                 const tb2Input = document.getElementById(`tb${s}_p2`);
-                if (tb1Input && tb1 !== null) tb1Input.value = tb1;
-                if (tb2Input && tb2 !== null) tb2Input.value = tb2;
+                
+                let loserTb = parseInt(tb1);
+                let tbTarget = (s === parseInt(matchNumSets || numSets)) ? 10 : 7;
+                let winnerTb = loserTb >= (tbTarget - 1) ? loserTb + 2 : tbTarget;
+                
+                if (parseInt(p1Games) > parseInt(p2Games)) {
+                    if (tb1Input) tb1Input.value = winnerTb;
+                    if (tb2Input) tb2Input.value = loserTb;
+                } else {
+                    if (tb1Input) tb1Input.value = loserTb;
+                    if (tb2Input) tb2Input.value = winnerTb;
+                }
             }
         }
     }
