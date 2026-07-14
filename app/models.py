@@ -90,6 +90,9 @@ class Participant(db.Model):
     partner_mobile = db.Column(db.String(20)) # Mobile of partner for Doubles (Self Registration)
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120))
+    mobile = db.Column(db.String(20))
+    gender = db.Column(db.String(20))
+    dob = db.Column(db.Date)
     seed = db.Column(db.Integer)  # Auto-assigned seed
     manual_seed = db.Column(db.Integer)  # Manually assigned seed (takes priority)
     checked_in = db.Column(db.Boolean, default=False)
