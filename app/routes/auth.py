@@ -70,10 +70,10 @@ def login():
         return redirect(url_for('main.index'))
 
     if request.method == 'POST':
-        username = request.form.get('username')
+        username = request.form.get('username', '').strip()
         password = request.form.get('password')
 
-        user = User.query.filter_by(username=username).first()
+        user = User.query.filter_by(username=username).first() or User.query.filter_by(email=username).first()
         if user and user.check_password(password):
             session['user_id'] = user.id
             session.permanent = True
@@ -90,8 +90,8 @@ def register():
         return redirect(url_for('main.index'))
 
     if request.method == 'POST':
-        username = request.form.get('username')
-        email = request.form.get('email')
+        username = request.form.get('username', '').strip()
+        email = request.form.get('email', '').strip()
         password = request.form.get('password')
 
         # Validation
