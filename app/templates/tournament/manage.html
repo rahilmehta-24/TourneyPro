@@ -236,6 +236,14 @@
                     {% if tournament.status == 'setup' %}
                     <p class="status-description">Add participants and start the tournament when ready.</p>
 
+                    <form method="POST" class="mt-3" style="margin-bottom: 1rem;">
+                        <input type="hidden" name="action" value="open_registration">
+                        <button type="submit" class="btn btn-primary btn-block" style="background-color: var(--accent-success); border-color: var(--accent-success);">
+                            <span class="btn-icon">🔓</span>
+                            Open Registration
+                        </button>
+                    </form>
+
                     {% if participants|length >= 2 %}
                     <form method="POST" class="mt-3">
                         <input type="hidden" name="action" value="start_tournament">

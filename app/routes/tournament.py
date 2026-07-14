@@ -347,6 +347,12 @@ def manage_tournament(slug):
                     flash(f'Removed participant: {participant.name}', 'info')
                 return redirect(url_for('tournament.manage_tournament', slug=slug))
 
+            elif action == 'open_registration':
+                tournament.status = 'registration'
+                db.session.commit()
+                flash('Tournament registration is now open!', 'success')
+                return redirect(url_for('tournament.manage_tournament', slug=slug))
+
             elif action == 'start_tournament':
                 if tournament.has_categories:
                     tournament.status = 'in_progress'
