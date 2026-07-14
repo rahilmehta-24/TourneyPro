@@ -28,7 +28,7 @@
                     <td style="padding: 1rem 0.5rem;">{{ p.dob.strftime('%Y-%m-%d') if p.dob else 'N/A' }}</td>
                     <td style="padding: 1rem 0.5rem;">{{ p.gender }}</td>
                     <td style="padding: 1rem 0.5rem; text-align: right;">
-                        <a href="{{ url_for('player.view_profile', id=p.id) }}" class="btn btn-secondary btn-small">View Profile</a>
+                        <a href="{{ url_for('player.view_player', player_id=p.id) }}" class="btn btn-secondary btn-small">View Profile</a>
                     </td>
                 </tr>
                 {% else %}
@@ -284,7 +284,7 @@
                     <td style="padding: 1rem 0.5rem;">{{ p.dob.strftime('%Y-%m-%d') if p.dob else 'N/A' }}</td>
                     <td style="padding: 1rem 0.5rem;">{{ p.gender }}</td>
                     <td style="padding: 1rem 0.5rem; text-align: right;">
-                        <a href="{{ url_for('player.view_profile', id=p.id) }}" class="btn btn-secondary btn-small">View Profile</a>
+                        <a href="{{ url_for('player.view_player', player_id=p.id) }}" class="btn btn-secondary btn-small">View Profile</a>
                     </td>
                 </tr>
                 {% else %}
