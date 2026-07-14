@@ -46,23 +46,15 @@ def dashboard():
         action = request.form.get('action')
         
         if action == 'update_profile':
-            import os
-            from werkzeug.utils import secure_filename
             
             player_id = request.form.get('player_id', type=int)
             player = Player.query.filter_by(id=player_id, user_id=current_user.id).first_or_404()
             populate_player_from_request(player)
             
-            # Handle profile photo upload
-            if 'profile_photo' in request.files:
-                file = request.files['profile_photo']
-                if file.filename != '':
-                    filename = secure_filename(file.filename)
-                    upload_dir = os.path.join('app', 'static', 'uploads')
-                    os.makedirs(upload_dir, exist_ok=True)
-                    file_path = os.path.join(upload_dir, f"{player.id}_{filename}")
-                    file.save(file_path)
-                    player.avatar_url = url_for('static', filename=f"uploads/{player.id}_{filename}")
+            # Handle profile photo (Vercel is read-only, so we accept a URL instead of a file)
+            avatar_url = request.form.get('avatar_url')
+            if avatar_url:
+                player.avatar_url = avatar_url
                     
             db.session.commit()
             flash('Profile updated successfully!', 'success')
