@@ -93,13 +93,16 @@
         </div>
         <div class="page-actions header-actions" {% if is_export %}style="display: none;"{% endif %}>
             <div class="action-group primary-actions">
+                {% if current_user and current_user.role in ['admin', 'superadmin'] %}
                 <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=category.id, export='1') }}" target="_blank" class="btn btn-primary">
                     🖨️ Export PDF
                 </a>
+                {% endif %}
                 <button onclick="copyShareLink('{{ url_for('category.view_category', slug=tournament.url_slug, category_id=category.id, _external=True) }}', this)" class="btn btn-secondary">
                     🔗 Share Link
                 </button>
             </div>
+            {% if current_user and current_user.role in ['admin', 'superadmin'] %}
             <div class="action-group secondary-actions">
                 <a href="{{ url_for('export.export_matches_csv', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-small btn-secondary" target="_blank">
                     📄 Matches CSV
@@ -110,6 +113,7 @@
                 </a>
                 {% endif %}
             </div>
+            {% endif %}
         </div>
     </div>
 
