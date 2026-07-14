@@ -4,41 +4,238 @@
 
 {% block content %}
 <div class="header">
-    <div class="header-content">
-        <h1>Player Dashboard</h1>
-        <p class="subtitle">Manage your player profiles</p>
+    <div class="header-content" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <div>
+            <h1>Player Dashboard</h1>
+            <p class="subtitle">Manage your player profiles</p>
+        </div>
+        <button onclick="document.getElementById('createProfileForm').style.display='block'" class="btn btn-primary">
+            + Create New Profile
+        </button>
+    </div>
+</div>
+
+<!-- Create Profile Form (Hidden by default) -->
+<div id="createProfileForm" class="card" style="display: none; margin-bottom: 2rem; border-top: 4px solid var(--primary);">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>Create New Player Profile</h2>
+        <button type="button" onclick="document.getElementById('createProfileForm').style.display='none'" class="btn btn-small btn-secondary">Cancel</button>
+    </div>
+    <div class="card-body">
+        <form action="{{ url_for('player.dashboard') }}" method="POST">
+            <input type="hidden" name="action" value="create_profile">
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Full Name *</label>
+                    <input type="text" name="name" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Registration No.</label>
+                    <input type="text" name="registration_no" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Date of Birth</label>
+                    <input type="date" name="dob" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Gender *</label>
+                    <select name="gender" class="form-input" required>
+                        <option value="Boys">Boys</option>
+                        <option value="Girls">Girls</option>
+                        <option value="Mens">Mens</option>
+                        <option value="Womens">Womens</option>
+                        <option value="Mixed">Mixed</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Age Category *</label>
+                    <select name="age_category" class="form-input" required>
+                        <option value="Open">Open</option>
+                        <option value="U8">U8</option>
+                        <option value="U10">U10</option>
+                        <option value="U12">U12</option>
+                        <option value="U14">U14</option>
+                        <option value="U16">U16</option>
+                        <option value="U18">U18</option>
+                        <option value="Seniors">Seniors</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" name="email" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Contact Number</label>
+                    <input type="tel" name="contact_number" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Height</label>
+                    <input type="text" name="height" class="form-input" placeholder="e.g. 180 cm">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Weight</label>
+                    <input type="text" name="weight" class="form-input" placeholder="e.g. 75 kg">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Blood Group</label>
+                    <input type="text" name="blood_group" class="form-input" placeholder="e.g. O+">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nationality</label>
+                    <input type="text" name="nationality" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Coach Name</label>
+                    <input type="text" name="coach" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Academy Name</label>
+                    <input type="text" name="academy" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Registration Date</label>
+                    <input type="date" name="registration_date" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Registration Validity</label>
+                    <input type="date" name="registration_validity" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Current Status</label>
+                    <select name="current_status" class="form-input">
+                        <option value="Active">Active</option>
+                        <option value="Suspended">Suspended</option>
+                        <option value="Retired">Retired</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group" style="margin-top: 1rem;">
+                <label class="form-label">Address</label>
+                <textarea name="address" class="form-input" rows="2"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Registration Details (Notes)</label>
+                <textarea name="registration_details" class="form-input" rows="2"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Avatar URL (Profile Photo)</label>
+                <input type="url" name="avatar_url" class="form-input" placeholder="https://example.com/avatar.jpg">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Bio</label>
+                <textarea name="bio" class="form-input" rows="4" placeholder="Tell us about yourself..."></textarea>
+            </div>
+            
+            <div class="form-actions" style="margin-top: 1.5rem;">
+                <button type="submit" class="btn btn-primary">Create Profile</button>
+            </div>
+        </form>
     </div>
 </div>
 
 <div class="dashboard-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 2rem;">
     {% for player in players %}
     <div class="card">
-        <div class="card-header">
-            <h2>{{ player.name }}</h2>
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="margin: 0;">{{ player.name }}</h2>
+            {% if player.avatar_url %}
+                <img src="{{ player.avatar_url }}" alt="Avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+            {% endif %}
         </div>
         <div class="card-body">
+            <a href="{{ url_for('player.view_player', player_id=player.id) }}" class="btn btn-secondary" style="width: 100%; margin-bottom: 1.5rem; text-align: center;">View Public Portfolio</a>
+            
             <form action="{{ url_for('player.dashboard') }}" method="POST">
                 <input type="hidden" name="action" value="update_profile">
                 <input type="hidden" name="player_id" value="{{ player.id }}">
                 
+                <h3 style="margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">Basic Info</h3>
                 <div class="form-group">
-                    <label class="form-label">Avatar URL</label>
-                    <input type="url" name="avatar_url" class="form-input" value="{{ player.avatar_url or '' }}" placeholder="https://example.com/avatar.jpg">
-                    {% if player.avatar_url %}
-                        <div style="margin-top: 1rem; text-align: center;">
-                            <img src="{{ player.avatar_url }}" alt="Avatar" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;">
-                        </div>
-                    {% endif %}
+                    <label class="form-label">Name</label>
+                    <input type="text" name="name" class="form-input" value="{{ player.name }}" required>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label class="form-label">Gender</label>
+                        <select name="gender" class="form-input">
+                            <option value="Boys" {% if player.gender == 'Boys' %}selected{% endif %}>Boys</option>
+                            <option value="Girls" {% if player.gender == 'Girls' %}selected{% endif %}>Girls</option>
+                            <option value="Mens" {% if player.gender == 'Mens' %}selected{% endif %}>Mens</option>
+                            <option value="Womens" {% if player.gender == 'Womens' %}selected{% endif %}>Womens</option>
+                            <option value="Mixed" {% if player.gender == 'Mixed' %}selected{% endif %}>Mixed</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Age Cat.</label>
+                        <select name="age_category" class="form-input">
+                            <option value="Open" {% if player.age_category == 'Open' %}selected{% endif %}>Open</option>
+                            <option value="U8" {% if player.age_category == 'U8' %}selected{% endif %}>U8</option>
+                            <option value="U10" {% if player.age_category == 'U10' %}selected{% endif %}>U10</option>
+                            <option value="U12" {% if player.age_category == 'U12' %}selected{% endif %}>U12</option>
+                            <option value="U14" {% if player.age_category == 'U14' %}selected{% endif %}>U14</option>
+                            <option value="U16" {% if player.age_category == 'U16' %}selected{% endif %}>U16</option>
+                            <option value="U18" {% if player.age_category == 'U18' %}selected{% endif %}>U18</option>
+                            <option value="Seniors" {% if player.age_category == 'Seniors' %}selected{% endif %}>Seniors</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Date of Birth</label>
+                    <input type="date" name="dob" class="form-input" value="{{ player.dob.strftime('%Y-%m-%d') if player.dob else '' }}">
+                </div>
+
+                <!-- Toggle for Advanced Fields -->
+                <button type="button" class="btn btn-small btn-secondary" onclick="document.getElementById('adv-{{ player.id }}').style.display = document.getElementById('adv-{{ player.id }}').style.display === 'none' ? 'block' : 'none'" style="width: 100%; margin-bottom: 1rem;">
+                    Toggle Advanced Details
+                </button>
+                
+                <div id="adv-{{ player.id }}" style="display: none; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem;">
+                    <h4 style="margin-top: 0;">Contact & Biological</h4>
+                    <input type="email" name="email" class="form-input" placeholder="Email" value="{{ player.email or '' }}" style="margin-bottom: 0.5rem;">
+                    <input type="tel" name="contact_number" class="form-input" placeholder="Contact Number" value="{{ player.contact_number or '' }}" style="margin-bottom: 0.5rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <input type="text" name="height" class="form-input" placeholder="Height" value="{{ player.height or '' }}">
+                        <input type="text" name="weight" class="form-input" placeholder="Weight" value="{{ player.weight or '' }}">
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <input type="text" name="blood_group" class="form-input" placeholder="Blood Group" value="{{ player.blood_group or '' }}">
+                        <input type="text" name="nationality" class="form-input" placeholder="Nationality" value="{{ player.nationality or '' }}">
+                    </div>
+                    <textarea name="address" class="form-input" placeholder="Address" rows="2" style="margin-bottom: 1rem;">{{ player.address or '' }}</textarea>
+
+                    <h4 style="margin-top: 0;">Coaching & Registration</h4>
+                    <input type="text" name="coach" class="form-input" placeholder="Coach Name" value="{{ player.coach or '' }}" style="margin-bottom: 0.5rem;">
+                    <input type="text" name="academy" class="form-input" placeholder="Academy Name" value="{{ player.academy or '' }}" style="margin-bottom: 0.5rem;">
+                    <input type="text" name="registration_no" class="form-input" placeholder="Registration No" value="{{ player.registration_no or '' }}" style="margin-bottom: 0.5rem;">
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <div><small style="color:var(--text-muted);">Reg. Date</small><input type="date" name="registration_date" class="form-input" value="{{ player.registration_date.strftime('%Y-%m-%d') if player.registration_date else '' }}"></div>
+                        <div><small style="color:var(--text-muted);">Reg. Validity</small><input type="date" name="registration_validity" class="form-input" value="{{ player.registration_validity.strftime('%Y-%m-%d') if player.registration_validity else '' }}"></div>
+                    </div>
+                    <select name="current_status" class="form-input" style="margin-bottom: 0.5rem;">
+                        <option value="Active" {% if player.current_status == 'Active' %}selected{% endif %}>Active</option>
+                        <option value="Suspended" {% if player.current_status == 'Suspended' %}selected{% endif %}>Suspended</option>
+                        <option value="Retired" {% if player.current_status == 'Retired' %}selected{% endif %}>Retired</option>
+                    </select>
+                    <textarea name="registration_details" class="form-input" placeholder="Registration Details / Notes" rows="2">{{ player.registration_details or '' }}</textarea>
                 </div>
                 
+                <h3 style="margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">Media & Bio</h3>
+                <div class="form-group">
+                    <label class="form-label">Avatar URL</label>
+                    <input type="url" name="avatar_url" class="form-input" value="{{ player.avatar_url or '' }}">
+                </div>
                 <div class="form-group">
                     <label class="form-label">Bio</label>
-                    <textarea name="bio" class="form-input" rows="4" placeholder="Tell us about yourself...">{{ player.bio or '' }}</textarea>
+                    <textarea name="bio" class="form-input" rows="3">{{ player.bio or '' }}</textarea>
                 </div>
                 
                 <div class="form-actions" style="margin-top: 1.5rem;">
-                    <button type="submit" class="btn btn-primary">Save Profile</button>
-                    <a href="{{ url_for('player.view_player', player_id=player.id) }}" class="btn btn-secondary">View Public Portfolio</a>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Save Changes</button>
                 </div>
             </form>
         </div>
@@ -46,7 +243,9 @@
     {% else %}
     <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
         <p style="color: var(--text-secondary); margin-bottom: 1rem;">You don't have any player profiles linked to your account yet.</p>
-        <p style="color: var(--text-secondary);">Participate in a tournament to have your profile automatically linked.</p>
+        <button onclick="document.getElementById('createProfileForm').style.display='block'" class="btn btn-primary">
+            + Create New Profile
+        </button>
     </div>
     {% endfor %}
 </div>
