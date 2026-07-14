@@ -64,6 +64,10 @@
                                     <label class="form-label">Current Status</label>
                                     <input type="text" class="form-input" value="{{ player.current_status or 'Active' }}" disabled style="color: var(--text-primary, #ffffff); background-color: rgba(255,255,255,0.1); cursor: not-allowed;">
                                 </div>
+                                <div>
+                                    <label class="form-label">Age Category</label>
+                                    <input type="text" class="form-input" value="{{ player.age_category }}" disabled style="color: var(--text-primary, #ffffff); background-color: rgba(255,255,255,0.1); cursor: not-allowed;">
+                                </div>
                             </div>
                         </div>
 
@@ -79,18 +83,18 @@
                                 <input type="email" name="email" class="form-input" value="{{ player.email or '' }}">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Date of Birth</label>
-                                <input type="date" name="dob" class="form-input" value="{{ player.dob.strftime('%Y-%m-%d') if player.dob else '' }}">
+                                <label class="form-label">Date of Birth *</label>
+                                <input type="date" name="dob" class="form-input" value="{{ player.dob.strftime('%Y-%m-%d') if player.dob else '' }}" required>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Contact Number</label>
                                 <input type="text" name="contact_number" class="form-input" value="{{ player.contact_number or '' }}">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Gender</label>
+                                <label class="form-label">Gender *</label>
                                 <select name="gender" class="form-input" required>
-                                    <option value="Boys" {% if player.gender == 'Boys' %}selected{% endif %}>Boys / Men</option>
-                                    <option value="Girls" {% if player.gender == 'Girls' %}selected{% endif %}>Girls / Women</option>
+                                    <option value="Male" {% if player.gender == 'Male' or player.gender == 'Boys' %}selected{% endif %}>Male</option>
+                                    <option value="Female" {% if player.gender == 'Female' or player.gender == 'Girls' %}selected{% endif %}>Female</option>
                                 </select>
                             </div>
                             <div class="form-group">

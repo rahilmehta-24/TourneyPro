@@ -31,8 +31,31 @@ def dashboard():
         def populate_player_from_request(p):
             p.name = request.form.get('name', p.name)
             p.gender = request.form.get('gender', p.gender)
-            p.age_category = request.form.get('age_category', p.age_category)
+            
             p.dob = parse_date(request.form.get('dob'))
+            if p.dob:
+                from datetime import date
+                today = date.today()
+                age = today.year - p.dob.year - ((today.month, today.day) < (p.dob.month, p.dob.day))
+                if age <= 8:
+                    p.age_category = 'U8'
+                elif age <= 10:
+                    p.age_category = 'U10'
+                elif age <= 12:
+                    p.age_category = 'U12'
+                elif age <= 14:
+                    p.age_category = 'U14'
+                elif age <= 16:
+                    p.age_category = 'U16'
+                elif age <= 18:
+                    p.age_category = 'U18'
+                elif age >= 45:
+                    p.age_category = '45+'
+                elif age >= 35:
+                    p.age_category = '35+'
+                else:
+                    p.age_category = 'Open'
+            
             p.email = request.form.get('email', p.email)
             p.contact_number = request.form.get('contact_number', p.contact_number)
             p.height = request.form.get('height', p.height)

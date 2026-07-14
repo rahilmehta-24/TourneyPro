@@ -114,21 +114,39 @@ def register():
         from datetime import datetime
         
         name = request.form.get('name', username)
-        gender = request.form.get('gender', 'Boys')
-        if gender not in ['Boys', 'Girls', 'Mens', 'Womens', 'Mixed']:
-            if gender == 'Boys':
-                gender = 'Boys'
-            elif gender == 'Girls':
-                gender = 'Girls'
-            else:
-                gender = 'Boys'
+        gender = request.form.get('gender', 'Male')
+        if gender not in ['Male', 'Female']:
+            gender = 'Male'
             
-        age_category = request.form.get('age_category', 'Open')
         dob_str = request.form.get('dob')
         dob = None
+        age_category = 'Open'
+        
         if dob_str:
             try:
                 dob = datetime.strptime(dob_str, '%Y-%m-%d').date()
+                from datetime import date
+                today = date.today()
+                age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+                
+                if age <= 8:
+                    age_category = 'U8'
+                elif age <= 10:
+                    age_category = 'U10'
+                elif age <= 12:
+                    age_category = 'U12'
+                elif age <= 14:
+                    age_category = 'U14'
+                elif age <= 16:
+                    age_category = 'U16'
+                elif age <= 18:
+                    age_category = 'U18'
+                elif age >= 45:
+                    age_category = '45+'
+                elif age >= 35:
+                    age_category = '35+'
+                else:
+                    age_category = 'Open'
             except ValueError:
                 pass
                 
