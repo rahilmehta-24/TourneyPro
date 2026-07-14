@@ -5,6 +5,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Tournament Platform{% endblock %}</title>
+    <script>
+        // Check for saved theme preference, otherwise use system preference
+        const savedTheme = localStorage.getItem('tourneypro-theme');
+        if (savedTheme === 'light') {
+            document.documentElement.setAttribute('data-theme', 'light');
+        } else if (!savedTheme && window.matchMedia('(prefers-color-scheme: light)').matches) {
+            document.documentElement.setAttribute('data-theme', 'light');
+        }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
@@ -58,6 +67,9 @@
 
             <!-- User Actions (Right) -->
             <div class="nav-user-actions" id="navUserActions">
+                <button id="themeToggleBtn" class="btn btn-outline btn-small" style="padding: 0.5rem; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; margin-right: 0.5rem;" title="Toggle Light/Dark Mode">
+                    <span id="themeIcon" style="font-size: 1.1rem;">☀️</span>
+                </button>
                 {% if current_user %}
                     {% if current_user.role == 'user' %}
                         <form method="POST" action="{{ url_for('auth.request_admin') }}" class="inline-form" style="margin: 0;">
