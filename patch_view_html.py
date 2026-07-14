@@ -1,4 +1,3 @@
-import re
 
 with open('app/templates/player/view.html', 'r') as f:
     content = f.read()
