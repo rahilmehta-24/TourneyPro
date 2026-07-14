@@ -56,7 +56,7 @@
                                     <span class="badge" style="background: var(--accent-success); color: white;">{{ player.current_status or 'Active' }}</span>
                                 </td>
                                 <td style="padding: 1rem 0.5rem; text-align: right;">
-                                    <a href="{{ url_for('player.view_player', id=player.id) }}" class="btn btn-secondary btn-small">View Profile</a>
+                                    <a href="{{ url_for('player.view_player', player_id=player.id) }}" class="btn btn-secondary btn-small">View Profile</a>
                                 </td>
                             </tr>
                         {% endfor %}

@@ -28,7 +28,7 @@
                         </div>
                     </div>
                     <div>
-                        <a href="{{ url_for('player.view_player', id=player.id) }}" class="btn btn-secondary btn-small">👁️ View Public Profile</a>
+                        <a href="{{ url_for('player.view_player', player_id=player.id) }}" class="btn btn-secondary btn-small">👁️ View Public Profile</a>
                         <button onclick="document.getElementById('editProfileForm-{{ player.id }}').style.display='block'" class="btn btn-primary btn-small">✏️ Edit Details</button>
                     </div>
                 </div>
