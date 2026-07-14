@@ -73,7 +73,7 @@ def login():
         username = request.form.get('username', '').strip()
         password = request.form.get('password')
 
-        user = User.query.filter_by(username=username).first() or User.query.filter_by(email=username).first()
+        user = User.query.filter(db.or_(User.username.ilike(username), User.email.ilike(username))).first()
         if user and user.check_password(password):
             session['user_id'] = user.id
             session.permanent = True
