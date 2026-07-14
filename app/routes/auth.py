@@ -107,9 +107,49 @@ def register():
         user.set_password(password)
 
         db.session.add(user)
+        db.session.commit()  # commit to get user.id
+        
+        # Create initial Player profile
+        from app.models import Player
+        from datetime import datetime
+        
+        name = request.form.get('name', username)
+        gender = request.form.get('gender', 'Boys')
+        if gender not in ['Boys', 'Girls', 'Mens', 'Womens', 'Mixed']:
+            if gender == 'Boys':
+                gender = 'Boys'
+            elif gender == 'Girls':
+                gender = 'Girls'
+            else:
+                gender = 'Boys'
+            
+        age_category = request.form.get('age_category', 'Open')
+        dob_str = request.form.get('dob')
+        dob = None
+        if dob_str:
+            try:
+                dob = datetime.strptime(dob_str, '%Y-%m-%d').date()
+            except ValueError:
+                pass
+                
+        contact_number = request.form.get('contact_number')
+        nationality = request.form.get('nationality')
+        
+        player = Player(
+            user_id=user.id,
+            name=name,
+            gender=gender,
+            age_category=age_category,
+            dob=dob,
+            email=email,
+            contact_number=contact_number,
+            nationality=nationality,
+            current_status='Active'
+        )
+        db.session.add(player)
         db.session.commit()
 
-        flash('Registration successful! Please log in.', 'success')
+        flash('Registration successful! Your player profile has been generated. Please log in.', 'success')
         return redirect(url_for('auth.login'))
 
     return render_template('auth/register.html')

@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}Register for {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 800px; margin: 0 auto; padding: 2rem;">
+    <h1 style="margin-bottom: 0.5rem; color: var(--accent-primary);">Register for Tournament</h1>
+    <h3 style="margin-top: 0; margin-bottom: 2rem; color: var(--text-secondary);">{{ tournament.name }}</h3>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="POST" id="registrationForm">
+                
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label class="form-label" style="font-size: 1.1rem; color: var(--text-primary);">Select Category</label>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">Which event are you signing up for?</p>
+                    <select name="category_id" id="category_select" class="form-input" required onchange="checkDoubles()">
+                        <option value="" disabled selected>-- Select a category --</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat.id }}" data-name="{{ cat.name|lower }}">{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label class="form-label" style="font-size: 1.1rem; color: var(--text-primary);">Select Player Profile</label>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">Which player from your account is participating?</p>
+                    <select name="player_id" class="form-input" required>
+                        <option value="" disabled selected>-- Select your player --</option>
+                        {% for player in players %}
+                            <option value="{{ player.id }}">{{ player.name }} ({{ player.gender }}, {{ player.age_category }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group" id="doubles_section" style="display: none; margin-bottom: 1.5rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: var(--radius-md); border-left: 3px solid var(--primary);">
+                    <label class="form-label" style="font-size: 1.1rem; color: var(--text-primary);">Select Doubles Partner (Optional for now)</label>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">If registering for Doubles, select your partner from your linked profiles. If they are not on your account, they can be added later by the Admin.</p>
+                    <select name="player2_id" class="form-input">
+                        <option value="-1" selected>-- No partner / I will inform Admin later --</option>
+                        {% for player in players %}
+                            <option value="{{ player.id }}">{{ player.name }} ({{ player.gender }}, {{ player.age_category }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; font-size: 0.9rem; color: var(--text-secondary);">
+                    <i class="fas fa-info-circle"></i> <strong>Note:</strong> Your registration will be sent to the tournament organizer for approval. You will receive an email once your participation is confirmed and you are added to the bracket.
+                </div>
+                
+                <div class="form-actions" style="margin-top: 2rem;">
+                    <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug) }}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary" style="padding-left: 2rem; padding-right: 2rem;">Submit Registration</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function checkDoubles() {
+    const select = document.getElementById('category_select');
+    const selectedOption = select.options[select.selectedIndex];
+    const catName = selectedOption.getAttribute('data-name');
+    const doublesSection = document.getElementById('doubles_section');
+    
+    if (catName && catName.includes('double')) {
+        doublesSection.style.display = 'block';
+    } else {
+        doublesSection.style.display = 'none';
+        // Reset player2 selection
+        document.querySelector('select[name="player2_id"]').value = "-1";
+    }
+}
+</script>
+{% endblock %}

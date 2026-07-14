@@ -1,6 +1,6 @@
 from app.utils.audit import log_audit
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
-from app.models import db, Tournament, Participant, Match, TournamentSettings
+from app.models import db, Tournament, Participant, Match, TournamentSettings, Registration, Category, Player
 from app.formats import get_format
 from app.constants import TOURNAMENT_FORMATS
 from app.routes.auth import login_required, role_required, get_current_user, check_tournament_ownership
@@ -185,6 +185,55 @@ def print_tournament(slug):
     return render_template('tournament/print.html', tournament=tournament)
 
 
+
+@tournament_bp.route('/tournaments/<slug>/register', methods=['GET', 'POST'])
+@login_required
+def register_for_tournament(slug):
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    if tournament.status != 'registration':
+        flash('Registration is currently closed for this tournament.', 'warning')
+        return redirect(url_for('tournament.view_tournament', slug=slug))
+        
+    categories = Category.query.filter_by(tournament_id=tournament.id).all()
+    user_players = Player.query.filter_by(user_id=current_user.id).all()
+    
+    if request.method == 'POST':
+        if not user_players:
+            flash('You must create a player profile before registering.', 'error')
+            return redirect(url_for('player.dashboard'))
+            
+        category_id = request.form.get('category_id', type=int)
+        player_id = request.form.get('player_id', type=int)
+        player2_id = request.form.get('player2_id', type=int)
+        
+        category = Category.query.get_or_404(category_id)
+        
+        # Check if already registered
+        existing = Registration.query.filter_by(
+            tournament_id=tournament.id, 
+            category_id=category_id, 
+            player_id=player_id
+        ).first()
+        
+        if existing:
+            flash('This player is already registered for this category.', 'warning')
+            return redirect(url_for('tournament.view_tournament', slug=slug))
+            
+        reg = Registration(
+            tournament_id=tournament.id,
+            category_id=category_id,
+            user_id=current_user.id,
+            player_id=player_id,
+            player2_id=player2_id if player2_id and player2_id != -1 else None,
+            status='pending'
+        )
+        db.session.add(reg)
+        db.session.commit()
+        flash('Registration submitted! It is now pending admin approval.', 'success')
+        return redirect(url_for('tournament.view_tournament', slug=slug))
+        
+    return render_template('tournament/register.html', tournament=tournament, categories=categories, players=user_players)
+
 @tournament_bp.route('/tournaments/<slug>/manage', methods=['GET', 'POST'])
 @login_required
 @role_required('admin', 'superadmin')
@@ -199,7 +248,34 @@ def manage_tournament(slug):
         action = request.form.get('action')
 
         try:
-            if action == 'add_participant':
+            if action == 'approve_registration':
+                reg_id = request.form.get('registration_id', type=int)
+                reg = Registration.query.get(reg_id)
+                if reg:
+                    reg.status = 'approved'
+                    # Create Participant
+                    participant = Participant(
+                        tournament_id=tournament.id,
+                        category_id=reg.category_id,
+                        name=f"{reg.player.name}{' / ' + reg.player2.name if reg.player2 else ''}",
+                        player_id=reg.player_id,
+                        player2_id=reg.player2_id
+                    )
+                    db.session.add(participant)
+                    db.session.commit()
+                    flash(f"Registration for {participant.name} approved.", 'success')
+                return redirect(url_for('tournament.manage_tournament', slug=slug))
+                
+            elif action == 'reject_registration':
+                reg_id = request.form.get('registration_id', type=int)
+                reg = Registration.query.get(reg_id)
+                if reg:
+                    reg.status = 'rejected'
+                    db.session.commit()
+                    flash("Registration rejected.", 'warning')
+                return redirect(url_for('tournament.manage_tournament', slug=slug))
+                
+            elif action == 'add_participant':
                 participant_name = request.form.get('participant_name')
                 participant_email = request.form.get('participant_email', '')
                 
@@ -340,7 +416,9 @@ def manage_tournament(slug):
         # For non-category tournaments, participants are directly under the tournament
         total_players = len(participants)
 
+    pending_registrations = Registration.query.filter_by(tournament_id=tournament.id, status='pending').all()
     return render_template('tournament/manage.html',
+                           pending_registrations=pending_registrations,
                          tournament=tournament,
                          participants=participants,
                          total_players=total_players,

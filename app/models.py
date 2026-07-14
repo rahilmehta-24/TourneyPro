@@ -240,3 +240,22 @@ class AuditLog(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     user = db.relationship('User', backref='audit_logs', lazy=True)
+
+class Registration(db.Model):
+    __tablename__ = 'registrations'
+
+    id = db.Column(db.Integer, primary_key=True)
+    tournament_id = db.Column(db.Integer, db.ForeignKey('tournaments.id'), nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    player_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=False)
+    player2_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=True)
+    status = db.Column(db.String(20), default='pending') # pending, approved, rejected
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    tournament = db.relationship('Tournament', backref='registrations')
+    category = db.relationship('Category', backref='registrations')
+    user = db.relationship('User', backref='registrations')
+    player = db.relationship('Player', foreign_keys=[player_id])
+    player2 = db.relationship('Player', foreign_keys=[player2_id])

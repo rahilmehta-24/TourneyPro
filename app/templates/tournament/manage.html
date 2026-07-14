@@ -19,6 +19,53 @@
     <div class="manage-grid">
         <div class="manage-main">
             <div class="card">
+
+            <!-- PENDING REGISTRATIONS SECTION -->
+            <div class="card" style="margin-bottom: 2rem; border: 1px solid var(--accent-warning);">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; background: rgba(245, 158, 11, 0.1);">
+                    <h2 class="card-title" style="margin: 0; color: var(--accent-warning);"><i class="fas fa-clipboard-list"></i> Pending Registrations <span class="badge" style="background: var(--accent-warning); color: #000; margin-left: 0.5rem;">{{ pending_registrations|length }}</span></h2>
+                </div>
+                <div class="card-body">
+                    {% if pending_registrations %}
+                        <div style="display: grid; gap: 1rem;">
+                        {% for reg in pending_registrations %}
+                            <div style="background: var(--bg-secondary); padding: 1rem; border-radius: var(--radius-md); border: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <div style="font-weight: bold; font-size: 1.1rem; color: var(--text-primary);">
+                                        {{ reg.player.name }}
+                                        {% if reg.player2 %}
+                                            <span style="color: var(--text-muted);"> &amp; </span> {{ reg.player2.name }}
+                                        {% endif %}
+                                    </div>
+                                    <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                                        <strong>Category:</strong> {{ reg.category.name if reg.category else 'N/A' }}
+                                    </div>
+                                    <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">
+                                        Registered by: {{ reg.user.username }} on {{ reg.created_at.strftime('%Y-%m-%d') }}
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <form method="POST" style="display: inline;">
+                                        <input type="hidden" name="action" value="approve_registration">
+                                        <input type="hidden" name="registration_id" value="{{ reg.id }}">
+                                        <button type="submit" class="btn btn-small btn-primary" style="background: var(--accent-success); border-color: var(--accent-success);">Approve</button>
+                                    </form>
+                                    <form method="POST" style="display: inline;">
+                                        <input type="hidden" name="action" value="reject_registration">
+                                        <input type="hidden" name="registration_id" value="{{ reg.id }}">
+                                        <button type="submit" class="btn btn-small btn-secondary" style="border-color: var(--accent-danger); color: var(--accent-danger);" onclick="return confirm('Are you sure you want to reject this registration?');">Reject</button>
+                                    </form>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        </div>
+                    {% else %}
+                        <p style="color: var(--text-muted); margin: 0; text-align: center; padding: 1rem 0;">No pending registrations at this time.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card">
                 <div class="card-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="toggleParticipants()">
                     <h2 class="card-title" style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
                         👥 Participants <span style="background: var(--bg-secondary); padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.8rem; color: var(--text-secondary);">{{ total_players }}</span>
