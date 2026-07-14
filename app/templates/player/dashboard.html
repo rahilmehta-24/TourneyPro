@@ -191,6 +191,22 @@
                 <p style="color: var(--text-secondary); max-width: 400px; margin: 0 auto 2rem auto;">It looks like your account doesn't have an associated player profile. This shouldn't happen if you just registered.</p>
             </div>
         {% endif %}
+
+        <!-- Danger Zone -->
+        <div class="card" style="margin-top: 2rem; border: 1px solid #ef4444; background-color: rgba(239, 68, 68, 0.05);">
+            <div class="card-header" style="border-bottom: 1px solid rgba(239, 68, 68, 0.2); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                <h3 class="card-title" style="color: #ef4444; font-weight: 700;">Danger Zone</h3>
+            </div>
+            <div class="card-body">
+                <h4 style="color: var(--text-primary); margin-bottom: 0.5rem;">Delete Account</h4>
+                <p style="color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.5;">
+                    Deleting your account is permanent. You will immediately lose access to your dashboard, and you will not be able to log back in. Your match history and tournament records will remain in the database for historical maintenance, marked as 'Deleted'.
+                </p>
+                <form action="{{ url_for('player.delete_account') }}" method="POST" onsubmit="return confirm('Are you absolutely sure you want to delete your account? This action cannot be undone.');">
+                    <button type="submit" class="btn btn-danger" style="background-color: #ef4444; color: white;">Permanently Delete Account</button>
+                </form>
+            </div>
+        </div>
     </div>
 
     <div class="dashboard-sidebar">

@@ -103,3 +103,25 @@ def admin_players():
         players = Player.query.all()
         
     return render_template('admin/players.html', players=players, search_query=search_query)
+
+
+@player_bp.route('/player/delete_account', methods=['POST'])
+def delete_account():
+    user = get_current_user()
+    if not user:
+        return redirect(url_for('auth.login'))
+        
+    player = Player.query.filter_by(user_id=user.id).first()
+    
+    # Soft delete
+    user.role = 'deleted'
+    user.password_hash = '*deleted*'
+    
+    if player:
+        player.current_status = 'Deleted'
+        
+    db.session.commit()
+    session.clear()
+    
+    flash('Your account has been successfully deleted. Your history remains for tournament records.', 'success')
+    return redirect(url_for('auth.login'))

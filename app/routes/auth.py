@@ -74,6 +74,11 @@ def login():
         password = request.form.get('password')
 
         user = User.query.filter(db.or_(User.username.ilike(username), User.email.ilike(username))).first()
+        
+        if user and user.role == 'deleted':
+            flash('This account has been deleted.', 'error')
+            return redirect(url_for('auth.login'))
+            
         if user and user.check_password(password):
             session['user_id'] = user.id
             session.permanent = True
