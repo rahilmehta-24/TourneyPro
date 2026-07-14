@@ -237,6 +237,7 @@ function initAuditInterceptor() {
     });
 }
 
+document.addEventListener('turbo:load', initAuditInterceptor);
 document.addEventListener("DOMContentLoaded", function() {
     initAuditInterceptor();
 });
