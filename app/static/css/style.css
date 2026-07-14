@@ -519,6 +519,7 @@ h6 {
 .tournament-actions {
     display: flex;
     gap: var(--spacing-sm);
+    flex-wrap: wrap;
 }
 
 /* ===== FORMS ===== */
@@ -672,6 +673,7 @@ select option {
 .page-actions {
     display: flex;
     gap: var(--spacing-sm);
+    flex-wrap: wrap;
 }
 
 .manage-grid {
@@ -1984,5 +1986,67 @@ body.pdf-export-mode .bracket-round:not(:first-child) .tennis-match::before {
     /* Optional: scale down the bracket slightly so it fits better on landscape A4 */
     .bracket {
         zoom: 0.6;
+    }
+}
+
+.action-group {
+    display: flex;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+    .header-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .action-group {
+        width: 100%;
+    }
+    
+    .action-group .btn {
+        flex: 1;
+        text-align: center;
+        justify-content: center;
+    }
+    
+    /* Make inline flex rows wrap properly on mobile */
+    .form-row, [style*="display: flex"] {
+        flex-wrap: wrap !important;
+    }
+}
+
+/* Player Profile Responsive Fixes */
+@media (max-width: 768px) {
+    /* Stack header content and avatar section vertically on mobile */
+    .header-content,
+    .card-header[style*="display: flex"],
+    div[style*="display: flex; justify-content: space-between"] {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 1rem !important;
+    }
+
+    /* Avatar section specific overrides */
+    .card-header > div[style*="align-items: center"] {
+        flex-direction: column !important;
+        align-items: center !important;
+        width: 100% !important;
+        text-align: center;
+    }
+    
+    .card-body[style*="display: flex; flex-wrap: wrap"] {
+        flex-direction: column !important;
+        align-items: center !important;
+        text-align: center;
+    }
+    
+    /* Make buttons and links full width inside these containers */
+    .card-header .btn,
+    .header-content .btn,
+    .player-stats-summary {
+        width: 100% !important;
+        justify-content: center !important;
     }
 }
