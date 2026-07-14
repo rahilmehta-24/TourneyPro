@@ -882,6 +882,7 @@ function handleStatusChange(status) {
 }
 
 function openMatchModal(matchId, currentStatus, currentScheduledTime, p1Name, p1Id, p2Name, p2Id, isAdmin, score1, score2, matchFormat, matchNumSets, matchGamesPerSet, matchPointsToWin) {
+    try {
     currentManageMatchId = matchId;
     currentManageMatchIsAdmin = isAdmin;
     document.getElementById('modalMatchId').innerText = matchId;
@@ -1081,6 +1082,10 @@ function openMatchModal(matchId, currentStatus, currentScheduledTime, p1Name, p1
 
     handleStatusChange(statusSelect.value);
     document.getElementById('matchManagementModal').classList.add('active');
+    } catch (e) {
+        console.error("Match modal error", e);
+        alert("Error opening modal: " + e.message);
+    }
 }
 
 function closeMatchModal() {

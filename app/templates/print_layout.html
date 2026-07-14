@@ -14,7 +14,8 @@
         body { background: #ffffff !important; color: #000000 !important; }
         
         /* Hide UI components completely */
-        .page-actions, .header-actions, .navbar, .footer, .btn, .flash-messages, .mobile-menu-btn, .no-print { 
+        .page-actions, .header-actions, .navbar, .footer, .btn, .flash-messages, .mobile-menu-btn, .no-print,
+        .mobile-bracket-tabs, .meta-row, .back-link, .status-badge { 
             display: none !important; 
         }
         
@@ -30,6 +31,30 @@
             .page-break {
                 break-after: page;
             }
+            
+            /* Modern Header adjustments for print */
+            .modern-header {
+                background: #ffffff !important;
+                color: #000000 !important;
+                border: none !important;
+                box-shadow: none !important;
+                padding: 1rem 0 !important;
+                margin-bottom: 0 !important;
+            }
+            .modern-header h1 {
+                font-weight: 800 !important;
+                color: #000000 !important;
+            }
+            
+            /* Bracket Section Page Breaks */
+            .bracket-section {
+                break-before: page;
+            }
+            /* Remove page break if it's the very first element (unlikely, but safe) */
+            .container > .bracket-section:first-child {
+                break-before: auto;
+            }
+            
             .bracket-round.first-visible-round .tennis-match::before {
                 display: none !important;
             }
