@@ -940,6 +940,9 @@ function openMatchModal(matchId, currentStatus, currentScheduledTime, p1Name, p1
     document.getElementById('winner2Label').textContent = p2Name;
     document.getElementById('p2SetHeader').textContent = p2Name; document.getElementById('p1PointsHeader').textContent = p1Name; document.getElementById('p2PointsHeader').textContent = p2Name;
     
+    document.getElementById('winner1').checked = (p1Id === winnerId);
+    document.getElementById('winner2').checked = (p2Id === winnerId);
+    
     // Prepulate Match Overrides
     const formatSelect = document.getElementById('modalMatchFormat');
     // For Python boolean evaluation to JS string, handle 'None' as empty
