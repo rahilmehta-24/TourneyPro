@@ -76,6 +76,10 @@
             <div class="tournament-actions">
                 <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug) }}"
                     class="btn btn-secondary btn-small">View Tournament</a>
+                {% if tournament.status == 'registration' and tournament.categories %}
+                <a href="{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug) }}"
+                    class="btn btn-primary btn-small" style="background-color: var(--accent-success); border-color: var(--accent-success);">Register Now</a>
+                {% endif %}
                 {% if current_user and (current_user.id == tournament.user_id or current_user.role == 'superadmin') %}
                 <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}"
                     class="btn btn-primary btn-small">Manage</a>
