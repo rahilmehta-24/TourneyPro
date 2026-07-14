@@ -2050,3 +2050,59 @@ body.pdf-export-mode .bracket-round:not(:first-child) .tennis-match::before {
         justify-content: center !important;
     }
 }
+
+/* ===== GLOBAL PADDING & UI CLEANUP ===== */
+.card-body {
+    padding: 2rem !important; /* Increased from var(--spacing-md) */
+}
+
+.card-header {
+    padding: 1.5rem 2rem !important;
+}
+
+.table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table th, .table td {
+    padding: 1.25rem 1rem !important;
+    vertical-align: middle;
+}
+
+.form-group {
+    margin-bottom: 1.5rem !important;
+}
+
+.form-input {
+    padding: 0.8rem 1rem !important;
+}
+
+.btn {
+    padding: 0.75rem 1.5rem !important;
+}
+
+.btn-small {
+    padding: 0.5rem 1rem !important;
+}
+
+.dashboard-grid, .manage-grid {
+    gap: 2rem !important;
+}
+
+.main-content .container {
+    padding-top: 3rem !important;
+    padding-bottom: 3rem !important;
+}
+
+/* Ensure mobile isn't too padded */
+@media (max-width: 768px) {
+    .card-body, .card-header {
+        padding: 1.25rem !important;
+    }
+    .main-content .container {
+        padding-top: 1.5rem !important;
+        padding-bottom: 1.5rem !important;
+    }
+}
