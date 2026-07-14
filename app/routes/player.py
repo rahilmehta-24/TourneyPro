@@ -18,7 +18,7 @@ def dashboard():
     players = Player.query.filter_by(user_id=current_user.id).all()
     all_players = []
     if current_user.role == 'superadmin':
-        all_players = Player.query.order_by(Player.name).all()
+        all_players = Player.query.filter(Player.registration_no.isnot(None), Player.registration_no != '').order_by(Player.name).all()
     
     if request.method == 'POST':
         from datetime import datetime

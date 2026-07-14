@@ -1,8 +1,21 @@
 {% extends 'base.html' %}
 
-{% block title %}Player Dashboard - TourneyPro
+{% block title %}Player Dashboard - TourneyPro{% endblock %}
+
+{% block content %}
+
+<div class="header">
+    <div class="header-content" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <div>
+            <h1>Player Dashboard</h1>
+            <p class="subtitle">Manage your player profile and view your tournament history</p>
+        </div>
+    </div>
+</div>
+
+
 {% if current_user.role == 'superadmin' %}
-<div class="card mt-5">
+<div class="card">
     <div class="card-header" style="background: linear-gradient(135deg, var(--bg-card), var(--bg-secondary));">
         <h2 style="margin: 0; color: var(--accent-primary);">Global Player Directory</h2>
         <p style="margin: 0; color: var(--text-muted); font-size: 0.9rem;">Superadmin access: All registered players</p>
@@ -40,20 +53,7 @@
         </table>
     </div>
 </div>
-{% endif %}
-
-{% endblock %}
-
-{% block content %}
-<div class="header">
-    <div class="header-content" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-        <div>
-            <h1>Player Dashboard</h1>
-            <p class="subtitle">Manage your player profile and view your tournament history</p>
-        </div>
-    </div>
-</div>
-
+{% else %}
 <div class="dashboard-grid">
     <div class="dashboard-main">
         {% if players %}
@@ -257,45 +257,7 @@
 </div>
 
 
-{% if current_user.role == 'superadmin' %}
-<div class="card mt-5">
-    <div class="card-header" style="background: linear-gradient(135deg, var(--bg-card), var(--bg-secondary));">
-        <h2 style="margin: 0; color: var(--accent-primary);">Global Player Directory</h2>
-        <p style="margin: 0; color: var(--text-muted); font-size: 0.9rem;">Superadmin access: All registered players</p>
-    </div>
-    <div class="card-body" style="overflow-x: auto;">
-        <table class="table" style="width: 100%; border-collapse: collapse; text-align: left;">
-            <thead>
-                <tr style="border-bottom: 2px solid var(--border-color);">
-                    <th style="padding: 1rem 0.5rem; color: var(--text-secondary);">Name</th>
-                    <th style="padding: 1rem 0.5rem; color: var(--text-secondary);">Registration No</th>
-                    <th style="padding: 1rem 0.5rem; color: var(--text-secondary);">Age</th>
-                    <th style="padding: 1rem 0.5rem; color: var(--text-secondary);">DOB</th>
-                    <th style="padding: 1rem 0.5rem; color: var(--text-secondary);">Gender</th>
-                    <th style="padding: 1rem 0.5rem; text-align: right; color: var(--text-secondary);">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for p in all_players %}
-                <tr style="border-bottom: 1px solid var(--border-color);">
-                    <td style="padding: 1rem 0.5rem; font-weight: bold; color: var(--text-primary);">{{ p.name }}</td>
-                    <td style="padding: 1rem 0.5rem;">{{ p.registration_no or 'N/A' }}</td>
-                    <td style="padding: 1rem 0.5rem;">{{ p.age if p.age else 'N/A' }}</td>
-                    <td style="padding: 1rem 0.5rem;">{{ p.dob.strftime('%Y-%m-%d') if p.dob else 'N/A' }}</td>
-                    <td style="padding: 1rem 0.5rem;">{{ p.gender }}</td>
-                    <td style="padding: 1rem 0.5rem; text-align: right;">
-                        <a href="{{ url_for('player.view_player', player_id=p.id) }}" class="btn btn-secondary btn-small">View Profile</a>
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="6" style="text-align: center; padding: 2rem;">No players found.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
+
 {% endif %}
 
 {% endblock %}
