@@ -265,7 +265,11 @@
                                 <div class="tennis-player-info">
                                     {% if match.participant1 %}
                                         <span class="tennis-player-seed">#{{ match.participant1.manual_seed or match.participant1.seed or loop.index }}</span>
+                                        {% if match.participant1.player_id %}
+                                        <a href="{{ url_for('player.view_player', player_id=match.participant1.player_id) }}" class="tennis-player-name" onclick="event.stopPropagation();" style="color: inherit; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">{{ match.participant1.name }}</a>
+                                        {% else %}
                                         <span class="tennis-player-name">{{ match.participant1.name }}</span>
+                                        {% endif %}
                                     {% elif match.participant2 and match.round == 1 %}
                                         <span class="tennis-player-name" style="color: var(--text-muted); font-style: italic;">Bye</span>
                                     {% else %}
@@ -281,7 +285,11 @@
                                 <div class="tennis-player-info">
                                     {% if match.participant2 %}
                                         <span class="tennis-player-seed">#{{ match.participant2.manual_seed or match.participant2.seed or loop.index }}</span>
+                                        {% if match.participant2.player_id %}
+                                        <a href="{{ url_for('player.view_player', player_id=match.participant2.player_id) }}" class="tennis-player-name" onclick="event.stopPropagation();" style="color: inherit; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">{{ match.participant2.name }}</a>
+                                        {% else %}
                                         <span class="tennis-player-name">{{ match.participant2.name }}</span>
+                                        {% endif %}
                                     {% elif match.participant1 and match.round == 1 %}
                                         <span class="tennis-player-name" style="color: var(--text-muted); font-style: italic;">Bye</span>
                                     {% else %}
@@ -382,7 +390,11 @@
                                             <div class="tennis-player-info">
                                                 {% if match.participant1 %}
                                                     <span class="tennis-player-seed">#{{ match.participant1.manual_seed or match.participant1.seed or 'W' }}</span>
-                                                    <span class="tennis-player-name">{{ match.participant1.name }}</span>
+                                                    {% if match.participant1.player_id %}
+                                        <a href="{{ url_for('player.view_player', player_id=match.participant1.player_id) }}" class="tennis-player-name" onclick="event.stopPropagation();" style="color: inherit; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">{{ match.participant1.name }}</a>
+                                        {% else %}
+                                        <span class="tennis-player-name">{{ match.participant1.name }}</span>
+                                        {% endif %}
                                                 {% else %}
                                                     <span class="tennis-player-name" style="color: var(--text-muted); font-style: italic;">Winners Champ</span>
                                                 {% endif %}
@@ -396,7 +408,11 @@
                                             <div class="tennis-player-info">
                                                 {% if match.participant2 %}
                                                     <span class="tennis-player-seed">#{{ match.participant2.manual_seed or match.participant2.seed or 'L' }}</span>
-                                                    <span class="tennis-player-name">{{ match.participant2.name }}</span>
+                                                    {% if match.participant2.player_id %}
+                                        <a href="{{ url_for('player.view_player', player_id=match.participant2.player_id) }}" class="tennis-player-name" onclick="event.stopPropagation();" style="color: inherit; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">{{ match.participant2.name }}</a>
+                                        {% else %}
+                                        <span class="tennis-player-name">{{ match.participant2.name }}</span>
+                                        {% endif %}
                                                 {% else %}
                                                     <span class="tennis-player-name" style="color: var(--text-muted); font-style: italic;">Losers Champ</span>
                                                 {% endif %}
@@ -461,7 +477,13 @@
                     {% for participant in group_info.standings %}
                     <tr>
                         <td>{{ loop.index }}</td>
-                        <td>{{ participant.name }}</td>
+                        <td>
+                            {% if participant.player_id %}
+                                <a href="{{ url_for('player.view_player', player_id=participant.player_id) }}" style="color: inherit; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">{{ participant.name }}</a>
+                            {% else %}
+                                {{ participant.name }}
+                            {% endif %}
+                        </td>
                         <td>{{ participant.group_wins }}</td>
                         <td>{{ participant.group_losses }}</td>
                         <td>{{ participant.group_points }}</td>
@@ -584,9 +606,17 @@
                     </div>
                     
                 </div>
+                {% if match.participant1 and match.participant1.player_id %}
+                <a href="{{ url_for('player.view_player', player_id=match.participant1.player_id) }}" onclick="event.stopPropagation();" style="color: inherit; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">{{ match.participant1.name }}</a>
+                {% else %}
                 <span>{{ match.participant1.name if match.participant1 else 'TBD' }}</span>
+                {% endif %}
                 <span class="vs">vs</span>
+                {% if match.participant2 and match.participant2.player_id %}
+                <a href="{{ url_for('player.view_player', player_id=match.participant2.player_id) }}" onclick="event.stopPropagation();" style="color: inherit; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">{{ match.participant2.name }}</a>
+                {% else %}
                 <span>{{ match.participant2.name if match.participant2 else 'TBD' }}</span>
+                {% endif %}
                 {% if match.status == 'completed' %}
                 <span class="score">
                     {% if match.winner_id == match.participant1_id %}

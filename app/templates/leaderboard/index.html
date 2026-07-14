@@ -91,8 +91,9 @@
                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
                     <td style="padding: 1rem; font-weight: bold; color: var(--accent-primary);">#{{ loop.index }}</td>
                     <td style="padding: 1rem;">
-                        <div style="font-weight: 500; cursor: pointer; color: var(--accent-primary); display: inline-flex; align-items: center; gap: 5px;" onclick="togglePlayerDetails('{{ player.id }}')">
-                            {{ player.name }} <span style="font-size: 0.8rem;">▼</span>
+                        <div style="display: inline-flex; align-items: center; gap: 5px;">
+                            <a href="{{ url_for('player.view_player', player_id=player.id) }}" style="font-weight: 500; color: var(--accent-primary); text-decoration: none;" class="hover-underline">{{ player.name }}</a>
+                            <span onclick="togglePlayerDetails('{{ player.id }}')" style="font-size: 0.8rem; cursor: pointer; color: var(--text-secondary); padding: 0 5px;" title="Toggle Details">▼</span>
                         </div>
                         <div style="font-size: 0.85rem; margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px;">
                             {% for record in player.tournament_records %}
