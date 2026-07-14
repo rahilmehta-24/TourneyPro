@@ -58,8 +58,10 @@
         </div>
     </div>
 
+    {% set is_authorized = current_user and (current_user.role in ['admin', 'superadmin'] or current_user.id == player.user_id) %}
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
         <!-- Biological & Contact Profile -->
+        {% if is_authorized %}
         <div class="card">
             <div class="card-header">
                 <h3 style="margin: 0; color: var(--accent-primary);"><i class="fas fa-id-card"></i> Personal Information</h3>
@@ -112,6 +114,8 @@
             </div>
         </div>
 
+        {% endif %}
+        
         <!-- Registration & Coaching Profile -->
         <div class="card">
             <div class="card-header">

@@ -3,15 +3,15 @@
 {% block title %}Register - TourneyPro Tennis{% endblock %}
 
 {% block content %}
-<div class="container" style="max-width: 700px; margin: 0 auto; padding: var(--spacing-xl) var(--spacing-md);">
+<div class="container" style="max-width: 900px; margin: 0 auto; padding: var(--spacing-xl) var(--spacing-md);">
     <div class="form-section" style="background: var(--bg-card); padding: var(--spacing-lg); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);">
         <h2 class="form-section-title" style="text-align: center; margin-bottom: var(--spacing-sm); font-size: 2rem;">Create Account & Profile 🎾</h2>
         <p style="text-align: center; color: var(--text-secondary); margin-bottom: var(--spacing-lg);">Join the ultimate tennis management platform</p>
         
-        <form method="POST" data-turbo="false">
-            <h3 style="margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; color: var(--accent-primary);">Account Details</h3>
+        <form method="POST" data-turbo="false" enctype="multipart/form-data">
+            <h3 style="margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; color: var(--accent-primary);">1. Account Details</h3>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
                 <div class="form-group">
                     <label for="username" class="form-label">Username *</label>
                     <input type="text" id="username" name="username" class="form-input" required placeholder="Choose a username">
@@ -21,17 +21,18 @@
                     <label for="email" class="form-label">Email Address *</label>
                     <input type="email" id="email" name="email" class="form-input" required placeholder="Enter your email">
                 </div>
-            </div>
-            
-            <div class="form-group" style="margin-bottom: 2rem;">
-                <label for="password" class="form-label">Password *</label>
-                <input type="password" id="password" name="password" class="form-input" required placeholder="Create a strong password">
+                
+                <div class="form-group">
+                    <label for="password" class="form-label">Password *</label>
+                    <input type="password" id="password" name="password" class="form-input" required placeholder="Create a strong password">
+                </div>
             </div>
 
-            <h3 style="margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; color: var(--accent-primary);">Player Profile Setup</h3>
-            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.5rem;">This will automatically generate your primary Player Portfolio.</p>
+            <h3 style="margin-top: 2rem; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; color: var(--accent-primary);">2. Player Profile Setup</h3>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.5rem;">This will automatically generate your primary Player Portfolio. System fields like Registration Number will be auto-generated.</p>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                <!-- Basic Info -->
                 <div class="form-group">
                     <label class="form-label">Full Name *</label>
                     <input type="text" name="name" class="form-input" required placeholder="Your full name">
@@ -67,6 +68,50 @@
                 <div class="form-group">
                     <label class="form-label">Nationality</label>
                     <input type="text" name="nationality" class="form-input" placeholder="Your country">
+                </div>
+                
+                <!-- Physical Attributes -->
+                <div class="form-group">
+                    <label class="form-label">Height (cm/in)</label>
+                    <input type="text" name="height" class="form-input" placeholder="e.g. 180cm">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Weight (kg/lbs)</label>
+                    <input type="text" name="weight" class="form-input" placeholder="e.g. 75kg">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Blood Group</label>
+                    <select name="blood_group" class="form-input">
+                        <option value="">Select...</option>
+                        <option value="A+">A+</option>
+                        <option value="A-">A-</option>
+                        <option value="B+">B+</option>
+                        <option value="B-">B-</option>
+                        <option value="AB+">AB+</option>
+                        <option value="AB-">AB-</option>
+                        <option value="O+">O+</option>
+                        <option value="O-">O-</option>
+                    </select>
+                </div>
+                
+                <!-- Tennis Info -->
+                <div class="form-group">
+                    <label class="form-label">Coach Name</label>
+                    <input type="text" name="coach" class="form-input" placeholder="Current Coach">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Academy Name</label>
+                    <input type="text" name="academy" class="form-input" placeholder="Training Academy">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Profile Photo (Optional)</label>
+                    <input type="file" name="profile_photo" class="form-input" accept="image/*">
+                </div>
+                
+                <!-- Address -->
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label class="form-label">Full Address</label>
+                    <textarea name="address" class="form-input" rows="2" placeholder="Your residential address"></textarea>
                 </div>
             </div>
             

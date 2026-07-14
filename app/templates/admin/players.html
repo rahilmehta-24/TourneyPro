@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Player Directory - TourneyPro Admin{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1200px; margin: 0 auto; padding: 2rem;">
+    <div class="header" style="margin-bottom: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h1 style="margin: 0; color: var(--accent-primary);">Player Directory</h1>
+                <p style="color: var(--text-secondary); margin: 0.5rem 0 0 0;">Manage and view all registered players across the platform.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="card" style="margin-bottom: 2rem; background: var(--bg-card); border-left: 4px solid var(--primary);">
+        <div class="card-body">
+            <form action="{{ url_for('player.admin_players') }}" method="GET" style="display: flex; gap: 1rem; align-items: center;">
+                <div style="flex: 1;">
+                    <input type="text" name="search" class="form-input" placeholder="Search by Player Name or Registration No..." value="{{ search_query }}" style="width: 100%; border: 1px solid rgba(255,255,255,0.2); background: var(--bg-secondary);">
+                </div>
+                <button type="submit" class="btn btn-primary" style="padding: 0.75rem 2rem;">Search</button>
+                {% if search_query %}
+                    <a href="{{ url_for('player.admin_players') }}" class="btn btn-secondary">Clear</a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <!-- Players Table -->
+    <div class="card">
+        <div class="card-body" style="overflow-x: auto;">
+            {% if players %}
+                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid rgba(255,255,255,0.1); color: var(--text-secondary);">
+                            <th style="padding: 1rem 0.5rem;">Registration No</th>
+                            <th style="padding: 1rem 0.5rem;">Name</th>
+                            <th style="padding: 1rem 0.5rem;">Gender</th>
+                            <th style="padding: 1rem 0.5rem;">Age Cat.</th>
+                            <th style="padding: 1rem 0.5rem;">Contact</th>
+                            <th style="padding: 1rem 0.5rem;">Status</th>
+                            <th style="padding: 1rem 0.5rem; text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for player in players %}
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.02)'" onmouseout="this.style.backgroundColor='transparent'">
+                                <td style="padding: 1rem 0.5rem; font-family: monospace; color: var(--accent-primary);">{{ player.registration_no or 'N/A' }}</td>
+                                <td style="padding: 1rem 0.5rem; font-weight: bold; color: var(--text-primary);">{{ player.name }}</td>
+                                <td style="padding: 1rem 0.5rem; color: var(--text-secondary);">{{ player.gender }}</td>
+                                <td style="padding: 1rem 0.5rem; color: var(--text-secondary);">{{ player.age_category }}</td>
+                                <td style="padding: 1rem 0.5rem; color: var(--text-secondary);">{{ player.contact_number or 'N/A' }}</td>
+                                <td style="padding: 1rem 0.5rem;">
+                                    <span class="badge" style="background: var(--accent-success); color: white;">{{ player.current_status or 'Active' }}</span>
+                                </td>
+                                <td style="padding: 1rem 0.5rem; text-align: right;">
+                                    <a href="{{ url_for('player.view_player', id=player.id) }}" class="btn btn-secondary btn-small">View Profile</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div style="text-align: center; padding: 3rem 1rem; color: var(--text-secondary);">
+                    <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;">🔍</div>
+                    <h3>No players found.</h3>
+                    {% if search_query %}
+                        <p>Try adjusting your search criteria.</p>
+                    {% else %}
+                        <p>There are currently no registered players in the system.</p>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

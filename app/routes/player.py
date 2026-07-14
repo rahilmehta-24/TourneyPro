@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for
-from app.routes.auth import login_required, get_current_user
+from app.routes.auth import login_required, get_current_user, role_required
 from app.models import Player, db
 
 player_bp = Blueprint('player', __name__)
@@ -32,40 +32,20 @@ def dashboard():
             p.name = request.form.get('name', p.name)
             p.gender = request.form.get('gender', p.gender)
             p.age_category = request.form.get('age_category', p.age_category)
-            p.registration_no = request.form.get('registration_no')
             p.dob = parse_date(request.form.get('dob'))
-            p.email = request.form.get('email')
-            p.contact_number = request.form.get('contact_number')
-            p.height = request.form.get('height')
-            p.weight = request.form.get('weight')
-            p.blood_group = request.form.get('blood_group')
-            p.nationality = request.form.get('nationality')
-            p.address = request.form.get('address')
-            p.coach = request.form.get('coach')
-            p.academy = request.form.get('academy')
-            p.registration_details = request.form.get('registration_details')
-            p.registration_date = parse_date(request.form.get('registration_date'))
-            p.registration_validity = parse_date(request.form.get('registration_validity'))
-            p.current_status = request.form.get('current_status', 'Active')
-            p.avatar_url = request.form.get('avatar_url')
-            p.bio = request.form.get('bio')
+            p.email = request.form.get('email', p.email)
+            p.contact_number = request.form.get('contact_number', p.contact_number)
+            p.height = request.form.get('height', p.height)
+            p.weight = request.form.get('weight', p.weight)
+            p.blood_group = request.form.get('blood_group', p.blood_group)
+            p.nationality = request.form.get('nationality', p.nationality)
+            p.address = request.form.get('address', p.address)
+            p.coach = request.form.get('coach', p.coach)
+            p.academy = request.form.get('academy', p.academy)
             
         action = request.form.get('action')
         
-        if action == 'create_profile':
-            new_player = Player(
-                user_id=current_user.id,
-                name=request.form.get('name', 'New Player'),
-                gender=request.form.get('gender', 'Boys'),
-                age_category=request.form.get('age_category', 'Open')
-            )
-            populate_player_from_request(new_player)
-            db.session.add(new_player)
-            db.session.commit()
-            flash('Player Profile created successfully!', 'success')
-            return redirect(url_for('player.dashboard'))
-            
-        elif action == 'update_profile':
+        if action == 'update_profile':
             player_id = request.form.get('player_id', type=int)
             player = Player.query.filter_by(id=player_id, user_id=current_user.id).first_or_404()
             populate_player_from_request(player)
@@ -74,3 +54,22 @@ def dashboard():
             return redirect(url_for('player.dashboard'))
             
     return render_template('player/dashboard.html', players=players)
+
+
+@player_bp.route('/admin/players')
+@login_required
+@role_required('admin', 'superadmin')
+def admin_players():
+    search_query = request.args.get('search', '').strip()
+    
+    if search_query:
+        players = Player.query.filter(
+            db.or_(
+                Player.name.ilike(f'%{search_query}%'),
+                Player.registration_no.ilike(f'%{search_query}%')
+            )
+        ).all()
+    else:
+        players = Player.query.all()
+        
+    return render_template('admin/players.html', players=players, search_query=search_query)

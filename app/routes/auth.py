@@ -132,8 +132,26 @@ def register():
             except ValueError:
                 pass
                 
+        # Parse new fields
         contact_number = request.form.get('contact_number')
         nationality = request.form.get('nationality')
+        height = request.form.get('height')
+        weight = request.form.get('weight')
+        blood_group = request.form.get('blood_group')
+        address = request.form.get('address')
+        coach = request.form.get('coach')
+        academy = request.form.get('academy')
+        
+        # System generated fields
+        from datetime import date
+        from datetime import timedelta
+        import random
+        
+        current_date = date.today()
+        # Generate Registration No: TP-YYYY-HEX
+        reg_no = f"TP-{current_date.year}-{random.randint(0x1000, 0xFFFF):X}"
+        registration_date = current_date
+        registration_validity = current_date + timedelta(days=365)
         
         player = Player(
             user_id=user.id,
@@ -144,6 +162,15 @@ def register():
             email=email,
             contact_number=contact_number,
             nationality=nationality,
+            height=height,
+            weight=weight,
+            blood_group=blood_group,
+            address=address,
+            coach=coach,
+            academy=academy,
+            registration_no=reg_no,
+            registration_date=registration_date,
+            registration_validity=registration_validity,
             current_status='Active'
         )
         db.session.add(player)
