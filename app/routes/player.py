@@ -16,6 +16,9 @@ def dashboard():
     # For now, let's assume a 1-to-many relationship, and the dashboard lists all players they manage
     current_user = get_current_user()
     players = Player.query.filter_by(user_id=current_user.id).all()
+    all_players = []
+    if current_user.role == 'superadmin':
+        all_players = Player.query.order_by(Player.name).all()
     
     if request.method == 'POST':
         from datetime import datetime
@@ -83,7 +86,7 @@ def dashboard():
             flash('Profile updated successfully!', 'success')
             return redirect(url_for('player.dashboard'))
             
-    return render_template('player/dashboard.html', players=players)
+    return render_template('player/dashboard.html', players=players, all_players=all_players)
 
 
 @player_bp.route('/admin/players')
