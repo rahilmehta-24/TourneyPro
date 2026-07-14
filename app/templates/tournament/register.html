@@ -23,29 +23,23 @@
                 </div>
 
                 <div class="form-group" style="margin-bottom: 1.5rem;">
-                    <label class="form-label" style="font-size: 1.1rem; color: var(--text-primary);">Select Player Profile</label>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">Which player from your account is participating?</p>
-                    <select name="player_id" class="form-input" required>
-                        <option value="" disabled selected>-- Select your player --</option>
-                        {% for player in players %}
-                            <option value="{{ player.id }}">{{ player.name }} ({{ player.gender }}, {{ player.age_category }})</option>
-                        {% endfor %}
-                    </select>
+                    <label class="form-label" style="font-size: 1.1rem; color: var(--text-primary);">Registering As</label>
+                    <input type="text" class="form-input" value="{{ player.name }} ({{ player.gender }}, {{ player.age_category }})" disabled style="background-color: rgba(255,255,255,0.1); color: var(--text-muted);">
                 </div>
 
                 <div class="form-group" id="doubles_section" style="display: none; margin-bottom: 1.5rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: var(--radius-md); border-left: 3px solid var(--primary);">
-                    <label class="form-label" style="font-size: 1.1rem; color: var(--text-primary);">Select Doubles Partner (Optional for now)</label>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">If registering for Doubles, select your partner from your linked profiles. If they are not on your account, they can be added later by the Admin.</p>
-                    <select name="player2_id" class="form-input">
-                        <option value="-1" selected>-- No partner / I will inform Admin later --</option>
-                        {% for player in players %}
-                            <option value="{{ player.id }}">{{ player.name }} ({{ player.gender }}, {{ player.age_category }})</option>
-                        {% endfor %}
-                    </select>
+                    <h4 style="margin-top: 0; color: var(--text-primary);">Doubles Partner Details</h4>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">Since you selected a Doubles category, please provide your partner's information.</p>
+                    
+                    <label class="form-label">Partner Name *</label>
+                    <input type="text" name="partner_name" id="partner_name_input" class="form-input" style="margin-bottom: 1rem;">
+                    
+                    <label class="form-label">Partner Mobile *</label>
+                    <input type="text" name="partner_mobile" id="partner_mobile_input" class="form-input">
                 </div>
 
                 <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; font-size: 0.9rem; color: var(--text-secondary);">
-                    <i class="fas fa-info-circle"></i> <strong>Note:</strong> Your registration will be sent to the tournament organizer for approval. You will receive an email once your participation is confirmed and you are added to the bracket.
+                    <i class="fas fa-info-circle"></i> <strong>Note:</strong> Registration is currently auto-approved upon completion. You will be instantly enrolled into the participant list.
                 </div>
                 
                 <div class="form-actions" style="margin-top: 2rem;">
@@ -66,10 +60,14 @@ function checkDoubles() {
     
     if (catName && catName.includes('double')) {
         doublesSection.style.display = 'block';
+        document.getElementById('partner_name_input').required = true;
+        document.getElementById('partner_mobile_input').required = true;
     } else {
         doublesSection.style.display = 'none';
-        // Reset player2 selection
-        document.querySelector('select[name="player2_id"]').value = "-1";
+        document.getElementById('partner_name_input').required = false;
+        document.getElementById('partner_mobile_input').required = false;
+        document.getElementById('partner_name_input').value = "";
+        document.getElementById('partner_mobile_input').value = "";
     }
 }
 </script>

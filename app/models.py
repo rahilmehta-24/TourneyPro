@@ -86,6 +86,8 @@ class Participant(db.Model):
     group_id = db.Column(db.Integer, db.ForeignKey('groups.id'))  # For group stage
     player_id = db.Column(db.Integer, db.ForeignKey('players.id')) # Link to global player
     player2_id = db.Column(db.Integer, db.ForeignKey('players.id')) # Link to global player 2 for Doubles
+    partner_name = db.Column(db.String(100)) # Name of partner for Doubles (Self Registration)
+    partner_mobile = db.Column(db.String(20)) # Mobile of partner for Doubles (Self Registration)
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120))
     seed = db.Column(db.Integer)  # Auto-assigned seed
@@ -250,6 +252,8 @@ class Registration(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     player_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=False)
     player2_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=True)
+    partner_name = db.Column(db.String(100))
+    partner_mobile = db.Column(db.String(20))
     status = db.Column(db.String(20), default='pending') # pending, approved, rejected
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 

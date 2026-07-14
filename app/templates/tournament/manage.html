@@ -88,6 +88,11 @@
                                 </span>
                                 {% endif %}
                                 <span class="participant-email" style="color: var(--text-muted); font-size: 0.85rem;">{{ participant.email or '' }}</span>
+                                {% if participant.partner_name %}
+                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-left: 0.5rem; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px;">
+                                    Partner: <span style="color: var(--text-primary);">{{ participant.partner_name }}</span> ({{ participant.partner_mobile }})
+                                </div>
+                                {% endif %}
                             </div>
                             {% if (not tournament.has_categories and tournament.status == 'setup') or (tournament.has_categories and participant.category and participant.category.status == 'setup') %}
                             <div class="participant-actions">

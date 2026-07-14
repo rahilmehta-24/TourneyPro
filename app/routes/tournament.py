@@ -195,44 +195,66 @@ def register_for_tournament(slug):
         return redirect(url_for('tournament.view_tournament', slug=slug))
         
     categories = Category.query.filter_by(tournament_id=tournament.id).all()
-    user_players = Player.query.filter_by(user_id=current_user.id).all()
+    
+    # Check if user has a profile
+    player = Player.query.filter_by(user_id=current_user.id).first()
+    if not player:
+        flash('You must create your Player Profile before registering for a tournament.', 'error')
+        return redirect(url_for('player.dashboard'))
     
     if request.method == 'POST':
-        if not user_players:
-            flash('You must create a player profile before registering.', 'error')
-            return redirect(url_for('player.dashboard'))
-            
         category_id = request.form.get('category_id', type=int)
-        player_id = request.form.get('player_id', type=int)
-        player2_id = request.form.get('player2_id', type=int)
         
         category = Category.query.get_or_404(category_id)
+        
+        is_doubles = "Doubles" in category.name
+        partner_name = request.form.get('partner_name', '').strip() if is_doubles else None
+        partner_mobile = request.form.get('partner_mobile', '').strip() if is_doubles else None
+        
+        if is_doubles and not partner_name:
+            flash('Partner name is required for Doubles categories.', 'error')
+            return redirect(url_for('tournament.register_for_tournament', slug=slug))
         
         # Check if already registered
         existing = Registration.query.filter_by(
             tournament_id=tournament.id, 
             category_id=category_id, 
-            player_id=player_id
+            player_id=player.id
         ).first()
         
         if existing:
-            flash('This player is already registered for this category.', 'warning')
+            flash('You are already registered for this category.', 'warning')
             return redirect(url_for('tournament.view_tournament', slug=slug))
             
+        # Create Registration
         reg = Registration(
             tournament_id=tournament.id,
             category_id=category_id,
             user_id=current_user.id,
-            player_id=player_id,
-            player2_id=player2_id if player2_id and player2_id != -1 else None,
-            status='pending'
+            player_id=player.id,
+            partner_name=partner_name,
+            partner_mobile=partner_mobile,
+            status='approved' # Auto-approve for now
         )
         db.session.add(reg)
+        
+        # Create Participant instantly
+        p = Participant(
+            tournament_id=tournament.id,
+            category_id=category_id,
+            player_id=player.id,
+            name=player.name,
+            email=current_user.email,
+            partner_name=partner_name,
+            partner_mobile=partner_mobile
+        )
+        db.session.add(p)
         db.session.commit()
-        flash('Registration submitted! It is now pending admin approval.', 'success')
+        
+        flash('Registration successful! You are now officially enrolled in the tournament.', 'success')
         return redirect(url_for('tournament.view_tournament', slug=slug))
         
-    return render_template('tournament/register.html', tournament=tournament, categories=categories, players=user_players)
+    return render_template('tournament/register.html', tournament=tournament, categories=categories, player=player)
 
 @tournament_bp.route('/tournaments/<slug>/manage', methods=['GET', 'POST'])
 @login_required

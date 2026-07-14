@@ -18,6 +18,7 @@
             {% endif %}
             <a href="{{ url_for('main.index') }}" class="btn btn-secondary">← Back to Tournaments</a>
             {% if tournament.status == 'registration' %}
+            <button onclick="copyShareLink('{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-secondary" style="border-color: var(--accent-success); color: var(--accent-success);">📋 Copy Reg. Link</button>
             <a href="{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug) }}" class="btn btn-primary" style="background-color: var(--accent-success); border-color: var(--accent-success); box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);">Register Now</a>
             {% endif %}
             {% if tournament.status == 'setup' %}
