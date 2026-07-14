@@ -861,7 +861,23 @@ function handleStatusChange(status) {
     if (isAdmin) {
         if (savePendingBtn) savePendingBtn.style.display = (status === 'pending') ? 'block' : 'none';
         if (saveLiveBtn) saveLiveBtn.style.display = (status === 'in_progress' || status === 'pending') ? 'block' : 'none';
-        if (completeMatchBtn) completeMatchBtn.style.display = (status === 'completed') ? 'block' : 'none';
+        
+        if (completeMatchBtn) {
+            completeMatchBtn.style.display = (status === 'completed') ? 'block' : 'none';
+            // Audit Workflow UI: If editing a match that is ALREADY completed
+            if (status === 'completed') {
+                const matchIdElem = document.getElementById('modalMatchId');
+                const isOriginallyCompleted = (matchIdElem && matchIdElem.dataset.originalStatus === 'completed');
+                
+                if (isOriginallyCompleted) {
+                    completeMatchBtn.innerHTML = 'Update Completed Score 🛡️';
+                    completeMatchBtn.className = 'btn btn-danger';
+                } else {
+                    completeMatchBtn.innerHTML = 'Complete Match & Advance Winner';
+                    completeMatchBtn.className = 'btn btn-primary';
+                }
+            }
+        }
     }
 }
 
@@ -872,6 +888,9 @@ function openMatchModal(matchId, currentStatus, currentScheduledTime, p1Name, p1
     
     const statusSelect = document.getElementById('modalMatchStatus');
     statusSelect.value = currentStatus || 'pending';
+    
+    // Store original status to track if we are modifying an ALREADY completed match
+    document.getElementById('modalMatchId').dataset.originalStatus = currentStatus;
     
     const statusText = document.getElementById('modalMatchStatusText');
     const statusMap = {
@@ -953,7 +972,8 @@ function openMatchModal(matchId, currentStatus, currentScheduledTime, p1Name, p1
     }
     
     
-    const isReadOnly = (!isAdmin || currentStatus === 'completed');
+    
+    const isReadOnly = !isAdmin; // Only readonly for non-admins, admins can always edit
     
     // Apply read-only states
     if (!isAdmin) {
@@ -962,7 +982,7 @@ function openMatchModal(matchId, currentStatus, currentScheduledTime, p1Name, p1
     } else {
         if (statusSelect) {
             statusSelect.style.display = 'block';
-            statusSelect.disabled = isReadOnly;
+            statusSelect.disabled = false;
         }
         if (statusText) statusText.style.display = 'none';
     }
@@ -1055,9 +1075,6 @@ function openMatchModal(matchId, currentStatus, currentScheduledTime, p1Name, p1
                 const tb2Input = document.getElementById(`tb${s}_p2`);
                 if (tb1Input && tb1 !== null) tb1Input.value = tb1;
                 if (tb2Input && tb2 !== null) tb2Input.value = tb2;
-                
-                if (p1Input) p1Input.readOnly = true;
-                if (p2Input) p2Input.readOnly = true;
             }
         }
     }
