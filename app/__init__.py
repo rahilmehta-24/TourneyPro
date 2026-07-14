@@ -52,6 +52,7 @@ def create_app(config_class=Config):
     from app.routes.export import export_bp
     from app.routes.auth import auth_bp
     from app.routes.leaderboard import leaderboard_bp
+    from app.routes.player import player_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(tournament_bp)
@@ -59,6 +60,7 @@ def create_app(config_class=Config):
     app.register_blueprint(export_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(leaderboard_bp)
+    app.register_blueprint(player_bp)
     
     
     

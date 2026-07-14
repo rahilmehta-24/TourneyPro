@@ -187,6 +187,8 @@ class Player(db.Model):
     name = db.Column(db.String(100), nullable=False)
     gender = db.Column(db.String(20), nullable=False) # e.g. Boys, Girls, Mens, Womens
     age_category = db.Column(db.String(20), nullable=False) # e.g. U8, U10, U12, U14, U18, Open
+    avatar_url = db.Column(db.String(500), nullable=True)
+    bio = db.Column(db.Text, nullable=True)
     total_points = db.Column(db.Float, default=0.0)
     matches_played = db.Column(db.Integer, default=0)
     matches_won = db.Column(db.Integer, default=0)

@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}Player Dashboard - TourneyPro{% endblock %}
+
+{% block content %}
+<div class="header">
+    <div class="header-content">
+        <h1>Player Dashboard</h1>
+        <p class="subtitle">Manage your player profiles</p>
+    </div>
+</div>
+
+<div class="dashboard-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 2rem;">
+    {% for player in players %}
+    <div class="card">
+        <div class="card-header">
+            <h2>{{ player.name }}</h2>
+        </div>
+        <div class="card-body">
+            <form action="{{ url_for('player.dashboard') }}" method="POST">
+                <input type="hidden" name="action" value="update_profile">
+                <input type="hidden" name="player_id" value="{{ player.id }}">
+                
+                <div class="form-group">
+                    <label class="form-label">Avatar URL</label>
+                    <input type="url" name="avatar_url" class="form-input" value="{{ player.avatar_url or '' }}" placeholder="https://example.com/avatar.jpg">
+                    {% if player.avatar_url %}
+                        <div style="margin-top: 1rem; text-align: center;">
+                            <img src="{{ player.avatar_url }}" alt="Avatar" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;">
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Bio</label>
+                    <textarea name="bio" class="form-input" rows="4" placeholder="Tell us about yourself...">{{ player.bio or '' }}</textarea>
+                </div>
+                
+                <div class="form-actions" style="margin-top: 1.5rem;">
+                    <button type="submit" class="btn btn-primary">Save Profile</button>
+                    <a href="{{ url_for('player.view_player', player_id=player.id) }}" class="btn btn-secondary">View Public Portfolio</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% else %}
+    <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+        <p style="color: var(--text-secondary); margin-bottom: 1rem;">You don't have any player profiles linked to your account yet.</p>
+        <p style="color: var(--text-secondary);">Participate in a tournament to have your profile automatically linked.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
