@@ -74,9 +74,13 @@ def create_app(config_class=Config):
         import re
         return re.sub(r'\((\d+)\)', r'<sup>\1</sup>', score_str)
 
-    # Cache Control Middleware for static assets
+    # Cache Control Middleware for static assets & Security Headers
     @app.after_request
     def add_cache_headers(response):
+        # Global Security & Watermark Headers
+        response.headers['X-Author'] = 'Built for Tennis by Rahil Mehta'
+        response.headers['X-Powered-By'] = 'TourneyPro Engine'
+        
         # Cache static files for 1 hour
         if request.path.startswith('/static/'):
             response.headers['Cache-Control'] = 'public, max-age=3600'
