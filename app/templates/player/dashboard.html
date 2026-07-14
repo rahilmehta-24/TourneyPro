@@ -23,7 +23,7 @@
                             {{ player.name[:2]|upper }}
                         </div>
                         <div>
-                            <h2 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">{{ player.name }} <span class="badge badge-success">{{ player.current_status or 'Active' }}</span></h2>
+                            <h2 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">{{ player.name }} <span class="badge" style="background-color: var(--accent-success, #22c55e); color: white; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.85rem; font-weight: 600;">Status: {{ player.current_status or 'Active' }}</span></h2>
                             <p style="margin: 0; color: var(--text-muted); font-size: 0.9rem;">Reg No: <strong style="color: var(--accent-primary);">{{ player.registration_no or 'Pending' }}</strong></p>
                         </div>
                     </div>
