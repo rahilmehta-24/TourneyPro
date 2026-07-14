@@ -197,7 +197,8 @@ def register_for_tournament(slug):
     categories = Category.query.filter_by(tournament_id=tournament.id).all()
     
     # Check if user has a profile
-    player = Player.query.filter_by(user_id=current_user.id).first()
+    current_u = get_current_user()
+    player = Player.query.filter_by(user_id=current_u.id).first()
     if not player:
         flash('You must create your Player Profile before registering for a tournament.', 'error')
         return redirect(url_for('player.dashboard'))
@@ -230,7 +231,7 @@ def register_for_tournament(slug):
         reg = Registration(
             tournament_id=tournament.id,
             category_id=category_id,
-            user_id=current_user.id,
+            user_id=current_u.id,
             player_id=player.id,
             partner_name=partner_name,
             partner_mobile=partner_mobile,
@@ -244,7 +245,7 @@ def register_for_tournament(slug):
             category_id=category_id,
             player_id=player.id,
             name=player.name,
-            email=current_user.email,
+            email=current_u.email,
             partner_name=partner_name,
             partner_mobile=partner_mobile
         )
