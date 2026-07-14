@@ -113,9 +113,13 @@ def delete_account():
         
     player = Player.query.filter_by(user_id=user.id).first()
     
-    # Soft delete
+    # Soft delete and free up the email so they can register again
     user.role = 'deleted'
     user.password_hash = '*deleted*'
+    # Append a timestamp or ID to the email to prevent Unique Constraint violation if they register again
+    import time
+    user.email = f"deleted_{int(time.time())}_{user.email}"
+    # The original username remains taken so they must pick a new one
     
     if player:
         player.current_status = 'Deleted'
