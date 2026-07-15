@@ -99,6 +99,26 @@
                         <input type="number" name="max_participants" class="form-input" value="{{ category.max_participants or '' }}" placeholder="Unlimited" min="2" style="width: 100%;">
                     </div>
 
+                    <div class="form-section" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.05);">
+                        <h4 style="margin-bottom: var(--spacing-sm); color: var(--text-primary);">📅 Schedule & Courts Settings</h4>
+                        <div class="form-group">
+                            <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Number of Courts Used *</label>
+                            <input type="number" name="num_courts" class="form-input" min="1" value="{{ category.num_courts or 1 }}" required style="width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Custom Court Names</label>
+                            <input type="text" name="court_names" class="form-input" value="{{ category.court_names or '' }}" placeholder="e.g. Court 1, Centre Court" style="width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Category Start Date & Time</label>
+                            <input type="datetime-local" name="start_date_time" class="form-input" value="{{ category.start_date_time.strftime('%Y-%m-%dT%H:%M') if category.start_date_time else '' }}" style="width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Average Match Duration (minutes) *</label>
+                            <input type="number" name="avg_match_duration" class="form-input" min="5" value="{{ category.avg_match_duration or 60 }}" required style="width: 100%;">
+                        </div>
+                    </div>
+
                     {% if category.status == 'setup' %}
                     <div class="form-group">
                         <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Format *</label>

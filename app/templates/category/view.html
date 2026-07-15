@@ -125,44 +125,7 @@
       🟢 Live — scores updating
     </div>
 
-    {% if current_user and current_user.role in ['admin', 'superadmin'] %}
-    <!-- Schedule Matches Panel (Admin Only) -->
-    <div style="margin:1.5rem 0;">
-      <button onclick="document.getElementById('schedulePanelInner').style.display=document.getElementById('schedulePanelInner').style.display==='none'?'block':'none'"
-              class="btn btn-secondary btn-small">⚙️ Generate Match Schedule</button>
-      <div id="schedulePanelInner" style="display:none; margin-top:1rem;">
-        <div class="card" style="border:1px solid rgba(249,115,22,0.3);">
-          <div class="card-body">
-            <h3 style="margin-bottom:1.5rem; color:var(--accent-primary);">⚙️ Auto-Schedule Matches</h3>
-            <form action="{{ url_for('category.schedule_category', slug=tournament.url_slug, category_id=category.id) }}" method="POST">
-              <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
-                <div class="form-group">
-                  <label class="form-label">Number of Courts</label>
-                  <input type="number" name="num_courts" class="form-input" min="1" max="20" value="{{ tournament.num_courts or 2 }}" required>
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Court Names <small style="color:var(--text-muted);">(comma-separated, optional)</small></label>
-                  <input type="text" name="court_names" class="form-input" placeholder="e.g. Court 1, Court 2, Centre Court">
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Start Date &amp; Time</label>
-                  <input type="datetime-local" name="start_time" class="form-input" required>
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Avg Match Duration (minutes)</label>
-                  <input type="number" name="avg_duration" class="form-input" min="10" max="300" value="{{ tournament.avg_match_duration or 60 }}" required>
-                </div>
-              </div>
-              <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:1rem;">
-                ⚠️ This will overwrite existing court/time assignments for pending matches in this category.
-              </p>
-              <button type="submit" class="btn btn-primary">📅 Generate Schedule</button>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
-    {% endif %}
+
     {% endif %}
 
     {% if rankings %}

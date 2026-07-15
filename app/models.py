@@ -65,7 +65,13 @@ class Category(db.Model):
     max_players_per_team = db.Column(db.Integer)
     total_games = db.Column(db.Integer)
     scoring_format = db.Column(db.String(20), default='games') # 'games' or 'points'
-    points_to_win = db.Column(db.Integer)
+    points_to_win = db.Column(db.Integer, default=11)
+
+    # Court scheduling fields
+    num_courts = db.Column(db.Integer, default=1)
+    court_names = db.Column(db.Text)  # JSON list of court names e.g. '["Court 1", "Court 2"]'
+    start_date_time = db.Column(db.DateTime)
+    avg_match_duration = db.Column(db.Integer, default=60)             # minutes
 
     # Relationships
     participants = db.relationship('Participant', backref='category', lazy=True, cascade='all, delete-orphan')

@@ -114,6 +114,28 @@
                 placeholder="Leave empty for unlimited">
         </div>
 
+        <div class="form-section" style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+            <h3>📅 Schedule & Courts Settings</h3>
+            <div class="form-group">
+                <label for="num_courts">Number of Courts Used *</label>
+                <input type="number" id="num_courts" name="num_courts" class="form-input" min="1" value="1" required>
+            </div>
+            <div class="form-group">
+                <label for="court_names">Custom Court Names</label>
+                <input type="text" id="court_names" name="court_names" class="form-input" placeholder="e.g. Court 1, Centre Court">
+                <small>Comma-separated list. If left blank, courts will be named numerically.</small>
+            </div>
+            <div class="form-group">
+                <label for="start_date_time">Category Start Date & Time</label>
+                <input type="datetime-local" id="start_date_time" name="start_date_time" class="form-input">
+                <small>When will the first match of this category begin? Matches will be scheduled from this time.</small>
+            </div>
+            <div class="form-group">
+                <label for="avg_match_duration">Average Match Duration (minutes) *</label>
+                <input type="number" id="avg_match_duration" name="avg_match_duration" class="form-input" min="5" value="60" required>
+            </div>
+        </div>
+
         <div id="group-stage-fields" style="display: none;">
             <h3>Group Stage Configuration</h3>
 

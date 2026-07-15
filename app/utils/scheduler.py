@@ -10,7 +10,6 @@ Algorithm:
  - Assigns scheduled_time to each match and saves court_name.
 """
 
-import json
 from datetime import datetime, timedelta
 from app.models import db, Match, Category, Tournament
 
@@ -23,23 +22,24 @@ def _get_court_names(tournament: Tournament, num_courts: int, custom_names: list
     return [f"Court {i + 1}" for i in range(num_courts)]
 
 
-def auto_schedule_category(
-    category_id: int,
-    start_dt: datetime,
-    num_courts: int,
-    court_names_list: list | None = None,
-    avg_duration_minutes: int = 60,
-) -> dict:
+def auto_schedule_category(category_id: int) -> dict:
     """
-    Schedule all pending matches in a category across the given courts.
+    Schedule all pending matches in a category across its configured courts.
 
     Returns a dict: {"scheduled": int, "courts": list[str], "end_time": datetime}
     """
     category = Category.query.get_or_404(category_id)
     tournament = Tournament.query.get_or_404(category.tournament_id)
+    
+    start_dt = category.start_date_time or tournament.started_at or datetime.utcnow()
+    num_courts = category.num_courts or 1
+    
+    court_names_list = None
+    if category.court_names:
+        court_names_list = [name.strip() for name in category.court_names.split(',') if name.strip()]
 
     courts = _get_court_names(tournament, num_courts, court_names_list)
-    duration = timedelta(minutes=avg_duration_minutes)
+    duration = timedelta(minutes=category.avg_match_duration or 60)
 
     # Fetch all matches for this category that are not yet completed
     matches = (
@@ -87,12 +87,7 @@ def auto_schedule_category(
         # Round is considered done when the last match on any court ends
         round_ready_at = max(court_free_at)
 
-    # Persist tournament court settings
-    tournament.num_courts = num_courts
-    if court_names_list:
-        tournament.court_names = json.dumps(court_names_list)
-    tournament.avg_match_duration = avg_duration_minutes
-
+    # Persist match assignments
     db.session.commit()
 
     return {
