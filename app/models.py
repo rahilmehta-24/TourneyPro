@@ -25,6 +25,13 @@ class Tournament(db.Model):
     num_sets = db.Column(db.Integer, default=1)  # 1, 2 or 3 sets
     games_per_set = db.Column(db.Integer, default=6)  # games to win a set
 
+    # Court scheduling fields
+    num_courts = db.Column(db.Integer, default=1)
+    court_names = db.Column(db.Text)  # JSON list of court names e.g. '["Court 1", "Court 2"]'
+    court_operating_start = db.Column(db.String(5), default='08:00')  # HH:MM
+    court_operating_end = db.Column(db.String(5), default='20:00')    # HH:MM
+    avg_match_duration = db.Column(db.Integer, default=60)             # minutes
+
     # Relationships
     categories = db.relationship('Category', backref='tournament', lazy=True, cascade='all, delete-orphan')
     participants = db.relationship('Participant', backref='tournament', lazy=True, cascade='all, delete-orphan')
@@ -125,6 +132,7 @@ class Match(db.Model):
     status = db.Column(db.String(20), default='pending')  # pending, in_progress, completed
     scheduled_time = db.Column(db.DateTime)
     completed_at = db.Column(db.DateTime)
+    court_name = db.Column(db.String(100))  # e.g. "Court 1", assigned by scheduler
     
     # Match-specific scoring overrides (only for knockout)
     scoring_format = db.Column(db.String(20)) # 'games', 'points', or None to inherit

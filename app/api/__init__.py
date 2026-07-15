@@ -2,4 +2,4 @@ from flask import Blueprint
 
 api_bp = Blueprint('api', __name__)
 
-from . import auth, tournaments, matches  # noqa: E402, F401
+from . import auth, tournaments, matches, live  # noqa: E402, F401

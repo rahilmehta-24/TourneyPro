@@ -940,3 +940,47 @@ def update_grid_scores(slug, category_id):
     
     flash(f'Successfully updated {updated_count} matches.', 'success')
     return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
+
+
+@category_bp.route('/tournaments/<slug>/categories/<int:category_id>/schedule', methods=['POST'])
+@login_required
+@role_required('admin', 'superadmin')
+def schedule_category(slug, category_id):
+    """Auto-schedule all pending matches in a category across courts."""
+    from app.utils.scheduler import auto_schedule_category
+    from datetime import datetime
+
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
+
+    num_courts = request.form.get('num_courts', 1, type=int)
+    avg_duration = request.form.get('avg_duration', 60, type=int)
+    start_time_str = request.form.get('start_time', '')
+
+    # Parse court names from comma-separated string
+    court_names_raw = request.form.get('court_names', '').strip()
+    court_names_list = [c.strip() for c in court_names_raw.split(',') if c.strip()] if court_names_raw else None
+
+    # Parse start datetime
+    try:
+        if start_time_str:
+            start_dt = datetime.strptime(start_time_str, '%Y-%m-%dT%H:%M')
+        else:
+            start_dt = datetime.utcnow()
+    except ValueError:
+        start_dt = datetime.utcnow()
+
+    result = auto_schedule_category(
+        category_id=category_id,
+        start_dt=start_dt,
+        num_courts=num_courts,
+        court_names_list=court_names_list,
+        avg_duration_minutes=avg_duration,
+    )
+
+    flash(
+        f"✅ Schedule generated: {result['scheduled']} matches assigned across {len(result['courts'])} court(s). "
+        f"Estimated end: {result['end_time'].strftime('%d %b %H:%M') if result['end_time'] else 'N/A'}",
+        'success'
+    )
+    return redirect(url_for('category.view_category', slug=slug, category_id=category_id))

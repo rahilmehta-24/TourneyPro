@@ -16,6 +16,7 @@
             {% if current_user and current_user.role in ['admin', 'superadmin'] and tournament.categories %}
             <a href="{{ url_for('tournament.print_tournament', slug=tournament.url_slug) }}" target="_blank" class="btn btn-primary" id="btnExportTournament">🖨️ Export PDF</a>
             {% endif %}
+            <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug) }}" class="btn btn-secondary">📋 Order of Play</a>
             <a href="{{ url_for('main.index') }}" class="btn btn-secondary">← Back to Tournaments</a>
             {% if tournament.status == 'registration' and tournament.categories %}
             <button onclick="copyShareLink('{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-secondary" style="border-color: var(--accent-success); color: var(--accent-success);">📋 Copy Reg. Link</button>

@@ -819,3 +819,40 @@ def delete_tournament(slug):
         flash(f'Failed to delete tournament: {str(e)}', 'error')
 
     return redirect(url_for('main.index'))
+
+
+@tournament_bp.route('/tournaments/<slug>/schedule')
+def court_schedule(slug):
+    """Public Court Schedule — shows all scheduled matches across all courts."""
+    from app.utils.scheduler import get_order_of_play
+    data = get_order_of_play(slug)
+    return render_template(
+        'tournament/schedule.html',
+        courts=data['courts'],
+        tournament=data['tournament'],
+        export=request.args.get('export', '0'),
+    )
+
+
+@tournament_bp.route('/tournaments/<slug>/order-of-play')
+def order_of_play(slug):
+    """Order of Play page — PDF-ready, filterable by court."""
+    from app.utils.scheduler import get_order_of_play
+    data = get_order_of_play(slug)
+    selected_court = request.args.get('court', None)
+    is_export = request.args.get('export', '0') == '1'
+
+    courts = data['courts']
+    if selected_court and selected_court in courts:
+        filtered_courts = {selected_court: courts[selected_court]}
+    else:
+        filtered_courts = courts
+
+    return render_template(
+        'tournament/order_of_play.html',
+        courts=filtered_courts,
+        all_courts=list(courts.keys()),
+        selected_court=selected_court,
+        tournament=data['tournament'],
+        is_export=is_export,
+    )

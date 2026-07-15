@@ -1,0 +1,187 @@
+{% if is_export %}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Order of Play — {{ tournament.name }}</title>
+<style>
+  @page { size: A4; margin: 1.5cm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 11px; color: #1a1a1a; background: #fff; }
+  .header { text-align: center; margin-bottom: 1.5rem; border-bottom: 3px solid #f97316; padding-bottom: 1rem; }
+  .header h1 { font-size: 22px; color: #f97316; }
+  .header p { font-size: 11px; color: #555; margin-top: 4px; }
+  .court-block { margin-bottom: 2rem; page-break-inside: avoid; }
+  .court-title { background: #f97316; color: white; padding: 8px 14px; font-size: 14px; font-weight: bold; border-radius: 4px 4px 0 0; }
+  .oop-table { width: 100%; border-collapse: collapse; }
+  .oop-table th { background: #2a2a2a; color: white; padding: 8px 10px; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .oop-table td { padding: 8px 10px; border-bottom: 1px solid #e5e5e5; vertical-align: middle; }
+  .oop-table tr:nth-child(even) td { background: #f9f9f9; }
+  .vs-badge { background: #e5e7eb; padding: 1px 6px; border-radius: 9999px; font-size: 9px; font-weight: bold; }
+  .status-pending { color: #6b7280; }
+  .status-in_progress { color: #f59e0b; font-weight: bold; }
+  .status-completed { color: #10b981; font-weight: bold; }
+  .footer { text-align: center; font-size: 9px; color: #9ca3af; margin-top: 2rem; padding-top: 0.5rem; border-top: 1px solid #e5e5e5; }
+  .round-badge { background: #f97316; color: white; font-size: 9px; padding: 2px 6px; border-radius: 9999px; font-weight: bold; }
+</style>
+</head>
+<body>
+{% else %}
+{% extends "base.html" %}
+{% block title %}Order of Play — {{ tournament.name }}{% endblock %}
+{% block content %}
+{% endif %}
+
+{% if not is_export %}
+<div class="header">
+  <div class="header-content" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+    <div>
+      <h1>📋 Order of Play</h1>
+      <p class="subtitle">{{ tournament.name }}</p>
+    </div>
+    <div class="action-group" style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+      <!-- Court filter -->
+      <form method="GET" style="display:flex; align-items:center; gap:0.5rem;">
+        <input type="hidden" name="export" value="0">
+        <select name="court" class="form-input" style="min-width:160px;" onchange="this.form.submit()">
+          <option value="">All Courts</option>
+          {% for c in all_courts %}
+          <option value="{{ c }}" {% if selected_court == c %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </form>
+      <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug, court=selected_court or '', export='1') }}"
+         target="_blank" class="btn btn-primary">🖨️ Export PDF</a>
+      <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug) }}" class="btn btn-secondary">← Back</a>
+    </div>
+  </div>
+</div>
+
+<div style="max-width:1100px; margin:0 auto; padding:2rem;">
+{% else %}
+<div class="header">
+  <h1>📋 Order of Play</h1>
+  <p>{{ tournament.name }} &mdash; Generated {{ now }}</p>
+</div>
+{% endif %}
+
+{% if courts %}
+  {% for court_name, matches in courts.items() %}
+  <div class="court-block" {% if not is_export %}style="background:var(--bg-card); border-radius:var(--radius-lg); overflow:hidden; box-shadow:var(--shadow-md); margin-bottom:2rem;"{% endif %}>
+    
+    {% if not is_export %}
+    <div style="background:linear-gradient(135deg, #f97316, #f59e0b); padding:1rem 1.5rem; display:flex; align-items:center; gap:0.75rem;">
+      <span style="font-size:1.5rem;">🎾</span>
+      <div>
+        <h2 style="margin:0; color:white; font-size:1.25rem;">{{ court_name }}</h2>
+        <p style="margin:0; color:rgba(255,255,255,0.85); font-size:0.85rem;">{{ matches|length }} match{{ 'es' if matches|length != 1 else '' }} scheduled</p>
+      </div>
+    </div>
+    <div style="overflow-x:auto;">
+    <table style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr style="background:var(--bg-secondary);">
+          <th style="padding:1rem; text-align:left; color:var(--text-muted); font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; width:90px;">Time</th>
+          <th style="padding:1rem; text-align:left; color:var(--text-muted); font-size:0.8rem; text-transform:uppercase; letter-spacing:1px;">Category</th>
+          <th style="padding:1rem; text-align:left; color:var(--text-muted); font-size:0.8rem; text-transform:uppercase; letter-spacing:1px;">Round</th>
+          <th style="padding:1rem; text-align:left; color:var(--text-muted); font-size:0.8rem; text-transform:uppercase; letter-spacing:1px;">Match</th>
+          <th style="padding:1rem; text-align:center; color:var(--text-muted); font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; width:80px;">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in matches %}
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.06); transition: background 0.15s;" 
+            onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background=''">
+          <td style="padding:1rem; font-weight:bold; font-size:1.1rem; color:var(--accent-primary);">{{ item.time }}</td>
+          <td style="padding:1rem; color:var(--text-secondary); font-size:0.9rem;">{{ item.category_name }}</td>
+          <td style="padding:1rem;">
+            <span style="background:rgba(249,115,22,0.15); color:var(--accent-primary); padding:0.2rem 0.6rem; border-radius:9999px; font-size:0.8rem; font-weight:600;">
+              R{{ item.round }}
+            </span>
+          </td>
+          <td style="padding:1rem;">
+            <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+              <span style="font-weight:600; color:var(--text-primary);">{{ item.p1 }}</span>
+              <span style="background:var(--bg-tertiary); color:var(--text-muted); padding:0.15rem 0.5rem; border-radius:9999px; font-size:0.75rem;">vs</span>
+              <span style="font-weight:600; color:var(--text-primary);">{{ item.p2 }}</span>
+            </div>
+          </td>
+          <td style="padding:1rem; text-align:center;">
+            {% if item.status == 'completed' %}
+              <span style="background:rgba(16,185,129,0.15); color:#10b981; padding:0.25rem 0.75rem; border-radius:9999px; font-size:0.8rem; font-weight:600;">✓ Done</span>
+            {% elif item.status == 'in_progress' %}
+              <span style="background:rgba(245,158,11,0.15); color:#f59e0b; padding:0.25rem 0.75rem; border-radius:9999px; font-size:0.8rem; font-weight:600;">🔴 Live</span>
+            {% else %}
+              <span style="background:rgba(255,255,255,0.05); color:var(--text-muted); padding:0.25rem 0.75rem; border-radius:9999px; font-size:0.8rem;">Pending</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+
+    {% else %}
+    {# PDF mode #}
+    <div class="court-block">
+      <div class="court-title">{{ court_name }} &mdash; {{ matches|length }} Match{{ 'es' if matches|length != 1 else '' }}</div>
+      <table class="oop-table">
+        <thead>
+          <tr>
+            <th style="width:70px;">Time</th>
+            <th>Category</th>
+            <th style="width:50px;">Round</th>
+            <th>Player 1</th>
+            <th style="width:30px;"></th>
+            <th>Player 2</th>
+            <th style="width:70px;">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in matches %}
+          <tr>
+            <td><strong>{{ item.time }}</strong></td>
+            <td>{{ item.category_name }}</td>
+            <td><span class="round-badge">R{{ item.round }}</span></td>
+            <td>{{ item.p1 }}</td>
+            <td style="text-align:center;"><span class="vs-badge">vs</span></td>
+            <td>{{ item.p2 }}</td>
+            <td class="status-{{ item.status }}">
+              {% if item.status == 'completed' %}✓ Done
+              {% elif item.status == 'in_progress' %}● Live
+              {% else %}Pending{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+
+{% else %}
+  {% if not is_export %}
+  <div class="card" style="text-align:center; padding:4rem 2rem;">
+    <div style="font-size:4rem; margin-bottom:1rem; opacity:0.4;">📋</div>
+    <h2>No Scheduled Matches</h2>
+    <p style="color:var(--text-secondary); max-width:400px; margin:1rem auto;">
+      No matches have been scheduled yet. Go to a category's management panel and use "Generate Schedule" to assign courts and times.
+    </p>
+  </div>
+  {% else %}
+  <p style="text-align:center; color:#888; margin-top:2rem;">No matches scheduled yet.</p>
+  {% endif %}
+{% endif %}
+
+{% if not is_export %}
+</div>
+{% block endscripts %}{% endblock %}
+{% endblock %}
+{% else %}
+<div class="footer">
+  Generated by TourneyPro &mdash; {{ tournament.name }}
+</div>
+</body>
+</html>
+{% endif %}
