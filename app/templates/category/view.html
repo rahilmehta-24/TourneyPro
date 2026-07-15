@@ -261,7 +261,7 @@
                             <span>Match #{{ match.match_number }}</span>
                             <div style="display: flex; align-items: center; gap: 8px;">
                                 {% if match.scheduled_time %}
-                                    <span class="match-status-badge badge-pending">📅 {{ match.scheduled_time.strftime('%d/%m/%Y %H:%M %p') }}</span>
+                                    <span class="match-status-badge badge-pending">📅 {{ match.scheduled_time.strftime('%d/%m/%Y %H:%M %p') }}{% if match.court_name %} | 🏟️ {{ match.court_name }}{% endif %}</span>
                                 {% endif %}
                                 {% if match.status == 'completed' %}
                                     <span class="match-status-badge badge-completed">✓ Complete</span>
@@ -386,7 +386,7 @@
                                         <span>Grand Final {% if match.match_number == 2 %}(Reset Match){% endif %}</span>
                                         <div style="display: flex; align-items: center; gap: 8px;">
                                             {% if match.scheduled_time %}
-                                                <span class="match-status-badge badge-pending">📅 {{ match.scheduled_time.strftime('%d/%m/%Y %H:%M %p') }}</span>
+                                                <span class="match-status-badge badge-pending">📅 {{ match.scheduled_time.strftime('%d/%m/%Y %H:%M %p') }}{% if match.court_name %} | 🏟️ {{ match.court_name }}{% endif %}</span>
                                             {% endif %}
                                             {% if match.status == 'completed' %}
                                                 <span class="match-status-badge badge-completed">✓ Complete</span>
@@ -609,7 +609,7 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 0.5rem;">
                     <div style="display: flex; align-items: center; gap: 8px;">
                         {% if match.scheduled_time %}
-                            <span class="match-status-badge badge-pending">📅 {{ match.scheduled_time.strftime('%d/%m/%Y %H:%M %p') }}</span>
+                            <span class="match-status-badge badge-pending">📅 {{ match.scheduled_time.strftime('%d/%m/%Y %H:%M %p') }}{% if match.court_name %} | 🏟️ {{ match.court_name }}{% endif %}</span>
                         {% endif %}
                         {% if match.status == 'completed' %}
                             <span class="match-status-badge badge-completed">✓ Complete</span>
