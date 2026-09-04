@@ -16,6 +16,9 @@
 .tournament-list.list-view .tournament-meta { flex: 1; display: flex; gap: 1rem; }
 .tournament-list.list-view .tournament-actions { flex: 0 0 auto; align-items: center; }
 @media (max-width: 768px) { .tournament-list.list-view .tournament-card { flex-direction: column; align-items: flex-start; } .tournament-list.list-view .tournament-actions { width: 100%; display: flex; } }
+.status-filters .filter-btn { border-color: var(--border-color); color: var(--text-secondary); background: transparent; }
+.status-filters .filter-btn:hover { background: var(--bg-hover); }
+.status-filters .filter-btn.active { background: var(--accent-primary); color: white; border-color: var(--accent-primary); }
 </style>
 {% endblock %}
 
@@ -41,54 +44,76 @@
     </div>
 
     {% if tournaments %}
-    <div class="tournament-list" id="tournamentList">
-        {% for tournament in tournaments %}
-        <div class="tournament-card">
-            <div class="tournament-header">
-                <div class="tournament-format-badge">
-                    {% if tournament.format %}
-                        {{ formats[tournament.format].icon }} {{ formats[tournament.format].name }}
-                    {% else %}
-                        🗂️ Multi-Category
-                    {% endif %}
+    <!-- Filter Bar -->
+    <div class="status-filters" style="margin-bottom: 2rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <button class="btn btn-small filter-btn active" data-filter="all">All Tournaments</button>
+        <button class="btn btn-small filter-btn" data-filter="registration">Registration</button>
+        <button class="btn btn-small filter-btn" data-filter="in_progress">In Progress</button>
+        <button class="btn btn-small filter-btn" data-filter="completed">Completed</button>
+        <button class="btn btn-small filter-btn" data-filter="setup">Setup</button>
+    </div>
+
+    <div id="tournamentContainer">
+        {% set statuses = ['registration', 'in_progress', 'completed', 'setup'] %}
+        {% for status in statuses %}
+            {% set status_tournaments = tournaments | selectattr('status', 'equalto', status) | list %}
+            {% if status_tournaments %}
+            <div class="tournament-group" data-status="{{ status }}" style="margin-bottom: 3rem;">
+                <h2 style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; color: var(--text-primary); font-size: 1.5rem; font-weight: 600;">
+                    {{ status.replace('_', ' ').title() }} <span style="font-size: 1rem; color: var(--text-muted); font-weight: normal; margin-left: 0.5rem;">({{ status_tournaments|length }})</span>
+                </h2>
+                <div class="tournament-list">
+                    {% for tournament in status_tournaments %}
+                    <div class="tournament-card">
+                        <div class="tournament-header">
+                            <div class="tournament-format-badge">
+                                {% if tournament.format %}
+                                    {{ formats[tournament.format].icon }} {{ formats[tournament.format].name }}
+                                {% else %}
+                                    🗂️ Multi-Category
+                                {% endif %}
+                            </div>
+                            <div class="tournament-status status-{{ tournament.status }}">
+                                {{ tournament.status.replace('_', ' ').title() }}
+                            </div>
+                        </div>
+                        <h3 class="tournament-name">{{ tournament.name }}</h3>
+                        {% if tournament.owner %}
+                        <p class="tournament-creator" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+                            Created by: <strong>{{ tournament.owner.username }}</strong>
+                        </p>
+                        {% elif tournament.creator_name %}
+                        <p class="tournament-creator" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+                            Created by: <strong>{{ tournament.creator_name }}</strong>
+                        </p>
+                        {% endif %}
+                        {% if tournament.game_info %}
+                        <p class="tournament-game">🎮 {{ tournament.game_info }}</p>
+                        {% endif %}
+                        <div class="tournament-meta">
+                            <span class="meta-item">👥 {{ tournament.participants|length }} participants</span>
+                            <span class="meta-item">📅 {{ tournament.created_at.strftime('%b %d, %Y') }}</span>
+                        </div>
+                        <div class="tournament-actions">
+                            <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug) }}"
+                                class="btn btn-secondary btn-small">View Tournament</a>
+                            {% if tournament.status == 'registration' and tournament.categories %}
+                            <a href="{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug) }}"
+                                class="btn btn-primary btn-small" style="background-color: var(--accent-success); border-color: var(--accent-success);">Register Now</a>
+                            {% endif %}
+                            {% if current_user and (current_user.id == tournament.user_id or current_user.role == 'superadmin') %}
+                            <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}"
+                                class="btn btn-primary btn-small">Manage</a>
+                            <form action="{{ url_for('tournament.delete_tournament', slug=tournament.url_slug) }}" method="POST" style="margin: 0; padding: 0; display: flex;" class="requires-high-risk-audit" data-audit-action="Delete Tournament">
+                                <button type="submit" class="btn btn-danger btn-small" style="padding: 0.4rem 1rem; background: var(--error); border: none; color: white; border-radius: var(--radius-sm); font-weight: 600; cursor: pointer;">Delete</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
                 </div>
-                <div class="tournament-status status-{{ tournament.status }}">
-                    {{ tournament.status.replace('_', ' ').title() }}
-                </div>
             </div>
-            <h3 class="tournament-name">{{ tournament.name }}</h3>
-            {% if tournament.owner %}
-            <p class="tournament-creator" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">
-                Created by: <strong>{{ tournament.owner.username }}</strong>
-            </p>
-            {% elif tournament.creator_name %}
-            <p class="tournament-creator" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">
-                Created by: <strong>{{ tournament.creator_name }}</strong>
-            </p>
             {% endif %}
-            {% if tournament.game_info %}
-            <p class="tournament-game">🎮 {{ tournament.game_info }}</p>
-            {% endif %}
-            <div class="tournament-meta">
-                <span class="meta-item">👥 {{ tournament.participants|length }} participants</span>
-                <span class="meta-item">📅 {{ tournament.created_at.strftime('%b %d, %Y') }}</span>
-            </div>
-            <div class="tournament-actions">
-                <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug) }}"
-                    class="btn btn-secondary btn-small">View Tournament</a>
-                {% if tournament.status == 'registration' and tournament.categories %}
-                <a href="{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug) }}"
-                    class="btn btn-primary btn-small" style="background-color: var(--accent-success); border-color: var(--accent-success);">Register Now</a>
-                {% endif %}
-                {% if current_user and (current_user.id == tournament.user_id or current_user.role == 'superadmin') %}
-                <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}"
-                    class="btn btn-primary btn-small">Manage</a>
-                <form action="{{ url_for('tournament.delete_tournament', slug=tournament.url_slug) }}" method="POST" style="margin: 0; padding: 0; display: flex;" class="requires-high-risk-audit" data-audit-action="Delete Tournament">
-                    <button type="submit" class="btn btn-danger btn-small" style="padding: 0.4rem 1rem; background: var(--error); border: none; color: white; border-radius: var(--radius-sm); font-weight: 600; cursor: pointer;">Delete</button>
-                </form>
-                {% endif %}
-            </div>
-        </div>
         {% endfor %}
     </div>
     {% else %}
@@ -105,16 +130,16 @@
 {% block extra_js %}
 <script>
 function setViewMode(mode) {
-    const list = document.getElementById("tournamentList");
+    const lists = document.querySelectorAll(".tournament-list");
     const btnGrid = document.getElementById("btnGrid");
     const btnList = document.getElementById("btnList");
     if (mode === "list") {
-        list.classList.add("list-view");
+        lists.forEach(list => list.classList.add("list-view"));
         btnList.classList.add("active");
         btnGrid.classList.remove("active");
         localStorage.setItem("tourneyViewMode", "list");
     } else {
-        list.classList.remove("list-view");
+        lists.forEach(list => list.classList.remove("list-view"));
         btnGrid.classList.add("active");
         btnList.classList.remove("active");
         localStorage.setItem("tourneyViewMode", "grid");
@@ -124,6 +149,28 @@ function setViewMode(mode) {
 document.addEventListener("DOMContentLoaded", () => {
     const savedMode = localStorage.getItem("tourneyViewMode") || "grid";
     setViewMode(savedMode);
+
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    const tournamentGroups = document.querySelectorAll('.tournament-group');
+
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Remove active class from all buttons
+            filterBtns.forEach(b => b.classList.remove('active'));
+            // Add active class to clicked button
+            btn.classList.add('active');
+
+            const filter = btn.dataset.filter;
+            
+            tournamentGroups.forEach(group => {
+                if (filter === 'all' || group.dataset.status === filter) {
+                    group.style.display = 'block';
+                } else {
+                    group.style.display = 'none';
+                }
+            });
+        });
+    });
 });
 </script>
 {% endblock %}
