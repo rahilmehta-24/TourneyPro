@@ -11,7 +11,7 @@ Algorithm:
 """
 
 from datetime import datetime, timedelta
-from app.models import db, Match, Category, Tournament
+from app.domain.models import db, Match, Category, Tournament
 
 
 def _get_court_names(tournament: Tournament, num_courts: int, custom_names: list | None) -> list:
@@ -111,7 +111,7 @@ def get_order_of_play(tournament_slug: str) -> dict:
     }
     Sorted by scheduled_time within each court.
     """
-    from app.models import Tournament as TournamentModel
+    from app.domain.models import Tournament as TournamentModel
 
     tournament = TournamentModel.query.filter_by(url_slug=tournament_slug).first_or_404()
 

@@ -1,10 +1,10 @@
-from app.utils.audit import log_audit
+from app.services.utils.audit import log_audit
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
-from app.models import db, Tournament, Participant, Match, TournamentSettings, Registration, Category, Player
-from app.formats import get_format
-from app.constants import TOURNAMENT_FORMATS
-from app.routes.auth import login_required, role_required, get_current_user, check_tournament_ownership
-from app.tennis_logic import validate_and_format_score
+from app.domain.models import db, Tournament, Participant, Match, TournamentSettings, Registration, Category, Player
+from app.services.format_engine import get_format
+from app.core.constants import TOURNAMENT_FORMATS
+from app.web.controllers.auth import login_required, role_required, get_current_user, check_tournament_ownership
+from app.services.tennis_logic import validate_and_format_score
 from slugify import slugify
 from datetime import datetime
 
@@ -343,7 +343,7 @@ def manage_tournament(slug):
                 # Handle comma-separated names
                 names = [n.strip() for n in participant_name.split(',') if n.strip()]
                 
-                from app.models import Player
+                from app.domain.models import Player
                 added_names = []
                 
                 for name in names:
@@ -653,7 +653,7 @@ def report_match_result(slug, match_id):
         match.completed_at = datetime.utcnow()
         db.session.commit()
 
-        from app.leaderboard_logic import update_live_player_stats
+        from app.services.leaderboard import update_live_player_stats
         update_live_player_stats(match)
 
         # Update next round match
@@ -824,7 +824,7 @@ def delete_tournament(slug):
 @tournament_bp.route('/tournaments/<slug>/schedule')
 def court_schedule(slug):
     """Public Court Schedule — shows all scheduled matches across all courts."""
-    from app.utils.scheduler import get_order_of_play
+    from app.services.utils.scheduler import get_order_of_play
     data = get_order_of_play(slug)
     return render_template(
         'tournament/schedule.html',
@@ -837,7 +837,7 @@ def court_schedule(slug):
 @tournament_bp.route('/tournaments/<slug>/order-of-play')
 def order_of_play(slug):
     """Order of Play page — PDF-ready, filterable by court."""
-    from app.utils.scheduler import get_order_of_play
+    from app.services.utils.scheduler import get_order_of_play
     data = get_order_of_play(slug)
     selected_court = request.args.get('court', None)
     is_export = request.args.get('export', '0') == '1'

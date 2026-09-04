@@ -1,5 +1,5 @@
-from app.formats.base import TournamentFormat
-from app.models import db, Match, Participant, Group
+from app.services.format_engine.base import TournamentFormat
+from app.domain.models import db, Match, Participant, Group
 
 class GroupStageFormat(TournamentFormat):
     name = "Group Stage + Knockout"
@@ -115,12 +115,12 @@ class GroupStageFormat(TournamentFormat):
     @classmethod
     def advance_match(cls, match, category, winner_id=None):
         if match.match_type == 'knockout':
-            from app.formats.single_elimination.logic import SingleEliminationFormat
+            from app.services.format_engine.single_elimination.logic import SingleEliminationFormat
             SingleEliminationFormat.advance_match(match, category, winner_id)
 
     @classmethod
     def calculate_final_rankings(cls, category):
-        from app.formats.single_elimination.logic import SingleEliminationFormat
+        from app.services.format_engine.single_elimination.logic import SingleEliminationFormat
         SingleEliminationFormat.calculate_final_rankings(category)
 
     @staticmethod
@@ -172,7 +172,7 @@ class GroupStageFormat(TournamentFormat):
 
     @classmethod
     def generate_knockout_from_groups(cls, category):
-        from app.formats.single_elimination.logic import SingleEliminationFormat
+        from app.services.format_engine.single_elimination.logic import SingleEliminationFormat
 
         qualifiers_per_group = category.qualifiers_per_group or 2
         groups = Group.query.filter_by(category_id=category.id).all()

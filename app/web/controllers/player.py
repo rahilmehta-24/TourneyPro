@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for
-from app.routes.auth import login_required, get_current_user, role_required
-from app.models import Player, db
+from app.web.controllers.auth import login_required, get_current_user, role_required
+from app.domain.models import Player, db
 
 player_bp = Blueprint('player', __name__)
 

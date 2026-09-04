@@ -1,5 +1,5 @@
-from app.formats.base import TournamentFormat
-from app.models import Match, Participant, db
+from app.services.format_engine.base import TournamentFormat
+from app.domain.models import Match, Participant, db
 
 class RoundRobinFormat(TournamentFormat):
     name = "Round Robin (League)"

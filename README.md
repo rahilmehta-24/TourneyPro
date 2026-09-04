@@ -37,14 +37,11 @@ A robust, production-ready Flask-based web application (and upcoming mobile appl
 ```
 TourneyPro/
 ├── app/
-│   ├── api/             # JSON REST API endpoints for the mobile application
-│   ├── algorithms/      # Bracket generation algorithms (Single Elim, Round Robin, Group Stage)
-│   ├── routes/          # Flask Blueprints (Auth, Tournament, Category, Match, Leaderboard)
-│   ├── templates/       # Jinja2 HTML Templates
-│   ├── static/          # CSS, JS, and Images
-│   ├── models.py        # SQLAlchemy Database Models
-│   ├── constants.py     # Format definitions and system constants
-│   ├── leaderboard_logic.py # Centralized stats recalculation module
+│   ├── core/            # Configs, constants, custom exceptions
+│   ├── domain/          # Core models (SQLAlchemy) and schemas
+│   ├── services/        # Business logic (brackets, leaderboards, tennis logic)
+│   ├── web/             # Flask Controllers (Blueprints), HTML Templates, Static files
+│   ├── api/             # JSON REST API endpoints (v1) for the mobile app
 │   └── __init__.py      # App factory and initialization
 ├── mobile-app/          # React Native (Expo) frontend mobile application codebase
 ├── config.py            # Environment Configuration

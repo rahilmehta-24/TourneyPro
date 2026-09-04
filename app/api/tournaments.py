@@ -1,7 +1,7 @@
 from flask import jsonify
 from . import api_bp
-from app.models import Tournament, Category
-from app.schemas import tournaments_schema, tournament_schema, category_schema
+from app.domain.models import Tournament, Category
+from app.domain.schemas import tournaments_schema, tournament_schema, category_schema
 
 @api_bp.route('/tournaments', methods=['GET'])
 def get_tournaments():

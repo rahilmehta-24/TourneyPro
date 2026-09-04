@@ -1,7 +1,7 @@
 from flask import request, jsonify
 from flask_jwt_extended import create_access_token
 from . import api_bp
-from app.models import User, db
+from app.domain.models import User, db
 
 @api_bp.route('/auth/login', methods=['POST'])
 def login():

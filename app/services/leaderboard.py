@@ -1,4 +1,4 @@
-from app.models import db, Player, PlayerTournamentRecord, Match, Participant
+from app.domain.models import db, Player, PlayerTournamentRecord, Match, Participant
 
 def assign_leaderboard_points(category):
     # Find all participants with a player_id

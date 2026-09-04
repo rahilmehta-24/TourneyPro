@@ -25,6 +25,6 @@ class Config:
                 'prepare_threshold': None
             }
         }
-    # Upload folder in 'app/static/uploads'
-    UPLOAD_FOLDER = os.path.join(basedir, 'app', 'static', 'uploads')
+    # Upload folder in 'app/web/static/uploads'
+    UPLOAD_FOLDER = os.path.join(basedir, 'app', 'web', 'static', 'uploads')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size

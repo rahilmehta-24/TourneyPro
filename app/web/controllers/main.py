@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template
-from app.models import Tournament
-from app.constants import TOURNAMENT_FORMATS
+from app.domain.models import Tournament
+from app.core.constants import TOURNAMENT_FORMATS
 
 main_bp = Blueprint('main', __name__)
 

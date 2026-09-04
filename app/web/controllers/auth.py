@@ -1,7 +1,7 @@
 import os
 from functools import wraps
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, g, abort
-from app.models import db, User
+from app.domain.models import db, User
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -115,7 +115,7 @@ def register():
         db.session.commit()  # commit to get user.id
         
         # Create initial Player profile
-        from app.models import Player
+        from app.domain.models import Player
         from datetime import datetime
         
         name = request.form.get('name', username)
@@ -274,7 +274,7 @@ def clear_user_database():
         
     target_user = User.query.get_or_404(target_user_id)
     
-    from app.models import Tournament, Player
+    from app.domain.models import Tournament, Player
     
     try:
         # Delete user's players

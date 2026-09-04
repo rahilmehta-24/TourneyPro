@@ -1,6 +1,6 @@
 import math
-from app.formats.base import TournamentFormat
-from app.models import Match, Participant
+from app.services.format_engine.base import TournamentFormat
+from app.domain.models import Match, Participant
 
 class DoubleEliminationFormat(TournamentFormat):
     name = "Double Elimination"
@@ -198,7 +198,7 @@ class DoubleEliminationFormat(TournamentFormat):
 
     @staticmethod
     def _generate_double_elimination(participants, use_manual_seeding=True):
-        from app.formats.single_elimination.logic import SingleEliminationFormat
+        from app.services.format_engine.single_elimination.logic import SingleEliminationFormat
         winners_matches = SingleEliminationFormat._generate_single_elimination(participants, use_manual_seeding)
 
         for match in winners_matches:

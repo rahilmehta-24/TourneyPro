@@ -1,4 +1,4 @@
-from app.formats.single_elimination.logic import SingleEliminationFormat
+from app.services.format_engine.single_elimination.logic import SingleEliminationFormat
 
 class DoublesEliminationFormat(SingleEliminationFormat):
     name = "Doubles Elimination"

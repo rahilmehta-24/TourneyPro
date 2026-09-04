@@ -1,6 +1,6 @@
 """Live score polling API endpoint."""
 from flask import jsonify
-from app.models import Match, Tournament
+from app.domain.models import Match, Tournament
 from app.api import api_bp
 
 

@@ -1,16 +1,16 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
-from app.models import db, Tournament, Category, Participant, Match, Group
-from app.constants import TOURNAMENT_FORMATS
-from app.formats import get_format
-from app.routes.auth import login_required, role_required, check_tournament_ownership
-from app.tennis_logic import validate_and_format_score
+from app.domain.models import db, Tournament, Category, Participant, Match, Group
+from app.core.constants import TOURNAMENT_FORMATS
+from app.services.format_engine import get_format
+from app.web.controllers.auth import login_required, role_required, check_tournament_ownership
+from app.services.tennis_logic import validate_and_format_score
 from datetime import datetime
-from app.routes.export import get_category_winners
+from app.web.controllers.export import get_category_winners
 
 category_bp = Blueprint('category', __name__)
 
 def check_category_auto_completion(category):
-    from app.models import Match
+    from app.domain.models import Match
     has_knockout = category.format in ['single_elimination', 'double_elimination'] or \
                    category.format == 'group_stage' or \
                    (category.format in ['round_robin', 'doubles_round_robin'] and category.qualifiers_per_group and category.qualifiers_per_group > 0)
@@ -203,7 +203,7 @@ def view_category(slug, category_id):
     # Get group stage data if applicable
     groups_data = None
     if category.has_group_stage:
-        from app.formats.group_stage.logic import GroupStageFormat
+        from app.services.format_engine.group_stage.logic import GroupStageFormat
         groups = Group.query.filter_by(category_id=category_id).all()
         groups_data = []
         for group in groups:
@@ -297,7 +297,7 @@ def manage_category(slug, category_id):
                     flash(f'Cannot add participants. Maximum limit of {category.max_participants} would be exceeded.', 'error')
                     return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
 
-                from app.models import Player
+                from app.domain.models import Player
                 
                 added_names = []
                 for name in names:
@@ -368,7 +368,7 @@ def manage_category(slug, category_id):
                             category.num_groups = math.ceil(total_players / category.teams_per_group) if total_players > 0 else 1
                         
                         # Generate group stage data but tag as round robin
-                        from app.formats.group_stage.logic import GroupStageFormat
+                        from app.services.format_engine.group_stage.logic import GroupStageFormat
                         matches_data = GroupStageFormat.generate(category, participants_list)
                         for match_data in matches_data:
                             match_data['match_type'] = 'round_robin'
@@ -387,7 +387,7 @@ def manage_category(slug, category_id):
                 db.session.commit()
 
                 try:
-                    from app.utils.scheduler import auto_schedule_category
+                    from app.services.utils.scheduler import auto_schedule_category
                     if category.start_date_time:
                         auto_schedule_category(category_id)
                         flash('Category started! Bracket generated and matches scheduled.', 'success')
@@ -495,7 +495,7 @@ def manage_category(slug, category_id):
                 participant_id = request.form.get('participant_id', type=int)
                 participant = Participant.query.get(participant_id)
                 if participant:
-                    from app.utils.audit import log_audit
+                    from app.services.utils.audit import log_audit
                     reason = request.form.get('audit_reason')
                     explanation = request.form.get('audit_explanation', '')
                     if not reason:
@@ -516,7 +516,7 @@ def manage_category(slug, category_id):
 
             elif action == 'reset_category':
                 if category.status in ['in_progress', 'completed']:
-                    from app.utils.audit import log_audit
+                    from app.services.utils.audit import log_audit
                     reason = request.form.get('audit_reason')
                     explanation = request.form.get('audit_explanation', '')
                     if not reason:
@@ -571,7 +571,7 @@ def manage_category(slug, category_id):
 
                 db.session.commit()
 
-                from app.leaderboard_logic import assign_leaderboard_points
+                from app.services.leaderboard import assign_leaderboard_points
                 assign_leaderboard_points(category)
 
                 flash('Tournament completed and points assigned to leaderboard! 🏆', 'success')
@@ -674,7 +674,7 @@ def delete_category(slug, category_id):
     category = Category.query.get_or_404(category_id)
     
     # Audit Validation
-    from app.utils.audit import log_audit
+    from app.services.utils.audit import log_audit
     reason = request.form.get('audit_reason')
     explanation = request.form.get('audit_explanation', '')
     if not reason:
@@ -685,7 +685,7 @@ def delete_category(slug, category_id):
         return redirect(request.referrer or url_for('tournament.view_tournament', slug=slug))
     
     try:
-        from app.models import Match, Group, Participant
+        from app.domain.models import Match, Group, Participant
         # Log Audit
         log_audit(
             action_type='delete_category',
@@ -732,7 +732,7 @@ def report_category_match_result(slug, category_id, match_id):
         
         # Audit Validation if match was already completed
         if match.status == 'completed':
-            from app.utils.audit import log_audit
+            from app.services.utils.audit import log_audit
             reason = request.form.get('audit_reason')
             explanation = request.form.get('audit_explanation', '')
             if not reason:
@@ -854,7 +854,7 @@ def report_category_match_result(slug, category_id, match_id):
         match.completed_at = datetime.utcnow()
         db.session.commit()
 
-        from app.leaderboard_logic import update_live_player_stats
+        from app.services.leaderboard import update_live_player_stats
         update_live_player_stats(match)
 
         # Stats will be recalculated at the end
@@ -869,7 +869,7 @@ def report_category_match_result(slug, category_id, match_id):
         
         # Recalculate group/round-robin stats
         if category.format in ['group_stage', 'round_robin', 'doubles_round_robin']:
-            from app.leaderboard_logic import recalculate_all_group_stats
+            from app.services.leaderboard import recalculate_all_group_stats
             recalculate_all_group_stats(category.id)
         
             
@@ -897,7 +897,7 @@ def update_grid_scores(slug, category_id):
         category.started_at = datetime.utcnow()
         # Will commit at the end
     
-    from app.models import Match
+    from app.domain.models import Match
     
     # Process form data
     # Expected format: match_{id}_p1, match_{id}_p2
@@ -962,7 +962,7 @@ def update_grid_scores(slug, category_id):
     db.session.commit()
     
     # Recalculate group/round-robin stats
-    from app.leaderboard_logic import recalculate_all_group_stats
+    from app.services.leaderboard import recalculate_all_group_stats
     recalculate_all_group_stats(category.id)
 
     # Check if category is finished
@@ -970,10 +970,10 @@ def update_grid_scores(slug, category_id):
         category.status = 'completed'
         category.completed_at = datetime.utcnow()
         if category.format in ['round_robin', 'doubles_round_robin'] and (not category.qualifiers_per_group or category.qualifiers_per_group == 0):
-            from app.leaderboard_logic import calculate_combined_round_robin_standings
+            from app.services.leaderboard import calculate_combined_round_robin_standings
             calculate_combined_round_robin_standings(category.id)
         db.session.commit()
-        from app.leaderboard_logic import assign_leaderboard_points
+        from app.services.leaderboard import assign_leaderboard_points
         assign_leaderboard_points(category)
     
     flash(f'Successfully updated {updated_count} matches.', 'success')

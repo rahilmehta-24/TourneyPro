@@ -1,5 +1,5 @@
 from flask import Blueprint, make_response, abort, redirect, url_for
-from app.models import Tournament, Category, Match, Group
+from app.domain.models import Tournament, Category, Match, Group
 import csv
 import io
 

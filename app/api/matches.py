@@ -1,10 +1,10 @@
 from flask import request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from . import api_bp
-from app.models import Match, User, db
-from app.schemas import matches_schema
-from app.formats import get_format
-from app.leaderboard_logic import update_live_player_stats, recalculate_all_group_stats
+from app.domain.models import Match, User, db
+from app.domain.schemas import matches_schema
+from app.services.format_engine import get_format
+from app.services.leaderboard import update_live_player_stats, recalculate_all_group_stats
 from datetime import datetime
 
 @api_bp.route('/matches/category/<int:category_id>', methods=['GET'])

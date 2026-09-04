@@ -1,6 +1,6 @@
 import math
-from app.formats.base import TournamentFormat
-from app.models import Match, Participant
+from app.services.format_engine.base import TournamentFormat
+from app.domain.models import Match, Participant
 
 class SingleEliminationFormat(TournamentFormat):
     name = "Knockout (Single Elimination)"

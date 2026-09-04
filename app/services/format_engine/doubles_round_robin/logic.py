@@ -1,4 +1,4 @@
-from app.formats.round_robin.logic import RoundRobinFormat
+from app.services.format_engine.round_robin.logic import RoundRobinFormat
 
 class DoublesRoundRobinFormat(RoundRobinFormat):
     name = "Doubles Round Robin"

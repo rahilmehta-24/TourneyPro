@@ -1,12 +1,12 @@
 from flask import Flask, request
 from config import Config
-from app.models import db
+from app.domain.models import db
 from flask_compress import Compress
 from flask_jwt_extended import JWTManager
 import os
 
 def create_app(config_class=Config):
-    app = Flask(__name__)
+    app = Flask(__name__, template_folder='web/templates', static_folder='web/static')
     app.config.from_object(config_class)
 
     # Initialize extensions
@@ -19,7 +19,7 @@ def create_app(config_class=Config):
     app.config['JWT_SECRET_KEY'] = app.config.get('SECRET_KEY', 'super-secret')  # Use app secret key for JWT
     jwt = JWTManager(app)
     
-    from app.schemas import ma
+    from app.domain.schemas import ma
     ma.init_app(app)
 
     # Ensure instance folder exists
@@ -39,20 +39,20 @@ def create_app(config_class=Config):
         if not os.environ.get('VERCEL'):
             try:
                 db.create_all()
-                from app.routes.auth import bootstrap_superadmin
+                from app.web.controllers.auth import bootstrap_superadmin
                 bootstrap_superadmin()
             except Exception as e:
                 import logging
                 logging.error(f'Error during db.create_all: {e}')
 
     # Register Blueprints
-    from app.routes.main import main_bp
-    from app.routes.tournament import tournament_bp
-    from app.routes.category import category_bp
-    from app.routes.export import export_bp
-    from app.routes.auth import auth_bp
-    from app.routes.leaderboard import leaderboard_bp
-    from app.routes.player import player_bp
+    from app.web.controllers.main import main_bp
+    from app.web.controllers.tournament import tournament_bp
+    from app.web.controllers.category import category_bp
+    from app.web.controllers.export import export_bp
+    from app.web.controllers.auth import auth_bp
+    from app.web.controllers.leaderboard import leaderboard_bp
+    from app.web.controllers.player import player_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(tournament_bp)
@@ -89,7 +89,7 @@ def create_app(config_class=Config):
     # Inject current_user into templates
     @app.context_processor
     def inject_user():
-        from app.routes.auth import get_current_user
+        from app.web.controllers.auth import get_current_user
         return dict(current_user=get_current_user())
 
     import traceback

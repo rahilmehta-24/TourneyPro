@@ -1,5 +1,5 @@
-from app.models import db, AuditLog
-from app.routes.auth import get_current_user
+from app.domain.models import db, AuditLog
+from app.web.controllers.auth import get_current_user
 import json
 
 def log_audit(action_type, target_id=None, target_name=None, reason=None, explanation=None, details=None):

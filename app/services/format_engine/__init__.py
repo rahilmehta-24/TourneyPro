@@ -1,9 +1,9 @@
-from app.formats.single_elimination.logic import SingleEliminationFormat
-from app.formats.doubles_elimination.logic import DoublesEliminationFormat
-from app.formats.double_elimination.logic import DoubleEliminationFormat
-from app.formats.round_robin.logic import RoundRobinFormat
-from app.formats.doubles_round_robin.logic import DoublesRoundRobinFormat
-from app.formats.group_stage.logic import GroupStageFormat
+from app.services.format_engine.single_elimination.logic import SingleEliminationFormat
+from app.services.format_engine.doubles_elimination.logic import DoublesEliminationFormat
+from app.services.format_engine.double_elimination.logic import DoubleEliminationFormat
+from app.services.format_engine.round_robin.logic import RoundRobinFormat
+from app.services.format_engine.doubles_round_robin.logic import DoublesRoundRobinFormat
+from app.services.format_engine.group_stage.logic import GroupStageFormat
 
 FormatRegistry = {
     'single_elimination': SingleEliminationFormat,
