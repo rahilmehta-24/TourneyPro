@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}{{ academy.name }} - TourneyPro{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Academy Header -->
+    <div class="card shadow-sm mb-4 border-0 bg-primary text-white">
+        <div class="card-body p-5 text-center">
+            <h1 class="display-4 fw-bold mb-3">{{ academy.name }}</h1>
+            <p class="lead mb-4">{{ academy.description }}</p>
+            
+            {% if not is_member and current_user.is_authenticated %}
+                <a href="{{ url_for('academy.join', slug=academy.url_slug) }}" class="btn btn-light btn-lg px-5 text-primary fw-bold">Join Academy</a>
+            {% elif not current_user.is_authenticated %}
+                <a href="{{ url_for('auth.login') }}" class="btn btn-light btn-lg px-5 text-primary fw-bold">Log in to Join</a>
+            {% else %}
+                <span class="badge bg-light text-primary fs-6 px-3 py-2">
+                    <i class="bi bi-check-circle-fill me-2"></i>You are a {{ member_role|title }}
+                </span>
+                {% if member_role == 'admin' %}
+                    <a href="{{ url_for('academy.members', slug=academy.url_slug) }}" class="btn btn-outline-light ms-3">Manage Members</a>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    {% if is_member %}
+    <div class="row g-4">
+        <!-- Announcements Column -->
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="mb-0"><i class="bi bi-megaphone me-2"></i>Announcements</h3>
+            </div>
+            
+            {% if member_role == 'admin' %}
+            <div class="card shadow-sm mb-4 border-primary border-opacity-25">
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('academy.post_announcement', slug=academy.url_slug) }}">
+                        <div class="mb-3">
+                            <input type="text" name="title" class="form-control fw-bold" placeholder="Announcement Title" required>
+                        </div>
+                        <div class="mb-3">
+                            <textarea name="content" class="form-control" rows="3" placeholder="Write your message here..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm">Post Announcement</button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+
+            {% for ann in announcements %}
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <h5 class="card-title text-primary">{{ ann.title }}</h5>
+                    <h6 class="card-subtitle mb-3 text-muted small">
+                        Posted by {{ ann.author.username }} on {{ ann.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+                    </h6>
+                    <p class="card-text">{{ ann.content|nl2br }}</p>
+                </div>
+            </div>
+            {% else %}
+            <div class="text-center text-muted py-4 bg-light rounded">
+                <p class="mb-0">No announcements yet.</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Tournaments Column -->
+        <div class="col-lg-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="mb-0"><i class="bi bi-trophy me-2"></i>Internal Events</h3>
+                {% if member_role in ['admin', 'superadmin'] %}
+                    <a href="{{ url_for('tournament.create_tournament', academy_id=academy.id) }}" class="btn btn-sm btn-outline-primary">Create Event</a>
+                {% endif %}
+            </div>
+            
+            {% for t in tournaments %}
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">{{ t.name }}</h5>
+                    <p class="card-text small text-muted mb-2">
+                        <i class="bi bi-calendar me-1"></i> {{ t.start_date.strftime('%b %d, %Y') if t.start_date else 'TBD' }}
+                    </p>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <span class="badge bg-{{ 'success' if t.status == 'in_progress' else 'secondary' if t.status == 'completed' else 'primary' }}">{{ t.status|replace('_', ' ')|title }}</span>
+                        <a href="{{ url_for('tournament.tournament_details', slug=t.url_slug) }}" class="btn btn-sm btn-primary">View</a>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="text-center text-muted py-4 bg-light rounded">
+                <p class="mb-0">No internal events scheduled.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <!-- Non-member view -->
+    <div class="text-center py-5">
+        <i class="bi bi-lock display-1 text-muted mb-3 d-block"></i>
+        <h3>Private Academy Hub</h3>
+        <p class="text-muted lead">You must be a member of this academy to view announcements and internal tournaments.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

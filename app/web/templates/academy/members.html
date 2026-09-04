@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Members - {{ academy.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Manage Members: {{ academy.name }}</h2>
+        <a href="{{ url_for('academy.dashboard', slug=academy.url_slug) }}" class="btn btn-outline-secondary">Back to Dashboard</a>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Add Member Manually</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('academy.members', slug=academy.url_slug) }}">
+                        <input type="hidden" name="action" value="add_manual">
+                        <div class="mb-3">
+                            <label class="form-label">User Email</label>
+                            <input type="email" name="email" class="form-control" required placeholder="player@example.com">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Role</label>
+                            <select name="role" class="form-select">
+                                <option value="member">Member</option>
+                                <option value="coach">Coach</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add Member</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Bulk Add via CSV</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">Upload a CSV file where the first column is the user's email address. The first row (header) will be ignored.</p>
+                    <form method="POST" action="{{ url_for('academy.members', slug=academy.url_slug) }}" enctype="multipart/form-data">
+                        <input type="hidden" name="action" value="upload_csv">
+                        <div class="mb-3">
+                            <input type="file" name="csv_file" class="form-control" accept=".csv" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Upload and Import</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">Current Members ({{ memberships|length }})</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Joined At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in memberships %}
+                        <tr>
+                            <td>{{ m.user.username }}</td>
+                            <td>{{ m.user.email }}</td>
+                            <td><span class="badge bg-{% if m.role == 'admin' %}danger{% elif m.role == 'coach' %}warning text-dark{% else %}primary{% endif %}">{{ m.role|title }}</span></td>
+                            <td>{{ m.joined_at.strftime('%Y-%m-%d') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

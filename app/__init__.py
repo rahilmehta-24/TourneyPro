@@ -53,11 +53,13 @@ def create_app(config_class=Config):
     from app.web.controllers.auth import auth_bp
     from app.web.controllers.leaderboard import leaderboard_bp
     from app.web.controllers.player import player_bp
+    from app.web.controllers.academy import academy_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(tournament_bp)
     app.register_blueprint(category_bp)
     app.register_blueprint(export_bp)
+    app.register_blueprint(academy_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(leaderboard_bp)
     app.register_blueprint(player_bp)

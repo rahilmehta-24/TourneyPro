@@ -20,6 +20,8 @@ def create_tournament():
         creator_name = request.form.get('creator_name', 'Anonymous')
         description = request.form.get('description', '')
         game_info = request.form.get('game_info', '')
+        academy_id = request.form.get('academy_id')
+        is_internal = request.form.get('is_internal') == 'on'
         # Set legacy values for backwards compatibility, but do not prompt for them
         format_type = None
         max_participants = None
@@ -46,7 +48,9 @@ def create_tournament():
             max_participants=max_participants,
             num_sets=num_sets,
             games_per_set=games_per_set,
-            has_categories=True  # Force categories for all new tournaments
+            has_categories=True,  # Force categories for all new tournaments
+            academy_id=academy_id if academy_id else None,
+            is_internal=is_internal
         )
 
         try:
@@ -57,15 +61,23 @@ def create_tournament():
             settings = TournamentSettings(tournament_id=tournament.id)
             db.session.add(settings)
             db.session.commit()
+            log_audit(
+                action='CREATE_TOURNAMENT',
+                target_id=tournament.id,
+                target_name=tournament.name,
+                reason='Created new tournament',
+                details={'creator_name': creator_name, 'academy_id': academy_id}
+            )
 
             flash('Tournament created successfully!', 'success')
             return redirect(url_for('tournament.manage_tournament', slug=tournament.url_slug))
         except Exception as e:
             db.session.rollback()
-            flash(f'Failed to create tournament: {str(e)}', 'error')
-            return redirect(url_for('main.index'))
+            flash('Error creating tournament. Please try again.', 'error')
+            print(f"Error: {e}")
 
-    return render_template('tournament/create.html', formats=TOURNAMENT_FORMATS)
+    academy_id = request.args.get('academy_id')
+    return render_template('tournament/create.html', academy_id=academy_id, formats=TOURNAMENT_FORMATS)
 
 @tournament_bp.route('/tournaments/<slug>')
 def view_tournament(slug):

@@ -25,6 +25,10 @@ class Tournament(db.Model):
     num_sets = db.Column(db.Integer, default=1)  # 1, 2 or 3 sets
     games_per_set = db.Column(db.Integer, default=6)  # games to win a set
 
+    # Academy Integration
+    academy_id = db.Column(db.Integer, db.ForeignKey('academies.id'), nullable=True)
+    is_internal = db.Column(db.Boolean, default=False)
+
     # Court scheduling fields
     num_courts = db.Column(db.Integer, default=1)
     court_names = db.Column(db.Text)  # JSON list of court names e.g. '["Court 1", "Court 2"]'
@@ -280,3 +284,43 @@ class Registration(db.Model):
     user = db.relationship('User', backref=db.backref('registrations', cascade='all, delete-orphan'))
     player = db.relationship('Player', foreign_keys=[player_id])
     player2 = db.relationship('Player', foreign_keys=[player2_id])
+
+class Academy(db.Model):
+    __tablename__ = 'academies'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    url_slug = db.Column(db.String(200), unique=True, nullable=False)
+    description = db.Column(db.Text)
+    owner_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    owner = db.relationship('User', backref='owned_academies')
+    tournaments = db.relationship('Tournament', backref='academy', lazy=True)
+    announcements = db.relationship('AcademyAnnouncement', backref='academy', lazy=True, cascade='all, delete-orphan')
+    members = db.relationship('AcademyMember', backref='academy', lazy=True, cascade='all, delete-orphan')
+
+class AcademyMember(db.Model):
+    __tablename__ = 'academy_members'
+
+    id = db.Column(db.Integer, primary_key=True)
+    academy_id = db.Column(db.Integer, db.ForeignKey('academies.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    role = db.Column(db.String(50), default='member')  # admin, coach, member
+    joined_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref=db.backref('academy_memberships', cascade='all, delete-orphan'))
+
+class AcademyAnnouncement(db.Model):
+    __tablename__ = 'academy_announcements'
+
+    id = db.Column(db.Integer, primary_key=True)
+    academy_id = db.Column(db.Integer, db.ForeignKey('academies.id'), nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    author = db.relationship('User', backref='academy_announcements')
+

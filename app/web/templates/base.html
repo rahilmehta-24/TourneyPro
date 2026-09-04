@@ -57,6 +57,7 @@
             <!-- Main Links (Center) -->
             <div class="nav-links-main" id="navLinksMain">
                 <a href="{{ url_for('main.index') }}" class="nav-link">Home</a>
+                <a href="{{ url_for('academy.index') }}" class="nav-link">Academies</a>
                 <a href="{{ url_for('leaderboard.view_leaderboard') }}" class="nav-link">Leaderboard</a>
                 <a href="{{ url_for('main.tournament_list') }}" class="nav-link">Tournaments</a>
                 {% if current_user %}

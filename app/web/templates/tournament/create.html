@@ -12,6 +12,17 @@
     <form method="POST" class="tournament-form">
         <div class="form-section">
             <h2 class="form-section-title">Basic Information</h2>
+            
+            {% if academy_id %}
+            <input type="hidden" name="academy_id" value="{{ academy_id }}">
+            <div class="form-group alert alert-info py-2 px-3 mb-4">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="is_internal" name="is_internal" checked>
+                    <label class="form-check-label fw-bold" for="is_internal">Make this an Internal Academy Tournament</label>
+                </div>
+                <small class="text-muted d-block mt-1">If checked, this tournament will not appear on the public browse page and only academy members can view and join it.</small>
+            </div>
+            {% endif %}
 
             <div class="form-group">
                 <label for="name" class="form-label">Tournament Name *</label>
