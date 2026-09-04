@@ -173,8 +173,8 @@ class MatchAttachment(db.Model):
     file_path = db.Column(db.String(500), nullable=False)
     uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    match = db.relationship('Match', backref='attachments')
-    participant = db.relationship('Participant', backref='attachments')
+    match = db.relationship('Match', backref=db.backref('attachments', cascade='all, delete-orphan'))
+    participant = db.relationship('Participant', backref=db.backref('attachments', cascade='all, delete-orphan'))
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -275,8 +275,8 @@ class Registration(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships
-    tournament = db.relationship('Tournament', backref='registrations')
-    category = db.relationship('Category', backref='registrations')
-    user = db.relationship('User', backref='registrations')
+    tournament = db.relationship('Tournament', backref=db.backref('registrations', cascade='all, delete-orphan'))
+    category = db.relationship('Category', backref=db.backref('registrations', cascade='all, delete-orphan'))
+    user = db.relationship('User', backref=db.backref('registrations', cascade='all, delete-orphan'))
     player = db.relationship('Player', foreign_keys=[player_id])
     player2 = db.relationship('Player', foreign_keys=[player2_id])
