@@ -215,8 +215,14 @@
             console.log("%c© Built for Tennis by Rahil Mehta. All rights reserved.", "color: #f97316; font-family: monospace; font-size: 1.1em; font-weight: bold; margin-top: 10px;");
             // ------------------------------
 
-            document.addEventListener('turbo:load', setupThemeToggle);
-            document.addEventListener('DOMContentLoaded', setupThemeToggle);
+            document.addEventListener('turbo:load', () => {
+                setupThemeToggle();
+                setupAutoRefresh();
+            });
+            document.addEventListener('DOMContentLoaded', () => {
+                setupThemeToggle();
+                setupAutoRefresh();
+            });
             
             function setupThemeToggle() {
                 const themeBtn = document.getElementById('themeToggleBtn');
@@ -248,6 +254,50 @@
                         themeIcon.textContent = '☀️';
                     }
                 });
+            }
+
+            function setupAutoRefresh() {
+                if (window.tourneyAutoRefreshInterval) {
+                    clearInterval(window.tourneyAutoRefreshInterval);
+                }
+                
+                const containersToUpdate = [
+                    '.bracket-container',
+                    '.bracket',
+                    '.category-grid',
+                    '.overall-leaderboard',
+                    '.group-standings-section',
+                    '.podium-container'
+                ];
+                
+                const hasContainers = containersToUpdate.some(selector => document.querySelector(selector));
+                if (!hasContainers) return;
+
+                window.tourneyAutoRefreshInterval = setInterval(async () => {
+                    // Prevent updates while a modal is open to not disrupt user interaction
+                    if (document.querySelector('.modal[style*="display: flex"]') || document.querySelector('.modal[style*="display: block"]')) return;
+                    
+                    try {
+                        const response = await fetch(window.location.href);
+                        if (!response.ok) return;
+                        const html = await response.text();
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        
+                        containersToUpdate.forEach(selector => {
+                            const currentEls = document.querySelectorAll(selector);
+                            const newEls = doc.querySelectorAll(selector);
+                            
+                            if (currentEls.length === newEls.length && currentEls.length > 0) {
+                                for (let i = 0; i < currentEls.length; i++) {
+                                    currentEls[i].innerHTML = newEls[i].innerHTML;
+                                }
+                            }
+                        });
+                    } catch (err) {
+                        console.error('Auto-refresh failed', err);
+                    }
+                }, 15000); // 15 seconds
             }
         </script>
 </body>
