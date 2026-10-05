@@ -24,6 +24,7 @@ class Tournament(db.Model):
     completed_at = db.Column(db.DateTime)
     num_sets = db.Column(db.Integer, default=1)  # 1, 2 or 3 sets
     games_per_set = db.Column(db.Integer, default=6)  # games to win a set
+    payment_upi_id = db.Column(db.String(100)) # Admin's UPI ID for manual payments
 
     # Academy Integration
     academy_id = db.Column(db.Integer, db.ForeignKey('academies.id'), nullable=True)
@@ -279,6 +280,7 @@ class Registration(db.Model):
     status = db.Column(db.String(20), default='pending') # pending, approved, rejected
     payment_status = db.Column(db.String(20), default='pending') # pending, paid, refunded
     amount_due = db.Column(db.Float, default=0.0)
+    transaction_id = db.Column(db.String(100)) # User's submitted UPI transaction ID
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships

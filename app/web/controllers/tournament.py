@@ -19,6 +19,7 @@ def create_tournament():
         name = request.form.get('name')
         creator_name = request.form.get('creator_name', 'Anonymous')
         description = request.form.get('description', '')
+        payment_upi_id = request.form.get('payment_upi_id', '').strip()
         game_info = request.form.get('game_info', '')
         academy_id = request.form.get('academy_id')
         is_internal = request.form.get('is_internal') == 'on'
@@ -50,7 +51,8 @@ def create_tournament():
             games_per_set=games_per_set,
             has_categories=True,  # Force categories for all new tournaments
             academy_id=academy_id if academy_id else None,
-            is_internal=is_internal
+            is_internal=is_internal,
+            payment_upi_id=payment_upi_id if payment_upi_id else None
         )
 
         try:
@@ -323,12 +325,15 @@ def register_for_tournament(slug):
             cat_fee = cat.entry_fee or 0.0
             amount_due = cat_fee * 2 if "Doubles" in cat.name else cat_fee
             
+            transaction_id = request.form.get('transaction_id', '').strip()
+            
             reg = Registration(
                 tournament_id=tournament.id, category_id=cat.id,
                 user_id=current_u.id, player_id=player.id,
                 partner_name=cat_partner_name, partner_mobile=cat_partner_mobile,
                 status='approved',
                 amount_due=amount_due,
+                transaction_id=transaction_id if amount_due > 0 else None,
                 payment_status='pending' if amount_due > 0 else 'paid'
             )
             db.session.add(reg)
