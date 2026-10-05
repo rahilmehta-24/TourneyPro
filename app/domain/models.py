@@ -58,6 +58,7 @@ class Category(db.Model):
     completed_at = db.Column(db.DateTime)
     num_sets = db.Column(db.Integer, default=1)  # 1, 2 or 3 sets
     games_per_set = db.Column(db.Integer, default=6)  # games to win a set
+    entry_fee = db.Column(db.Float, default=0.0) # Entry fee per person
 
     # Group stage specific fields
     has_group_stage = db.Column(db.Boolean, default=False)
@@ -276,6 +277,8 @@ class Registration(db.Model):
     partner_name = db.Column(db.String(100))
     partner_mobile = db.Column(db.String(20))
     status = db.Column(db.String(20), default='pending') # pending, approved, rejected
+    payment_status = db.Column(db.String(20), default='pending') # pending, paid, refunded
+    amount_due = db.Column(db.Float, default=0.0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships

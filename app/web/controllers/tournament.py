@@ -320,11 +320,16 @@ def register_for_tournament(slug):
             cat_partner_name = partners_data.get(cat.id, {}).get('name')
             cat_partner_mobile = partners_data.get(cat.id, {}).get('mobile')
             
+            cat_fee = cat.entry_fee or 0.0
+            amount_due = cat_fee * 2 if "Doubles" in cat.name else cat_fee
+            
             reg = Registration(
                 tournament_id=tournament.id, category_id=cat.id,
                 user_id=current_u.id, player_id=player.id,
                 partner_name=cat_partner_name, partner_mobile=cat_partner_mobile,
-                status='approved'
+                status='approved',
+                amount_due=amount_due,
+                payment_status='pending' if amount_due > 0 else 'paid'
             )
             db.session.add(reg)
             

@@ -99,6 +99,11 @@
                         <input type="number" name="max_participants" class="form-input" value="{{ category.max_participants or '' }}" placeholder="Unlimited" min="2" style="width: 100%;">
                     </div>
 
+                    <div class="form-group">
+                        <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Entry Fee (Per Person)</label>
+                        <input type="number" name="entry_fee" class="form-input" value="{{ category.entry_fee or 0.0 }}" min="0" step="0.01" style="width: 100%;">
+                    </div>
+
                     <div class="form-section" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.05);">
                         <h4 style="margin-bottom: var(--spacing-sm); color: var(--text-primary);">📅 Schedule & Courts Settings</h4>
                         <div class="form-group">

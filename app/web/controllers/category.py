@@ -95,6 +95,7 @@ def create_category(slug):
             except ValueError:
                 pass
         avg_match_duration = request.form.get('avg_match_duration', type=int, default=60)
+        entry_fee = request.form.get('entry_fee', type=float, default=0.0)
 
         category = Category(
             tournament_id=tournament.id,
@@ -118,7 +119,8 @@ def create_category(slug):
             num_courts=num_courts,
             court_names=court_names,
             start_date_time=start_date_time,
-            avg_match_duration=avg_match_duration
+            avg_match_duration=avg_match_duration,
+            entry_fee=entry_fee
         )
 
         try:
@@ -433,6 +435,7 @@ def manage_category(slug, category_id):
                 category.scoring_format = scoring_format
                 category.points_to_win = points_to_win
                 category.max_players_per_team = max_players_per_team
+                category.entry_fee = request.form.get('entry_fee', type=float, default=0.0)
                 
                 # Scheduling fields
                 category.num_courts = request.form.get('num_courts', type=int, default=1)

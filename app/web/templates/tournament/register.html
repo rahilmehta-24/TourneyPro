@@ -17,8 +17,8 @@
                     <div id="category_select" style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: var(--radius-md); max-height: 200px; overflow-y: auto;">
                         {% for cat in categories %}
                             <label style="display: block; margin-bottom: 0.5rem; cursor: pointer;">
-                                <input type="checkbox" name="category_id" value="{{ cat.id }}" data-name="{{ cat.name|lower }}" onchange="checkDoubles()" style="margin-right: 0.5rem;">
-                                {{ cat.name }}
+                                <input type="checkbox" name="category_id" value="{{ cat.id }}" data-name="{{ cat.name|lower }}" data-fee="{{ cat.entry_fee or 0 }}" onchange="updateForm()" style="margin-right: 0.5rem;">
+                                {{ cat.name }} {% if cat.entry_fee %} (₹{{ cat.entry_fee }}) {% else %} (Free) {% endif %}
                             </label>
                         {% endfor %}
                     </div>
@@ -80,10 +80,15 @@
                 <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; font-size: 0.9rem; color: var(--text-secondary);">
                     <i class="fas fa-info-circle"></i> <strong>Note:</strong> Registration is currently auto-approved upon completion. You will be instantly enrolled into the participant list.
                 </div>
+
+                <div id="payment_summary" style="display: none; background: rgba(0,255,0,0.1); padding: 1.5rem; border-radius: var(--radius-md); border: 2px solid var(--primary); margin-bottom: 1.5rem; text-align: center;">
+                    <h3 style="margin: 0; color: var(--text-primary);">Total Amount Due: <span id="total_amount" style="font-weight: bold;">₹0.00</span></h3>
+                    <p style="margin: 0.5rem 0 0 0; color: var(--text-muted); font-size: 0.9rem;">(Doubles categories cover both partners)</p>
+                </div>
                 
                 <div class="form-actions" style="margin-top: 2rem;">
                     <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug) }}" class="btn btn-secondary">Cancel</a>
-                    <button type="submit" class="btn btn-primary" style="padding-left: 2rem; padding-right: 2rem;">Submit Registration</button>
+                    <button type="submit" class="btn btn-primary" style="padding-left: 2rem; padding-right: 2rem;">Submit Registration & Pay</button>
                 </div>
             </form>
         </div>
@@ -91,9 +96,11 @@
 </div>
 
 <script>
-function checkDoubles() {
+function updateForm() {
     const checkboxes = document.querySelectorAll('input[name="category_id"]:checked');
     const container = document.getElementById('doubles_partners_container');
+    const paymentSummary = document.getElementById('payment_summary');
+    const totalAmountSpan = document.getElementById('total_amount');
     
     // Remember existing values so we don't clear them when another checkbox is clicked
     const existingData = {};
@@ -103,13 +110,18 @@ function checkDoubles() {
     });
 
     container.innerHTML = ''; // Clear container
+    let totalFee = 0.0;
 
     checkboxes.forEach((cb) => {
         const catName = cb.getAttribute('data-name');
         const catId = cb.value;
-        const rawCatName = cb.parentNode.innerText.trim();
+        const fee = parseFloat(cb.getAttribute('data-fee') || 0);
+        const rawCatName = cb.parentNode.innerText.trim().split(' (')[0];
+        
+        let categoryFee = fee;
         
         if (catName && catName.includes('double')) {
+            categoryFee = fee * 2;
             const partnerDiv = document.createElement('div');
             partnerDiv.style = "margin-bottom: 1.5rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: var(--radius-md); border-left: 3px solid var(--primary);";
             
@@ -131,7 +143,17 @@ function checkDoubles() {
             `;
             container.appendChild(partnerDiv);
         }
+        
+        totalFee += categoryFee;
     });
+    
+    if (checkboxes.length > 0 && totalFee > 0) {
+        paymentSummary.style.display = 'block';
+        totalAmountSpan.innerText = '₹' + totalFee.toFixed(2);
+    } else {
+        paymentSummary.style.display = 'none';
+        totalAmountSpan.innerText = '₹0.00';
+    }
 }
 </script>
 {% endblock %}
