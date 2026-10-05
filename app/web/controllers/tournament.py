@@ -1,6 +1,6 @@
 from app.services.utils.audit import log_audit
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
-from app.domain.models import db, Tournament, Participant, Match, TournamentSettings, Registration, Category, Player
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
+from app.domain.models import db, Tournament, Participant, Match, TournamentSettings, Registration, Category, Player, User
 from app.services.format_engine import get_format
 from app.core.constants import TOURNAMENT_FORMATS
 from app.web.controllers.auth import login_required, role_required, get_current_user, check_tournament_ownership
@@ -257,14 +257,20 @@ def register_for_tournament(slug):
             db.session.add(reg)
             
         else:
-            # Guest User
+            # Smart Account Creation
             participant_name = request.form.get('guest_name', '').strip()
+            participant_email = request.form.get('guest_email', '').strip()
+            participant_password = request.form.get('guest_password', '')
             participant_mobile = request.form.get('guest_mobile', '').strip()
             participant_gender = request.form.get('guest_gender', '').strip()
             participant_dob_str = request.form.get('guest_dob', '').strip()
             
-            if not participant_name or not participant_mobile or not participant_gender or not participant_dob_str:
-                flash('All guest information is required.', 'error')
+            if not participant_name or not participant_email or not participant_password or not participant_mobile or not participant_gender or not participant_dob_str:
+                flash('All registration fields are required.', 'error')
+                return redirect(url_for('tournament.register_for_tournament', slug=slug))
+                
+            if len(participant_password) < 6:
+                flash('Password must be at least 6 characters long.', 'error')
                 return redirect(url_for('tournament.register_for_tournament', slug=slug))
                 
             try:
@@ -273,19 +279,46 @@ def register_for_tournament(slug):
                 flash('Invalid date format for Date of Birth.', 'error')
                 return redirect(url_for('tournament.register_for_tournament', slug=slug))
                 
-            participant_email = None # Email removed for guests, using mobile instead
-            
-            # Can't reliably check if guest is already registered without player_id, but could check by name/mobile
-            existing = Participant.query.filter_by(
-                tournament_id=tournament.id, category_id=category_id, name=participant_name, mobile=participant_mobile
-            ).first()
-            if existing:
-                flash('A guest with this name and mobile number is already registered for this category.', 'warning')
-                return redirect(url_for('tournament.view_tournament', slug=slug))
+            existing_user = User.query.filter_by(email=participant_email).first()
+            if existing_user:
+                flash('An account with this email already exists. Please log in first to register.', 'warning')
+                return redirect(url_for('tournament.register_for_tournament', slug=slug))
                 
+            username_base = participant_email.split('@')[0]
+            username = username_base
+            suffix = 1
+            while User.query.filter_by(username=username).first():
+                username = f"{username_base}{suffix}"
+                suffix += 1
+                
+            new_user = User(
+                username=username,
+                email=participant_email,
+                role='user'
+            )
+            new_user.set_password(participant_password)
+            db.session.add(new_user)
+            db.session.flush() # To get new_user.id
+            
+            session['user_id'] = new_user.id
+            session.permanent = True
+            current_u = new_user
+            
+            player = Player(
+                user_id=new_user.id,
+                name=participant_name,
+                email=participant_email,
+                contact_number=participant_mobile,
+                gender=participant_gender,
+                dob=participant_dob,
+                age_category='Open'
+            )
+            db.session.add(player)
+            db.session.flush() # To get player.id
+            
             reg = Registration(
                 tournament_id=tournament.id, category_id=category_id,
-                user_id=None, player_id=None,
+                user_id=current_u.id, player_id=player.id,
                 partner_name=partner_name, partner_mobile=partner_mobile,
                 status='approved'
             )
@@ -294,7 +327,7 @@ def register_for_tournament(slug):
         # Create Participant instantly for both
         p = Participant(
             tournament_id=tournament.id, category_id=category_id,
-            player_id=player.id if player else None,
+            player_id=player.id,
             name=participant_name, email=participant_email, mobile=participant_mobile,
             gender=participant_gender, dob=participant_dob,
             partner_name=partner_name, partner_mobile=partner_mobile
