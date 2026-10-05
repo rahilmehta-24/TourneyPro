@@ -290,14 +290,18 @@
                             
                             if (currentEls.length === newEls.length && currentEls.length > 0) {
                                 for (let i = 0; i < currentEls.length; i++) {
-                                    currentEls[i].innerHTML = newEls[i].innerHTML;
+                                    if (currentEls[i].innerHTML !== newEls[i].innerHTML) {
+                                        currentEls[i].innerHTML = newEls[i].innerHTML;
+                                        currentEls[i].classList.add('live-updated');
+                                        setTimeout(() => { if(currentEls[i]) currentEls[i].classList.remove('live-updated'); }, 2000);
+                                    }
                                 }
                             }
                         });
                     } catch (err) {
                         console.error('Auto-refresh failed', err);
                     }
-                }, 15000); // 15 seconds
+                }, 3000); // 3 seconds
             }
         </script>
 </body>
