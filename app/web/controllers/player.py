@@ -20,6 +20,46 @@ def dashboard():
     if current_user.role == 'superadmin':
         all_players = Player.query.filter(Player.registration_no.isnot(None), Player.registration_no != '').order_by(Player.name).all()
     
+    from app.domain.models import Participant, Match
+    from datetime import datetime
+    
+    dashboard_data = []
+    for p in players:
+        participants = Participant.query.filter(
+            db.or_(Participant.player_id == p.id, Participant.player2_id == p.id)
+        ).all()
+        participant_ids = [part.id for part in participants]
+        
+        matches = []
+        if participant_ids:
+            matches = Match.query.filter(
+                db.or_(
+                    Match.participant1_id.in_(participant_ids),
+                    Match.participant2_id.in_(participant_ids)
+                )
+            ).order_by(Match.scheduled_time.asc().nulls_last()).all()
+            
+        upcoming_matches = [m for m in matches if m.status in ['pending', 'in_progress'] and m.participant1_id and m.participant2_id]
+        match_history = [m for m in matches if m.status == 'completed']
+        match_history.sort(key=lambda m: m.completed_at or m.scheduled_time or datetime.min, reverse=True)
+        
+        wins = sum(1 for m in match_history if m.winner_id in participant_ids)
+        losses = len(match_history) - wins
+        win_rate = (wins / len(match_history) * 100) if match_history else 0
+        
+        dashboard_data.append({
+            'player': p,
+            'upcoming_matches': upcoming_matches,
+            'match_history': match_history,
+            'participant_ids': participant_ids,
+            'stats': {
+                'matches_played': len(match_history),
+                'wins': wins,
+                'losses': losses,
+                'win_rate': round(win_rate, 1)
+            }
+        })
+    
     if request.method == 'POST':
         from datetime import datetime
         
@@ -86,7 +126,7 @@ def dashboard():
             flash('Profile updated successfully!', 'success')
             return redirect(url_for('player.dashboard'))
             
-    return render_template('player/dashboard.html', players=players, all_players=all_players)
+    return render_template('player/dashboard.html', players=players, dashboard_data=dashboard_data, all_players=all_players)
 
 
 @player_bp.route('/admin/players')

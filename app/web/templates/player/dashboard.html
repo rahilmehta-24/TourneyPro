@@ -56,8 +56,9 @@
 {% else %}
 <div class="dashboard-grid">
     <div class="dashboard-main">
-        {% if players %}
-            {% for player in players %}
+        {% if dashboard_data %}
+            {% for data in dashboard_data %}
+            {% set player = data.player %}
             <div class="card" style="margin-bottom: 2rem;">
                 <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, var(--bg-card), var(--bg-secondary));">
                     <div style="display: flex; align-items: center; gap: 1rem;">
@@ -223,6 +224,99 @@
                             <p style="margin: 0; color: var(--text-secondary);">No tournaments played yet.</p>
                         </div>
                     {% endif %}
+                </div>
+                
+                <!-- Player Analytics & Matches Section -->
+                <div style="padding: 1.5rem; border-top: 1px solid var(--border-color); background: rgba(0,0,0,0.02);">
+                    <!-- Analytics Summary -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                        <div class="stat-card" style="background: var(--bg-card); padding: 1rem; border-radius: var(--radius-md); text-align: center; border: 1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                            <div style="font-size: 2rem; font-weight: bold; color: var(--accent-primary);">{{ data.stats.matches_played }}</div>
+                            <div style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Matches Played</div>
+                        </div>
+                        <div class="stat-card" style="background: var(--bg-card); padding: 1rem; border-radius: var(--radius-md); text-align: center; border: 1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                            <div style="font-size: 2rem; font-weight: bold; color: var(--accent-success);">{{ data.stats.wins }}</div>
+                            <div style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Wins</div>
+                        </div>
+                        <div class="stat-card" style="background: var(--bg-card); padding: 1rem; border-radius: var(--radius-md); text-align: center; border: 1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                            <div style="font-size: 2rem; font-weight: bold; color: var(--error);">{{ data.stats.losses }}</div>
+                            <div style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Losses</div>
+                        </div>
+                        <div class="stat-card" style="background: var(--bg-card); padding: 1rem; border-radius: var(--radius-md); text-align: center; border: 1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                            <div style="font-size: 2rem; font-weight: bold; color: var(--accent-secondary);">{{ data.stats.win_rate }}%</div>
+                            <div style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Win Rate</div>
+                        </div>
+                    </div>
+
+                    <!-- Matches Container -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+                        <!-- Upcoming Matches -->
+                        <div>
+                            <h4 style="margin-top: 0; margin-bottom: 1rem; color: var(--text-primary); border-bottom: 2px solid var(--accent-primary); padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <span>⏳</span> Upcoming Matches
+                            </h4>
+                            {% if data.upcoming_matches %}
+                                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                                {% for match in data.upcoming_matches %}
+                                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                                        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted);">
+                                            <span>{{ match.tournament.name if match.tournament else 'Tournament' }}</span>
+                                            <span style="color: var(--accent-secondary);">Round {{ match.round }}</span>
+                                        </div>
+                                        <div style="display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 1.1rem;">
+                                            <span style="{% if match.participant1_id in data.participant_ids %}color: var(--accent-primary);{% endif %}">{{ match.participant1.name if match.participant1 else 'TBD' }}</span>
+                                            <span style="color: var(--text-muted); font-size: 0.9rem;">VS</span>
+                                            <span style="{% if match.participant2_id in data.participant_ids %}color: var(--accent-primary);{% endif %}">{{ match.participant2.name if match.participant2 else 'TBD' }}</span>
+                                        </div>
+                                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-top: 0.5rem;">
+                                            <span style="background: rgba(255,255,255,0.1); padding: 0.2rem 0.5rem; border-radius: 4px;">📅 {{ match.scheduled_time.strftime('%b %d, %H:%M') if match.scheduled_time else 'TBD' }}</span>
+                                            <span style="background: rgba(255,255,255,0.1); padding: 0.2rem 0.5rem; border-radius: 4px;">🏟️ {{ match.court_name or 'TBD' }}</span>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                                </div>
+                            {% else %}
+                                <p style="color: var(--text-muted); font-style: italic; background: var(--bg-card); padding: 1rem; border-radius: var(--radius-md); text-align: center;">No upcoming matches scheduled.</p>
+                            {% endif %}
+                        </div>
+
+                        <!-- Match History -->
+                        <div>
+                            <h4 style="margin-top: 0; margin-bottom: 1rem; color: var(--text-primary); border-bottom: 2px solid var(--accent-success); padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <span>✅</span> Recent Match History
+                            </h4>
+                            {% if data.match_history %}
+                                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                                {% for match in data.match_history[:5] %}
+                                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                                        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted);">
+                                            <span>{{ match.tournament.name if match.tournament else 'Tournament' }}</span>
+                                            <span>{{ match.completed_at.strftime('%b %d, %Y') if match.completed_at else (match.scheduled_time.strftime('%b %d, %Y') if match.scheduled_time else '') }}</span>
+                                        </div>
+                                        <div style="display: flex; justify-content: space-between; align-items: center; font-weight: bold;">
+                                            <span style="{% if match.winner_id == match.participant1_id %}color: var(--accent-success);{% elif match.participant1_id in data.participant_ids %}color: var(--error);{% endif %}">
+                                                {{ match.participant1.name if match.participant1 else 'TBD' }}
+                                                {% if match.winner_id == match.participant1_id %}🏆{% endif %}
+                                            </span>
+                                            <span style="background: rgba(255,255,255,0.05); padding: 0.2rem 0.5rem; border-radius: 4px; font-family: monospace;">{{ match.score1 or '-' }} : {{ match.score2 or '-' }}</span>
+                                            <span style="{% if match.winner_id == match.participant2_id %}color: var(--accent-success);{% elif match.participant2_id in data.participant_ids %}color: var(--error);{% endif %}">
+                                                {% if match.winner_id == match.participant2_id %}🏆{% endif %}
+                                                {{ match.participant2.name if match.participant2 else 'TBD' }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                                {% if data.match_history|length > 5 %}
+                                    <div style="text-align: center; margin-top: 0.5rem;">
+                                        <a href="{{ url_for('player.view_player', player_id=player.id) }}" style="color: var(--accent-primary); font-size: 0.9rem; text-decoration: none;">View Full History &rarr;</a>
+                                    </div>
+                                {% endif %}
+                                </div>
+                            {% else %}
+                                <p style="color: var(--text-muted); font-style: italic; background: var(--bg-card); padding: 1rem; border-radius: var(--radius-md); text-align: center;">No matches played yet.</p>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
             </div>
             {% endfor %}
