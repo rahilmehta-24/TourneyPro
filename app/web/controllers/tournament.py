@@ -62,7 +62,7 @@ def create_tournament():
             db.session.add(settings)
             db.session.commit()
             log_audit(
-                action='CREATE_TOURNAMENT',
+                action_type='CREATE_TOURNAMENT',
                 target_id=tournament.id,
                 target_name=tournament.name,
                 reason='Created new tournament',
