@@ -161,14 +161,30 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.classList.add('active');
 
             const filter = btn.dataset.filter;
+            let hasVisible = false;
             
             tournamentGroups.forEach(group => {
                 if (filter === 'all' || group.dataset.status === filter) {
                     group.style.display = 'block';
+                    hasVisible = true;
                 } else {
                     group.style.display = 'none';
                 }
             });
+            
+            let emptyState = document.getElementById('filterEmptyState');
+            if (!hasVisible) {
+                if (!emptyState) {
+                    emptyState = document.createElement('div');
+                    emptyState.id = 'filterEmptyState';
+                    emptyState.className = 'empty-state';
+                    emptyState.innerHTML = '<div class="empty-icon" style="font-size: 3rem; margin-bottom: 1rem;">📂</div><p style="color: var(--text-secondary);">No tournaments found in this status.</p>';
+                    document.getElementById('tournamentContainer').appendChild(emptyState);
+                }
+                emptyState.style.display = 'block';
+            } else if (emptyState) {
+                emptyState.style.display = 'none';
+            }
         });
     });
 });
