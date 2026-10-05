@@ -1,9 +1,7 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, abort, current_app
-from werkzeug.utils import secure_filename
-import os
+from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
 import csv
 from app import db
-from app.domain.models import Academy, AcademyMember, AcademyAnnouncement, Tournament, User, Player
+from app.domain.models import Academy, AcademyMember, AcademyAnnouncement, Tournament, User
 from app.web.controllers.auth import login_required, get_current_user
 
 academy_bp = Blueprint('academy', __name__, url_prefix='/academies')
@@ -149,7 +147,8 @@ def members(slug):
                     added = 0
                     not_found = 0
                     for idx, row in enumerate(reader):
-                        if idx == 0: continue # Skip header
+                        if idx == 0:
+                            continue  # Skip header
                         if len(row) > 0:
                             email = row[0].strip()
                             user = User.query.filter_by(email=email).first()

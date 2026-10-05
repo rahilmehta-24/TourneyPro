@@ -12,11 +12,11 @@ def get_visible_tournaments(limit=None):
     if current_user:
         user_academy_ids = [m.academy_id for m in current_user.academy_memberships]
         if user_academy_ids:
-            query = query.filter((Tournament.is_internal == False) | (Tournament.is_internal == None) | (Tournament.academy_id.in_(user_academy_ids)))
+            query = query.filter(Tournament.is_internal.is_(False) | Tournament.is_internal.is_(None) | Tournament.academy_id.in_(user_academy_ids))
         else:
-            query = query.filter((Tournament.is_internal == False) | (Tournament.is_internal == None))
+            query = query.filter(Tournament.is_internal.is_(False) | Tournament.is_internal.is_(None))
     else:
-        query = query.filter((Tournament.is_internal == False) | (Tournament.is_internal == None))
+        query = query.filter(Tournament.is_internal.is_(False) | Tournament.is_internal.is_(None))
         
     query = query.order_by(Tournament.created_at.desc())
     if limit:
