@@ -216,17 +216,23 @@ def register_for_tournament(slug):
             return redirect(url_for('player.dashboard'))
     
     if request.method == 'POST':
-        category_id = request.form.get('category_id', type=int)
-        category = Category.query.get_or_404(category_id)
-        is_doubles = "Doubles" in category.name
-        
-        partner_name = request.form.get('partner_name', '').strip() if is_doubles else None
-        partner_mobile = request.form.get('partner_mobile', '').strip() if is_doubles else None
-        
-        if is_doubles and not partner_name:
-            flash('Partner name is required for Doubles categories.', 'error')
+        category_ids = request.form.getlist('category_id', type=int)
+        if not category_ids:
+            flash('Please select at least one category.', 'error')
             return redirect(url_for('tournament.register_for_tournament', slug=slug))
             
+        selected_categories = Category.query.filter(Category.id.in_(category_ids)).all()
+        
+        partners_data = {}
+        for cat in selected_categories:
+            if "Doubles" in cat.name:
+                p_name = request.form.get(f'partner_name_{cat.id}', '').strip()
+                p_mobile = request.form.get(f'partner_mobile_{cat.id}', '').strip()
+                if not p_name:
+                    flash(f'Partner name is required for {cat.name}.', 'error')
+                    return redirect(url_for('tournament.register_for_tournament', slug=slug))
+                partners_data[cat.id] = {'name': p_name, 'mobile': p_mobile}
+                
         # Process participant details based on login status
         from datetime import datetime
         
@@ -238,24 +244,16 @@ def register_for_tournament(slug):
             participant_gender = player.gender
             participant_dob = player.dob
             
-            # Check if already registered
-            existing = Registration.query.filter_by(
-                tournament_id=tournament.id, 
-                category_id=category_id, 
-                player_id=player.id
+            # Check if already registered for ANY of the selected categories
+            existing = Registration.query.filter(
+                Registration.tournament_id == tournament.id, 
+                Registration.category_id.in_(category_ids), 
+                Registration.player_id == player.id
             ).first()
             if existing:
-                flash('You are already registered for this category.', 'warning')
+                flash('You are already registered for one or more of the selected categories.', 'warning')
                 return redirect(url_for('tournament.view_tournament', slug=slug))
                 
-            reg = Registration(
-                tournament_id=tournament.id, category_id=category_id,
-                user_id=current_u.id, player_id=player.id,
-                partner_name=partner_name, partner_mobile=partner_mobile,
-                status='approved'
-            )
-            db.session.add(reg)
-            
         else:
             # Smart Account Creation
             participant_name = request.form.get('guest_name', '').strip()
@@ -281,8 +279,9 @@ def register_for_tournament(slug):
                 
             existing_user = User.query.filter_by(email=participant_email).first()
             if existing_user:
-                flash('An account with this email already exists. Please log in first to register.', 'warning')
-                return redirect(url_for('tournament.register_for_tournament', slug=slug))
+                flash('An account with this email already exists. Please log in to continue registration.', 'warning')
+                next_url = url_for('tournament.register_for_tournament', slug=slug)
+                return redirect(url_for('auth.login', next=next_url))
                 
             username_base = participant_email.split('@')[0]
             username = username_base
@@ -316,23 +315,28 @@ def register_for_tournament(slug):
             db.session.add(player)
             db.session.flush() # To get player.id
             
+        # Create Registrations and Participants for each category
+        for cat in selected_categories:
+            cat_partner_name = partners_data.get(cat.id, {}).get('name')
+            cat_partner_mobile = partners_data.get(cat.id, {}).get('mobile')
+            
             reg = Registration(
-                tournament_id=tournament.id, category_id=category_id,
+                tournament_id=tournament.id, category_id=cat.id,
                 user_id=current_u.id, player_id=player.id,
-                partner_name=partner_name, partner_mobile=partner_mobile,
+                partner_name=cat_partner_name, partner_mobile=cat_partner_mobile,
                 status='approved'
             )
             db.session.add(reg)
             
-        # Create Participant instantly for both
-        p = Participant(
-            tournament_id=tournament.id, category_id=category_id,
-            player_id=player.id,
-            name=participant_name, email=participant_email, mobile=participant_mobile,
-            gender=participant_gender, dob=participant_dob,
-            partner_name=partner_name, partner_mobile=partner_mobile
-        )
-        db.session.add(p)
+            p = Participant(
+                tournament_id=tournament.id, category_id=cat.id,
+                player_id=player.id,
+                name=participant_name, email=participant_email, mobile=participant_mobile,
+                gender=participant_gender, dob=participant_dob,
+                partner_name=cat_partner_name, partner_mobile=cat_partner_mobile
+            )
+            db.session.add(p)
+            
         db.session.commit()
         
         flash('Registration successful! You are now officially enrolled in the tournament.', 'success')

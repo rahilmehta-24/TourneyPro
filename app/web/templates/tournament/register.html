@@ -12,14 +12,16 @@
             <form method="POST" id="registrationForm">
                 
                 <div class="form-group" style="margin-bottom: 1.5rem;">
-                    <label class="form-label" style="font-size: 1.1rem; color: var(--text-primary);">Select Category</label>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">Which event are you signing up for?</p>
-                    <select name="category_id" id="category_select" class="form-input" required onchange="checkDoubles()">
-                        <option value="" disabled selected>-- Select a category --</option>
+                    <label class="form-label" style="font-size: 1.1rem; color: var(--text-primary);">Select Categories</label>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">Which events are you signing up for? (You can select multiple)</p>
+                    <div id="category_select" style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: var(--radius-md); max-height: 200px; overflow-y: auto;">
                         {% for cat in categories %}
-                            <option value="{{ cat.id }}" data-name="{{ cat.name|lower }}">{{ cat.name }}</option>
+                            <label style="display: block; margin-bottom: 0.5rem; cursor: pointer;">
+                                <input type="checkbox" name="category_id" value="{{ cat.id }}" data-name="{{ cat.name|lower }}" onchange="checkDoubles()" style="margin-right: 0.5rem;">
+                                {{ cat.name }}
+                            </label>
                         {% endfor %}
-                    </select>
+                    </div>
                 </div>
 
                 {% if player %}
@@ -71,15 +73,8 @@
                 </div>
                 {% endif %}
 
-                <div class="form-group" id="doubles_section" style="display: none; margin-bottom: 1.5rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: var(--radius-md); border-left: 3px solid var(--primary);">
-                    <h4 style="margin-top: 0; color: var(--text-primary);">Doubles Partner Details</h4>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">Since you selected a Doubles category, please provide your partner's information.</p>
-                    
-                    <label class="form-label">Partner Name *</label>
-                    <input type="text" name="partner_name" id="partner_name_input" class="form-input" style="margin-bottom: 1rem;">
-                    
-                    <label class="form-label">Partner Mobile *</label>
-                    <input type="text" name="partner_mobile" id="partner_mobile_input" class="form-input">
+                <div id="doubles_partners_container">
+                    <!-- Javascript will dynamically inject partner inputs here for each selected doubles category -->
                 </div>
 
                 <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; font-size: 0.9rem; color: var(--text-secondary);">
@@ -97,22 +92,46 @@
 
 <script>
 function checkDoubles() {
-    const select = document.getElementById('category_select');
-    const selectedOption = select.options[select.selectedIndex];
-    const catName = selectedOption.getAttribute('data-name');
-    const doublesSection = document.getElementById('doubles_section');
+    const checkboxes = document.querySelectorAll('input[name="category_id"]:checked');
+    const container = document.getElementById('doubles_partners_container');
     
-    if (catName && catName.includes('double')) {
-        doublesSection.style.display = 'block';
-        document.getElementById('partner_name_input').required = true;
-        document.getElementById('partner_mobile_input').required = true;
-    } else {
-        doublesSection.style.display = 'none';
-        document.getElementById('partner_name_input').required = false;
-        document.getElementById('partner_mobile_input').required = false;
-        document.getElementById('partner_name_input').value = "";
-        document.getElementById('partner_mobile_input').value = "";
-    }
+    // Remember existing values so we don't clear them when another checkbox is clicked
+    const existingData = {};
+    const existingInputs = container.querySelectorAll('input');
+    existingInputs.forEach(input => {
+        existingData[input.name] = input.value;
+    });
+
+    container.innerHTML = ''; // Clear container
+
+    checkboxes.forEach((cb) => {
+        const catName = cb.getAttribute('data-name');
+        const catId = cb.value;
+        const rawCatName = cb.parentNode.innerText.trim();
+        
+        if (catName && catName.includes('double')) {
+            const partnerDiv = document.createElement('div');
+            partnerDiv.style = "margin-bottom: 1.5rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: var(--radius-md); border-left: 3px solid var(--primary);";
+            
+            const nameInputName = 'partner_name_' + catId;
+            const mobileInputName = 'partner_mobile_' + catId;
+            
+            const nameVal = existingData[nameInputName] || '';
+            const mobileVal = existingData[mobileInputName] || '';
+
+            partnerDiv.innerHTML = `
+                <h4 style="margin-top: 0; color: var(--text-primary);">${rawCatName} Partner Details</h4>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">Please provide your partner's information for this category.</p>
+                
+                <label class="form-label">Partner Name *</label>
+                <input type="text" name="${nameInputName}" class="form-input" style="margin-bottom: 1rem;" required value="${nameVal}">
+                
+                <label class="form-label">Partner Mobile *</label>
+                <input type="text" name="${mobileInputName}" class="form-input" required value="${mobileVal}">
+            `;
+            container.appendChild(partnerDiv);
+        }
+    });
 }
 </script>
 {% endblock %}
