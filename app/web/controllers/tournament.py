@@ -312,10 +312,11 @@ def register_for_tournament(slug):
             db.session.add(reg)
             
             if reg_status == 'approved':
+                display_name = f"{participant_name} / {cat_partner_name}" if cat_partner_name else participant_name
                 p = Participant(
                     tournament_id=tournament.id, category_id=cat.id,
                     player_id=new_player.id,
-                    name=participant_name, email=participant_email, mobile=participant_mobile,
+                    name=display_name, email=participant_email, mobile=participant_mobile,
                     gender=participant_gender, dob=participant_dob,
                     partner_name=cat_partner_name, partner_mobile=cat_partner_mobile
                 )
@@ -351,7 +352,7 @@ def manage_tournament(slug):
                     participant = Participant(
                         tournament_id=tournament.id,
                         category_id=reg.category_id,
-                        name=f"{reg.player.name}{' / ' + reg.player2.name if reg.player2 else ''}",
+                        name=f"{reg.player.name}{' / ' + reg.partner_name if reg.partner_name else ''}",
                         player_id=reg.player_id,
                         player2_id=reg.player2_id
                     )
