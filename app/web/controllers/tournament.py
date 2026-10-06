@@ -1,5 +1,5 @@
 from app.services.utils.audit import log_audit
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from app.domain.models import db, Tournament, Participant, Match, TournamentSettings, Registration, Category, Player, User
 from app.services.format_engine import get_format
 from app.core.constants import TOURNAMENT_FORMATS
@@ -235,112 +235,82 @@ def register_for_tournament(slug):
                     return redirect(url_for('tournament.register_for_tournament', slug=slug))
                 partners_data[cat.id] = {'name': p_name, 'mobile': p_mobile}
                 
-        # Process participant details based on login status
+        # Anonymous Free Registration Logic
         from datetime import datetime
         
+        participant_name = request.form.get('guest_name', '').strip()
+        participant_email = request.form.get('guest_email', '').strip()
+        participant_mobile = request.form.get('guest_mobile', '').strip()
+        participant_gender = request.form.get('guest_gender', '').strip()
+        participant_dob_str = request.form.get('guest_dob', '').strip()
+        
+        # If user is logged in, auto-fill from their profile if fields are empty
         if player:
-            # Logged in User
-            participant_name = player.name
-            participant_email = current_u.email
-            participant_mobile = player.mobile if hasattr(player, 'mobile') else None
-            participant_gender = player.gender
+            participant_name = participant_name or player.name
+            participant_email = participant_email or current_u.email
+            participant_mobile = participant_mobile or (player.mobile if hasattr(player, 'mobile') else None)
+            participant_gender = participant_gender or player.gender
             participant_dob = player.dob
+        
+        if not participant_name or not participant_email or not participant_gender or not participant_dob_str:
+            flash('Name, Email, Gender, and Date of Birth are required.', 'error')
+            return redirect(url_for('tournament.register_for_tournament', slug=slug))
             
-            # Check if already registered for ANY of the selected categories
-            existing = Registration.query.filter(
-                Registration.tournament_id == tournament.id, 
-                Registration.category_id.in_(category_ids), 
-                Registration.player_id == player.id
-            ).first()
-            if existing:
-                flash('You are already registered for one or more of the selected categories.', 'warning')
-                return redirect(url_for('tournament.view_tournament', slug=slug))
-                
-        else:
-            # Smart Account Creation
-            participant_name = request.form.get('guest_name', '').strip()
-            participant_email = request.form.get('guest_email', '').strip()
-            participant_password = request.form.get('guest_password', '')
-            participant_mobile = request.form.get('guest_mobile', '').strip()
-            participant_gender = request.form.get('guest_gender', '').strip()
-            participant_dob_str = request.form.get('guest_dob', '').strip()
-            
-            if not participant_name or not participant_email or not participant_password or not participant_mobile or not participant_gender or not participant_dob_str:
-                flash('All registration fields are required.', 'error')
-                return redirect(url_for('tournament.register_for_tournament', slug=slug))
-                
-            if len(participant_password) < 6:
-                flash('Password must be at least 6 characters long.', 'error')
-                return redirect(url_for('tournament.register_for_tournament', slug=slug))
-                
-            try:
+        try:
+            if participant_dob_str:
                 participant_dob = datetime.strptime(participant_dob_str, '%Y-%m-%d').date()
-            except ValueError:
-                flash('Invalid date format for Date of Birth.', 'error')
-                return redirect(url_for('tournament.register_for_tournament', slug=slug))
-                
-            existing_user = User.query.filter_by(email=participant_email).first()
-            if existing_user:
-                flash('An account with this email already exists. Please log in to continue registration.', 'warning')
-                next_url = url_for('tournament.register_for_tournament', slug=slug)
-                return redirect(url_for('auth.login', next=next_url))
-                
-            username_base = participant_email.split('@')[0]
-            username = username_base
-            suffix = 1
-            while User.query.filter_by(username=username).first():
-                username = f"{username_base}{suffix}"
-                suffix += 1
-                
-            new_user = User(
-                username=username,
-                email=participant_email,
-                role='user'
-            )
-            new_user.set_password(participant_password)
-            db.session.add(new_user)
-            db.session.flush() # To get new_user.id
+        except ValueError:
+            flash('Invalid date format for Date of Birth.', 'error')
+            return redirect(url_for('tournament.register_for_tournament', slug=slug))
+
+        # 1. Ensure we have an anonymous dummy user for Registration.user_id (which is not nullable)
+        anon_email = 'anonymous@tourneypro.com'
+        anon_user = User.query.filter_by(email=anon_email).first()
+        if not anon_user:
+            anon_user = User(username='anonymous_registrations', email=anon_email, role='user')
+            anon_user.set_password('random_unused_password_1234')
+            db.session.add(anon_user)
+            db.session.flush()
             
-            session['user_id'] = new_user.id
-            session.permanent = True
-            current_u = new_user
+        current_u_id = current_u.id if current_u else anon_user.id
             
-            player = Player(
-                user_id=new_user.id,
-                name=participant_name,
-                email=participant_email,
-                contact_number=participant_mobile,
-                gender=participant_gender,
-                dob=participant_dob,
-                age_category='Open'
-            )
-            db.session.add(player)
-            db.session.flush() # To get player.id
+        # 2. Create a Player profile (unlinked to a user if guest)
+        new_player = player if player else Player(
+            user_id=None,
+            name=participant_name,
+            email=participant_email,
+            contact_number=participant_mobile,
+            gender=participant_gender,
+            dob=participant_dob,
+            age_category='Open'
+        )
+        if not player:
+            db.session.add(new_player)
+            db.session.flush()
             
         # Create Registrations and Participants for each category
         for cat in selected_categories:
             cat_partner_name = partners_data.get(cat.id, {}).get('name')
             cat_partner_mobile = partners_data.get(cat.id, {}).get('mobile')
             
-            cat_fee = cat.entry_fee or 0.0
-            amount_due = cat_fee * 2 if "Doubles" in cat.name else cat_fee
+            amount_due = 0.0 # Totally free
             
-            transaction_id = request.form.get('transaction_id', '').strip()
+            transaction_id = None
             
             reg = Registration(
                 tournament_id=tournament.id, category_id=cat.id,
-                user_id=current_u.id, player_id=player.id,
+                user_id=current_u_id, player_id=new_player.id,
                 partner_name=cat_partner_name, partner_mobile=cat_partner_mobile,
                 status='approved',
                 amount_due=amount_due,
-                transaction_id=transaction_id if amount_due > 0 else None,
-                payment_status='pending' if amount_due > 0 else 'paid'
+                transaction_id=transaction_id,
+                payment_status='paid'
             )
             db.session.add(reg)
             
             p = Participant(
                 tournament_id=tournament.id, category_id=cat.id,
-                player_id=player.id,
+                player_id=new_player.id,
                 name=participant_name, email=participant_email, mobile=participant_mobile,
                 gender=participant_gender, dob=participant_dob,
                 partner_name=cat_partner_name, partner_mobile=cat_partner_mobile

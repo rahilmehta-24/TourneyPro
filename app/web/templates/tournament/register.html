@@ -46,10 +46,6 @@
                         <label class="form-label">Email Address *</label>
                         <input type="email" name="guest_email" class="form-input" required placeholder="Enter your email">
                     </div>
-                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
-                        <label class="form-label">Password *</label>
-                        <input type="password" name="guest_password" class="form-input" required placeholder="Choose a password (min 6 chars)" minlength="6">
-                    </div>
                 </div>
                 
                 <div class="form-group" style="margin-bottom: 1.5rem;">
@@ -81,29 +77,11 @@
                     <i class="fas fa-info-circle"></i> <strong>Note:</strong> Registration is currently auto-approved upon completion. You will be instantly enrolled into the participant list.
                 </div>
 
-                <div id="payment_summary" style="display: none; background: rgba(0,255,0,0.1); padding: 1.5rem; border-radius: var(--radius-md); border: 2px solid var(--primary); margin-bottom: 1.5rem; text-align: center;">
-                    <h3 style="margin: 0; color: var(--text-primary);">Total Amount Due: <span id="total_amount" style="font-weight: bold;">₹0.00</span></h3>
-                    <p style="margin: 0.5rem 0 0 0; color: var(--text-muted); font-size: 0.9rem;">(Doubles categories cover both partners)</p>
-                    
-                    {% if tournament.payment_upi_id %}
-                    <div id="upi_payment_section" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid rgba(0,255,0,0.2);">
-                        <h4 style="margin: 0 0 1rem 0;">Scan to Pay via UPI</h4>
-                        <div id="qr_code_container" style="background: white; padding: 10px; display: inline-block; border-radius: 8px; margin-bottom: 1rem;">
-                            <img id="upi_qr_img" src="" alt="UPI QR Code" style="width: 200px; height: 200px;">
-                        </div>
-                        <p style="font-size: 1rem; margin-bottom: 1rem;">UPI ID: <strong>{{ tournament.payment_upi_id }}</strong></p>
-                        
-                        <div class="form-group" style="max-width: 300px; margin: 0 auto; text-align: left;">
-                            <label class="form-label">Transaction ID / UTR *</label>
-                            <input type="text" name="transaction_id" id="transaction_id" class="form-input" placeholder="e.g. 301294829391" required>
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
+                <!-- Payments Removed -->
                 
                 <div class="form-actions" style="margin-top: 2rem;">
                     <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug) }}" class="btn btn-secondary">Cancel</a>
-                    <button type="submit" class="btn btn-primary" style="padding-left: 2rem; padding-right: 2rem;">Submit Registration & Pay</button>
+                    <button type="submit" class="btn btn-primary" style="padding-left: 2rem; padding-right: 2rem;">Submit Registration</button>
                 </div>
             </form>
         </div>
@@ -159,28 +137,10 @@ function updateForm() {
             container.appendChild(partnerDiv);
         }
         
+        
         totalFee += categoryFee;
     });
-    
-    if (checkboxes.length > 0 && totalFee > 0) {
-        paymentSummary.style.display = 'block';
-        totalAmountSpan.innerText = '₹' + totalFee.toFixed(2);
-        
-        {% if tournament.payment_upi_id %}
-        const upiId = "{{ tournament.payment_upi_id }}";
-        const tName = "{{ tournament.name|urlencode }}";
-        // Generate UPI URI
-        const upiString = `upi://pay?pa=${upiId}&pn=${tName}&am=${totalFee.toFixed(2)}&cu=INR`;
-        document.getElementById('upi_qr_img').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiString)}`;
-        document.getElementById('transaction_id').required = true;
-        {% endif %}
-    } else {
-        paymentSummary.style.display = 'none';
-        totalAmountSpan.innerText = '₹0.00';
-        {% if tournament.payment_upi_id %}
-        document.getElementById('transaction_id').required = false;
-        {% endif %}
-    }
 }
+
 </script>
 {% endblock %}
