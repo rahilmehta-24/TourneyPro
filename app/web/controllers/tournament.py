@@ -268,7 +268,9 @@ def register_for_tournament(slug):
             flash('Invalid date format for Date of Birth.', 'error')
             return redirect(url_for('tournament.register_for_tournament', slug=slug))
 
-        # 1. Ensure we have an anonymous dummy user for Registration.user_id (which is not nullable)
+        # 1. SMART REGISTRATION: Ensure we have an anonymous dummy user for Registration.user_id 
+        # The Registration table requires a user_id. For unauthenticated (guest) users, we map 
+        # their registrations to a shared 'anonymous_registrations' system account.
         anon_email = 'anonymous@tourneypro.com'
         anon_user = User.query.filter_by(email=anon_email).first()
         if not anon_user:
@@ -279,7 +281,10 @@ def register_for_tournament(slug):
             
         current_u_id = current_u.id if current_u else anon_user.id
             
-        # 2. Create a Player profile (unlinked to a user if guest)
+        # 2. GUEST PROFILE CREATION: Create a standalone Player profile
+        # If this is a guest registration, we create a Player profile that is intentionally 
+        # NOT linked to a User account (user_id=None). This allows the system to track their 
+        # stats and matches independently.
         new_player = player if player else Player(
             user_id=None,
             name=participant_name,
