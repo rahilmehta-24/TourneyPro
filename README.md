@@ -10,12 +10,14 @@ A robust, production-ready Flask-based web application (and upcoming mobile appl
   - **Multi-Category Architecture:** A single tournament can host dozens of distinct events (e.g., Men's Singles, Under-15s, Mixed Doubles) all running completely different formats independently.
 
 - **Match & Score Management**
+  - **Unified Admin Wizard:** Seamless Step-by-Step management dashboard (Setup -> Categories -> Registration -> Execution) to streamline organizer workflows.
   - Interactive grid and bracket UI for visualizing live progress.
   - Two distinct scoring modes: "Total Games Scoring" (cumulative numeric points) or "Standard Tennis Set Scoring" (traditional Best-of-3 or Best-of-5 sets with tiebreaks).
-  - Admin controls for manual result reporting, progressing winners, and resetting faulty brackets.
+  - Admin controls for manual result reporting, progressing winners, and resetting faulty brackets (safeguarded against duplicate execution).
   - *[Upcoming]* Mobile App Companion for on-the-go score reporting by admins and live tracking by fans.
 
-- **Global Player Statistics**
+- **Smart Registration & Ecosystem**
+  - **Guest Registration:** Intelligent 'Smart Registration' flow allows unauthenticated users to register. The system automatically provisions standalone Player profiles and maps them to a secure system account, tracking their lifetime stats effortlessly.
   - Maintains a centralized Player Registry across all tournaments.
   - Dynamically calculates lifetime wins, losses, win rates, and podium finishes.
   - Real-time Leaderboards synchronized with live bracket results.
@@ -23,6 +25,7 @@ A robust, production-ready Flask-based web application (and upcoming mobile appl
 - **Enterprise & Security**
   - PostgreSQL Database backend optimized for relational integrity (Foreign Key enforcement).
   - Role-based Access Control (RBAC): SuperAdmin, Admin, and public viewer segregation.
+  - **Intelligent Timezone Handling:** Admin dashboards natively detect and convert local browser time to UTC for critical deadlines (e.g., Registration Closures and Category Start Times).
   - REST API (`/api/v1/`) with JWT authentication to support mobile and third-party integrations.
 
 ## Tech Stack
