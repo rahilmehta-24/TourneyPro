@@ -31,9 +31,6 @@ def check_category_auto_completion(category):
                 
     return True
 
-@category_bp.route('/tournaments/<slug>/categories/new', methods=['GET', 'POST'])
-@login_required
-@role_required('admin', 'superadmin')
 def start_single_category(category, tournament):
     """Helper to start a single category and generate brackets."""
     from app.domain.models import Participant, Match, db
@@ -75,6 +72,9 @@ def start_single_category(category, tournament):
         pass
 
 
+@category_bp.route('/tournaments/<slug>/categories/new', methods=['GET', 'POST'])
+@login_required
+@role_required('admin', 'superadmin')
 def create_category(slug):
     """Create new category within tournament"""
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
