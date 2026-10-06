@@ -293,29 +293,33 @@ def register_for_tournament(slug):
             cat_partner_name = partners_data.get(cat.id, {}).get('name')
             cat_partner_mobile = partners_data.get(cat.id, {}).get('mobile')
             
-            amount_due = 0.0 # Totally free
+            cat_fee = cat.entry_fee or 0.0
+            amount_due = cat_fee * 2 if "Doubles" in cat.name else cat_fee
             
-            transaction_id = None
+            transaction_id = request.form.get('transaction_id', '').strip()
+            
+            reg_status = 'pending' if amount_due > 0 else 'approved'
             
             reg = Registration(
                 tournament_id=tournament.id, category_id=cat.id,
                 user_id=current_u_id, player_id=new_player.id,
                 partner_name=cat_partner_name, partner_mobile=cat_partner_mobile,
-                status='approved',
+                status=reg_status,
                 amount_due=amount_due,
-                transaction_id=transaction_id,
-                payment_status='paid'
+                transaction_id=transaction_id if amount_due > 0 else None,
+                payment_status='pending' if amount_due > 0 else 'paid'
             )
             db.session.add(reg)
             
-            p = Participant(
-                tournament_id=tournament.id, category_id=cat.id,
-                player_id=new_player.id,
-                name=participant_name, email=participant_email, mobile=participant_mobile,
-                gender=participant_gender, dob=participant_dob,
-                partner_name=cat_partner_name, partner_mobile=cat_partner_mobile
-            )
-            db.session.add(p)
+            if reg_status == 'approved':
+                p = Participant(
+                    tournament_id=tournament.id, category_id=cat.id,
+                    player_id=new_player.id,
+                    name=participant_name, email=participant_email, mobile=participant_mobile,
+                    gender=participant_gender, dob=participant_dob,
+                    partner_name=cat_partner_name, partner_mobile=cat_partner_mobile
+                )
+                db.session.add(p)
             
         db.session.commit()
         
