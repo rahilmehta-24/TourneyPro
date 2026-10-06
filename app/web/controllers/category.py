@@ -408,7 +408,7 @@ def manage_category(slug, category_id):
                 else:
                     flash('Category started! Bracket generated. Configure start time to enable auto-scheduling.', 'info')
 
-                return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
+                return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
 
             elif action == 'update_settings':
                 name = request.form.get('name')
@@ -588,7 +588,7 @@ def manage_category(slug, category_id):
                 assign_leaderboard_points(category)
 
                 flash('Tournament completed and points assigned to leaderboard! 🏆', 'success')
-                return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
+                return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
         except Exception as e:
             db.session.rollback()
             flash(f'Failed to perform action: {str(e)}', 'error')

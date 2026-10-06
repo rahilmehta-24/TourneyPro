@@ -5,7 +5,7 @@
 {% block content %}
 <div class="container">
     <h1>Create New Category</h1>
-    <p class="subtitle">Tournament: {{ tournament.name }}</p>
+    <p class="subtitle">Tournament: <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}" style="color: var(--accent-primary); text-decoration: none;">{{ tournament.name }}</a></p>
 
     <form method="POST" class="form-card">
         <div class="form-group">

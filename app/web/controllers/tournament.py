@@ -452,7 +452,7 @@ def manage_tournament(slug):
                             start_single_category(cat, tournament)
                             
                     flash('Tournament started! Brackets generated for all categories.', 'success')
-                    return redirect(url_for('tournament.view_tournament', slug=slug))
+                    return redirect(url_for('tournament.manage_tournament', slug=slug))
                 else:
                     # Legacy tournament without categories
                     if tournament.format == 'single_elimination':
@@ -472,7 +472,7 @@ def manage_tournament(slug):
                         db.session.commit()
 
                         flash('Tournament started! Bracket generated.', 'success')
-                        return redirect(url_for('tournament.view_tournament', slug=slug))
+                        return redirect(url_for('tournament.manage_tournament', slug=slug))
                     else:
                         flash(f'Format "{tournament.format}" is not yet implemented. Coming soon!', 'warning')
 
@@ -519,7 +519,7 @@ def manage_tournament(slug):
                 db.session.commit()
 
                 flash('Tournament completed! 🏆', 'success')
-                return redirect(url_for('tournament.view_tournament', slug=slug))
+                return redirect(url_for('tournament.manage_tournament', slug=slug))
         except Exception as e:
             db.session.rollback()
             flash(f'Failed to perform action: {str(e)}', 'error')

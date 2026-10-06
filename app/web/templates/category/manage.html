@@ -8,7 +8,7 @@
     <div class="page-header" style="margin-bottom: var(--spacing-lg); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--spacing-md);">
         <div>
             <h1 class="page-title" style="margin-bottom: var(--spacing-xs);">Manage Category: {{ category.name }}</h1>
-            <p class="page-subtitle">Tournament: <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug) }}" style="color: var(--accent-primary); text-decoration: none; font-weight: 600;">{{ tournament.name }}</a> | Format: <strong style="color: var(--text-primary);">{{ formats[category.format].name }}</strong></p>
+            <p class="page-subtitle">Tournament: <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}" style="color: var(--accent-primary); text-decoration: none; font-weight: 600;">{{ tournament.name }}</a> | Format: <strong style="color: var(--text-primary);">{{ formats[category.format].name }}</strong></p>
         </div>
         <div class="page-actions">
             <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-primary" style="background: var(--gradient-primary); border: none;">
