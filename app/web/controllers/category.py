@@ -34,6 +34,47 @@ def check_category_auto_completion(category):
 @category_bp.route('/tournaments/<slug>/categories/new', methods=['GET', 'POST'])
 @login_required
 @role_required('admin', 'superadmin')
+def start_single_category(category, tournament):
+    """Helper to start a single category and generate brackets."""
+    from app.domain.models import Participant, Match, db
+    from app.services.format_engine import get_format
+    from datetime import datetime
+
+    participants_list = Participant.query.filter_by(category_id=category.id).all()
+    fmt = get_format(category.format)
+    if fmt:
+        if category.format in ['round_robin', 'doubles_round_robin'] and category.teams_per_group and category.teams_per_group >= 3:
+            import math
+            total_players = len(participants_list)
+            if not category.num_groups:
+                category.num_groups = math.ceil(total_players / category.teams_per_group) if total_players > 0 else 1
+            
+            from app.services.format_engine.group_stage.logic import GroupStageFormat
+            matches_data = GroupStageFormat.generate(category, participants_list)
+            for match_data in matches_data:
+                match_data['match_type'] = 'round_robin'
+                match = Match(**match_data, tournament_id=tournament.id)
+                db.session.add(match)
+        else:
+            matches_data = fmt.generate(category, participants_list)
+            for match_data in matches_data:
+                if 'category_id' not in match_data:
+                    match_data['category_id'] = category.id
+                match = Match(**match_data, tournament_id=tournament.id)
+                db.session.add(match)
+
+    category.status = 'in_progress'
+    category.started_at = datetime.utcnow()
+    db.session.commit()
+
+    try:
+        from app.services.utils.scheduler import auto_schedule_category
+        if category.start_date_time:
+            auto_schedule_category(category.id)
+    except Exception:
+        pass
+
+
 def create_category(slug):
     """Create new category within tournament"""
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
@@ -358,46 +399,15 @@ def manage_category(slug, category_id):
                 if tournament.status not in ['in_progress', 'completed']:
                     tournament.status = 'in_progress'
                     tournament.started_at = datetime.utcnow()
-                    
-                participants_list = Participant.query.filter_by(category_id=category_id).all()
+                    db.session.commit()
+                
+                start_single_category(category, tournament)
+                
+                if category.start_date_time:
+                    flash('Category started! Bracket generated and matches scheduled.', 'success')
+                else:
+                    flash('Category started! Bracket generated. Configure start time to enable auto-scheduling.', 'info')
 
-                fmt = get_format(category.format)
-                if fmt:
-                    if category.format in ['round_robin', 'doubles_round_robin'] and category.teams_per_group and category.teams_per_group >= 3:
-                        import math
-                        total_players = len(participants_list)
-                        if not category.num_groups:
-                            category.num_groups = math.ceil(total_players / category.teams_per_group) if total_players > 0 else 1
-                        
-                        # Generate group stage data but tag as round robin
-                        from app.services.format_engine.group_stage.logic import GroupStageFormat
-                        matches_data = GroupStageFormat.generate(category, participants_list)
-                        for match_data in matches_data:
-                            match_data['match_type'] = 'round_robin'
-                            match = Match(**match_data, tournament_id=tournament.id)
-                            db.session.add(match)
-                    else:
-                        matches_data = fmt.generate(category, participants_list)
-                        for match_data in matches_data:
-                            if 'category_id' not in match_data:
-                                match_data['category_id'] = category.id
-                            match = Match(**match_data, tournament_id=tournament.id)
-                            db.session.add(match)
-
-                category.status = 'in_progress'
-                category.started_at = datetime.utcnow()
-                db.session.commit()
-
-                try:
-                    from app.services.utils.scheduler import auto_schedule_category
-                    if category.start_date_time:
-                        auto_schedule_category(category_id)
-                        flash('Category started! Bracket generated and matches scheduled.', 'success')
-                    else:
-                        flash('Category started! Bracket generated. Configure start time to enable auto-scheduling.', 'info')
-                except Exception as e:
-                    flash(f'Category started, but scheduling failed: {str(e)}', 'warning')
-                    
                 return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
 
             elif action == 'update_settings':

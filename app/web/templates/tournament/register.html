@@ -7,6 +7,11 @@
     <h1 style="margin-bottom: 0.5rem; color: var(--accent-primary);">Register for Tournament</h1>
     <h3 style="margin-top: 0; margin-bottom: 2rem; color: var(--text-secondary);">{{ tournament.name }}</h3>
 
+    {% if tournament.registration_closes_at %}
+    <div style="background: rgba(var(--accent-primary-rgb, 59, 130, 246), 0.1); border-left: 4px solid var(--accent-primary); padding: 1rem; border-radius: var(--radius-sm); margin-bottom: 2rem; color: var(--text-primary); font-size: 0.95rem;">
+        Registration closes automatically on <strong>{{ tournament.registration_closes_at.strftime('%B %d, %Y at %I:%M %p') }}</strong>.
+    </div>
+    {% endif %}
     <div class="card">
         <div class="card-body">
             <form method="POST" id="registrationForm">

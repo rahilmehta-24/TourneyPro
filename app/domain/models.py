@@ -25,7 +25,7 @@ class Tournament(db.Model):
     num_sets = db.Column(db.Integer, default=1)  # 1, 2 or 3 sets
     games_per_set = db.Column(db.Integer, default=6)  # games to win a set
     payment_upi_id = db.Column(db.String(100)) # Admin's UPI ID for manual payments
-
+    registration_closes_at = db.Column(db.DateTime)
     # Academy Integration
     academy_id = db.Column(db.Integer, db.ForeignKey('academies.id'), nullable=True)
     is_internal = db.Column(db.Boolean, default=False)

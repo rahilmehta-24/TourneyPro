@@ -207,6 +207,13 @@ def register_for_tournament(slug):
         flash('Registration is currently closed for this tournament.', 'warning')
         return redirect(url_for('tournament.view_tournament', slug=slug))
         
+    if tournament.registration_closes_at and datetime.utcnow() > tournament.registration_closes_at:
+        if tournament.status == 'registration':
+            tournament.status = 'in_progress'
+            db.session.commit()
+        flash('Registration deadline has passed for this tournament.', 'warning')
+        return redirect(url_for('tournament.view_tournament', slug=slug))
+
     categories = Category.query.filter_by(tournament_id=tournament.id).all()
     
     current_u = get_current_user()
@@ -236,8 +243,7 @@ def register_for_tournament(slug):
                 partners_data[cat.id] = {'name': p_name, 'mobile': p_mobile}
                 
         # Anonymous Free Registration Logic
-        from datetime import datetime
-        
+
         participant_name = request.form.get('guest_name', '').strip()
         participant_email = request.form.get('guest_email', '').strip()
         participant_mobile = request.form.get('guest_mobile', '').strip()
@@ -422,6 +428,14 @@ def manage_tournament(slug):
 
             elif action == 'open_registration':
                 tournament.status = 'registration'
+                
+                reg_closes_str = request.form.get('registration_closes_at')
+                if reg_closes_str:
+                    try:
+                        tournament.registration_closes_at = datetime.strptime(reg_closes_str, '%Y-%m-%dT%H:%M')
+                    except ValueError:
+                        pass
+                
                 db.session.commit()
                 flash('Tournament registration is now open!', 'success')
                 return redirect(url_for('tournament.manage_tournament', slug=slug))
@@ -431,7 +445,13 @@ def manage_tournament(slug):
                     tournament.status = 'in_progress'
                     tournament.started_at = datetime.utcnow()
                     db.session.commit()
-                    flash('Tournament started! You can now start individual category brackets.', 'success')
+                    
+                    from app.web.controllers.category import start_single_category
+                    for cat in tournament.categories:
+                        if cat.status == 'setup':
+                            start_single_category(cat, tournament)
+                            
+                    flash('Tournament started! Brackets generated for all categories.', 'success')
                     return redirect(url_for('tournament.view_tournament', slug=slug))
                 else:
                     # Legacy tournament without categories
