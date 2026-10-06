@@ -243,9 +243,20 @@
                         
                         <div class="form-group" style="margin-bottom: 1rem;">
                             <label style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem; display: block;">Registration Closes On (Optional)</label>
+                            <input type="hidden" name="tz_offset" id="tz_offset_reg">
                             <input type="datetime-local" name="registration_closes_at" class="form-input" style="width: 100%; padding: 0.5rem; font-size: 0.9rem;">
-                            <small style="color: var(--text-muted); font-size: 0.75rem;">If set, form will auto-close at this time.</small>
+                            <small style="color: var(--text-muted); font-size: 0.75rem;">If set, form will auto-close at this time (converted from your local time).</small>
                         </div>
+                        <script>
+                            document.addEventListener('turbo:load', function() {
+                                const tzInput = document.getElementById('tz_offset_reg');
+                                if (tzInput) tzInput.value = new Date().getTimezoneOffset();
+                            });
+                            document.addEventListener('DOMContentLoaded', function() {
+                                const tzInput = document.getElementById('tz_offset_reg');
+                                if (tzInput) tzInput.value = new Date().getTimezoneOffset();
+                            });
+                        </script>
 
                         <button type="submit" class="btn btn-primary btn-block" style="background-color: var(--accent-success); border-color: var(--accent-success);">
                             <span class="btn-icon">🔓</span>

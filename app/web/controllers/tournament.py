@@ -76,7 +76,6 @@ def create_tournament():
         except Exception as e:
             db.session.rollback()
             flash('Error creating tournament. Please try again.', 'error')
-            print(f"Error: {e}")
 
     academy_id = request.args.get('academy_id')
     return render_template('tournament/create.html', academy_id=academy_id, formats=TOURNAMENT_FORMATS)
@@ -432,7 +431,14 @@ def manage_tournament(slug):
                 reg_closes_str = request.form.get('registration_closes_at')
                 if reg_closes_str:
                     try:
-                        tournament.registration_closes_at = datetime.strptime(reg_closes_str, '%Y-%m-%dT%H:%M')
+                        from datetime import timedelta
+                        local_dt = datetime.strptime(reg_closes_str, '%Y-%m-%dT%H:%M')
+                        tz_offset = request.form.get('tz_offset', type=int)
+                        if tz_offset is not None:
+                            utc_dt = local_dt + timedelta(minutes=tz_offset)
+                        else:
+                            utc_dt = local_dt
+                        tournament.registration_closes_at = utc_dt
                     except ValueError:
                         pass
                 
@@ -441,6 +447,10 @@ def manage_tournament(slug):
                 return redirect(url_for('tournament.manage_tournament', slug=slug))
 
             elif action == 'start_tournament':
+                if tournament.status != 'setup':
+                    flash('Tournament is already started.', 'warning')
+                    return redirect(url_for('tournament.manage_tournament', slug=slug))
+                
                 if tournament.has_categories:
                     tournament.status = 'in_progress'
                     tournament.started_at = datetime.utcnow()
