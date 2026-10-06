@@ -148,6 +148,7 @@
     </div>
 
     <!-- OVERALL LEADERBOARD -->
+    {% if current_user.is_authenticated and current_user.role in ['admin', 'superadmin'] %}
     <div class="overall-leaderboard" style="margin: 2rem 0;">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
             <h2 class="section-title" style="margin: 0;">🏆 Overall Leaderboard</h2>
@@ -231,6 +232,7 @@
             });
         }
     </script>
+    {% endif %}
 
     <!-- PLAYER REGISTRY -->
     {% if player_registry %}
