@@ -112,6 +112,9 @@
             <div class="title-wrapper">
                 <h1>{{ category.name }}</h1>
                 <span class="status-badge status-{{ category.status }}">{{ category.status.replace('_', ' ').title() }}</span>
+                {% if category.status == 'in_progress' %}
+                <span class="live-indicator-badge" title="Live Scores: Updating automatically"><span class="live-indicator-dot"></span> Live Scores</span>
+                {% endif %}
             </div>
             <div class="meta-row">
                 <span class="meta-item">🏅 {{ formats[category.format].name }}</span>

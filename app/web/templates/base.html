@@ -22,18 +22,57 @@
     <!-- Turbo.js for instant page navigation -->
     <script type="module" src="https://unpkg.com/@hotwired/turbo@8.0.4/dist/turbo.es2017-umd.js"></script>
     {% block extra_css %}{% endblock %}
-        <style>
-        @keyframes flashUpdate {
-            0% { background-color: rgba(59, 130, 246, 0.5); }
-            100% { background-color: transparent; }
+    <style>
+        @keyframes flashMatchUpdate {
+            0% {
+                box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.7), 0 0 16px rgba(34, 197, 94, 0.5);
+                background-color: rgba(34, 197, 94, 0.18) !important;
+                transform: scale(1.01);
+            }
+            70% {
+                box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3);
+                background-color: rgba(34, 197, 94, 0.08);
+                transform: scale(1.0);
+            }
+            100% {
+                box-shadow: none;
+                background-color: transparent;
+                transform: scale(1.0);
+            }
         }
         .live-updated {
-            animation: flashUpdate 2s ease-out;
+            animation: flashMatchUpdate 2.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+            transition: all 0.3s ease;
+        }
+        @keyframes livePulse {
+            0% { transform: scale(0.95); opacity: 0.7; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.7; }
+        }
+        .live-indicator-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 0.2rem 0.55rem;
+            border-radius: 9999px;
+            background: rgba(34, 197, 94, 0.12);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.25);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .live-indicator-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: #22c55e;
+            box-shadow: 0 0 6px #22c55e;
+            animation: livePulse 1.8s infinite ease-in-out;
         }
     </style>
-
-        </style>
-    </head>
+</head>
     <body>
     <!-- SECURITY WATERMARK: Do not remove. Modifying this constitutes a violation of copyright. -->
     <div id="tourneypro-sys-sig" style="opacity: 0.001; pointer-events: none; position: absolute; z-index: -9999; top: -9999px; left: -9999px; width: 1px; height: 1px; overflow: hidden;" aria-hidden="true" data-copyright="Built for Tennis by Rahil Mehta" data-platform="TourneyPro">
@@ -259,26 +298,49 @@
             function setupAutoRefresh() {
                 if (window.tourneyAutoRefreshInterval) {
                     clearInterval(window.tourneyAutoRefreshInterval);
+                    window.tourneyAutoRefreshInterval = null;
                 }
                 
+                // Selectors for elements that display scores, brackets, standings, or match schedules
                 const containersToUpdate = [
-                    '.bracket-container',
                     '.bracket',
+                    '.groups-section',
+                    '.group-standings-section',
                     '.category-grid',
                     '.overall-leaderboard',
-                    '.group-standings-section',
-                    '.podium-container'
+                    '.podium-container',
+                    '.winner-section',
+                    '.semi-finalists-section',
+                    '.court-block'
                 ];
                 
                 const hasContainers = containersToUpdate.some(selector => document.querySelector(selector));
                 if (!hasContainers) return;
 
-                window.tourneyAutoRefreshInterval = setInterval(async () => {
-                    // Prevent updates while a modal is open to not disrupt user interaction
-                    if (document.querySelector('.modal[style*="display: flex"]') || document.querySelector('.modal[style*="display: block"]')) return;
+                function isUserInteracting() {
+                    // Check if match modal or any glass overlay is active
+                    if (document.querySelector('.glass-modal-overlay.active')) return true;
+                    if (document.querySelector('.modal[style*="display: flex"]') || document.querySelector('.modal[style*="display: block"]')) return true;
+                    if (document.querySelector('.modal.show, .modal.active')) return true;
+                    if (document.body.classList.contains('pdf-export-mode')) return true;
+                    if (window.location.search.includes('export=1')) return true;
+                    
+                    // Don't refresh while user has an input, textarea, or select focused
+                    const active = document.activeElement;
+                    if (active && ['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName)) return true;
+                    return false;
+                }
+
+                let isFetching = false;
+                async function performScoreRefresh() {
+                    if (isFetching || isUserInteracting() || document.hidden) return;
+                    isFetching = true;
                     
                     try {
-                        const response = await fetch(window.location.href);
+                        const response = await fetch(window.location.href, {
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                            cache: 'no-store'
+                        });
                         if (!response.ok) return;
                         const html = await response.text();
                         const parser = new DOMParser();
@@ -291,17 +353,71 @@
                             if (currentEls.length === newEls.length && currentEls.length > 0) {
                                 for (let i = 0; i < currentEls.length; i++) {
                                     if (currentEls[i].innerHTML !== newEls[i].innerHTML) {
+                                        // 1. Preserve horizontal and vertical scroll positions (critical for large brackets)
+                                        const prevScrollLeft = currentEls[i].scrollLeft;
+                                        const prevScrollTop = currentEls[i].scrollTop;
+                                        
+                                        // 2. Detect which individual match cards changed to provide granular visual feedback
+                                        const oldMatches = currentEls[i].querySelectorAll('.tennis-match, .match-card');
+                                        const newMatches = newEls[i].querySelectorAll('.tennis-match, .match-card');
+                                        
+                                        // 3. Update container HTML
                                         currentEls[i].innerHTML = newEls[i].innerHTML;
-                                        currentEls[i].classList.add('live-updated');
-                                        setTimeout(() => { if(currentEls[i]) currentEls[i].classList.remove('live-updated'); }, 2000);
+                                        
+                                        // 4. Restore scroll positions
+                                        if (prevScrollLeft) currentEls[i].scrollLeft = prevScrollLeft;
+                                        if (prevScrollTop) currentEls[i].scrollTop = prevScrollTop;
+                                        
+                                        // 5. Apply highlight to the updated match cards or the container
+                                        if (oldMatches.length === newMatches.length && oldMatches.length > 0) {
+                                            const updatedMatches = currentEls[i].querySelectorAll('.tennis-match, .match-card');
+                                            let anyMatchFlashed = false;
+                                            for (let m = 0; m < oldMatches.length; m++) {
+                                                if (oldMatches[m].innerHTML !== newMatches[m].innerHTML) {
+                                                    anyMatchFlashed = true;
+                                                    if (updatedMatches[m]) {
+                                                        updatedMatches[m].classList.add('live-updated');
+                                                        setTimeout(() => {
+                                                            if (updatedMatches[m]) updatedMatches[m].classList.remove('live-updated');
+                                                        }, 2500);
+                                                    }
+                                                }
+                                            }
+                                            if (!anyMatchFlashed) {
+                                                currentEls[i].classList.add('live-updated');
+                                                setTimeout(() => {
+                                                    if (currentEls[i]) currentEls[i].classList.remove('live-updated');
+                                                }, 2000);
+                                            }
+                                        } else {
+                                            currentEls[i].classList.add('live-updated');
+                                            setTimeout(() => {
+                                                if (currentEls[i]) currentEls[i].classList.remove('live-updated');
+                                            }, 2000);
+                                        }
                                     }
                                 }
                             }
                         });
                     } catch (err) {
-                        console.error('Auto-refresh failed', err);
+                        // Silent fail for network glitches
+                    } finally {
+                        isFetching = false;
                     }
-                }, 3000); // 3 seconds
+                }
+
+                // Periodic refresh every 3 seconds
+                window.tourneyAutoRefreshInterval = setInterval(performScoreRefresh, 3000);
+
+                // Immediate refresh as soon as user returns to the tab
+                if (!window._tourneyVisibilityListenerAttached) {
+                    window._tourneyVisibilityListenerAttached = true;
+                    document.addEventListener('visibilitychange', () => {
+                        if (!document.hidden && window.tourneyAutoRefreshInterval) {
+                            performScoreRefresh();
+                        }
+                    });
+                }
             }
         </script>
 </body>

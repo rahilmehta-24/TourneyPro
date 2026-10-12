@@ -41,8 +41,11 @@
     </div>
 
     <div class="page-header" style="margin-bottom: 1.5rem;">
-        <div>
-            <h1 class="page-title">{{ tournament.name }}</h1>
+        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+            <h1 class="page-title" style="margin: 0;">{{ tournament.name }}</h1>
+            {% if tournament.status == 'in_progress' %}
+            <span class="live-indicator-badge" title="Live Scores: Updating automatically"><span class="live-indicator-dot"></span> Live Scores</span>
+            {% endif %}
         </div>
     </div>
 
