@@ -80,13 +80,14 @@ def create_tournament():
     academy_id = request.args.get('academy_id')
     return render_template('tournament/create.html', academy_id=academy_id, formats=TOURNAMENT_FORMATS)
 
+@tournament_bp.route('/t/<slug>')
 @tournament_bp.route('/tournaments/<slug>')
 def view_tournament(slug):
-    """View tournament bracket"""
+    """View tournament hub (brackets, schedule, organizer dashboard)"""
     tournament = Tournament.query.options(db.joinedload(Tournament.categories)).filter_by(url_slug=slug).first_or_404()
     
     # If tournament is in registration phase, visiting/clicking the shared link opens the Registration page
-    if tournament.status == 'registration' and request.args.get('view') != 'bracket':
+    if tournament.status == 'registration' and request.args.get('view') not in ['bracket', 'manage']:
         return redirect(url_for('tournament.register_for_tournament', slug=slug))
 
     participants = Participant.query.filter_by(tournament_id=tournament.id).order_by(Participant.seed).all()
@@ -196,6 +197,7 @@ def view_tournament(slug):
                          player_registry=player_registry,
                          formats=TOURNAMENT_FORMATS)
 
+@tournament_bp.route('/t/<slug>/print')
 @tournament_bp.route('/tournaments/<slug>/print')
 def print_tournament(slug):
     """Print tournament bracket and standings"""
@@ -204,6 +206,7 @@ def print_tournament(slug):
 
 
 
+@tournament_bp.route('/t/<slug>/register', methods=['GET', 'POST'])
 @tournament_bp.route('/tournaments/<slug>/register', methods=['GET', 'POST'])
 def register_for_tournament(slug):
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
@@ -344,6 +347,7 @@ def register_for_tournament(slug):
         
     return render_template('tournament/register.html', tournament=tournament, categories=categories, player=player)
 
+@tournament_bp.route('/t/<slug>/manage', methods=['GET', 'POST'])
 @tournament_bp.route('/tournaments/<slug>/manage', methods=['GET', 'POST'])
 @login_required
 @role_required('admin', 'superadmin')
@@ -901,19 +905,23 @@ def delete_tournament(slug):
     return redirect(url_for('main.index'))
 
 
+@tournament_bp.route('/t/<slug>/schedule')
 @tournament_bp.route('/tournaments/<slug>/schedule')
 def court_schedule(slug):
     """Public Court Schedule — shows all scheduled matches across all courts."""
     from app.services.utils.scheduler import get_order_of_play
     data = get_order_of_play(slug)
     return render_template(
-        'tournament/schedule.html',
+        'tournament/order_of_play.html',
         courts=data['courts'],
+        all_courts=list(data['courts'].keys()),
         tournament=data['tournament'],
-        export=request.args.get('export', '0'),
+        selected_court=None,
+        is_export=request.args.get('export', '0') == '1',
     )
 
 
+@tournament_bp.route('/t/<slug>/order-of-play')
 @tournament_bp.route('/tournaments/<slug>/order-of-play')
 def order_of_play(slug):
     """Order of Play page — PDF-ready, filterable by court."""

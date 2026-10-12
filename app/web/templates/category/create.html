@@ -4,8 +4,21 @@
 
 {% block content %}
 <div class="container">
+    <!-- Breadcrumb & Backway Bar -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
+        <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.95rem;">
+            <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;">
+                ← Back to {{ tournament.name }}
+            </a>
+            <span style="color: var(--text-muted);">/</span>
+            <span style="color: var(--text-primary); font-weight: 600;">{{ tournament.name }}</span>
+            <span style="color: var(--text-muted);">/</span>
+            <span style="color: var(--accent-primary); font-weight: 500;">➕ Create Category</span>
+        </div>
+    </div>
+
     <h1>Create New Category</h1>
-    <p class="subtitle">Tournament: <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}" style="color: var(--accent-primary); text-decoration: none;">{{ tournament.name }}</a></p>
+    <p class="subtitle" style="margin-bottom: 2rem;">Add a new event or division to <strong style="color: var(--text-primary);">{{ tournament.name }}</strong></p>
 
     <form method="POST" class="form-card">
         <div class="form-group">

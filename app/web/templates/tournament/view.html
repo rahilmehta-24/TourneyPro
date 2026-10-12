@@ -6,32 +6,43 @@
 {% block content %}
 <style>.category-card-hover:hover { transform: translateY(-3px) !important; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1) !important; }</style>
 <div class="container">
-    <div class="page-header">
+    <!-- Breadcrumb & Navigation Bar -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
+        <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.95rem;">
+            <a href="{{ url_for('main.index') }}" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;">
+                ← All Tournaments
+            </a>
+            <span style="color: var(--text-muted);">/</span>
+            <span style="color: var(--text-primary); font-weight: 600;">{{ tournament.name }}</span>
+            <span style="color: var(--text-muted);">/</span>
+            <span style="color: var(--accent-primary); font-weight: 500;">🏆 Bracket & Standings</span>
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+            <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}" class="btn btn-primary" style="padding: 0.35rem 0.85rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;">
+                ⚙️ Organizer Dashboard
+            </a>
+            {% endif %}
+            {% if tournament.status == 'registration' and tournament.categories %}
+            <a href="{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug) }}" class="btn btn-primary" style="background-color: var(--accent-success); border-color: var(--accent-success); padding: 0.35rem 0.85rem; font-size: 0.85rem;">
+                ✍️ Register Now
+            </a>
+            {% endif %}
+            {% if tournament.status == 'registration' %}
+            <button onclick="copyShareLink('{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">🔗 Share Registration Link</button>
+            {% else %}
+            <button onclick="copyShareLink('{{ url_for('tournament.view_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">🔗 Share Link</button>
+            {% endif %}
+            <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug) }}" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">📋 Order of Play</a>
+            {% if current_user and current_user.role in ['admin', 'superadmin'] and tournament.categories %}
+            <a href="{{ url_for('tournament.print_tournament', slug=tournament.url_slug) }}" target="_blank" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;" id="btnExportTournament">🖨️ Export PDF</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="page-header" style="margin-bottom: 1.5rem;">
         <div>
             <h1 class="page-title">{{ tournament.name }}</h1>
-
-        </div>
-        <div class="page-actions">
-            {% if tournament.status == 'registration' %}
-            <button onclick="copyShareLink('{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-primary" style="background-color: var(--accent-success); border-color: var(--accent-success);">🔗 Share Registration Link</button>
-            {% else %}
-            <button onclick="copyShareLink('{{ url_for('tournament.view_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-secondary">🔗 Share Link</button>
-            {% endif %}
-            {% if current_user and current_user.role in ['admin', 'superadmin'] and tournament.categories %}
-            <a href="{{ url_for('tournament.print_tournament', slug=tournament.url_slug) }}" target="_blank" class="btn btn-primary" id="btnExportTournament">🖨️ Export PDF</a>
-            {% endif %}
-            <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug) }}" class="btn btn-secondary">📋 Order of Play</a>
-            <a href="{{ url_for('main.index') }}" class="btn btn-secondary">← Back to Tournaments</a>
-            {% if tournament.status == 'registration' and tournament.categories %}
-            <a href="{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug) }}" class="btn btn-primary" style="background-color: var(--accent-success); border-color: var(--accent-success); box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);">Register Now</a>
-            {% endif %}
-            {% if tournament.status == 'setup' %}
-            {% if current_user and current_user.role in ['admin', 'superadmin'] %}
-<a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}"
-                class="btn btn-primary">Manage
-                Tournament</a>
-{% endif %}
-            {% endif %}
         </div>
     </div>
 

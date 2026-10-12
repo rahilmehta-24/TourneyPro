@@ -77,11 +77,38 @@
     </style>
 
 <div class="container" id="category-export-content">
-    <div class="page-header modern-header">
-        <div class="header-content">
-            <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug) }}" class="back-link">
+    {% if not is_export %}
+    <!-- Breadcrumb & Backway Bar -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
+        <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.95rem;">
+            <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug) }}" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;">
                 ← Back to {{ tournament.name }}
             </a>
+            <span style="color: var(--text-muted);">/</span>
+            <span style="color: var(--text-primary); font-weight: 600;">{{ tournament.name }}</span>
+            <span style="color: var(--text-muted);">/</span>
+            <span style="color: var(--accent-primary); font-weight: 500;">🏆 {{ category.name }} Bracket</span>
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+            {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+            <a href="{{ url_for('category.manage_category', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-primary" style="padding: 0.35rem 0.85rem; font-size: 0.85rem;">
+                ⚙️ Manage Category
+            </a>
+            {% endif %}
+            <button onclick="copyShareLink('{{ url_for('category.view_category', slug=tournament.url_slug, category_id=category.id, _external=True) }}', this)" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">
+                🔗 Share Link
+            </button>
+            {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+            <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=category.id, export='1') }}" target="_blank" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">
+                🖨️ Export PDF
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="page-header modern-header">
+        <div class="header-content">
             <div class="title-wrapper">
                 <h1>{{ category.name }}</h1>
                 <span class="status-badge status-{{ category.status }}">{{ category.status.replace('_', ' ').title() }}</span>
@@ -94,13 +121,10 @@
         <div class="page-actions header-actions" {% if is_export %}style="display: none;"{% endif %}>
             <div class="action-group primary-actions">
                 {% if current_user and current_user.role in ['admin', 'superadmin'] %}
-                <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=category.id, export='1') }}" target="_blank" class="btn btn-primary">
-                    🖨️ Export PDF
+                <a href="{{ url_for('category.manage_category', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-primary">
+                    ⚙️ Manage Category
                 </a>
                 {% endif %}
-                <button onclick="copyShareLink('{{ url_for('category.view_category', slug=tournament.url_slug, category_id=category.id, _external=True) }}', this)" class="btn btn-secondary">
-                    🔗 Share Link
-                </button>
             </div>
             {% if current_user and current_user.role in ['admin', 'superadmin'] %}
             <div class="action-group secondary-actions">

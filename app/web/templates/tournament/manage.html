@@ -4,15 +4,36 @@
 
 {% block content %}
 <div class="container">
-    <div class="page-header">
+    <!-- Breadcrumb & Navigation Bar -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
+        <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.95rem;">
+            <a href="{{ url_for('main.index') }}" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;">
+                ← All Tournaments
+            </a>
+            <span style="color: var(--text-muted);">/</span>
+            <span style="color: var(--text-primary); font-weight: 600;">{{ tournament.name }}</span>
+            <span style="color: var(--text-muted);">/</span>
+            <span style="color: var(--accent-primary); font-weight: 500;">⚙️ Organizer Dashboard</span>
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug, view='bracket') }}" class="btn btn-primary" style="padding: 0.35rem 0.85rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;">
+                🏆 Public Bracket View
+            </a>
+            {% if tournament.status == 'registration' %}
+            <a href="{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug) }}" target="_blank" class="btn btn-primary" style="background-color: var(--accent-success); border-color: var(--accent-success); padding: 0.35rem 0.85rem; font-size: 0.85rem;">
+                ✍️ Open Registration Form ↗
+            </a>
+            <button onclick="copyShareLink('{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">🔗 Share Registration Link</button>
+            {% else %}
+            <button onclick="copyShareLink('{{ url_for('tournament.view_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">🔗 Share Link</button>
+            {% endif %}
+            <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug) }}" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">📋 Order of Play</a>
+        </div>
+    </div>
+
+    <div class="page-header" style="margin-bottom: 1.5rem;">
         <div>
             <h1 class="page-title">{{ tournament.name }}</h1>
-        </div>
-        <div class="page-actions">
-            {% if tournament.status == 'registration' %}
-            <a href="{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug) }}" target="_blank" class="btn btn-primary" style="background-color: var(--accent-success); border-color: var(--accent-success);">Open Registration Form ↗</a>
-            {% endif %}
-            <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug, view='bracket') }}" class="btn btn-secondary">View Tournament</a>
         </div>
     </div>
 
@@ -41,6 +62,52 @@
         <div style="color: var(--accent-success); font-weight: bold; display: flex; align-items: center; gap: 0.5rem;"><div style="background: var(--accent-success); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">✓</div> Execute</div>
         {% endif %}
     </div>
+
+    <!-- NEXT STEP GUIDANCE BANNER -->
+    {% if tournament.status == 'setup' and not tournament.categories %}
+    <div style="background: rgba(59, 130, 246, 0.1); border-left: 4px solid var(--accent-primary); padding: 1.25rem 1.5rem; border-radius: var(--radius-sm); margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h4 style="margin: 0; color: var(--accent-primary); font-size: 1.1rem;">👉 Next Step: Add Tournament Categories</h4>
+            <p style="margin: 0.25rem 0 0; color: var(--text-secondary); font-size: 0.9rem;">To accept registrations or generate brackets, define at least one category (e.g., Men's Singles, Women's Doubles).</p>
+        </div>
+        <a href="{{ url_for('category.create_category', slug=tournament.url_slug) }}" class="btn btn-primary" style="padding: 0.6rem 1.25rem; font-weight: 600;">
+            ➕ Add First Category
+        </a>
+    </div>
+    {% elif tournament.status == 'setup' and tournament.categories %}
+    <div style="background: rgba(16, 185, 129, 0.1); border-left: 4px solid var(--accent-success); padding: 1.25rem 1.5rem; border-radius: var(--radius-sm); margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h4 style="margin: 0; color: var(--accent-success); font-size: 1.1rem;">👉 Next Step: Open Registration & Share Link</h4>
+            <p style="margin: 0.25rem 0 0; color: var(--text-secondary); font-size: 0.9rem;">Categories are configured! Open registration to start collecting player signups online.</p>
+        </div>
+        <form method="POST" style="margin: 0;">
+            <input type="hidden" name="action" value="open_registration">
+            <button type="submit" class="btn btn-primary" style="background-color: var(--accent-success); border-color: var(--accent-success); padding: 0.6rem 1.25rem; font-weight: 600;">
+                🔓 Open Registration Now
+            </button>
+        </form>
+    </div>
+    {% elif tournament.status == 'registration' %}
+    <div style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid var(--accent-warning); padding: 1.25rem 1.5rem; border-radius: var(--radius-sm); margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h4 style="margin: 0; color: var(--accent-warning); font-size: 1.1rem;">👉 Registration is Active: Share URL With Players</h4>
+            <p style="margin: 0.25rem 0 0; color: var(--text-secondary); font-size: 0.9rem;">Players who open the link land directly on the registration form. When ready, close registration and launch!</p>
+        </div>
+        <div style="display: flex; gap: 0.75rem;">
+            <button onclick="copyShareLink('{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-secondary" style="padding: 0.6rem 1rem;">
+                📋 Copy Registration Link
+            </button>
+            {% if participants|length >= 2 or tournament.has_categories %}
+            <form method="POST" style="margin: 0;">
+                <input type="hidden" name="action" value="start_tournament">
+                <button type="submit" class="btn btn-success" style="padding: 0.6rem 1.25rem; font-weight: 600;">
+                    🚀 Launch Tournament
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
 
     <div class="manage-grid">
         <div class="manage-main">

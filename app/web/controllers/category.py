@@ -72,6 +72,7 @@ def start_single_category(category, tournament):
         pass
 
 
+@category_bp.route('/t/<slug>/categories/new', methods=['GET', 'POST'])
 @category_bp.route('/tournaments/<slug>/categories/new', methods=['GET', 'POST'])
 @login_required
 @role_required('admin', 'superadmin')
@@ -183,6 +184,7 @@ def create_category(slug):
 
     return render_template('category/create.html', tournament=tournament, formats=TOURNAMENT_FORMATS)
 
+@category_bp.route('/t/<slug>/categories/<int:category_id>')
 @category_bp.route('/tournaments/<slug>/categories/<int:category_id>')
 def view_category(slug, category_id):
     """View category bracket/standings"""
@@ -319,6 +321,7 @@ def view_category(slug, category_id):
                          rankings=rankings,
                          formats=TOURNAMENT_FORMATS)
 
+@category_bp.route('/t/<slug>/categories/<int:category_id>/manage', methods=['GET', 'POST'])
 @category_bp.route('/tournaments/<slug>/categories/<int:category_id>/manage', methods=['GET', 'POST'])
 @login_required
 @role_required('admin', 'superadmin')
