@@ -565,8 +565,12 @@ def manage_tournament(slug):
                 tournament.court_operating_end = request.form.get('court_operating_end', '20:00')
                 tournament.avg_match_duration = request.form.get('avg_match_duration', type=int, default=60)
                 tournament.court_buffer_minutes = request.form.get('court_buffer_minutes', type=int, default=10)
-                tournament.min_rest_minutes = request.form.get('min_rest_minutes', type=int, default=30)
-                tournament.max_matches_per_player_day = request.form.get('max_matches_per_player_day', type=int, default=3)
+                
+                min_rest_str = request.form.get('min_rest_minutes')
+                tournament.min_rest_minutes = int(min_rest_str) if min_rest_str and min_rest_str.strip() != '' else 0
+                
+                max_matches_str = request.form.get('max_matches_per_player_day')
+                tournament.max_matches_per_player_day = int(max_matches_str) if max_matches_str and max_matches_str.strip() != '' else None
 
                 db.session.commit()
                 flash('Tournament dates, courts, and operating hours updated successfully!', 'success')

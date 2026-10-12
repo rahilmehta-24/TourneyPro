@@ -107,8 +107,8 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
     courts = get_court_names_list(tournament.court_names, max_courts)
 
     court_buffer = timedelta(minutes=tournament.court_buffer_minutes if tournament.court_buffer_minutes is not None else 10)
-    player_rest_buffer = timedelta(minutes=tournament.min_rest_minutes if tournament.min_rest_minutes is not None else 30)
-    max_daily_matches = tournament.max_matches_per_player_day or 4
+    player_rest_buffer = timedelta(minutes=tournament.min_rest_minutes if tournament.min_rest_minutes is not None else 0)
+    max_daily_matches = tournament.max_matches_per_player_day  # Can be None (no limit) or integer
 
     # 3. Gather all pending/in-progress matches across all categories
     all_matches = (
@@ -194,8 +194,8 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
         assigned = False
 
         for current_day in target_days:
-            # Check player daily match cap for this day
-            if p_keys and any(player_daily_count[current_day].get(pk, 0) >= max_daily_matches for pk in p_keys):
+            # Check player daily match cap for this day (only if organizer set a limit)
+            if max_daily_matches is not None and p_keys and any(player_daily_count[current_day].get(pk, 0) >= max_daily_matches for pk in p_keys):
                 continue  # Try next day
 
             day_end_dt = datetime.combine(current_day, daily_end)

@@ -289,11 +289,11 @@
                                 </div>
                                 <div>
                                     <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Min Rest Between Matches (Mins)</label>
-                                    <input type="number" name="min_rest_minutes" min="10" max="180" class="form-input" value="{{ tournament.min_rest_minutes if tournament.min_rest_minutes is not none else 30 }}" title="Rest interval enforced if player plays multiple categories" style="width: 100%;">
+                                    <input type="number" name="min_rest_minutes" min="0" max="300" class="form-input" value="{{ tournament.min_rest_minutes if tournament.min_rest_minutes is not none else '' }}" placeholder="e.g. 0, 5, 15, 30" title="Rest interval enforced if player plays multiple categories. Can be 0 or less than 10." style="width: 100%;">
                                 </div>
                                 <div>
                                     <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Max Matches / Player / Day</label>
-                                    <input type="number" name="max_matches_per_player_day" min="1" max="10" class="form-input" value="{{ tournament.max_matches_per_player_day or 3 }}" style="width: 100%;">
+                                    <input type="number" name="max_matches_per_player_day" min="1" max="20" class="form-input" value="{{ tournament.max_matches_per_player_day if tournament.max_matches_per_player_day is not none else '' }}" placeholder="Leave blank for no limit" style="width: 100%;">
                                 </div>
                             </div>
                             <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
