@@ -289,7 +289,7 @@
                                 </div>
                                 <div>
                                     <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Min Rest Between Matches (Mins)</label>
-                                    <input type="number" name="min_rest_minutes" min="10" max="180" class="form-input" value="{{ tournament.min_rest_minutes if tournament.min_rest_minutes is not None else 30 }}" title="Rest interval enforced if player plays multiple categories" style="width: 100%;">
+                                    <input type="number" name="min_rest_minutes" min="10" max="180" class="form-input" value="{{ tournament.min_rest_minutes if tournament.min_rest_minutes is not none else 30 }}" title="Rest interval enforced if player plays multiple categories" style="width: 100%;">
                                 </div>
                                 <div>
                                     <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Max Matches / Player / Day</label>
@@ -473,7 +473,7 @@
                         {% endif %}
                         <div class="info-item">
                             <span class="info-label">Created</span>
-                            <span class="info-value">{{ tournament.created_at.strftime('%b %d, %Y') }}</span>
+                            <span class="info-value">{{ tournament.created_at.strftime('%b %d, %Y') if tournament.created_at else 'Today' }}</span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">Share Link</span>
