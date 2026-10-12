@@ -84,6 +84,11 @@ def create_tournament():
 def view_tournament(slug):
     """View tournament bracket"""
     tournament = Tournament.query.options(db.joinedload(Tournament.categories)).filter_by(url_slug=slug).first_or_404()
+    
+    # If tournament is in registration phase, visiting/clicking the shared link opens the Registration page
+    if tournament.status == 'registration' and request.args.get('view') != 'bracket':
+        return redirect(url_for('tournament.register_for_tournament', slug=slug))
+
     participants = Participant.query.filter_by(tournament_id=tournament.id).order_by(Participant.seed).all()
     matches = Match.query.options(
         db.joinedload(Match.participant1),
@@ -451,8 +456,14 @@ def manage_tournament(slug):
                 flash('Tournament registration is now open!', 'success')
                 return redirect(url_for('tournament.manage_tournament', slug=slug))
 
+            elif action == 'close_registration':
+                tournament.status = 'setup'
+                db.session.commit()
+                flash('Tournament registration is now closed. Status returned to setup.', 'info')
+                return redirect(url_for('tournament.manage_tournament', slug=slug))
+
             elif action == 'start_tournament':
-                if tournament.status != 'setup':
+                if tournament.status not in ['setup', 'registration']:
                     flash('Tournament is already started.', 'warning')
                     return redirect(url_for('tournament.manage_tournament', slug=slug))
                 

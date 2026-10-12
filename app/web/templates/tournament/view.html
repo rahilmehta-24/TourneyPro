@@ -12,7 +12,11 @@
 
         </div>
         <div class="page-actions">
+            {% if tournament.status == 'registration' %}
+            <button onclick="copyShareLink('{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-primary" style="background-color: var(--accent-success); border-color: var(--accent-success);">🔗 Share Registration Link</button>
+            {% else %}
             <button onclick="copyShareLink('{{ url_for('tournament.view_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-secondary">🔗 Share Link</button>
+            {% endif %}
             {% if current_user and current_user.role in ['admin', 'superadmin'] and tournament.categories %}
             <a href="{{ url_for('tournament.print_tournament', slug=tournament.url_slug) }}" target="_blank" class="btn btn-primary" id="btnExportTournament">🖨️ Export PDF</a>
             {% endif %}
@@ -30,6 +34,19 @@
             {% endif %}
         </div>
     </div>
+
+    {% if tournament.status == 'registration' %}
+    <div style="background: rgba(16, 185, 129, 0.15); border-left: 4px solid var(--accent-success); padding: 1rem 1.5rem; border-radius: var(--radius-sm); margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <strong style="color: var(--accent-success); font-size: 1.05rem;">Registration is currently Open!</strong>
+            <p style="margin: 0.25rem 0 0; color: var(--text-secondary); font-size: 0.9rem;">Participants can register online for tournament categories.</p>
+        </div>
+        <div style="display: flex; gap: 0.75rem;">
+            <button onclick="copyShareLink('{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-secondary" style="font-size: 0.85rem;">🔗 Share Registration Link</button>
+            <a href="{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug) }}" class="btn btn-primary" style="background-color: var(--accent-success); border-color: var(--accent-success); font-size: 0.85rem;">Go to Registration Form →</a>
+        </div>
+    </div>
+    {% endif %}
 
     {% if tournament.description %}
     <div class="tournament-description">

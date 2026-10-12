@@ -9,7 +9,10 @@
             <h1 class="page-title">{{ tournament.name }}</h1>
         </div>
         <div class="page-actions">
-            <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug) }}" class="btn btn-secondary">View Tournament</a>
+            {% if tournament.status == 'registration' %}
+            <a href="{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug) }}" target="_blank" class="btn btn-primary" style="background-color: var(--accent-success); border-color: var(--accent-success);">Open Registration Form ↗</a>
+            {% endif %}
+            <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug, view='bracket') }}" class="btn btn-secondary">View Tournament</a>
         </div>
     </div>
 
@@ -276,6 +279,37 @@
                     <p class="text-muted mt-3">Need at least 2 participants to start</p>
                     {% endif %}
 
+                    {% elif tournament.status == 'registration' %}
+                    <p class="status-description" style="color: var(--accent-success); font-weight: 500;">
+                        Registration is open! Share the direct registration link with participants.
+                    </p>
+
+                    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: var(--radius-sm); padding: 0.75rem; margin-bottom: 1rem;">
+                        <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Registration Share Link:</label>
+                        <div style="display: flex; gap: 0.25rem;">
+                            <input type="text" readonly value="{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug, _external=True) }}" class="form-input" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; flex: 1;">
+                            <button onclick="copyShareLink('{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; background: var(--accent-success); border: none;">Copy</button>
+                        </div>
+                    </div>
+
+                    {% if participants|length >= 2 or tournament.has_categories %}
+                    <form method="POST" class="mt-3">
+                        <input type="hidden" name="action" value="start_tournament">
+                        <button type="submit" class="btn btn-success btn-block">
+                            <span class="btn-icon">🚀</span>
+                            Start Tournament
+                        </button>
+                    </form>
+                    {% endif %}
+
+                    <form method="POST" class="mt-2">
+                        <input type="hidden" name="action" value="close_registration">
+                        <button type="submit" class="btn btn-secondary btn-block">
+                            <span class="btn-icon">🔒</span>
+                            Close Registration
+                        </button>
+                    </form>
+
                     {% elif tournament.status == 'in_progress' %}
                     <p class="status-description">Tournament is currently active.</p>
                     <form method="POST" class="mt-3"
@@ -323,10 +357,12 @@
                             <span class="info-value">{{ tournament.created_at.strftime('%b %d, %Y') }}</span>
                         </div>
                         <div class="info-item">
-                            <span class="info-label">URL</span>
-                            <span class="info-value" style="display: flex; gap: 0.5rem; align-items: center;">
-                                {{ tournament.url_slug }}
-                                <button onclick="copyShareLink('{{ url_for('tournament.view_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.8rem;">🔗 Share Link</button>
+                            <span class="info-label">Share Link</span>
+                            <span class="info-value" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                                {% if tournament.status == 'registration' %}
+                                <button onclick="copyShareLink('{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-primary" style="padding: 0.25rem 0.6rem; font-size: 0.8rem; background: var(--accent-success); border-color: var(--accent-success);">🔗 Share Registration Link</button>
+                                {% endif %}
+                                <button onclick="copyShareLink('{{ url_for('tournament.view_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">🔗 Tournament Link</button>
                             </span>
                         </div>
                     </div>
