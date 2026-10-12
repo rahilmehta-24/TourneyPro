@@ -471,6 +471,8 @@ def manage_tournament(slug):
                     flash('Tournament is already started.', 'warning')
                     return redirect(url_for('tournament.manage_tournament', slug=slug))
                 
+                from app.services.utils.scheduler import auto_schedule_tournament
+
                 if tournament.has_categories:
                     tournament.status = 'in_progress'
                     tournament.started_at = datetime.utcnow()
@@ -480,8 +482,12 @@ def manage_tournament(slug):
                     for cat in tournament.categories:
                         if cat.status == 'setup':
                             start_single_category(cat, tournament)
-                            
-                    flash('Tournament started! Brackets generated for all categories.', 'success')
+                    
+                    # Automatically schedule Order of Play across all courts and days
+                    sched_result = auto_schedule_tournament(tournament.id)
+                    num_sched = sched_result.get('scheduled', 0) if isinstance(sched_result, dict) else 0
+
+                    flash(f'Tournament started! Brackets generated and Order of Play automatically scheduled ({num_sched} matches assigned to courts).', 'success')
                     return redirect(url_for('tournament.manage_tournament', slug=slug))
                 else:
                     # Legacy tournament without categories
@@ -501,7 +507,11 @@ def manage_tournament(slug):
                         tournament.started_at = datetime.utcnow()
                         db.session.commit()
 
-                        flash('Tournament started! Bracket generated.', 'success')
+                        # Automatically schedule Order of Play across all courts and days
+                        sched_result = auto_schedule_tournament(tournament.id)
+                        num_sched = sched_result.get('scheduled', 0) if isinstance(sched_result, dict) else 0
+
+                        flash(f'Tournament started! Bracket generated and Order of Play automatically scheduled ({num_sched} matches assigned to courts).', 'success')
                         return redirect(url_for('tournament.manage_tournament', slug=slug))
                     else:
                         flash(f'Format "{tournament.format}" is not yet implemented. Coming soon!', 'warning')
@@ -601,6 +611,12 @@ def manage_tournament(slug):
                 tournament.daily_operating_hours = json.dumps(daily_dict) if daily_dict else None
 
                 db.session.commit()
+
+                # If tournament is already started, immediately recalculate the Order of Play with new hours
+                if tournament.status == 'in_progress':
+                    from app.services.utils.scheduler import auto_schedule_tournament
+                    auto_schedule_tournament(tournament.id)
+
                 flash('Tournament dates, courts, and operating hours updated successfully!', 'success')
                 return redirect(url_for('tournament.manage_tournament', slug=slug))
 

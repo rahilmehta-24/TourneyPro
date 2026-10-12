@@ -65,9 +65,8 @@ def start_single_category(category, tournament):
     db.session.commit()
 
     try:
-        from app.services.utils.scheduler import auto_schedule_category
-        if category.start_date_time:
-            auto_schedule_category(category.id)
+        from app.services.utils.scheduler import auto_schedule_tournament
+        auto_schedule_tournament(tournament.id)
     except Exception:
         pass
 
@@ -403,12 +402,7 @@ def manage_category(slug, category_id):
                     db.session.commit()
                 
                 start_single_category(category, tournament)
-                
-                if category.start_date_time:
-                    flash('Category started! Bracket generated and matches scheduled.', 'success')
-                else:
-                    flash('Category started! Bracket generated. Configure start time to enable auto-scheduling.', 'info')
-
+                flash('Category started! Bracket generated and matches automatically scheduled in Order of Play.', 'success')
                 return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
 
             elif action == 'update_settings':

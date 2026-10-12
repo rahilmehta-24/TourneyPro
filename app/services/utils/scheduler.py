@@ -120,7 +120,7 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
     """
     tournament = Tournament.query.get_or_404(tournament_id)
     categories = Category.query.filter_by(tournament_id=tournament_id).all()
-    if not categories:
+    if not categories and tournament.has_categories:
         return {"scheduled": 0, "message": "No categories found"}
 
     # 1. Determine Tournament Calendar Days
@@ -294,11 +294,11 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
             if assigned:
                 break
 
-        # Fallback if days were constrained: schedule on last day after court hours or next morning
         if not assigned:
             fallback_day = target_days[-1]
+            fallback_day_start = daily_schedules[fallback_day]["start"]
             best_court = min(courts, key=lambda c: court_next_available[fallback_day][c])
-            f_start = max(court_next_available[fallback_day][best_court], datetime.combine(fallback_day, daily_start))
+            f_start = max(court_next_available[fallback_day][best_court], datetime.combine(fallback_day, fallback_day_start))
             f_end = f_start + match_duration
             
             match.scheduled_time = f_start
