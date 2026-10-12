@@ -30,12 +30,17 @@ class Tournament(db.Model):
     academy_id = db.Column(db.Integer, db.ForeignKey('academies.id'), nullable=True)
     is_internal = db.Column(db.Boolean, default=False)
 
-    # Court scheduling fields
+    # Court scheduling & Multi-day fields
+    start_date = db.Column(db.Date)                                    # Tournament start date
+    end_date = db.Column(db.Date)                                      # Tournament end date
     num_courts = db.Column(db.Integer, default=1)
-    court_names = db.Column(db.Text)  # JSON list of court names e.g. '["Court 1", "Court 2"]'
-    court_operating_start = db.Column(db.String(5), default='08:00')  # HH:MM
-    court_operating_end = db.Column(db.String(5), default='20:00')    # HH:MM
+    court_names = db.Column(db.Text)  # JSON or comma-separated list of court names
+    court_operating_start = db.Column(db.String(5), default='08:00')  # HH:MM e.g. '09:00'
+    court_operating_end = db.Column(db.String(5), default='20:00')    # HH:MM e.g. '19:00'
     avg_match_duration = db.Column(db.Integer, default=60)             # minutes
+    court_buffer_minutes = db.Column(db.Integer, default=10)           # buffer between matches on same court
+    min_rest_minutes = db.Column(db.Integer, default=30)               # rest buffer between matches for multi-category player
+    max_matches_per_player_day = db.Column(db.Integer, default=3)      # safety match capping per day per player
 
     # Relationships
     categories = db.relationship('Category', backref='tournament', lazy=True, cascade='all, delete-orphan')
@@ -75,9 +80,11 @@ class Category(db.Model):
 
     # Court scheduling fields
     num_courts = db.Column(db.Integer, default=1)
-    court_names = db.Column(db.Text)  # JSON list of court names e.g. '["Court 1", "Court 2"]'
+    court_names = db.Column(db.Text)  # JSON or comma-separated list of court names e.g. 'Court 1, Court 2'
     start_date_time = db.Column(db.DateTime)
     avg_match_duration = db.Column(db.Integer, default=60)             # minutes
+    preferred_start_day = db.Column(db.Integer, default=1)             # Day 1, Day 2, etc.
+    pin_finals_to_last_day = db.Column(db.Boolean, default=True)       # Keep final match on the concluding tournament day
 
     # Relationships
     participants = db.relationship('Participant', backref='category', lazy=True, cascade='all, delete-orphan')
@@ -141,10 +148,13 @@ class Match(db.Model):
     score2 = db.Column(db.String(50))
     bracket_type = db.Column(db.String(20), default='main')  # main, winners, losers
     match_type = db.Column(db.String(20), default='knockout')  # knockout, group_stage, round_robin
-    status = db.Column(db.String(20), default='pending')  # pending, in_progress, completed
+    status = db.Column(db.String(20), default='pending')        # pending, in_progress, completed
     scheduled_time = db.Column(db.DateTime)
+    scheduled_date = db.Column(db.Date)                        # Match calendar day
+    scheduled_end_time = db.Column(db.DateTime)                # Estimated finish time
+    is_not_before = db.Column(db.Boolean, default=False)       # True if match is 'Not Before (Followed By)'
+    court_name = db.Column(db.String(100))                     # e.g. "Court 1", assigned by scheduler
     completed_at = db.Column(db.DateTime)
-    court_name = db.Column(db.String(100))  # e.g. "Court 1", assigned by scheduler
     
     # Match-specific scoring overrides (only for knockout)
     scoring_format = db.Column(db.String(20)) # 'games', 'points', or None to inherit

@@ -250,6 +250,58 @@
                         </a>
                     </div>
                     
+                    <!-- TOURNAMENT MULTI-DAY CALENDAR & COURT OPERATING SETTINGS -->
+                    <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
+                        <h3 style="font-size: 1.15rem; color: var(--text-primary); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                            📅 Tournament Calendar & Court Operating Settings
+                        </h3>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1.25rem;">
+                            Configure multi-day tournament dates, operating hours, courts, and player rest buffers for automatic scheduling and anti-clash protection.
+                        </p>
+                        <form method="POST">
+                            <input type="hidden" name="action" value="update_schedule_settings">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                                <div>
+                                    <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Tournament Start Date</label>
+                                    <input type="date" name="start_date" class="form-input" value="{{ tournament.start_date.strftime('%Y-%m-%d') if tournament.start_date else '' }}" style="width: 100%;">
+                                </div>
+                                <div>
+                                    <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Tournament End Date</label>
+                                    <input type="date" name="end_date" class="form-input" value="{{ tournament.end_date.strftime('%Y-%m-%d') if tournament.end_date else '' }}" style="width: 100%;">
+                                </div>
+                                <div>
+                                    <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Daily Start Time</label>
+                                    <input type="time" name="court_operating_start" class="form-input" value="{{ tournament.court_operating_start or '09:00' }}" style="width: 100%;">
+                                </div>
+                                <div>
+                                    <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Daily End Time (Cutoff)</label>
+                                    <input type="time" name="court_operating_end" class="form-input" value="{{ tournament.court_operating_end or '19:00' }}" style="width: 100%;">
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                                <div>
+                                    <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Total Courts Available</label>
+                                    <input type="number" name="num_courts" min="1" max="50" class="form-input" value="{{ tournament.num_courts or 1 }}" style="width: 100%;">
+                                </div>
+                                <div>
+                                    <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Court Names (Comma separated)</label>
+                                    <input type="text" name="court_names" placeholder="Court 1, Court 2, Centre Court" class="form-input" value="{{ tournament.court_names or '' }}" style="width: 100%;">
+                                </div>
+                                <div>
+                                    <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Min Rest Between Matches (Mins)</label>
+                                    <input type="number" name="min_rest_minutes" min="10" max="180" class="form-input" value="{{ tournament.min_rest_minutes if tournament.min_rest_minutes is not None else 30 }}" title="Rest interval enforced if player plays multiple categories" style="width: 100%;">
+                                </div>
+                                <div>
+                                    <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Max Matches / Player / Day</label>
+                                    <input type="number" name="max_matches_per_player_day" min="1" max="10" class="form-input" value="{{ tournament.max_matches_per_player_day or 3 }}" style="width: 100%;">
+                                </div>
+                            </div>
+                            <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                                <button type="submit" class="btn btn-primary" style="padding: 0.45rem 1.25rem;">💾 Save Tournament Calendar & Courts</button>
+                            </div>
+                        </form>
+                    </div>
+                    
                     <script>
                     function renameCategory(categoryId, currentName) {
                         const newName = prompt("Enter new name for category:", currentName);

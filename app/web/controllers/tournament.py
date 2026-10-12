@@ -543,6 +543,35 @@ def manage_tournament(slug):
                     flash('Tournament is already in setup status.', 'warning')
                     return redirect(url_for('tournament.manage_tournament', slug=slug))
 
+            elif action == 'update_schedule_settings':
+                start_date_str = request.form.get('start_date')
+                end_date_str = request.form.get('end_date')
+                if start_date_str:
+                    try:
+                        tournament.start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+                    except ValueError:
+                        pass
+                if end_date_str:
+                    try:
+                        tournament.end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+                    except ValueError:
+                        pass
+                if tournament.start_date and tournament.end_date and tournament.end_date < tournament.start_date:
+                    tournament.end_date = tournament.start_date
+
+                tournament.num_courts = request.form.get('num_courts', type=int, default=1)
+                tournament.court_names = request.form.get('court_names', '')
+                tournament.court_operating_start = request.form.get('court_operating_start', '08:00')
+                tournament.court_operating_end = request.form.get('court_operating_end', '20:00')
+                tournament.avg_match_duration = request.form.get('avg_match_duration', type=int, default=60)
+                tournament.court_buffer_minutes = request.form.get('court_buffer_minutes', type=int, default=10)
+                tournament.min_rest_minutes = request.form.get('min_rest_minutes', type=int, default=30)
+                tournament.max_matches_per_player_day = request.form.get('max_matches_per_player_day', type=int, default=3)
+
+                db.session.commit()
+                flash('Tournament dates, courts, and operating hours updated successfully!', 'success')
+                return redirect(url_for('tournament.manage_tournament', slug=slug))
+
             elif action == 'finish_tournament':
                 tournament.status = 'completed'
                 tournament.completed_at = datetime.utcnow()
@@ -921,12 +950,59 @@ def court_schedule(slug):
     )
 
 
-@tournament_bp.route('/t/<slug>/order-of-play')
-@tournament_bp.route('/tournaments/<slug>/order-of-play')
+@tournament_bp.route('/t/<slug>/order-of-play', methods=['GET', 'POST'])
+@tournament_bp.route('/tournaments/<slug>/order-of-play', methods=['GET', 'POST'])
 def order_of_play(slug):
-    """Order of Play page — PDF-ready, filterable by court."""
-    from app.services.utils.scheduler import get_order_of_play
-    data = get_order_of_play(slug)
+    """Order of Play page — Multi-day, PDF-ready, filterable by day & court."""
+    from app.services.utils.scheduler import (
+        get_order_of_play,
+        auto_schedule_tournament,
+        apply_weather_delay,
+        reassign_match_court
+    )
+    from datetime import datetime
+
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+
+    # Handle organizer actions: Rain delay, regenerate schedule, move match
+    if request.method == 'POST':
+        action = request.form.get('action')
+        user = get_current_user()
+        if not user or user.role not in ('admin', 'superadmin') or (user.role != 'superadmin' and tournament.user_id != user.id):
+            flash('Unauthorized to manage schedule.', 'error')
+            return redirect(url_for('tournament.order_of_play', slug=slug))
+
+        if action == 'reschedule_all':
+            res = auto_schedule_tournament(tournament.id)
+            flash(res.get('message', 'Tournament matches scheduled!'), 'success')
+            return redirect(url_for('tournament.order_of_play', slug=slug))
+
+        elif action == 'apply_delay':
+            minutes = request.form.get('delay_minutes', type=int, default=30)
+            court_filter = request.form.get('delay_court') or None
+            count = apply_weather_delay(tournament.id, minutes, court_filter=court_filter)
+            court_str = f" on {court_filter}" if court_filter else " across all courts"
+            flash(f'Shifted {count} pending matches by +{minutes} minutes{court_str}.', 'info')
+            return redirect(url_for('tournament.order_of_play', slug=slug))
+
+        elif action == 'reassign_court':
+            match_id = request.form.get('match_id', type=int)
+            new_court = request.form.get('new_court')
+            if match_id and new_court:
+                reassign_match_court(match_id, new_court)
+                flash(f'Match moved to {new_court}.', 'success')
+            return redirect(url_for('tournament.order_of_play', slug=slug))
+
+    # Parse optional date filter
+    date_param = request.args.get('date')
+    filter_date = None
+    if date_param:
+        try:
+            filter_date = datetime.strptime(date_param, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+
+    data = get_order_of_play(slug, filter_date=filter_date)
     selected_court = request.args.get('court', None)
     is_export = request.args.get('export', '0') == '1'
 
@@ -942,5 +1018,8 @@ def order_of_play(slug):
         all_courts=list(courts.keys()),
         selected_court=selected_court,
         tournament=data['tournament'],
+        days_meta=data['days_meta'],
+        active_date=data['active_date'],
+        total_matches_scheduled=data['total_matches_scheduled'],
         is_export=is_export,
     )

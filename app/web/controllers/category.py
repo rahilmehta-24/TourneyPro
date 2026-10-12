@@ -133,16 +133,12 @@ def create_category(slug):
         start_date_time = None
         if start_date_time_str:
             try:
-                from datetime import timedelta
-                local_dt = datetime.strptime(start_date_time_str, '%Y-%m-%dT%H:%M')
-                tz_offset = request.form.get('tz_offset', type=int)
-                if tz_offset is not None:
-                    start_date_time = local_dt + timedelta(minutes=tz_offset)
-                else:
-                    start_date_time = local_dt
+                start_date_time = datetime.strptime(start_date_time_str, '%Y-%m-%dT%H:%M')
             except ValueError:
                 pass
         avg_match_duration = request.form.get('avg_match_duration', type=int, default=60)
+        preferred_start_day = request.form.get('preferred_start_day', type=int, default=1)
+        pin_finals_to_last_day = request.form.get('pin_finals_to_last_day') == 'on'
         entry_fee = request.form.get('entry_fee', type=float, default=0.0)
 
         category = Category(
@@ -168,6 +164,8 @@ def create_category(slug):
             court_names=court_names,
             start_date_time=start_date_time,
             avg_match_duration=avg_match_duration,
+            preferred_start_day=preferred_start_day,
+            pin_finals_to_last_day=pin_finals_to_last_day,
             entry_fee=entry_fee
         )
 
@@ -462,18 +460,14 @@ def manage_category(slug, category_id):
                 start_date_time_str = request.form.get('start_date_time')
                 if start_date_time_str:
                     try:
-                        from datetime import timedelta
-                        local_dt = datetime.strptime(start_date_time_str, '%Y-%m-%dT%H:%M')
-                        tz_offset = request.form.get('tz_offset', type=int)
-                        if tz_offset is not None:
-                            category.start_date_time = local_dt + timedelta(minutes=tz_offset)
-                        else:
-                            category.start_date_time = local_dt
+                        category.start_date_time = datetime.strptime(start_date_time_str, '%Y-%m-%dT%H:%M')
                     except ValueError:
                         pass
                 else:
                     category.start_date_time = None
                 category.avg_match_duration = request.form.get('avg_match_duration', type=int, default=60)
+                category.preferred_start_day = request.form.get('preferred_start_day', type=int, default=1)
+                category.pin_finals_to_last_day = request.form.get('pin_finals_to_last_day') == 'on'
 
                 # Settings only editable in setup status
                 if category.status == 'setup':

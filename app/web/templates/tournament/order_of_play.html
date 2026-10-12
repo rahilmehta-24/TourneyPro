@@ -5,7 +5,7 @@
 {% block content %}
 {% if is_export %}
 <style>
-  @page { size: A4; margin: 1.5cm; }
+  @page { size: A4; margin: 1.2cm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: Arial, sans-serif; font-size: 11px; color: #1a1a1a; background: #fff !important; }
   .header { text-align: center; margin-bottom: 1.5rem; border-bottom: 3px solid #f97316; padding-bottom: 1rem; }
@@ -18,6 +18,7 @@
   .oop-table td { padding: 8px 10px; border-bottom: 1px solid #e5e5e5; vertical-align: middle; }
   .oop-table tr:nth-child(even) td { background: #f9f9f9; }
   .vs-badge { background: #e5e7eb; padding: 1px 6px; border-radius: 9999px; font-size: 9px; font-weight: bold; }
+  .nb-badge { background: #fef3c7; color: #92400e; padding: 2px 5px; border-radius: 4px; font-size: 9px; font-weight: bold; }
   .status-pending { color: #6b7280; }
   .status-in_progress { color: #f59e0b; font-weight: bold; }
   .status-completed { color: #10b981; font-weight: bold; }
@@ -27,7 +28,7 @@
 {% endif %}
 
 {% if not is_export %}
-<div class="container" style="max-width:1100px; margin:0 auto; padding: 1rem 2rem 0;">
+<div class="container" style="max-width:1150px; margin:0 auto; padding: 1rem 2rem 0;">
   <!-- Breadcrumb & Backway Bar -->
   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
     <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.95rem;">
@@ -39,91 +40,227 @@
       <span style="color: var(--text-muted);">/</span>
       <span style="color: var(--accent-primary); font-weight: 500;">📋 Order of Play</span>
     </div>
+    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+      {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+      <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">
+        ⚙️ Organizer Controls
+      </a>
+      {% endif %}
+      <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug, court=selected_court or '', date=active_date.strftime('%Y-%m-%d') if active_date else '', export='1') }}"
+         target="_blank" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">🖨️ Export PDF</a>
+    </div>
   </div>
 </div>
 
-<div class="header">
+<div class="header" style="max-width:1150px; margin:0 auto; padding: 0 2rem 1.5rem;">
   <div class="header-content" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
     <div>
-      <h1>📋 Order of Play</h1>
-      <p class="subtitle">{{ tournament.name }}</p>
+      <div style="display:flex; align-items:center; gap:0.75rem;">
+        <h1 style="margin:0; font-size:1.85rem;">📋 Order of Play</h1>
+        <span class="live-indicator-badge" title="Schedule auto-refreshes"><span class="live-indicator-dot"></span> Live</span>
+      </div>
+      <p class="subtitle" style="margin:0.25rem 0 0; color:var(--text-secondary);">
+        {{ tournament.name }} &bull; {{ total_matches_scheduled }} match{{ 'es' if total_matches_scheduled != 1 else '' }} scheduled
+      </p>
     </div>
-    <div class="action-group" style="display:flex; gap:0.75rem; flex-wrap:wrap;">
-      <!-- Court filter -->
+
+    <!-- Filters & Search -->
+    <div class="action-group" style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:center;">
+      <!-- Player Finder Search -->
+      <div style="position:relative;">
+        <input type="text" id="playerScheduleSearch" placeholder="🔍 Search player schedule..." class="form-input" style="padding:0.4rem 0.75rem; font-size:0.85rem; min-width:210px;" oninput="filterByPlayerName(this.value)">
+      </div>
+
+      <!-- Court Filter -->
       <form method="GET" style="display:flex; align-items:center; gap:0.5rem;">
-        <input type="hidden" name="export" value="0">
-        <select name="court" class="form-input" style="min-width:160px;" onchange="this.form.submit()">
+        {% if active_date %}
+        <input type="hidden" name="date" value="{{ active_date.strftime('%Y-%m-%d') }}">
+        {% endif %}
+        <select name="court" class="form-input" style="padding:0.4rem 0.75rem; font-size:0.85rem; min-width:150px;" onchange="this.form.submit()">
           <option value="">All Courts</option>
           {% for c in all_courts %}
           <option value="{{ c }}" {% if selected_court == c %}selected{% endif %}>{{ c }}</option>
           {% endfor %}
         </select>
       </form>
-      <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug, court=selected_court or '', export='1') }}"
-         target="_blank" class="btn btn-primary">🖨️ Export PDF</a>
-      <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug) }}" class="btn btn-secondary">← Back to Tournament</a>
     </div>
   </div>
+
+  <!-- MULTI-DAY TABS NAVIGATION -->
+  {% if days_meta and days_meta|length > 1 %}
+  <div style="display:flex; gap:0.5rem; margin-top:1.5rem; overflow-x:auto; padding-bottom:0.5rem; border-bottom:1px solid var(--border-color);">
+    {% for dm in days_meta %}
+    <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug, date=dm.date_str, court=selected_court or '') }}"
+       style="text-decoration:none; padding:0.5rem 1.15rem; border-radius:var(--radius-md); font-weight:600; font-size:0.875rem; white-space:nowrap; transition:all 0.15s; display:inline-flex; align-items:center; gap:0.4rem; {% if dm.is_active %}background:var(--accent-primary); color:white; box-shadow:0 2px 8px rgba(249,115,22,0.3);{% else %}background:var(--bg-secondary); color:var(--text-secondary); border:1px solid var(--border-color);{% endif %}">
+      📅 {{ dm.label }}
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- ORGANIZER SCHEDULE TOOLBAR (Rain delay, Auto-schedule) -->
+  {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+  <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:0.85rem 1.25rem; margin-top:1.25rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+    <div style="display:flex; align-items:center; gap:0.5rem; font-size:0.85rem; color:var(--text-secondary);">
+      <span>⚡ <strong>Tournament Dispatch:</strong></span>
+      <span>Anti-clash rest buffer active ({{ tournament.min_rest_minutes or 30 }} mins)</span>
+    </div>
+    <div style="display:flex; gap:0.6rem; align-items:center; flex-wrap:wrap;">
+      <!-- Rain Delay Quick Trigger -->
+      <form method="POST" style="display:inline-flex; align-items:center; gap:0.4rem;">
+        <input type="hidden" name="action" value="apply_delay">
+        <select name="delay_minutes" class="form-input" style="padding:0.25rem 0.5rem; font-size:0.8rem; height:32px;">
+          <option value="15">+15 Mins Delay</option>
+          <option value="30" selected>+30 Mins Delay</option>
+          <option value="45">+45 Mins Delay</option>
+          <option value="60">+60 Mins Delay</option>
+        </select>
+        <button type="submit" class="btn btn-secondary" style="padding:0.25rem 0.65rem; font-size:0.8rem; height:32px;" onclick="return confirm('Shift all remaining pending matches by this delay?');">
+          🌧️ Apply Delay
+        </button>
+      </form>
+
+      <!-- Global Reschedule / Anti-Clash Recalculate -->
+      <form method="POST" style="display:inline;">
+        <input type="hidden" name="action" value="reschedule_all">
+        <button type="submit" class="btn btn-primary" style="padding:0.25rem 0.75rem; font-size:0.8rem; height:32px;" onclick="return confirm('Recalculate schedule across all categories with anti-clash protection?');">
+          🔄 Auto-Schedule All
+        </button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
 </div>
 
-<div style="max-width:1100px; margin:0 auto; padding:2rem;">
+<div style="max-width:1150px; margin:0 auto; padding:0 2rem 2rem;">
 {% else %}
 <div class="header">
   <h1>📋 Order of Play</h1>
-  <p>{{ tournament.name }} &mdash; Generated {{ now }}</p>
+  <p>{{ tournament.name }} &mdash; {% if active_date %}Date: {{ active_date.strftime('%d %B %Y') }}{% endif %}</p>
 </div>
 {% endif %}
 
 {% if courts %}
   {% for court_name, matches in courts.items() %}
-  <div class="court-block" {% if not is_export %}style="background:var(--bg-card); border-radius:var(--radius-lg); overflow:hidden; box-shadow:var(--shadow-md); margin-bottom:2rem;"{% endif %}>
+  <div class="court-block" {% if not is_export %}style="background:var(--bg-card); border-radius:var(--radius-lg); overflow:hidden; box-shadow:var(--shadow-md); margin-bottom:2rem; border:1px solid var(--border-color);"{% endif %}>
     
     {% if not is_export %}
-    <div style="background:linear-gradient(135deg, #f97316, #f59e0b); padding:1rem 1.5rem; display:flex; align-items:center; gap:0.75rem;">
-      <span style="font-size:1.5rem;">🎾</span>
-      <div>
-        <h2 style="margin:0; color:white; font-size:1.25rem;">{{ court_name }}</h2>
-        <p style="margin:0; color:rgba(255,255,255,0.85); font-size:0.85rem;">{{ matches|length }} match{{ 'es' if matches|length != 1 else '' }} scheduled</p>
+    <div style="background:linear-gradient(135deg, #f97316, #ea580c); padding:1rem 1.5rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+      <div style="display:flex; align-items:center; gap:0.75rem;">
+        <span style="font-size:1.4rem;">🎾</span>
+        <div>
+          <h2 style="margin:0; color:white; font-size:1.2rem; font-weight:700;">{{ court_name }}</h2>
+          <p style="margin:0; color:rgba(255,255,255,0.85); font-size:0.825rem;">
+            {{ matches|length }} match{{ 'es' if matches|length != 1 else '' }} scheduled {% if active_date %}&bull; {{ active_date.strftime('%d %b %Y') }}{% endif %}
+          </p>
+        </div>
+      </div>
+      <div style="background:rgba(0,0,0,0.15); padding:0.25rem 0.65rem; border-radius:9999px; color:white; font-size:0.75rem; font-weight:600;">
+        Operating: {{ tournament.court_operating_start or '09:00' }} &ndash; {{ tournament.court_operating_end or '19:00' }}
       </div>
     </div>
+
     <div style="overflow-x:auto;">
-    <table style="width:100%; border-collapse:collapse;">
+    <table class="oop-matches-table" style="width:100%; border-collapse:collapse;">
       <thead>
-        <tr style="background:var(--bg-secondary);">
-          <th style="padding:1rem; text-align:left; color:var(--text-muted); font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; width:90px;">Time</th>
-          <th style="padding:1rem; text-align:left; color:var(--text-muted); font-size:0.8rem; text-transform:uppercase; letter-spacing:1px;">Category</th>
-          <th style="padding:1rem; text-align:left; color:var(--text-muted); font-size:0.8rem; text-transform:uppercase; letter-spacing:1px;">Round</th>
-          <th style="padding:1rem; text-align:left; color:var(--text-muted); font-size:0.8rem; text-transform:uppercase; letter-spacing:1px;">Match</th>
-          <th style="padding:1rem; text-align:center; color:var(--text-muted); font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; width:80px;">Status</th>
+        <tr style="background:var(--bg-secondary); border-bottom:1px solid var(--border-color);">
+          <th style="padding:0.85rem 1rem; text-align:left; color:var(--text-muted); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.8px; width:130px;">Time</th>
+          <th style="padding:0.85rem 1rem; text-align:left; color:var(--text-muted); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.8px;">Category</th>
+          <th style="padding:0.85rem 1rem; text-align:left; color:var(--text-muted); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.8px; width:70px;">Round</th>
+          <th style="padding:0.85rem 1rem; text-align:left; color:var(--text-muted); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.8px;">Match</th>
+          <th style="padding:0.85rem 1rem; text-align:center; color:var(--text-muted); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.8px; width:100px;">Status</th>
+          {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+          <th style="padding:0.85rem 1rem; text-align:right; color:var(--text-muted); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.8px; width:110px;">Dispatch</th>
+          {% endif %}
         </tr>
       </thead>
       <tbody>
         {% for item in matches %}
-        <tr style="border-bottom:1px solid rgba(255,255,255,0.06); transition: background 0.15s;" 
+        <tr class="oop-match-row" data-p1="{{ item.p1|lower }}" data-p2="{{ item.p2|lower }}" data-cat="{{ item.category_name|lower }}"
+            style="border-bottom:1px solid rgba(255,255,255,0.06); transition: background 0.15s;" 
             onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background=''">
-          <td style="padding:1rem; font-weight:bold; font-size:1.1rem; color:var(--accent-primary);">{{ item.time }}</td>
-          <td style="padding:1rem; color:var(--text-secondary); font-size:0.9rem;">{{ item.category_name }}</td>
-          <td style="padding:1rem;">
-            <span style="background:rgba(249,115,22,0.15); color:var(--accent-primary); padding:0.2rem 0.6rem; border-radius:9999px; font-size:0.8rem; font-weight:600;">
+          
+          <!-- Match Time & 'Not Before' indication -->
+          <td style="padding:0.85rem 1rem; vertical-align:middle;">
+            <div style="display:flex; flex-direction:column; gap:2px;">
+              <span style="font-weight:700; font-size:1.1rem; color:var(--accent-primary);">
+                {{ item.time }}
+              </span>
+              {% if item.is_not_before %}
+              <span style="font-size:0.72rem; color:var(--accent-warning); font-weight:600; display:inline-flex; align-items:center; gap:2px;">
+                ⏱️ Not Before
+              </span>
+              {% else %}
+              <span style="font-size:0.72rem; color:var(--accent-success); font-weight:600;">
+                🎾 First Match
+              </span>
+              {% endif %}
+            </div>
+          </td>
+
+          <!-- Category -->
+          <td style="padding:0.85rem 1rem; color:var(--text-secondary); font-size:0.9rem; vertical-align:middle;">
+            <strong>{{ item.category_name }}</strong>
+          </td>
+
+          <!-- Round -->
+          <td style="padding:0.85rem 1rem; vertical-align:middle;">
+            <span style="background:rgba(249,115,22,0.12); color:var(--accent-primary); padding:0.2rem 0.55rem; border-radius:9999px; font-size:0.78rem; font-weight:600;">
               R{{ item.round }}
             </span>
           </td>
-          <td style="padding:1rem;">
+
+          <!-- Players / Teams -->
+          <td style="padding:0.85rem 1rem; vertical-align:middle;">
             <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
-              <span style="font-weight:600; color:var(--text-primary);">{{ item.p1 }}</span>
-              <span style="background:var(--bg-tertiary); color:var(--text-muted); padding:0.15rem 0.5rem; border-radius:9999px; font-size:0.75rem;">vs</span>
-              <span style="font-weight:600; color:var(--text-primary);">{{ item.p2 }}</span>
+              <span style="font-weight:600; color:var(--text-primary); font-size:0.95rem;">
+                {% if item.p1_player_id %}
+                <a href="{{ url_for('player.view_player', player_id=item.p1_player_id) }}" style="color:inherit; text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">{{ item.p1 }}</a>
+                {% else %}
+                {{ item.p1 }}
+                {% endif %}
+              </span>
+              <span style="background:var(--bg-tertiary); color:var(--text-muted); padding:0.12rem 0.45rem; border-radius:9999px; font-size:0.72rem; font-weight:600;">vs</span>
+              <span style="font-weight:600; color:var(--text-primary); font-size:0.95rem;">
+                {% if item.p2_player_id %}
+                <a href="{{ url_for('player.view_player', player_id=item.p2_player_id) }}" style="color:inherit; text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">{{ item.p2 }}</a>
+                {% else %}
+                {{ item.p2 }}
+                {% endif %}
+              </span>
             </div>
           </td>
-          <td style="padding:1rem; text-align:center;">
+
+          <!-- Status -->
+          <td style="padding:0.85rem 1rem; text-align:center; vertical-align:middle;">
             {% if item.status == 'completed' %}
-              <span style="background:rgba(16,185,129,0.15); color:#10b981; padding:0.25rem 0.75rem; border-radius:9999px; font-size:0.8rem; font-weight:600;">✓ Done</span>
+              <span style="background:rgba(16,185,129,0.15); color:#10b981; padding:0.25rem 0.65rem; border-radius:9999px; font-size:0.78rem; font-weight:600;">✓ Done</span>
             {% elif item.status == 'in_progress' %}
-              <span style="background:rgba(245,158,11,0.15); color:#f59e0b; padding:0.25rem 0.75rem; border-radius:9999px; font-size:0.8rem; font-weight:600;">🔴 Live</span>
+              <span style="background:rgba(245,158,11,0.15); color:#f59e0b; padding:0.25rem 0.65rem; border-radius:9999px; font-size:0.78rem; font-weight:600; display:inline-flex; align-items:center; gap:3px;">🔴 In Progress</span>
             {% else %}
-              <span style="background:rgba(255,255,255,0.05); color:var(--text-muted); padding:0.25rem 0.75rem; border-radius:9999px; font-size:0.8rem;">Pending</span>
+              <span style="background:rgba(255,255,255,0.06); color:var(--text-muted); padding:0.25rem 0.65rem; border-radius:9999px; font-size:0.78rem;">To Play</span>
             {% endif %}
           </td>
+
+          <!-- Quick Move / Dispatch Menu for Organizers -->
+          {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+          <td style="padding:0.85rem 1rem; text-align:right; vertical-align:middle;">
+            {% if item.status != 'completed' %}
+            <form method="POST" style="display:inline-flex; align-items:center; gap:3px;">
+              <input type="hidden" name="action" value="reassign_court">
+              <input type="hidden" name="match_id" value="{{ item.match.id }}">
+              <select name="new_court" class="form-input" style="padding:0.2rem 0.4rem; font-size:0.75rem; height:28px; width:85px;" onchange="this.form.submit()">
+                <option value="" disabled selected>Move ⤾</option>
+                {% for oc in all_courts %}
+                {% if oc != court_name %}
+                <option value="{{ oc }}">{{ oc }}</option>
+                {% endif %}
+                {% endfor %}
+              </select>
+            </form>
+            {% endif %}
+          </td>
+          {% endif %}
         </tr>
         {% endfor %}
       </tbody>
@@ -131,25 +268,28 @@
     </div>
 
     {% else %}
-    {# PDF mode #}
+    {# PDF Export Mode #}
     <div class="court-block">
       <div class="court-title">{{ court_name }} &mdash; {{ matches|length }} Match{{ 'es' if matches|length != 1 else '' }}</div>
       <table class="oop-table">
         <thead>
           <tr>
-            <th style="width:70px;">Time</th>
+            <th style="width:85px;">Time</th>
             <th>Category</th>
-            <th style="width:50px;">Round</th>
+            <th style="width:45px;">Round</th>
             <th>Player 1</th>
-            <th style="width:30px;"></th>
+            <th style="width:25px;"></th>
             <th>Player 2</th>
-            <th style="width:70px;">Status</th>
+            <th style="width:75px;">Status</th>
           </tr>
         </thead>
         <tbody>
           {% for item in matches %}
           <tr>
-            <td><strong>{{ item.time }}</strong></td>
+            <td>
+              <strong>{{ item.time }}</strong>
+              {% if item.is_not_before %}<span class="nb-badge">NB</span>{% endif %}
+            </td>
             <td>{{ item.category_name }}</td>
             <td><span class="round-badge">R{{ item.round }}</span></td>
             <td>{{ item.p1 }}</td>
@@ -171,11 +311,15 @@
 
 {% else %}
   {% if not is_export %}
-  <div class="card" style="text-align:center; padding:4rem 2rem;">
-    <div style="font-size:4rem; margin-bottom:1rem; opacity:0.4;">📋</div>
-    <h2>No Scheduled Matches</h2>
-    <p style="color:var(--text-secondary); max-width:400px; margin:1rem auto;">
-      No matches have been scheduled yet. Go to a category's management panel and use "Generate Schedule" to assign courts and times.
+  <div class="card" style="text-align:center; padding:4rem 2rem; background:var(--bg-card); border-radius:var(--radius-lg); border:1px solid var(--border-color);">
+    <div style="font-size:3.5rem; margin-bottom:1rem; opacity:0.5;">📋</div>
+    <h2>No Scheduled Matches Found</h2>
+    <p style="color:var(--text-secondary); max-width:450px; margin:1rem auto;">
+      {% if active_date %}
+      No matches are scheduled for <strong>{{ active_date.strftime('%d %B %Y') }}</strong>. Use the day tabs above to view other dates.
+      {% else %}
+      Matches have not been generated yet. Open your Category management dashboard and click "🚀 Start Category Bracket" or use "Auto-Schedule All" above.
+      {% endif %}
     </p>
   </div>
   {% else %}
@@ -185,6 +329,22 @@
 
 {% if not is_export %}
 </div>
+<script>
+function filterByPlayerName(query) {
+    const q = (query || '').trim().toLowerCase();
+    const rows = document.querySelectorAll('.oop-match-row');
+    rows.forEach(r => {
+        const p1 = r.dataset.p1 || '';
+        const p2 = r.dataset.p2 || '';
+        const cat = r.dataset.cat || '';
+        if (!q || p1.includes(q) || p2.includes(q) || cat.includes(q)) {
+            r.style.display = '';
+        } else {
+            r.style.display = 'none';
+        }
+    });
+}
+</script>
 {% block endscripts %}{% endblock %}
 {% else %}
 <div class="footer">
