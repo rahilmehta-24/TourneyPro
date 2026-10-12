@@ -126,17 +126,11 @@ def create_category(slug):
             allow_lucky_losers = False
         max_players_per_team = request.form.get('max_players_per_team', type=int)
 
-        # Scheduling fields
-        num_courts = request.form.get('num_courts', type=int, default=1)
-        court_names = request.form.get('court_names', '')
-        start_date_time_str = request.form.get('start_date_time')
+        # Scheduling fields inherited globally from tournament
+        num_courts = request.form.get('num_courts', type=int) or tournament.num_courts or 1
+        court_names = request.form.get('court_names') or tournament.court_names or ''
         start_date_time = None
-        if start_date_time_str:
-            try:
-                start_date_time = datetime.strptime(start_date_time_str, '%Y-%m-%dT%H:%M')
-            except ValueError:
-                pass
-        avg_match_duration = request.form.get('avg_match_duration', type=int, default=60)
+        avg_match_duration = request.form.get('avg_match_duration', type=int) or tournament.avg_match_duration or 60
         preferred_start_day = request.form.get('preferred_start_day', type=int, default=1)
         pin_finals_to_last_day = request.form.get('pin_finals_to_last_day') == 'on'
         entry_fee = request.form.get('entry_fee', type=float, default=0.0)
@@ -454,20 +448,26 @@ def manage_category(slug, category_id):
                 category.max_players_per_team = max_players_per_team
                 category.entry_fee = request.form.get('entry_fee', type=float, default=0.0)
                 
-                # Scheduling fields
-                category.num_courts = request.form.get('num_courts', type=int, default=1)
-                category.court_names = request.form.get('court_names', '')
-                start_date_time_str = request.form.get('start_date_time')
-                if start_date_time_str:
-                    try:
-                        category.start_date_time = datetime.strptime(start_date_time_str, '%Y-%m-%dT%H:%M')
-                    except ValueError:
-                        pass
-                else:
-                    category.start_date_time = None
-                category.avg_match_duration = request.form.get('avg_match_duration', type=int, default=60)
-                category.preferred_start_day = request.form.get('preferred_start_day', type=int, default=1)
-                category.pin_finals_to_last_day = request.form.get('pin_finals_to_last_day') == 'on'
+                # Scheduling fields (inherited globally from tournament if not specified)
+                if request.form.get('num_courts'):
+                    category.num_courts = request.form.get('num_courts', type=int)
+                elif not category.num_courts:
+                    category.num_courts = tournament.num_courts or 1
+
+                if request.form.get('court_names'):
+                    category.court_names = request.form.get('court_names')
+                elif not category.court_names:
+                    category.court_names = tournament.court_names or ''
+
+                if request.form.get('avg_match_duration'):
+                    category.avg_match_duration = request.form.get('avg_match_duration', type=int)
+                elif not category.avg_match_duration:
+                    category.avg_match_duration = tournament.avg_match_duration or 60
+
+                if 'preferred_start_day' in request.form:
+                    category.preferred_start_day = request.form.get('preferred_start_day', type=int, default=1)
+                if 'pin_finals_to_last_day' in request.form:
+                    category.pin_finals_to_last_day = request.form.get('pin_finals_to_last_day') == 'on'
 
                 # Settings only editable in setup status
                 if category.status == 'setup':
