@@ -23,6 +23,7 @@ Features:
     - Allows moving a match to an open court immediately.
 """
 
+import json
 from datetime import datetime, date, time, timedelta
 from app.domain.models import db, Match, Category, Tournament, Participant, Group
 
@@ -52,6 +53,43 @@ def get_court_names_list(source_courts_text: str | None, num_courts: int) -> lis
                 names.append(f"Court {i}")
             return names
     return [f"Court {i + 1}" for i in range(max(num_courts, 1))]
+
+
+def get_tournament_daily_schedule(tournament: Tournament, tournament_days: list[date]) -> dict[date, dict[str, time]]:
+    """
+    Returns a mapping for each day in tournament_days:
+    {
+        d: {
+            "start": time(H, M),
+            "end": time(H, M)
+        }
+    }
+    Falling back to tournament.court_operating_start & tournament.court_operating_end.
+    """
+    default_start = parse_time_str(tournament.court_operating_start, default=time(9, 0))
+    default_end = parse_time_str(tournament.court_operating_end, default=time(19, 0))
+
+    custom_hours = {}
+    if getattr(tournament, 'daily_operating_hours', None):
+        try:
+            raw = tournament.daily_operating_hours
+            custom_hours = json.loads(raw) if isinstance(raw, str) else (raw or {})
+        except Exception:
+            custom_hours = {}
+
+    schedule = {}
+    for d in tournament_days:
+        d_str = d.strftime("%Y-%m-%d")
+        if d_str in custom_hours and isinstance(custom_hours[d_str], dict):
+            s_val = custom_hours[d_str].get('start')
+            e_val = custom_hours[d_str].get('end')
+            d_start = parse_time_str(s_val, default=default_start) if s_val else default_start
+            d_end = parse_time_str(e_val, default=default_end) if e_val else default_end
+        else:
+            d_start = default_start
+            d_end = default_end
+        schedule[d] = {"start": d_start, "end": d_end}
+    return schedule
 
 
 def get_participant_player_keys(p: Participant | None) -> set:
@@ -96,8 +134,7 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
     last_day = tournament_days[-1]
 
     # 2. Operating hours & court setup
-    daily_start = parse_time_str(tournament.court_operating_start, default=time(9, 0))
-    daily_end = parse_time_str(tournament.court_operating_end, default=time(19, 0))
+    daily_schedules = get_tournament_daily_schedule(tournament, tournament_days)
     
     # Determine overall court count & names
     max_courts = tournament.num_courts or 1
@@ -149,8 +186,9 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
     court_next_available: dict[date, dict[str, datetime]] = {}
     for d in tournament_days:
         court_next_available[d] = {}
+        d_start = daily_schedules[d]["start"]
         for c in courts:
-            court_next_available[d][c] = datetime.combine(d, daily_start)
+            court_next_available[d][c] = datetime.combine(d, d_start)
 
     # player_next_available[player_key] = datetime (player cannot play until this time)
     player_next_available: dict[str, datetime] = {}
@@ -187,7 +225,7 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
             earliest_time = max(earliest_time, round_ready_at[(match.category_id, match.round - 1)])
 
         # Search for best available (day, court, slot) that respects:
-        # - Daily closing time
+        # - Daily closing time (dynamically per day)
         # - Court availability
         # - Player anti-clash & rest buffer
         # - Player daily match cap
@@ -198,7 +236,9 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
             if max_daily_matches is not None and p_keys and any(player_daily_count[current_day].get(pk, 0) >= max_daily_matches for pk in p_keys):
                 continue  # Try next day
 
-            day_end_dt = datetime.combine(current_day, daily_end)
+            current_day_start = daily_schedules[current_day]["start"]
+            current_day_end = daily_schedules[current_day]["end"]
+            day_end_dt = datetime.combine(current_day, current_day_end)
 
             # Find court with earliest available slot
             # Sort courts by next available time on this day
@@ -208,7 +248,7 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
                 court_ready = court_next_available[current_day][court_name]
                 
                 # The match cannot start before court_ready, earliest_time, or any player's next_available time
-                tentative_start = max(court_ready, datetime.combine(current_day, daily_start))
+                tentative_start = max(court_ready, datetime.combine(current_day, current_day_start))
                 if earliest_time.date() == current_day:
                     tentative_start = max(tentative_start, earliest_time)
                 elif earliest_time.date() > current_day:
@@ -226,7 +266,7 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
                     continue  # Cannot fit on this court today
 
                 # Found valid slot!
-                is_first_match_of_day = (tentative_start.time() == daily_start)
+                is_first_match_of_day = (tentative_start.time() == current_day_start)
                 
                 match.scheduled_time = tentative_start
                 match.scheduled_date = current_day
@@ -443,11 +483,22 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
             "is_active": (d == active_date)
         })
 
+    # Discover active day's operating hours
+    active_day_start = tournament.court_operating_start or "09:00"
+    active_day_end = tournament.court_operating_end or "19:00"
+    if active_date:
+        act_sched = get_tournament_daily_schedule(tournament, [active_date]).get(active_date)
+        if act_sched:
+            active_day_start = act_sched["start"].strftime("%H:%M")
+            active_day_end = act_sched["end"].strftime("%H:%M")
+
     return {
         "courts": sorted_order,
         "tournament": tournament,
         "unique_dates": unique_dates,
         "active_date": active_date,
+        "active_day_start": active_day_start,
+        "active_day_end": active_day_end,
         "days_meta": days_meta,
         "total_matches_scheduled": len(all_matches)
     }

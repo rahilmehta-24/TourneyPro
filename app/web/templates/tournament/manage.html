@@ -263,21 +263,50 @@
                             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
                                 <div>
                                     <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Tournament Start Date</label>
-                                    <input type="date" name="start_date" class="form-input" value="{{ tournament.start_date.strftime('%Y-%m-%d') if tournament.start_date else '' }}" style="width: 100%;">
+                                    <input type="date" id="tournStartDate" name="start_date" class="form-input" value="{{ tournament.start_date.strftime('%Y-%m-%d') if tournament.start_date else '' }}" style="width: 100%;">
                                 </div>
                                 <div>
                                     <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Tournament End Date</label>
-                                    <input type="date" name="end_date" class="form-input" value="{{ tournament.end_date.strftime('%Y-%m-%d') if tournament.end_date else '' }}" style="width: 100%;">
+                                    <input type="date" id="tournEndDate" name="end_date" class="form-input" value="{{ tournament.end_date.strftime('%Y-%m-%d') if tournament.end_date else '' }}" style="width: 100%;">
                                 </div>
                                 <div>
-                                    <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Daily Start Time</label>
-                                    <input type="time" name="court_operating_start" class="form-input" value="{{ tournament.court_operating_start or '09:00' }}" style="width: 100%;">
+                                    <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Default Daily Start Time</label>
+                                    <input type="time" id="defaultStartTime" name="court_operating_start" class="form-input" value="{{ tournament.court_operating_start or '09:00' }}" style="width: 100%;">
                                 </div>
                                 <div>
-                                    <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Daily End Time (Cutoff)</label>
-                                    <input type="time" name="court_operating_end" class="form-input" value="{{ tournament.court_operating_end or '19:00' }}" style="width: 100%;">
+                                    <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Default Daily End Time (Cutoff)</label>
+                                    <input type="time" id="defaultEndTime" name="court_operating_end" class="form-input" value="{{ tournament.court_operating_end or '19:00' }}" style="width: 100%;">
                                 </div>
                             </div>
+
+                            <!-- DYNAMIC DAILY OPERATING SCHEDULE SECTION -->
+                            <div id="dynamicDailyScheduleSection" style="margin-top: 1.25rem; margin-bottom: 1.25rem; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.75rem;">
+                                    <div>
+                                        <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.4rem;">
+                                            ⏰ Daily Match Operating Hours (Dynamic Schedule)
+                                        </h4>
+                                        <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0.25rem 0 0;">
+                                            Select custom start and cutoff times for each tournament day (e.g. late afternoon start on Day 1, early finish on final day).
+                                        </p>
+                                    </div>
+                                    <button type="button" class="btn btn-secondary" id="applyDefaultsToAllDaysBtn" style="font-size: 0.75rem; padding: 0.3rem 0.65rem; border-radius: var(--radius-sm);">
+                                        🔄 Reset All Days to Default
+                                    </button>
+                                </div>
+
+                                <div id="dailyScheduleList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.85rem;">
+                                    <!-- Injected via JavaScript dynamically -->
+                                </div>
+
+                                <div id="dailyScheduleEmptyPrompt" style="display: none; color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 1.5rem 0;">
+                                    📅 Select both Start Date and End Date above to set daily timings.
+                                </div>
+
+                                <!-- Hidden input storing complete JSON -->
+                                <input type="hidden" name="daily_operating_hours" id="dailyOperatingHoursJson" value="{{ tournament.daily_operating_hours or '' }}">
+                            </div>
+
                             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
                                 <div>
                                     <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Total Courts Available</label>
@@ -318,6 +347,169 @@
                             form.submit();
                         }
                     }
+
+                    (function() {
+                        function initDynamicDailySchedule() {
+                            const startInput = document.getElementById('tournStartDate');
+                            const endInput = document.getElementById('tournEndDate');
+                            const defaultStartInput = document.getElementById('defaultStartTime');
+                            const defaultEndInput = document.getElementById('defaultEndTime');
+                            const container = document.getElementById('dailyScheduleList');
+                            const emptyPrompt = document.getElementById('dailyScheduleEmptyPrompt');
+                            const jsonInput = document.getElementById('dailyOperatingHoursJson');
+                            const resetBtn = document.getElementById('applyDefaultsToAllDaysBtn');
+
+                            if (!startInput || !endInput || !container) return;
+
+                            let savedHours = {};
+                            try {
+                                savedHours = {{ (parsed_daily_hours|tojson) if parsed_daily_hours else '{}' }};
+                            } catch (e) {
+                                savedHours = {};
+                            }
+
+                            function formatDisplayDate(dateObj) {
+                                const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                                return `${days[dateObj.getDay()]}, ${dateObj.getDate()} ${months[dateObj.getMonth()]}`;
+                            }
+
+                            function renderDays() {
+                                const startVal = startInput.value;
+                                const endVal = endInput.value || startVal;
+
+                                if (!startVal) {
+                                    container.innerHTML = '';
+                                    container.style.display = 'none';
+                                    if (emptyPrompt) emptyPrompt.style.display = 'block';
+                                    return;
+                                }
+
+                                const startDate = new Date(startVal + 'T00:00:00');
+                                let endDate = new Date(endVal + 'T00:00:00');
+
+                                if (endDate < startDate) {
+                                    endDate = new Date(startDate);
+                                    endInput.value = startVal;
+                                }
+
+                                container.innerHTML = '';
+                                container.style.display = 'grid';
+                                if (emptyPrompt) emptyPrompt.style.display = 'none';
+
+                                const defaultStart = defaultStartInput ? defaultStartInput.value || '09:00' : '09:00';
+                                const defaultEnd = defaultEndInput ? defaultEndInput.value || '19:00' : '19:00';
+
+                                const curr = new Date(startDate);
+                                let dayIndex = 1;
+
+                                while (curr <= endDate) {
+                                    const yyyy = curr.getFullYear();
+                                    const mm = String(curr.getMonth() + 1).padStart(2, '0');
+                                    const dd = String(curr.getDate()).padStart(2, '0');
+                                    const dateKey = `${yyyy}-${mm}-${dd}`;
+                                    const dateDisplay = formatDisplayDate(curr);
+
+                                    let sVal = defaultStart;
+                                    let eVal = defaultEnd;
+                                    if (savedHours[dateKey] && savedHours[dateKey].start) {
+                                        sVal = savedHours[dateKey].start;
+                                    }
+                                    if (savedHours[dateKey] && savedHours[dateKey].end) {
+                                        eVal = savedHours[dateKey].end;
+                                    }
+
+                                    const card = document.createElement('div');
+                                    card.style.background = 'var(--bg-card)';
+                                    card.style.border = '1px solid var(--border-color)';
+                                    card.style.borderRadius = 'var(--radius-sm)';
+                                    card.style.padding = '0.85rem';
+                                    card.style.display = 'flex';
+                                    card.style.flexDirection = 'column';
+                                    card.style.gap = '0.5rem';
+
+                                    card.innerHTML = `
+                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                            <span style="font-weight: 700; font-size: 0.85rem; color: var(--accent-primary);">
+                                                Day ${dayIndex}
+                                            </span>
+                                            <span style="font-size: 0.78rem; color: var(--text-muted); font-weight: 500;">
+                                                ${dateDisplay}
+                                            </span>
+                                        </div>
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.25rem;">
+                                            <div>
+                                                <label style="display: block; font-size: 0.72rem; color: var(--text-secondary); margin-bottom: 2px;">Start Time</label>
+                                                <input type="time" name="daily_start_${dateKey}" data-date="${dateKey}" data-type="start" class="form-input daily-time-start" value="${sVal}" style="padding: 0.3rem 0.5rem; font-size: 0.8rem; width: 100%;">
+                                            </div>
+                                            <div>
+                                                <label style="display: block; font-size: 0.72rem; color: var(--text-secondary); margin-bottom: 2px;">Cutoff Time</label>
+                                                <input type="time" name="daily_end_${dateKey}" data-date="${dateKey}" data-type="end" class="form-input daily-time-end" value="${eVal}" style="padding: 0.3rem 0.5rem; font-size: 0.8rem; width: 100%;">
+                                            </div>
+                                        </div>
+                                    `;
+
+                                    container.appendChild(card);
+                                    curr.setDate(curr.getDate() + 1);
+                                    dayIndex++;
+                                }
+
+                                syncToJson();
+                            }
+
+                            function syncToJson() {
+                                const starts = container.querySelectorAll('.daily-time-start');
+                                const result = {};
+                                starts.forEach(input => {
+                                    const dateKey = input.dataset.date;
+                                    const endInput = container.querySelector(`.daily-time-end[data-date="${dateKey}"]`);
+                                    result[dateKey] = {
+                                        start: input.value || (defaultStartInput ? defaultStartInput.value : '09:00'),
+                                        end: endInput ? (endInput.value || (defaultEndInput ? defaultEndInput.value : '19:00')) : '19:00'
+                                    };
+                                });
+                                savedHours = Object.assign({}, savedHours, result);
+                                if (jsonInput) {
+                                    jsonInput.value = JSON.stringify(result);
+                                }
+                            }
+
+                            container.addEventListener('change', syncToJson);
+                            container.addEventListener('input', syncToJson);
+
+                            startInput.addEventListener('change', renderDays);
+                            startInput.addEventListener('input', renderDays);
+                            endInput.addEventListener('change', renderDays);
+                            endInput.addEventListener('input', renderDays);
+
+                            if (defaultStartInput) {
+                                defaultStartInput.addEventListener('change', function() {
+                                    if (Object.keys(savedHours).length === 0) renderDays();
+                                });
+                            }
+                            if (defaultEndInput) {
+                                defaultEndInput.addEventListener('change', function() {
+                                    if (Object.keys(savedHours).length === 0) renderDays();
+                                });
+                            }
+
+                            if (resetBtn) {
+                                resetBtn.addEventListener('click', function() {
+                                    const defS = defaultStartInput ? defaultStartInput.value || '09:00' : '09:00';
+                                    const defE = defaultEndInput ? defaultEndInput.value || '19:00' : '19:00';
+                                    container.querySelectorAll('.daily-time-start').forEach(i => i.value = defS);
+                                    container.querySelectorAll('.daily-time-end').forEach(i => i.value = defE);
+                                    syncToJson();
+                                });
+                            }
+
+                            // Initial render
+                            renderDays();
+                        }
+
+                        document.addEventListener('DOMContentLoaded', initDynamicDailySchedule);
+                        document.addEventListener('turbo:load', initDynamicDailySchedule);
+                    })();
                     </script>
                 </div>
             </div>

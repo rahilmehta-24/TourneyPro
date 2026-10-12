@@ -5,8 +5,9 @@ from app.services.format_engine import get_format
 from app.core.constants import TOURNAMENT_FORMATS
 from app.web.controllers.auth import login_required, role_required, get_current_user, check_tournament_ownership
 from app.services.tennis_logic import validate_and_format_score
+import json
 from slugify import slugify
-from datetime import datetime
+from datetime import datetime, timedelta
 
 tournament_bp = Blueprint('tournament', __name__)
 
@@ -445,7 +446,6 @@ def manage_tournament(slug):
                 reg_closes_str = request.form.get('registration_closes_at')
                 if reg_closes_str:
                     try:
-                        from datetime import timedelta
                         local_dt = datetime.strptime(reg_closes_str, '%Y-%m-%dT%H:%M')
                         tz_offset = request.form.get('tz_offset', type=int)
                         if tz_offset is not None:
@@ -572,6 +572,34 @@ def manage_tournament(slug):
                 max_matches_str = request.form.get('max_matches_per_player_day')
                 tournament.max_matches_per_player_day = int(max_matches_str) if max_matches_str and max_matches_str.strip() != '' else None
 
+                # Parse dynamic daily operating hours
+                daily_dict = {}
+                raw_json = request.form.get('daily_operating_hours')
+                if raw_json:
+                    try:
+                        daily_dict = json.loads(raw_json)
+                    except Exception:
+                        daily_dict = {}
+
+                for k, v in request.form.items():
+                    if k.startswith('daily_start_'):
+                        d_key = k[len('daily_start_'):]
+                        if d_key not in daily_dict:
+                            daily_dict[d_key] = {}
+                        daily_dict[d_key]['start'] = v
+                    elif k.startswith('daily_end_'):
+                        d_key = k[len('daily_end_'):]
+                        if d_key not in daily_dict:
+                            daily_dict[d_key] = {}
+                        daily_dict[d_key]['end'] = v
+
+                if tournament.start_date and tournament.end_date:
+                    num_days = (tournament.end_date - tournament.start_date).days + 1
+                    valid_range = {(tournament.start_date + timedelta(days=i)).strftime('%Y-%m-%d') for i in range(num_days)}
+                    daily_dict = {dk: dv for dk, dv in daily_dict.items() if dk in valid_range}
+
+                tournament.daily_operating_hours = json.dumps(daily_dict) if daily_dict else None
+
                 db.session.commit()
                 flash('Tournament dates, courts, and operating hours updated successfully!', 'success')
                 return redirect(url_for('tournament.manage_tournament', slug=slug))
@@ -600,13 +628,21 @@ def manage_tournament(slug):
         # For non-category tournaments, participants are directly under the tournament
         total_players = len(participants)
 
+    parsed_daily_hours = {}
+    if tournament.daily_operating_hours:
+        try:
+            parsed_daily_hours = json.loads(tournament.daily_operating_hours)
+        except Exception:
+            parsed_daily_hours = {}
+
     pending_registrations = Registration.query.filter_by(tournament_id=tournament.id, status='pending').all()
     return render_template('tournament/manage.html',
                            pending_registrations=pending_registrations,
-                         tournament=tournament,
-                         participants=participants,
-                         total_players=total_players,
-                         formats=TOURNAMENT_FORMATS)
+                           tournament=tournament,
+                           participants=participants,
+                           total_players=total_players,
+                           parsed_daily_hours=parsed_daily_hours,
+                           formats=TOURNAMENT_FORMATS)
 
 @tournament_bp.route('/tournaments/<slug>/match/<int:match_id>/report', methods=['POST'])
 @login_required
@@ -1024,6 +1060,8 @@ def order_of_play(slug):
         tournament=data['tournament'],
         days_meta=data['days_meta'],
         active_date=data['active_date'],
+        active_day_start=data.get('active_day_start'),
+        active_day_end=data.get('active_day_end'),
         total_matches_scheduled=data['total_matches_scheduled'],
         is_export=is_export,
     )

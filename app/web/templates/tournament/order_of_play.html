@@ -156,7 +156,7 @@
         </div>
       </div>
       <div style="background:rgba(0,0,0,0.15); padding:0.25rem 0.65rem; border-radius:9999px; color:white; font-size:0.75rem; font-weight:600;">
-        Operating: {{ tournament.court_operating_start or '09:00' }} &ndash; {{ tournament.court_operating_end or '19:00' }}
+        Operating: {{ active_day_start or tournament.court_operating_start or '09:00' }} &ndash; {{ active_day_end or tournament.court_operating_end or '19:00' }}
       </div>
     </div>
 

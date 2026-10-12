@@ -35,8 +35,9 @@ class Tournament(db.Model):
     end_date = db.Column(db.Date)                                      # Tournament end date
     num_courts = db.Column(db.Integer, default=1)
     court_names = db.Column(db.Text)  # JSON or comma-separated list of court names
-    court_operating_start = db.Column(db.String(5), default='08:00')  # HH:MM e.g. '09:00'
-    court_operating_end = db.Column(db.String(5), default='20:00')    # HH:MM e.g. '19:00'
+    court_operating_start = db.Column(db.String(5), default='08:00')  # Default HH:MM e.g. '09:00'
+    court_operating_end = db.Column(db.String(5), default='20:00')    # Default HH:MM e.g. '19:00'
+    daily_operating_hours = db.Column(db.Text)                         # JSON mapping date -> {"start": "HH:MM", "end": "HH:MM"}
     avg_match_duration = db.Column(db.Integer, default=60)             # minutes
     court_buffer_minutes = db.Column(db.Integer, default=10)           # buffer between matches on same court
     min_rest_minutes = db.Column(db.Integer, default=30)               # rest buffer between matches for multi-category player
