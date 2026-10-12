@@ -24,7 +24,7 @@ Features:
 """
 
 from datetime import datetime, date, time, timedelta
-from app.domain.models import db, Match, Category, Tournament, Participant
+from app.domain.models import db, Match, Category, Tournament, Participant, Group
 
 
 def parse_time_str(time_str: str, default: time = time(9, 0)) -> time:
@@ -353,6 +353,43 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
     else:
         matches = all_matches
 
+    # Map max round per category (or overall tournament) for knockout round naming
+    # so that round names match the brackets exactly: Final, Semi-Final, Quarter-Final, Round X
+    max_rounds_by_cat: dict[int | None, int] = {}
+    for m in all_matches:
+        if m.match_type not in ('group_stage', 'round_robin'):
+            cid = m.category_id
+            if cid not in max_rounds_by_cat or m.round > max_rounds_by_cat[cid]:
+                max_rounds_by_cat[cid] = m.round
+
+    def get_match_round_name(m: Match) -> str:
+        # Check special bracket types first
+        b_type = getattr(m, 'bracket_type', None)
+        if b_type in ('grand_finals', 'grand_final'):
+            return "Grand Final"
+        elif b_type == 'third_place':
+            return "3rd Place"
+
+        if m.match_type == 'group_stage':
+            if m.group_id:
+                grp = Group.query.get(m.group_id)
+                if grp:
+                    return grp.name
+            return f"Group Stage (R{m.round})"
+        elif m.match_type == 'round_robin':
+            return f"Round {m.round}"
+        else:
+            # Knockout matches: exactly mirror the brackets
+            max_r = max_rounds_by_cat.get(m.category_id, 1)
+            if m.round == max_r:
+                return "Final"
+            elif m.round == max_r - 1 and max_r >= 2:
+                return "Semi-Final"
+            elif m.round == max_r - 2 and max_r >= 3:
+                return "Quarter-Final"
+            else:
+                return f"Round {m.round}"
+
     # Group by court
     order: dict[str, list] = {}
     for match in matches:
@@ -386,6 +423,7 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
             "p1_player_id": p1_player_id,
             "p2_player_id": p2_player_id,
             "round": match.round,
+            "round_name": get_match_round_name(match),
             "match_number": match.match_number,
             "status": match.status,
             "court": court,
@@ -397,8 +435,7 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
     # Build days metadata list for UI tabs
     days_meta = []
     for idx, d in enumerate(unique_dates):
-        is_final_day = (idx == len(unique_dates) - 1 and len(unique_dates) > 1)
-        label = f"Finals Day ({d.strftime('%d %b')})" if is_final_day else f"Day {idx + 1} ({d.strftime('%d %b')})"
+        label = f"Day {idx + 1} ({d.strftime('%d %b')})"
         days_meta.append({
             "date": d,
             "date_str": d.strftime("%Y-%m-%d"),

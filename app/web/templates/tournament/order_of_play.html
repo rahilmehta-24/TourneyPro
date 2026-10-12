@@ -206,7 +206,7 @@
           <!-- Round -->
           <td style="padding:0.85rem 1rem; vertical-align:middle;">
             <span style="background:rgba(249,115,22,0.12); color:var(--accent-primary); padding:0.2rem 0.55rem; border-radius:9999px; font-size:0.78rem; font-weight:600;">
-              R{{ item.round }}
+              {{ item.round_name }}
             </span>
           </td>
 
@@ -291,7 +291,7 @@
               {% if item.is_not_before %}<span class="nb-badge">NB</span>{% endif %}
             </td>
             <td>{{ item.category_name }}</td>
-            <td><span class="round-badge">R{{ item.round }}</span></td>
+            <td><span class="round-badge">{{ item.round_name }}</span></td>
             <td>{{ item.p1 }}</td>
             <td style="text-align:center;"><span class="vs-badge">vs</span></td>
             <td>{{ item.p2 }}</td>
