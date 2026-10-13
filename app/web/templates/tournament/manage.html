@@ -6,14 +6,14 @@
 <div class="container">
     <!-- Breadcrumb & Navigation Bar -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
-        <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.95rem;">
-            <a href="{{ url_for('main.index') }}" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;">
-                ← All Tournaments
+        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem;">
+            <a href="{{ url_for('main.index') }}" style="color: var(--text-secondary); text-decoration: none; font-weight: 500; transition: color 0.15s;" onmouseover="this.style.color='var(--accent-primary)'" onmouseout="this.style.color='var(--text-secondary)'">
+                Tournaments
             </a>
             <span style="color: var(--text-muted);">/</span>
             <span style="color: var(--text-primary); font-weight: 600;">{{ tournament.name }}</span>
             <span style="color: var(--text-muted);">/</span>
-            <span style="color: var(--accent-primary); font-weight: 500;">⚙️ Organizer Dashboard</span>
+            <span style="color: var(--accent-primary); font-weight: 600;">Dashboard</span>
         </div>
         <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
             <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug, view='bracket') }}" class="btn btn-primary" style="padding: 0.35rem 0.85rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;">

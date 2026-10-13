@@ -6,14 +6,12 @@
 <div class="container">
     <!-- Breadcrumb & Backway Bar -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
-        <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.95rem;">
-            <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;">
-                ← Back to {{ tournament.name }}
+        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem;">
+            <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}" style="color: var(--text-secondary); text-decoration: none; font-weight: 500; transition: color 0.15s;" onmouseover="this.style.color='var(--accent-primary)'" onmouseout="this.style.color='var(--text-secondary)'">
+                ← {{ tournament.name }}
             </a>
             <span style="color: var(--text-muted);">/</span>
-            <span style="color: var(--text-primary); font-weight: 600;">{{ tournament.name }}</span>
-            <span style="color: var(--text-muted);">/</span>
-            <span style="color: var(--accent-primary); font-weight: 500;">➕ Create Category</span>
+            <span style="color: var(--accent-primary); font-weight: 600;">Create Category</span>
         </div>
     </div>
 
@@ -184,7 +182,7 @@
 
         <div class="form-actions">
             <button type="submit" class="btn btn-primary btn-large">Create Category</button>
-            <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug) }}"
+            <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}"
                 class="btn btn-secondary btn-large">Cancel</a>
         </div>
     </form>

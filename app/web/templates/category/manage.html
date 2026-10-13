@@ -3,338 +3,395 @@
 {% block title %}Manage {{ category.name }} - {{ tournament.name }}{% endblock %}
 
 {% block content %}
-<div class="container">
-    <!-- Breadcrumb & Backway Bar -->
+<div class="container" style="max-width: 1200px; margin: 0 auto; padding: 1rem 1.5rem 3rem;">
+    <!-- Breadcrumb & Top Bar -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
-        <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.95rem;">
-            <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;">
-                ← Back to {{ tournament.name }}
+        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem;">
+            <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}" style="color: var(--text-secondary); text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 500; transition: color 0.15s;" onmouseover="this.style.color='var(--accent-primary)'" onmouseout="this.style.color='var(--text-secondary)'">
+                ← {{ tournament.name }}
             </a>
             <span style="color: var(--text-muted);">/</span>
-            <span style="color: var(--text-primary); font-weight: 600;">{{ tournament.name }}</span>
-            <span style="color: var(--text-muted);">/</span>
-            <span style="color: var(--accent-primary); font-weight: 500;">⚙️ Manage {{ category.name }}</span>
+            <span style="color: var(--accent-primary); font-weight: 600;">{{ category.name }}</span>
         </div>
         <div style="display: flex; gap: 0.5rem; align-items: center;">
-            <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-primary" style="padding: 0.35rem 0.85rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;">
-                👁️ View Category Bracket
-            </a>
-            <button onclick="copyShareLink('{{ url_for('category.view_category', slug=tournament.url_slug, category_id=category.id, _external=True) }}', this)" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">
-                🔗 Share Category Link
-            </button>
-        </div>
-    </div>
-
-    <!-- Page Header -->
-    <div class="page-header" style="margin-bottom: var(--spacing-lg);">
-        <div>
-            <h1 class="page-title" style="margin-bottom: var(--spacing-xs);">Manage Category: {{ category.name }}</h1>
-            <p class="page-subtitle">Tournament: <strong style="color: var(--text-primary);">{{ tournament.name }}</strong> | Format: <strong style="color: var(--text-primary);">{{ formats[category.format].name }}</strong></p>
-        </div>
-    </div>
-
-    <!-- Category Overview Card -->
-    <div class="grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: var(--spacing-lg); margin-bottom: var(--spacing-lg);">
-        
-        <!-- Left Side: Status and Add Participant Form -->
-        <div style="display: flex; flex-direction: column; gap: var(--spacing-lg);">
-            <!-- Status Card -->
-            <div class="card" style="background: var(--bg-card); border-radius: var(--radius-lg); padding: var(--spacing-md); box-shadow: var(--shadow-md); border: 1px solid rgba(255, 255, 255, 0.05);">
-                <h3 style="margin-bottom: var(--spacing-sm); font-size: 1.25rem; color: var(--text-primary); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: var(--spacing-xs);">Category Details</h3>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-sm);">
-                    <span style="font-weight: 500; color: var(--text-secondary);">Current Status</span>
-                    <span class="status-badge status-{{ category.status }}" style="padding: 0.35rem 0.75rem; border-radius: 50px; font-weight: 700; font-size: 0.85rem; text-transform: uppercase;">
-                        {{ category.status.replace('_', ' ').title() }}
-                    </span>
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-weight: 500; color: var(--text-secondary);">Registered Players</span>
-                    <span style="font-size: 1.15rem; font-weight: bold; color: var(--text-primary);">
-                        {{ participants|length }} {% if category.max_participants %} / {{ category.max_participants }} {% endif %}
-                    </span>
-                </div>
-            </div>
-
             {% if category.status != 'setup' %}
-            <!-- Reset Category Card -->
-            <div class="card" style="background: var(--bg-card); border-radius: var(--radius-lg); padding: var(--spacing-md); box-shadow: var(--shadow-md); border: 1px solid rgba(239, 68, 68, 0.1); border-left: 4px solid var(--accent-danger);">
-                <h3 style="margin-bottom: var(--spacing-xs); font-size: 1.15rem; color: var(--accent-danger);">⚠️ Stop Bracket Play</h3>
-                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: var(--spacing-sm);">Stopping the category will delete all matches and results generated so far. You can then edit settings and add/remove players.</p>
-                <form method="POST" class="requires-high-risk-audit" data-audit-action="Reset Category">
-                    <input type="hidden" name="action" value="reset_category">
-                    <button type="submit" class="btn btn-danger" style="background: var(--gradient-danger); border: none; font-weight: 600; padding: 0.65rem 1rem; font-size: 0.9rem; width: 100%;">
-                        Stop and Reset to Setup
-                    </button>
-                </form>
-            </div>
+            <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-secondary" style="padding: 0.4rem 0.9rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;">
+                🏆 View Live Bracket
+            </a>
             {% endif %}
+        </div>
+    </div>
 
+    <!-- Category Header Card with Key Stats -->
+    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.25rem;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                <h1 style="margin: 0; font-size: 1.75rem; font-weight: 700; color: var(--text-primary);">{{ category.name }}</h1>
+                <span class="status-badge status-{{ category.status }}" style="padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                    {{ category.status.replace('_', ' ').title() }}
+                </span>
+            </div>
+            <p style="margin: 0.35rem 0 0; color: var(--text-secondary); font-size: 0.9rem;">
+                Part of <strong style="color: var(--text-primary);">{{ tournament.name }}</strong>
+            </p>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+            <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 0.4rem 0.85rem; border-radius: var(--radius-md); font-size: 0.85rem; color: var(--text-secondary);">
+                🏅 <strong>{{ formats[category.format].name }}</strong>
+            </div>
+            <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 0.4rem 0.85rem; border-radius: var(--radius-md); font-size: 0.85rem; color: var(--text-secondary);">
+                👥 <strong>{{ participants|length }}</strong>{% if category.max_participants %} / {{ category.max_participants }}{% endif %} Players
+            </div>
+            <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 0.4rem 0.85rem; border-radius: var(--radius-md); font-size: 0.85rem; color: var(--text-secondary);">
+                💰 <strong>{% if category.entry_fee > 0 %}₹{{ category.entry_fee }}{% else %}Free Entry{% endif %}</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs: Players & Seeding VS Rules & Format -->
+    <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+        <button type="button" id="tabBtnPlayers" onclick="switchCategoryTab('players')" style="padding: 0.55rem 1.25rem; font-size: 0.9rem; font-weight: 600; border: none; background: var(--accent-primary); color: white; border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 0.4rem;">
+            👥 Players &amp; Seeds ({{ participants|length }})
+        </button>
+        <button type="button" id="tabBtnRules" onclick="switchCategoryTab('rules')" style="padding: 0.55rem 1.25rem; font-size: 0.9rem; font-weight: 600; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-secondary); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 0.4rem;">
+            ⚙️ Category Rules &amp; Format
+        </button>
+    </div>
+
+    <!-- TAB 1: PLAYERS & SEEDING -->
+    <div id="tabContentPlayers">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.5rem; align-items: start;">
+            
             {% if category.status == 'setup' %}
-            <!-- Add Participant Card -->
-            <div class="card" style="background: var(--bg-card); border-radius: var(--radius-lg); padding: var(--spacing-md); box-shadow: var(--shadow-md); border: 1px solid rgba(255, 255, 255, 0.05);">
-                <h3 style="margin-bottom: var(--spacing-md); font-size: 1.25rem; color: var(--text-primary); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: var(--spacing-xs);">🎾 Register Player</h3>
-                <form method="POST" style="display: flex; flex-direction: column; gap: var(--spacing-sm);">
+            <!-- Add Player Card -->
+            <div class="card" style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 1.5rem; border: 1px solid var(--border-color);">
+                <h3 style="margin: 0 0 1rem; font-size: 1.15rem; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                    ➕ Register Player / Team
+                </h3>
+                <form method="POST" style="display: flex; flex-direction: column; gap: 0.85rem;">
                     <input type="hidden" name="action" value="add_participant">
                     
-                    <div class="form-group">
-                        <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">{% if category.format in ['doubles_elimination', 'doubles_round_robin'] %}Team Name (Player 1 / Player 2) *{% else %}Player Name *{% endif %}</label>
-                        <input type="text" name="participant_name" class="form-input" placeholder="{% if category.format in ['doubles_elimination', 'doubles_round_robin'] %}e.g. Player 1 / Player 2, Player 3 / Player 4{% else %}e.g. Player 1, Player 2 (comma separated){% endif %}" required style="width: 100%;">
-                        <small style="display: block; margin-top: 0.5rem; color: #94a3b8;">You can enter multiple {% if category.format in ['doubles_elimination', 'doubles_round_robin'] %}teams{% else %}names{% endif %} separated by commas.</small>
+                    <div class="form-group" style="margin: 0;">
+                        <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">
+                            {% if category.format in ['doubles_elimination', 'doubles_round_robin'] %}Team / Player Names (Player 1 / Player 2) *{% else %}Player Name *{% endif %}
+                        </label>
+                        <input type="text" name="participant_name" class="form-input" placeholder="{% if category.format in ['doubles_elimination', 'doubles_round_robin'] %}e.g. John Doe / Jane Smith{% else %}e.g. Roger Federer, Rafael Nadal{% endif %}" required style="width: 100%;">
+                        <small style="display: block; margin-top: 0.35rem; color: var(--text-muted); font-size: 0.78rem;">Multiple entries can be comma-separated.</small>
                     </div>
 
-                    <div class="form-group">
-                        <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Initial Seed Number (Optional)</label>
-                        <input type="number" name="manual_seed" class="form-input" placeholder="e.g. 1" min="1" style="width: 100%;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                        <div class="form-group" style="margin: 0;">
+                            <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Initial Seed (Optional)</label>
+                            <input type="number" name="manual_seed" class="form-input" placeholder="e.g. 1" min="1" style="width: 100%;">
+                        </div>
+
+                        <div class="form-group" style="margin: 0;">
+                            <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Email (Optional)</label>
+                            <input type="email" name="participant_email" class="form-input" placeholder="player@email.com" style="width: 100%;">
+                        </div>
                     </div>
 
-                    <div class="form-group">
-                        <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Email Address (Optional)</label>
-                        <input type="email" name="participant_email" class="form-input" placeholder="player@example.com" style="width: 100%;">
-                    </div>
-
-                    <button type="submit" class="btn btn-primary" style="margin-top: var(--spacing-xs); background: var(--gradient-primary); width: 100%; border: none; font-weight: 600; padding: 0.75rem; box-shadow: var(--shadow-glow);">
-                        Add Player to Category
+                    <button type="submit" class="btn btn-primary" style="margin-top: 0.5rem; padding: 0.65rem 1rem; font-weight: 600; width: 100%;">
+                        Add to Category
                     </button>
                 </form>
             </div>
             {% endif %}
 
-            <!-- Edit Settings Card -->
-            <div class="card" style="background: var(--bg-card); border-radius: var(--radius-lg); padding: var(--spacing-md); box-shadow: var(--shadow-md); border: 1px solid rgba(255, 255, 255, 0.05);">
-                <h3 style="margin-bottom: var(--spacing-md); font-size: 1.25rem; color: var(--text-primary); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: var(--spacing-xs);">⚙️ Edit Category Settings</h3>
-                <form method="POST" style="display: flex; flex-direction: column; gap: var(--spacing-sm);">
-                    <input type="hidden" name="action" value="update_settings">
-                    
-                    <div class="form-group">
-                        <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Category Name *</label>
-                        <input type="text" name="name" class="form-input" value="{{ category.name }}" required style="width: 100%;">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Max Participants</label>
-                        <input type="number" name="max_participants" class="form-input" value="{{ category.max_participants or '' }}" placeholder="Unlimited" min="2" style="width: 100%;">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Entry Fee (Per Person)</label>
-                        <input type="number" name="entry_fee" class="form-input" value="{{ category.entry_fee or 0.0 }}" min="0" step="0.01" style="width: 100%;">
-                    </div>
-
-                    {% if category.status == 'setup' %}
-                    <div class="form-group">
-                        <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Format *</label>
-                        <select id="format" name="format" class="form-input" required style="width: 100%;" onchange="toggleGroupStageFields()">
-                            <option value="single_elimination" {% if category.format in ['single_elimination', 'doubles_elimination'] %}selected{% endif %}>🏆 Knockout (Single Elimination)</option>
-                            <option value="group_stage" {% if category.format == 'group_stage' %}selected{% endif %}>🎪 Group Stage + Knockout</option>
-                            <option value="round_robin" {% if category.format == 'round_robin' %}selected{% endif %}>🔄 Round Robin (League)</option>
-                        </select>
-                    </div>
-
-                    <div id="knockout-subformat-fields" style="display: {% if category.format in ['single_elimination', 'doubles_elimination', 'round_robin', 'doubles_round_robin'] %}block{% else %}none{% endif %};">
-                        <div class="form-group">
-                            <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Match Format *</label>
-                            <div style="display: flex; gap: 1.5rem; margin-top: 0.5rem;">
-                                <label style="display: flex; align-items: center; gap: 8px;">
-                                    <input type="radio" name="sub_format" value="singles" style="width: 18px; height: 18px; accent-color: var(--primary);" onchange="toggleGroupStageFields()" {% if category.format not in ['doubles_elimination', 'doubles_round_robin'] %}checked{% endif %}>
-                                    <span style="font-size: 0.95rem; font-weight: 500;">Singles</span>
-                                </label>
-                                <label style="display: flex; align-items: center; gap: 8px;">
-                                    <input type="radio" name="sub_format" value="doubles" style="width: 18px; height: 18px; accent-color: var(--primary);" onchange="toggleGroupStageFields()" {% if category.format in ['doubles_elimination', 'doubles_round_robin'] %}checked{% endif %}>
-                                    <span style="font-size: 0.95rem; font-weight: 500;">Doubles</span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Scoring Format *</label>
-                        <select id="scoring_format" name="scoring_format" class="form-input" required style="width: 100%;" onchange="toggleScoringFields()">
-                            <option value="games" {% if category.scoring_format == 'games' %}selected{% endif %}>Games (Sets & Games)</option>
-                            <option value="points" {% if category.scoring_format == 'points' %}selected{% endif %}>Points (Single Target)</option>
-                        </select>
-                    </div>
-
-                    <div id="total-games-fields" style="display: {% if category.format == 'group_stage' %}block{% else %}none{% endif %};">
-                        <div class="form-group">
-                            <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Total Games To Play *</label>
-                            <input type="number" id="total_games" name="total_games" class="form-input" min="1" max="50" value="{{ category.total_games or 7 }}" style="width: 100%;">
-                        </div>
-                    </div>
-
-                    <div id="points-to-win-fields" style="display: {% if category.format == 'round_robin' %}block{% else %}none{% endif %};">
-                        <div class="form-group">
-                            <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Points to Win (Match Setting) *</label>
-                            <input type="number" id="points_to_win" name="points_to_win" class="form-input" min="1" max="100" value="{{ category.points_to_win or 11 }}" style="width: 100%;">
-                            <small style="display: block; margin-top: 0.25rem; color: #94a3b8;">Number of points required to win the match (e.g., first to 11)</small>
-                        </div>
-                    </div>
-
-                    <div id="legacy-scoring-fields" style="display: {% if category.format != 'group_stage' %}flex{% else %}none{% endif %}; flex-direction: column; gap: var(--spacing-sm);">
-                        <div class="form-group">
-                            <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Number of Sets</label>
-                            <input type="number" name="num_sets" class="form-input" min="1" max="5" value="{{ category.num_sets or 3 }}" style="width: 100%;">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Games Per Set to Win</label>
-                            <input type="number" name="games_per_set" class="form-input" min="1" max="10" value="{{ category.games_per_set or 6 }}" style="width: 100%;">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Max Players Per Team</label>
-                        <input type="number" id="max_players_per_team" name="max_players_per_team" class="form-input" min="1" value="{{ category.max_players_per_team or '' }}" placeholder="Unlimited" style="width: 100%;">
-                    </div>
-
-                    <div id="group-stage-fields" style="display: {% if category.format in ['group_stage', 'round_robin', 'doubles_round_robin'] %}flex{% else %}none{% endif %}; flex-direction: column; gap: var(--spacing-sm);">
-                        <div class="form-group" style="margin-top: var(--spacing-xs);">
-                            <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Number of Groups *</label>
-                            <input type="number" id="num_groups" name="num_groups" class="form-input" min="2" value="{{ category.num_groups or '' }}" placeholder="e.g. 2, 4" style="width: 100%;">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Teams Per Group *</label>
-                            <input type="number" id="teams_per_group" name="teams_per_group" class="form-input" min="2" value="{{ category.teams_per_group or '' }}" placeholder="e.g. 4" style="width: 100%;">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Matches Per Team Pair</label>
-                            <input type="number" id="matches_per_team_pair" name="matches_per_team_pair" class="form-input" min="1" value="{{ category.matches_per_team_pair or 1 }}" placeholder="1" style="width: 100%;">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Qualifiers Per Group *</label>
-                            <input type="number" id="qualifiers_per_group" name="qualifiers_per_group" class="form-input" min="1" value="{{ category.qualifiers_per_group or '' }}" placeholder="e.g. 2" style="width: 100%;">
-                        </div>
-                        <div class="form-group" style="margin-top: 0.5rem;">
-                            <label style="display: flex; align-items: center; gap: 8px;">
-                                <input type="checkbox" name="allow_lucky_losers" id="allow_lucky_losers" style="width: 18px; height: 18px; accent-color: var(--primary);" {% if category.allow_lucky_losers %}checked{% endif %}>
-                                <span style="font-size: 0.9rem; color: var(--text-secondary); font-weight: 500;">Enable Lucky Losers</span>
-                            </label>
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    <button type="submit" class="btn btn-primary" style="margin-top: var(--spacing-sm); background: var(--gradient-primary); width: 100%; border: none; font-weight: 600; padding: 0.75rem; box-shadow: var(--shadow-glow);">
-                        Save Category Settings
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <!-- Right Side: Registered Players List -->
-        <div style="display: flex; flex-direction: column;">
-            <div class="card" style="background: var(--bg-card); border-radius: var(--radius-lg); padding: var(--spacing-md); box-shadow: var(--shadow-md); border: 1px solid rgba(255, 255, 255, 0.05); min-height: 380px; display: flex; flex-direction: column; justify-content: space-between; gap: var(--spacing-md);">
-                <div>
-                    <h3 style="margin-bottom: var(--spacing-md); font-size: 1.25rem; color: var(--text-primary); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: var(--spacing-xs);">👥 Registered Players</h3>
-
-                    {% if participants %}
-                    <div style="overflow-x: auto;">
-                        <table class="participants-table" style="width: 100%; border-collapse: collapse; margin-top: var(--spacing-xs);">
-                            <thead>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);">
-                                    <th style="padding: 0.75rem; text-align: left; color: var(--text-muted); font-weight: 600; font-size: 0.9rem;">Seed</th>
-                                    <th style="padding: 0.75rem; text-align: left; color: var(--text-muted); font-weight: 600; font-size: 0.9rem;">Name</th>
-                                    <th style="padding: 0.75rem; text-align: left; color: var(--text-muted); font-weight: 600; font-size: 0.9rem;">Email</th>
-                                    {% if category.status == 'setup' %}
-                                    <th style="padding: 0.75rem; text-align: right; color: var(--text-muted); font-weight: 600; font-size: 0.9rem;">Actions</th>
-                                    {% endif %}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for participant in participants %}
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02); transition: background-color var(--transition-fast);" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.02)'" onmouseout="this.style.backgroundColor='transparent'">
-                                    <td style="padding: 0.75rem; font-weight: bold;">
-                                        {% if participant.manual_seed or participant.seed %}
-                                        <span style="background: var(--bg-tertiary); color: var(--accent-secondary); padding: 0.2rem 0.5rem; border-radius: var(--radius-sm); font-size: 0.85rem; border: 1px solid rgba(139, 92, 246, 0.2);">
-                                            #{{ participant.manual_seed or participant.seed }}
-                                        </span>
-                                        {% else %}
-                                        <span style="color: var(--text-muted);">-</span>
-                                        {% endif %}
-                                    </td>
-                                    <td style="padding: 0.75rem; font-weight: 500; color: var(--text-primary);">{{ participant.name }}</td>
-                                    <td style="padding: 0.75rem; color: var(--text-secondary); font-size: 0.9rem;">{{ participant.email or '-' }}</td>
-                                    {% if category.status == 'setup' %}
-                                    <td style="padding: 0.75rem; text-align: right;">
-                                        <form method="POST" style="display: inline;" class="requires-audit" data-audit-action="Delete Participant">
-                                            <input type="hidden" name="action" value="delete_participant">
-                                            <input type="hidden" name="participant_id" value="{{ participant.id }}">
-                                            <button type="submit" style="background: none; border: none; color: var(--accent-danger); cursor: pointer; font-weight: 600; font-size: 0.85rem; padding: 0;">
-                                                🗑️ Remove
-                                            </button>
-                                        </form>
-                                    </td>
-                                    {% endif %}
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% else %}
-                    <div style="text-align: center; padding: var(--spacing-xl) 0; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 250px;">
-                        <div style="font-size: 3.5rem; margin-bottom: var(--spacing-sm); filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.2));">🎾</div>
-                        <p style="font-size: 1.15rem; font-weight: 600; margin-bottom: 0.25rem; color: var(--text-primary);">No players registered yet</p>
-                        <p style="font-size: 0.9rem; max-width: 300px; color: var(--text-secondary);">Register players using the enrollment form on the left to activate this category.</p>
-                    </div>
+            <!-- Registered Players List -->
+            <div class="card" style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 1.5rem; border: 1px solid var(--border-color); {% if category.status != 'setup' %}grid-column: 1 / -1;{% endif %}">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+                    <h3 style="margin: 0; font-size: 1.15rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+                        👥 Registered Players <span style="background: var(--bg-secondary); padding: 0.15rem 0.55rem; border-radius: 9999px; font-size: 0.8rem; color: var(--text-secondary); border: 1px solid var(--border-color);">{{ participants|length }}</span>
+                    </h3>
+                    {% if category.status == 'setup' and participants %}
+                    <a href="{{ url_for('category.manage_seeding', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.25rem 0.65rem; border-radius: var(--radius-sm);">
+                        ⚙️ Edit Seeding
+                    </a>
                     {% endif %}
                 </div>
 
-                {% if category.status == 'setup' and participants %}
-                <div style="margin-top: var(--spacing-md); display: flex; gap: var(--spacing-sm); justify-content: flex-end; border-top: 1px solid rgba(255,255,255,0.05); padding-top: var(--spacing-md); flex-wrap: wrap;">
-                    <a href="{{ url_for('category.manage_seeding', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-secondary" style="font-weight: 600;">
-                        ⚙️ Edit Seeding
-                    </a>
+                {% if participants %}
+                <div style="overflow-x: auto;">
+                    <table class="participants-table" style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--border-color); text-align: left;">
+                                <th style="padding: 0.6rem 0.75rem; color: var(--text-muted); font-weight: 600; font-size: 0.85rem; width: 60px;">Seed</th>
+                                <th style="padding: 0.6rem 0.75rem; color: var(--text-muted); font-weight: 600; font-size: 0.85rem;">Name</th>
+                                <th style="padding: 0.6rem 0.75rem; color: var(--text-muted); font-weight: 600; font-size: 0.85rem;">Email</th>
+                                {% if category.status == 'setup' %}
+                                <th style="padding: 0.6rem 0.75rem; text-align: right; color: var(--text-muted); font-weight: 600; font-size: 0.85rem; width: 70px;">Action</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for participant in participants %}
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                                <td style="padding: 0.65rem 0.75rem; font-weight: bold;">
+                                    {% if participant.manual_seed or participant.seed %}
+                                    <span style="background: var(--bg-secondary); color: var(--accent-secondary); padding: 0.15rem 0.45rem; border-radius: var(--radius-sm); font-size: 0.8rem; border: 1px solid rgba(139, 92, 246, 0.25);">
+                                        #{{ participant.manual_seed or participant.seed }}
+                                    </span>
+                                    {% else %}
+                                    <span style="color: var(--text-muted);">-</span>
+                                    {% endif %}
+                                </td>
+                                <td style="padding: 0.65rem 0.75rem; font-weight: 500; color: var(--text-primary);">{{ participant.name }}</td>
+                                <td style="padding: 0.65rem 0.75rem; color: var(--text-secondary); font-size: 0.85rem;">{{ participant.email or '-' }}</td>
+                                {% if category.status == 'setup' %}
+                                <td style="padding: 0.65rem 0.75rem; text-align: right;">
+                                    <form method="POST" style="display: inline;" class="requires-audit" data-audit-action="Delete Participant">
+                                        <input type="hidden" name="action" value="delete_participant">
+                                        <input type="hidden" name="participant_id" value="{{ participant.id }}">
+                                        <button type="submit" style="background: none; border: none; color: var(--accent-danger); cursor: pointer; font-size: 0.8rem; padding: 0; font-weight: 600;" title="Remove player">
+                                            🗑️ Remove
+                                        </button>
+                                    </form>
+                                </td>
+                                {% endif %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
 
+                {% if tournament.status != 'setup' and category.status == 'setup' and participants|length >= 2 %}
+                <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
                     <form method="POST" style="display: inline;">
                         <input type="hidden" name="action" value="start_category">
-                        <button type="submit" class="btn btn-primary" style="background: var(--gradient-success); border: none; font-weight: 700; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); padding: 0.65rem 1.5rem;" 
-{% if participants|length < 2 %}disabled title="Need at least 2 participants."{% endif %} 
-onclick="{% if tournament.status not in ['in_progress', 'completed'] %}return confirm('The overall tournament has not started yet. Do you want to start the tournament and this category bracket now?');{% endif %}">
-                            🚀 Start Category Bracket
+                        <button type="submit" class="btn btn-primary" style="background: var(--accent-success); border-color: var(--accent-success); font-size: 0.85rem; padding: 0.45rem 1rem; font-weight: 600;">
+                            🚀 Launch Category Bracket
                         </button>
                     </form>
+                </div>
+                {% endif %}
+
+                {% else %}
+                <div style="text-align: center; padding: 3rem 1rem; color: var(--text-muted);">
+                    <div style="font-size: 2.5rem; margin-bottom: 0.5rem; opacity: 0.5;">🎾</div>
+                    <p style="font-size: 1rem; font-weight: 600; margin-bottom: 0.25rem; color: var(--text-primary);">No players registered yet</p>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0;">Add players above to prepare this category.</p>
                 </div>
                 {% endif %}
             </div>
         </div>
     </div>
 
-    <!-- Back Navigation Footer -->
-    <div style="margin-top: var(--spacing-lg); display: flex; gap: var(--spacing-sm); border-top: 1px solid rgba(255,255,255,0.05); padding-top: var(--spacing-md);">
-        <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug) }}" class="btn btn-secondary" style="font-weight: 500;">
-            ← Back to Tournament Dashboard
-        </a>
+    <!-- TAB 2: RULES & FORMAT -->
+    <div id="tabContentRules" style="display: none;">
+        <div class="card" style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 1.75rem; border: 1px solid var(--border-color); max-width: 800px; margin: 0 auto;">
+            <h3 style="margin: 0 0 1.25rem; font-size: 1.25rem; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 0.65rem;">
+                ⚙️ Category Rules &amp; Format Configuration
+            </h3>
+
+            <form method="POST" style="display: flex; flex-direction: column; gap: 1rem;">
+                <input type="hidden" name="action" value="update_settings">
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+                    <div class="form-group" style="margin: 0;">
+                        <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Category Name *</label>
+                        <input type="text" name="name" class="form-input" value="{{ category.name }}" required style="width: 100%;">
+                    </div>
+
+                    <div class="form-group" style="margin: 0;">
+                        <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Max Participants</label>
+                        <input type="number" name="max_participants" class="form-input" value="{{ category.max_participants or '' }}" placeholder="Unlimited" min="2" style="width: 100%;">
+                    </div>
+
+                    <div class="form-group" style="margin: 0;">
+                        <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Entry Fee (Per Person)</label>
+                        <input type="number" name="entry_fee" class="form-input" value="{{ category.entry_fee or 0.0 }}" min="0" step="0.01" style="width: 100%;">
+                    </div>
+                </div>
+
+                {% if category.status == 'setup' %}
+                <div class="form-group" style="margin: 0;">
+                    <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Competition Format *</label>
+                    <select id="format" name="format" class="form-input" required style="width: 100%;" onchange="toggleGroupStageFields()">
+                        <option value="single_elimination" {% if category.format in ['single_elimination', 'doubles_elimination'] %}selected{% endif %}>🏆 Knockout (Single Elimination)</option>
+                        <option value="group_stage" {% if category.format == 'group_stage' %}selected{% endif %}>🎪 Group Stage + Knockout</option>
+                        <option value="round_robin" {% if category.format == 'round_robin' %}selected{% endif %}>🔄 Round Robin (League)</option>
+                    </select>
+                </div>
+
+                <div id="knockout-subformat-fields" style="display: {% if category.format in ['single_elimination', 'doubles_elimination', 'round_robin', 'doubles_round_robin'] %}block{% else %}none{% endif %};">
+                    <div class="form-group" style="margin: 0;">
+                        <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Match Format *</label>
+                        <div style="display: flex; gap: 1.5rem; margin-top: 0.25rem;">
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="radio" name="sub_format" value="singles" style="width: 16px; height: 16px; accent-color: var(--primary);" onchange="toggleGroupStageFields()" {% if category.format not in ['doubles_elimination', 'doubles_round_robin'] %}checked{% endif %}>
+                                <span style="font-size: 0.9rem; font-weight: 500;">Singles</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="radio" name="sub_format" value="doubles" style="width: 16px; height: 16px; accent-color: var(--primary);" onchange="toggleGroupStageFields()" {% if category.format in ['doubles_elimination', 'doubles_round_robin'] %}checked{% endif %}>
+                                <span style="font-size: 0.9rem; font-weight: 500;">Doubles</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin: 0;">
+                    <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Scoring Format *</label>
+                    <select id="scoring_format" name="scoring_format" class="form-input" required style="width: 100%;" onchange="toggleScoringFields()">
+                        <option value="games" {% if category.scoring_format == 'games' %}selected{% endif %}>Games (Sets &amp; Games)</option>
+                        <option value="points" {% if category.scoring_format == 'points' %}selected{% endif %}>Points (Single Target Score)</option>
+                    </select>
+                </div>
+
+                <div id="total-games-fields" style="display: {% if category.format == 'group_stage' %}block{% else %}none{% endif %};">
+                    <div class="form-group" style="margin: 0;">
+                        <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Total Games To Play *</label>
+                        <input type="number" id="total_games" name="total_games" class="form-input" min="1" max="50" value="{{ category.total_games or 7 }}" style="width: 100%;">
+                    </div>
+                </div>
+
+                <div id="points-to-win-fields" style="display: {% if category.format == 'round_robin' %}block{% else %}none{% endif %};">
+                    <div class="form-group" style="margin: 0;">
+                        <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Points to Win *</label>
+                        <input type="number" id="points_to_win" name="points_to_win" class="form-input" min="1" max="100" value="{{ category.points_to_win or 11 }}" style="width: 100%;">
+                        <small style="display: block; margin-top: 0.25rem; color: var(--text-muted); font-size: 0.78rem;">Score required to win match (e.g. first to 11 or 21)</small>
+                    </div>
+                </div>
+
+                <div id="legacy-scoring-fields" style="display: {% if category.format != 'group_stage' %}grid{% else %}none{% endif %}; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group" style="margin: 0;">
+                        <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Number of Sets</label>
+                        <input type="number" name="num_sets" class="form-input" min="1" max="5" value="{{ category.num_sets or 3 }}" style="width: 100%;">
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                        <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Games Per Set</label>
+                        <input type="number" name="games_per_set" class="form-input" min="1" max="10" value="{{ category.games_per_set or 6 }}" style="width: 100%;">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin: 0;">
+                    <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Max Players Per Team</label>
+                    <input type="number" id="max_players_per_team" name="max_players_per_team" class="form-input" min="1" value="{{ category.max_players_per_team or '' }}" placeholder="Unlimited" style="width: 100%;">
+                </div>
+
+                <div id="group-stage-fields" style="display: {% if category.format in ['group_stage', 'round_robin', 'doubles_round_robin'] %}flex{% else %}none{% endif %}; flex-direction: column; gap: 0.85rem; background: var(--bg-secondary); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                        <div class="form-group" style="margin: 0;">
+                            <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Number of Groups *</label>
+                            <input type="number" id="num_groups" name="num_groups" class="form-input" min="2" value="{{ category.num_groups or '' }}" placeholder="e.g. 2, 4" style="width: 100%;">
+                        </div>
+                        <div class="form-group" style="margin: 0;">
+                            <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Teams Per Group *</label>
+                            <input type="number" id="teams_per_group" name="teams_per_group" class="form-input" min="2" value="{{ category.teams_per_group or '' }}" placeholder="e.g. 4" style="width: 100%;">
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                        <div class="form-group" style="margin: 0;">
+                            <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Matches Per Team Pair</label>
+                            <input type="number" id="matches_per_team_pair" name="matches_per_team_pair" class="form-input" min="1" value="{{ category.matches_per_team_pair or 1 }}" placeholder="1" style="width: 100%;">
+                        </div>
+                        <div class="form-group" style="margin: 0;">
+                            <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Qualifiers Per Group *</label>
+                            <input type="number" id="qualifiers_per_group" name="qualifiers_per_group" class="form-input" min="1" value="{{ category.qualifiers_per_group or '' }}" placeholder="e.g. 2" style="width: 100%;">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" name="allow_lucky_losers" id="allow_lucky_losers" style="width: 16px; height: 16px; accent-color: var(--primary);" {% if category.allow_lucky_losers %}checked{% endif %}>
+                            <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">Enable Lucky Losers</span>
+                        </label>
+                    </div>
+                </div>
+                {% endif %}
+
+                <button type="submit" class="btn btn-primary" style="margin-top: 0.75rem; padding: 0.75rem; font-weight: 600; width: 100%;">
+                    💾 Save Category Settings
+                </button>
+            </form>
+        </div>
     </div>
+
+    {% if category.status != 'setup' %}
+    <!-- DANGER ZONE: Reset Category (Tucked neatly at bottom) -->
+    <div style="margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
+        <div style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: var(--radius-md); padding: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h4 style="margin: 0; color: var(--accent-danger); font-size: 0.95rem; font-weight: 700;">⚠️ Reset Category to Setup</h4>
+                <p style="margin: 0.25rem 0 0; color: var(--text-secondary); font-size: 0.85rem;">
+                    Resets bracket and matches for this category so you can adjust format or participants.
+                </p>
+            </div>
+            <form method="POST" class="requires-high-risk-audit" data-audit-action="Reset Category" style="margin: 0;">
+                <input type="hidden" name="action" value="reset_category">
+                <button type="submit" class="btn btn-danger" style="padding: 0.45rem 1rem; font-size: 0.85rem; font-weight: 600;">
+                    Reset to Setup
+                </button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <script>
+    function switchCategoryTab(tab) {
+        const tabBtnPlayers = document.getElementById('tabBtnPlayers');
+        const tabBtnRules = document.getElementById('tabBtnRules');
+        const tabContentPlayers = document.getElementById('tabContentPlayers');
+        const tabContentRules = document.getElementById('tabContentRules');
+
+        if (tab === 'players') {
+            tabBtnPlayers.style.background = 'var(--accent-primary)';
+            tabBtnPlayers.style.color = 'white';
+            tabBtnPlayers.style.border = 'none';
+
+            tabBtnRules.style.background = 'var(--bg-secondary)';
+            tabBtnRules.style.color = 'var(--text-secondary)';
+            tabBtnRules.style.border = '1px solid var(--border-color)';
+
+            tabContentPlayers.style.display = 'block';
+            tabContentRules.style.display = 'none';
+        } else {
+            tabBtnRules.style.background = 'var(--accent-primary)';
+            tabBtnRules.style.color = 'white';
+            tabBtnRules.style.border = 'none';
+
+            tabBtnPlayers.style.background = 'var(--bg-secondary)';
+            tabBtnPlayers.style.color = 'var(--text-secondary)';
+            tabBtnPlayers.style.border = '1px solid var(--border-color)';
+
+            tabContentRules.style.display = 'block';
+            tabContentPlayers.style.display = 'none';
+        }
+    }
+
     function toggleScoringFields() {
-        const scoringFormat = document.getElementById('scoring_format').value;
+        const scoringFormat = document.getElementById('scoring_format');
+        if (!scoringFormat) return;
+        const val = scoringFormat.value;
         const legacyScoringFields = document.getElementById('legacy-scoring-fields');
         const pointsToWinFields = document.getElementById('points-to-win-fields');
 
-        if (scoringFormat === 'points') {
+        if (val === 'points') {
             if (legacyScoringFields) legacyScoringFields.style.display = 'none';
             if (pointsToWinFields) {
                 pointsToWinFields.style.display = 'block';
-                document.getElementById('points_to_win').required = true;
+                const ptw = document.getElementById('points_to_win');
+                if (ptw) ptw.required = true;
             }
         } else {
-            if (legacyScoringFields) legacyScoringFields.style.display = 'flex';
+            if (legacyScoringFields) legacyScoringFields.style.display = 'grid';
             if (pointsToWinFields) {
                 pointsToWinFields.style.display = 'none';
-                document.getElementById('points_to_win').required = false;
+                const ptw = document.getElementById('points_to_win');
+                if (ptw) ptw.required = false;
             }
         }
     }
 
     function toggleGroupStageFields() {
-        const format = document.getElementById('format').value;
+        const formatSelect = document.getElementById('format');
+        if (!formatSelect) return;
+        const format = formatSelect.value;
         const groupFields = document.getElementById('group-stage-fields');
         const totalGamesFields = document.getElementById('total-games-fields');
         const knockoutSubformatFields = document.getElementById('knockout-subformat-fields');
         
-        // Reset global fields
-        const maxPlayersField = document.getElementById('max_players_per_team');
-        if (maxPlayersField) maxPlayersField.closest('.form-group').style.display = 'block';
-
         if (knockoutSubformatFields) {
             knockoutSubformatFields.style.display = (format === 'single_elimination' || format === 'round_robin') ? 'block' : 'none';
         }
@@ -342,48 +399,40 @@ onclick="{% if tournament.status not in ['in_progress', 'completed'] %}return co
         if (format === 'group_stage') {
             if (groupFields) {
                 groupFields.style.display = 'flex';
-                const label = groupFields.querySelector('label[for="teams_per_group"]');
-                if (label) label.innerText = 'Teams Per Group *';
-                document.getElementById('num_groups').closest('.form-group').style.display = 'block';
-                document.getElementById('num_groups').required = true;
-                
-                document.getElementById('max_players_per_team').closest('.form-group').style.display = 'block';
-                document.getElementById('qualifiers_per_group').closest('.form-group').style.display = 'block';
-                document.getElementById('allow_lucky_losers').closest('.form-group').style.display = 'block';
+                const numGroups = document.getElementById('num_groups');
+                if (numGroups) numGroups.required = true;
             }
             if (totalGamesFields) {
                 totalGamesFields.style.display = 'block';
-                document.getElementById('total_games').required = true;
+                const tg = document.getElementById('total_games');
+                if (tg) tg.required = true;
             }
         } else if (format === 'round_robin') {
             if (groupFields) {
                 groupFields.style.display = 'flex';
-                const label = groupFields.querySelector('label[for="teams_per_group"]');
-                const subFormat = document.querySelector('input[name="sub_format"]:checked');
-                if (label) label.innerText = (subFormat && subFormat.value === 'doubles') ? 'Teams Per Group *' : 'Players Per Group *';
-                
-                document.getElementById('num_groups').closest('.form-group').style.display = 'block';
-                document.getElementById('num_groups').required = false;
-                
-                document.getElementById('max_players_per_team').closest('.form-group').style.display = 'none';
-                document.getElementById('qualifiers_per_group').closest('.form-group').style.display = 'block';
-                document.getElementById('allow_lucky_losers').closest('.form-group').style.display = 'block';
+                const numGroups = document.getElementById('num_groups');
+                if (numGroups) numGroups.required = false;
             }
             if (totalGamesFields) {
                 totalGamesFields.style.display = 'none';
-                document.getElementById('total_games').required = false;
+                const tg = document.getElementById('total_games');
+                if (tg) tg.required = false;
             }
         } else {
             if (groupFields) groupFields.style.display = 'none';
             if (totalGamesFields) {
                 totalGamesFields.style.display = 'none';
-                document.getElementById('total_games').required = false;
+                const tg = document.getElementById('total_games');
+                if (tg) tg.required = false;
             }
         }
     }
     
-    // Initialize state on page load
     document.addEventListener('DOMContentLoaded', function() {
+        if (document.getElementById('scoring_format')) toggleScoringFields();
+        if (document.getElementById('format')) toggleGroupStageFields();
+    });
+    document.addEventListener('turbo:load', function() {
         if (document.getElementById('scoring_format')) toggleScoringFields();
         if (document.getElementById('format')) toggleGroupStageFields();
     });
