@@ -25,8 +25,11 @@
     <!-- Category Header Card with Key Stats -->
     <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.25rem;">
         <div>
-            <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
                 <h1 style="margin: 0; font-size: 1.75rem; font-weight: 700; color: var(--text-primary);">{{ category.name }}</h1>
+                <button type="button" class="btn btn-secondary btn-small rename-category-btn" title="Rename Category" data-category-id="{{ category.id }}" data-category-name="{{ category.name | e }}" style="padding: 0.25rem 0.55rem; font-size: 0.8rem; border-radius: var(--radius-sm);">
+                    ✏️ Rename
+                </button>
                 <span class="status-badge status-{{ category.status }}" style="padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">
                     {{ category.status.replace('_', ' ').title() }}
                 </span>
@@ -328,7 +331,72 @@
     {% endif %}
 </div>
 
+<!-- RENAME CATEGORY MODAL -->
+<div id="renameCategoryModal" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 1rem;">
+    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); width: 100%; max-width: 440px; padding: 1.5rem; box-shadow: var(--shadow-md);">
+        <h3 style="margin: 0 0 0.5rem; font-size: 1.2rem; color: var(--text-primary); font-weight: 700;">
+            ✏️ Rename Category
+        </h3>
+        <p style="margin: 0 0 1.25rem; font-size: 0.85rem; color: var(--text-secondary);">
+            Enter a new name for this category.
+        </p>
+
+        <form id="renameCategoryForm" method="POST" action="/tournaments/{{ tournament.url_slug }}/categories/{{ category.id }}/rename" data-turbo="false" style="display: flex; flex-direction: column; gap: 1rem;">
+            <div>
+                <label style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">Category Name *</label>
+                <input type="text" id="renameCategoryInput" name="new_name" class="form-input" value="{{ category.name }}" required style="width: 100%; padding: 0.55rem; font-size: 0.95rem;">
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 0.5rem;">
+                <button type="button" onclick="closeRenameModal()" class="btn btn-secondary" style="padding: 0.45rem 1rem; font-size: 0.85rem;">
+                    Cancel
+                </button>
+                <button type="submit" class="btn btn-primary" style="padding: 0.45rem 1.25rem; font-size: 0.85rem; font-weight: 600;">
+                    Save Name
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
+    function openRenameModal(categoryId, currentName) {
+        const modal = document.getElementById('renameCategoryModal');
+        const form = document.getElementById('renameCategoryForm');
+        const input = document.getElementById('renameCategoryInput');
+        if (!modal || !form || !input) return;
+
+        form.action = `/tournaments/{{ tournament.url_slug }}/categories/${categoryId}/rename`;
+        input.value = currentName || '';
+        modal.style.display = 'flex';
+        setTimeout(() => input.focus(), 50);
+    }
+
+    function closeRenameModal() {
+        const modal = document.getElementById('renameCategoryModal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.rename-category-btn');
+        if (btn) {
+            e.preventDefault();
+            const id = btn.getAttribute('data-category-id');
+            const name = btn.getAttribute('data-category-name');
+            openRenameModal(id, name);
+        }
+        const modal = document.getElementById('renameCategoryModal');
+        if (modal && e.target === modal) {
+            closeRenameModal();
+        }
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeRenameModal();
+        }
+    });
+
     function switchCategoryTab(tab) {
         const tabBtnPlayers = document.getElementById('tabBtnPlayers');
         const tabBtnRules = document.getElementById('tabBtnRules');
