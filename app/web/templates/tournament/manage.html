@@ -3,10 +3,10 @@
 {% block title %}Manage {{ tournament.name }}{% endblock %}
 
 {% block content %}
-<div class="container">
-    <!-- Breadcrumb & Navigation Bar -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
-        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem;">
+<div class="container" style="max-width: 1320px; margin: 0 auto; padding: 0.75rem 1.25rem 3rem;">
+    <!-- BREADCRUMB & QUICK SHORTCUTS -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border-color);">
+        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;">
             <a href="{{ url_for('main.index') }}" style="color: var(--text-secondary); text-decoration: none; font-weight: 500; transition: color 0.15s;" onmouseover="this.style.color='var(--accent-primary)'" onmouseout="this.style.color='var(--text-secondary)'">
                 Tournaments
             </a>
@@ -16,694 +16,627 @@
             <span style="color: var(--accent-primary); font-weight: 600;">Dashboard</span>
         </div>
         <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-            <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug, view='bracket') }}" class="btn btn-primary" style="padding: 0.35rem 0.85rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;">
-                🏆 Public Bracket View
+            <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug, view='bracket') }}" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+                🏆 Public View
             </a>
-            {% if tournament.status == 'registration' %}
-            <a href="{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug) }}" target="_blank" class="btn btn-primary" style="background-color: var(--accent-success); border-color: var(--accent-success); padding: 0.35rem 0.85rem; font-size: 0.85rem;">
-                ✍️ Open Registration Form ↗
+            <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug) }}" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+                📋 Order of Play
             </a>
-            <button onclick="copyShareLink('{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">🔗 Share Registration Link</button>
-            {% else %}
-            <button onclick="copyShareLink('{{ url_for('tournament.view_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">🔗 Share Link</button>
+            <button onclick="copyShareLink('{% if tournament.status == 'registration' %}{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug, _external=True) }}{% else %}{{ url_for('tournament.view_tournament', slug=tournament.url_slug, _external=True) }}{% endif %}', this)" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.82rem;">
+                🔗 Share Link
+            </button>
+        </div>
+    </div>
+
+    <!-- COMPACT TOURNAMENT HEADER & KEY STATS -->
+    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                <h1 style="margin: 0; font-size: 1.65rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.5px;">{{ tournament.name }}</h1>
+                <span class="status-badge status-{{ tournament.status }}" style="padding: 0.2rem 0.7rem; border-radius: 9999px; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                    {{ tournament.status.replace('_', ' ').title() }}
+                </span>
+            </div>
+
+            <!-- Sleek 1-line Stage Stepper -->
+            <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.5rem; font-size: 0.78rem;">
+                <span style="color: var(--accent-success); font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem;">
+                    ✓ Basic Info
+                </span>
+                <span style="color: var(--text-muted); opacity: 0.6;">→</span>
+                <span style="color: {% if tournament.categories %}var(--accent-success){% elif tournament.status == 'setup' %}var(--accent-primary){% else %}var(--text-muted){% endif %}; font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem;">
+                    {% if tournament.categories %}✓{% else %}2.{% endif %} Categories ({{ tournament.categories|length }})
+                </span>
+                <span style="color: var(--text-muted); opacity: 0.6;">→</span>
+                <span style="color: {% if tournament.status in ['registration', 'in_progress', 'completed'] %}var(--accent-success){% elif tournament.status == 'setup' and tournament.categories %}var(--accent-primary){% else %}var(--text-muted){% endif %}; font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem;">
+                    {% if tournament.status in ['registration', 'in_progress', 'completed'] %}✓{% else %}3.{% endif %} Registration
+                </span>
+                <span style="color: var(--text-muted); opacity: 0.6;">→</span>
+                <span style="color: {% if tournament.status in ['in_progress', 'completed'] %}var(--accent-success){% elif tournament.status == 'registration' %}var(--accent-primary){% else %}var(--text-muted){% endif %}; font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem;">
+                    {% if tournament.status in ['in_progress', 'completed'] %}✓{% else %}4.{% endif %} Live Play
+                </span>
+            </div>
+        </div>
+
+        <!-- Quick Summary Stats Pills -->
+        <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+            <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 0.35rem 0.75rem; border-radius: var(--radius-md); font-size: 0.82rem; color: var(--text-secondary);">
+                📁 <strong>{{ tournament.categories|length }}</strong> Categories
+            </div>
+            <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 0.35rem 0.75rem; border-radius: var(--radius-md); font-size: 0.82rem; color: var(--text-secondary);">
+                👥 <strong>{{ total_players }}</strong> Players
+            </div>
+            <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 0.35rem 0.75rem; border-radius: var(--radius-md); font-size: 0.82rem; color: var(--text-secondary);">
+                🏟️ <strong>{{ tournament.num_courts or 1 }}</strong> Courts
+            </div>
+            {% if tournament.start_date %}
+            <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 0.35rem 0.75rem; border-radius: var(--radius-md); font-size: 0.82rem; color: var(--text-secondary);">
+                📅 {{ tournament.start_date.strftime('%b %d') }}{% if tournament.end_date and tournament.end_date != tournament.start_date %} – {{ tournament.end_date.strftime('%b %d') }}{% endif %}
+            </div>
             {% endif %}
-            <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug) }}" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">📋 Order of Play</a>
         </div>
     </div>
 
-    <div class="page-header" style="margin-bottom: 1.5rem;">
-        <div>
-            <h1 class="page-title">{{ tournament.name }}</h1>
-        </div>
-    </div>
-
-    <!-- WIZARD STEPPER -->
-    <div style="display: flex; justify-content: space-between; margin-bottom: 2rem; background: var(--bg-secondary); padding: 1rem 2rem; border-radius: var(--radius-md); border: 1px solid {% if tournament.status == 'in_progress' %}var(--border-color){% else %}var(--accent-primary){% endif %};">
-        <div style="color: var(--accent-success); font-weight: bold; display: flex; align-items: center; gap: 0.5rem;"><div style="background: var(--accent-success); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">✓</div> Basic Details</div>
+    <!-- MAIN TWO-COLUMN WORKSPACE: LEFT (70% TABS) + RIGHT (30% STICKY CONTROLS) -->
+    <div class="dashboard-grid" style="display: grid; grid-template-columns: 1fr 340px; gap: 1.25rem; align-items: start;">
         
-        {% if tournament.status == 'setup' and not tournament.categories %}
-        <div style="color: var(--accent-primary); font-weight: bold; display: flex; align-items: center; gap: 0.5rem;"><div style="background: var(--accent-primary); color: #000; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">2</div> Categories</div>
-        <div style="color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem;"><div style="background: var(--bg-card); border: 1px solid var(--border-color); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">3</div> Registration</div>
-        <div style="color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem;"><div style="background: var(--bg-card); border: 1px solid var(--border-color); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">4</div> Execute</div>
-        
-        {% elif tournament.status == 'setup' and tournament.categories %}
-        <div style="color: var(--accent-success); font-weight: bold; display: flex; align-items: center; gap: 0.5rem;"><div style="background: var(--accent-success); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">✓</div> Categories</div>
-        <div style="color: var(--accent-primary); font-weight: bold; display: flex; align-items: center; gap: 0.5rem;"><div style="background: var(--accent-primary); color: #000; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">3</div> Registration</div>
-        <div style="color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem;"><div style="background: var(--bg-card); border: 1px solid var(--border-color); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">4</div> Execute</div>
-
-        {% elif tournament.status == 'registration' %}
-        <div style="color: var(--accent-success); font-weight: bold; display: flex; align-items: center; gap: 0.5rem;"><div style="background: var(--accent-success); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">✓</div> Categories</div>
-        <div style="color: var(--accent-success); font-weight: bold; display: flex; align-items: center; gap: 0.5rem;"><div style="background: var(--accent-success); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">✓</div> Registration</div>
-        <div style="color: var(--accent-primary); font-weight: bold; display: flex; align-items: center; gap: 0.5rem;"><div style="background: var(--accent-primary); color: #000; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">4</div> Execute</div>
-        
-        {% else %}
-        <div style="color: var(--accent-success); font-weight: bold; display: flex; align-items: center; gap: 0.5rem;"><div style="background: var(--accent-success); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">✓</div> Categories</div>
-        <div style="color: var(--accent-success); font-weight: bold; display: flex; align-items: center; gap: 0.5rem;"><div style="background: var(--accent-success); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">✓</div> Registration</div>
-        <div style="color: var(--accent-success); font-weight: bold; display: flex; align-items: center; gap: 0.5rem;"><div style="background: var(--accent-success); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">✓</div> Execute</div>
-        {% endif %}
-    </div>
-
-    <!-- NEXT STEP GUIDANCE BANNER -->
-    {% if tournament.status == 'setup' and not tournament.categories %}
-    <div style="background: rgba(59, 130, 246, 0.1); border-left: 4px solid var(--accent-primary); padding: 1.25rem 1.5rem; border-radius: var(--radius-sm); margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-        <div>
-            <h4 style="margin: 0; color: var(--accent-primary); font-size: 1.1rem;">👉 Next Step: Add Tournament Categories</h4>
-            <p style="margin: 0.25rem 0 0; color: var(--text-secondary); font-size: 0.9rem;">To accept registrations or generate brackets, define at least one category (e.g., Men's Singles, Women's Doubles).</p>
-        </div>
-        <a href="{{ url_for('category.create_category', slug=tournament.url_slug) }}" class="btn btn-primary" style="padding: 0.6rem 1.25rem; font-weight: 600;">
-            ➕ Add First Category
-        </a>
-    </div>
-    {% elif tournament.status == 'setup' and tournament.categories %}
-    <div style="background: rgba(16, 185, 129, 0.1); border-left: 4px solid var(--accent-success); padding: 1.25rem 1.5rem; border-radius: var(--radius-sm); margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-        <div>
-            <h4 style="margin: 0; color: var(--accent-success); font-size: 1.1rem;">👉 Next Step: Open Registration & Share Link</h4>
-            <p style="margin: 0.25rem 0 0; color: var(--text-secondary); font-size: 0.9rem;">Categories are configured! Open registration to start collecting player signups online.</p>
-        </div>
-        <form method="POST" style="margin: 0;">
-            <input type="hidden" name="action" value="open_registration">
-            <button type="submit" class="btn btn-primary" style="background-color: var(--accent-success); border-color: var(--accent-success); padding: 0.6rem 1.25rem; font-weight: 600;">
-                🔓 Open Registration Now
-            </button>
-        </form>
-    </div>
-    {% elif tournament.status == 'registration' %}
-    <div style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid var(--accent-warning); padding: 1.25rem 1.5rem; border-radius: var(--radius-sm); margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-        <div>
-            <h4 style="margin: 0; color: var(--accent-warning); font-size: 1.1rem;">👉 Registration is Active: Share URL With Players</h4>
-            <p style="margin: 0.25rem 0 0; color: var(--text-secondary); font-size: 0.9rem;">Players who open the link land directly on the registration form. When ready, close registration and launch!</p>
-        </div>
-        <div style="display: flex; gap: 0.75rem;">
-            <button onclick="copyShareLink('{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-secondary" style="padding: 0.6rem 1rem;">
-                📋 Copy Registration Link
-            </button>
-            {% if participants|length >= 2 or tournament.has_categories %}
-            <form method="POST" style="margin: 0;">
-                <input type="hidden" name="action" value="start_tournament">
-                <button type="submit" class="btn btn-success" style="padding: 0.6rem 1.25rem; font-weight: 600;">
-                    🚀 Launch Tournament
+        <!-- LEFT COLUMN: TABBED MANAGEMENT PANELS -->
+        <div class="dashboard-main" style="min-width: 0;">
+            
+            <!-- Navigation Tabs Bar -->
+            <div style="display: flex; gap: 0.4rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; flex-wrap: wrap;">
+                <button type="button" id="tabBtnCategories" onclick="switchDashboardTab('categories')" style="padding: 0.5rem 1.1rem; font-size: 0.85rem; font-weight: 600; border: none; background: var(--accent-primary); color: white; border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 0.35rem;">
+                    📁 Categories ({{ tournament.categories|length }})
                 </button>
-            </form>
-            {% endif %}
-        </div>
-    </div>
-    {% endif %}
-
-    <div class="manage-grid">
-        <div class="manage-main">
-            <div class="card">
-
-            <!-- PENDING REGISTRATIONS SECTION -->
-            <div class="card" style="margin-bottom: 2rem; border: 1px solid var(--accent-warning);">
-                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; background: rgba(245, 158, 11, 0.1);">
-                    <h2 class="card-title" style="margin: 0; color: var(--accent-warning);"><i class="fas fa-clipboard-list"></i> Pending Registrations <span class="badge" style="background: var(--accent-warning); color: #000; margin-left: 0.5rem;">{{ pending_registrations|length }}</span></h2>
-                </div>
-                <div class="card-body">
+                <button type="button" id="tabBtnSchedule" onclick="switchDashboardTab('schedule')" style="padding: 0.5rem 1.1rem; font-size: 0.85rem; font-weight: 600; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-secondary); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 0.35rem;">
+                    📅 Schedule &amp; Courts
+                </button>
+                <button type="button" id="tabBtnPlayers" onclick="switchDashboardTab('players')" style="padding: 0.5rem 1.1rem; font-size: 0.85rem; font-weight: 600; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-secondary); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 0.35rem;">
+                    👥 Players &amp; Approvals ({{ total_players }})
                     {% if pending_registrations %}
-                        <div style="display: grid; gap: 1rem;">
-                        {% for reg in pending_registrations %}
-                            <div style="background: var(--bg-secondary); padding: 1rem; border-radius: var(--radius-md); border: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
-                                <div>
-                                    <div style="font-weight: bold; font-size: 1.1rem; color: var(--text-primary);">
-                                        {{ reg.player.name }}
-                                        {% if reg.player2 %}
-                                            <span style="color: var(--text-muted);"> &amp; </span> {{ reg.player2.name }}
-                                        {% endif %}
-                                    </div>
-                                    <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.25rem;">
-                                        <strong>Category:</strong> {{ reg.category.name if reg.category else 'N/A' }}
-                                    </div>
-                                    <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">
-                                        Registered by: {{ reg.user.username }} on {{ reg.created_at.strftime('%Y-%m-%d') }}
-                                    </div>
-                                </div>
-                                <div style="display: flex; gap: 0.5rem;">
-                                    <form method="POST" style="display: inline;">
-                                        <input type="hidden" name="action" value="approve_registration">
-                                        <input type="hidden" name="registration_id" value="{{ reg.id }}">
-                                        <button type="submit" class="btn btn-small btn-primary" style="background: var(--accent-success); border-color: var(--accent-success);">Approve</button>
-                                    </form>
-                                    <form method="POST" style="display: inline;">
-                                        <input type="hidden" name="action" value="reject_registration">
-                                        <input type="hidden" name="registration_id" value="{{ reg.id }}">
-                                        <button type="submit" class="btn btn-small btn-secondary" style="border-color: var(--accent-danger); color: var(--accent-danger);" onclick="return confirm('Are you sure you want to reject this registration?');">Reject</button>
-                                    </form>
-                                </div>
-                            </div>
-                        {% endfor %}
+                    <span style="background: var(--accent-warning); color: #000; font-size: 0.72rem; padding: 1px 6px; border-radius: 9999px; font-weight: 700;">
+                        {{ pending_registrations|length }}
+                    </span>
+                    {% endif %}
+                </button>
+                <button type="button" id="tabBtnSettings" onclick="switchDashboardTab('settings')" style="padding: 0.5rem 1.1rem; font-size: 0.85rem; font-weight: 600; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-secondary); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 0.35rem;">
+                    ⚙️ Settings &amp; Info
+                </button>
+            </div>
+
+            <!-- TAB 1: CATEGORIES -->
+            <div id="tabContentCategories">
+                <div class="card" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+                        <div>
+                            <h3 style="margin: 0; font-size: 1.15rem; color: var(--text-primary); font-weight: 700;">
+                                Tournament Categories
+                            </h3>
+                            <p style="margin: 0.2rem 0 0; color: var(--text-secondary); font-size: 0.82rem;">
+                                Configure divisions, formats, entry fees, and participants.
+                            </p>
                         </div>
+                        <a href="{{ url_for('category.create_category', slug=tournament.url_slug) }}" class="btn btn-primary" style="padding: 0.45rem 1rem; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem;">
+                            ➕ Add Category
+                        </a>
+                    </div>
+
+                    {% if tournament.categories %}
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
+                        {% for category in tournament.categories %}
+                        <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.15rem; display: flex; flex-direction: column; gap: 0.75rem; position: relative; border-left: 4px solid var(--accent-primary);">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem;">
+                                <span style="color: var(--text-primary); font-weight: 700; font-size: 1.05rem; line-height: 1.3;">{{ category.name }}</span>
+                                <span class="tab-badge status-{{ category.status }}" style="font-size: 0.7rem; text-transform: uppercase; padding: 2px 8px; border-radius: 12px; font-weight: 700; letter-spacing: 0.5px; white-space: nowrap;">
+                                    {{ category.status.replace('_', ' ').title() }}
+                                </span>
+                            </div>
+                            
+                            <div style="font-size: 0.82rem; color: var(--text-secondary); display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; background: var(--bg-card); padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+                                <div>🏅 <strong>{{ category.format.replace('_', ' ').title() }}</strong></div>
+                                <div>👥 <strong>{{ category.participants|length }}</strong> players</div>
+                                <div>💰 <strong>{% if category.entry_fee > 0 %}₹{{ category.entry_fee }}{% else %}Free{% endif %}</strong></div>
+                                <div>⏰ <strong>{{ category.start_date_time.strftime('%b %d, %H:%M') if category.start_date_time else 'Auto' }}</strong></div>
+                            </div>
+
+                            <div style="margin-top: auto; display: flex; gap: 0.4rem; padding-top: 0.25rem;">
+                                <a href="{{ url_for('category.manage_category', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-primary btn-small" style="flex: 1; text-align: center; font-weight: 600; padding: 0.4rem;">
+                                    ⚙️ Manage
+                                </a>
+                                <button type="button" class="btn btn-secondary btn-small" title="Rename Category" onclick="renameCategory({{ category.id }}, '{{ category.name | escape }}')" style="padding: 0.4rem 0.65rem;">
+                                    ✏️
+                                </button>
+                                {% if category.status != 'setup' %}
+                                <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-secondary btn-small" title="View Bracket" style="padding: 0.4rem 0.65rem;">
+                                    🏆
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
                     {% else %}
-                        <p style="color: var(--text-muted); margin: 0; text-align: center; padding: 1rem 0;">No pending registrations at this time.</p>
+                    <!-- Clean empty state for categories -->
+                    <div style="text-align: center; padding: 2.5rem 1rem; border: 2px dashed var(--border-color); border-radius: var(--radius-md);">
+                        <div style="font-size: 2.5rem; margin-bottom: 0.5rem; opacity: 0.6;">📁</div>
+                        <h4 style="margin: 0 0 0.25rem; font-size: 1.1rem; color: var(--text-primary); font-weight: 600;">No categories defined yet</h4>
+                        <p style="margin: 0 0 1.25rem; color: var(--text-secondary); font-size: 0.85rem; max-width: 420px; margin-left: auto; margin-right: auto;">
+                            Create divisions (e.g., Men's Singles, Under-14 Boys, Mixed Doubles) to collect player entries.
+                        </p>
+                        <a href="{{ url_for('category.create_category', slug=tournament.url_slug) }}" class="btn btn-primary" style="padding: 0.55rem 1.25rem; font-weight: 600;">
+                            ➕ Add First Category
+                        </a>
+                    </div>
                     {% endif %}
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="toggleParticipants()">
-                    <h2 class="card-title" style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
-                        👥 Participants <span style="background: var(--bg-secondary); padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.8rem; color: var(--text-secondary);">{{ total_players }}</span>
-                    </h2>
-                    <span id="participants-chevron" style="transition: transform 0.3s; transform: rotate(180deg);">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                    </span>
-                </div>
-                <div class="card-body" id="participants-container" style="display: none; border-top: 1px solid var(--border-color); padding-top: 1rem;">
-                    {% if participants %}
-                    <div class="participants-list" style="display: grid; gap: 0.75rem;">
-                        {% for participant in participants %}
-                        <div class="participant-item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: var(--bg-secondary); border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
-                            <div class="participant-info" style="display: flex; align-items: center; gap: 1rem;">
-                                <span class="participant-seed" style="font-weight: 700; color: var(--text-muted); font-size: 0.9rem; min-width: 25px;">#{{ participant.seed or loop.index }}</span>
-                                <span class="participant-name" style="font-weight: 600; color: var(--text-primary);">{{ participant.name }}</span>
-                                {% if tournament.has_categories and participant.category %}
-                                <span class="tab-badge" style="font-size: 0.7rem; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 2px 8px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
-                                    {{ participant.category.name }}
-                                </span>
-                                {% endif %}
-                                <span class="participant-email" style="color: var(--text-muted); font-size: 0.85rem;">{{ participant.email or '' }}</span>
-                                {% if participant.partner_name %}
-                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-left: 0.5rem; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px;">
-                                    Partner: <span style="color: var(--text-primary);">{{ participant.partner_name }}</span> ({{ participant.partner_mobile }})
-                                </div>
-                                {% endif %}
+            <!-- TAB 2: SCHEDULE & COURTS -->
+            <div id="tabContentSchedule" style="display: none;">
+                <div class="card" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem;">
+                    <div style="margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+                        <h3 style="margin: 0; font-size: 1.15rem; color: var(--text-primary); font-weight: 700;">
+                            📅 Tournament Calendar &amp; Court Operating Settings
+                        </h3>
+                        <p style="margin: 0.2rem 0 0; color: var(--text-secondary); font-size: 0.82rem;">
+                            Configure multi-day tournament dates, operating hours, courts, and rest buffers for automatic scheduling.
+                        </p>
+                    </div>
+
+                    <form method="POST">
+                        <input type="hidden" name="action" value="update_schedule_settings">
+
+                        <!-- Dates & Operating Hours Grid -->
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 0.85rem; margin-bottom: 1.25rem;">
+                            <div>
+                                <label class="form-label" style="font-size: 0.82rem; font-weight: 600; margin-bottom: 0.25rem; display: block;">Tournament Start Date</label>
+                                <input type="date" id="tournStartDate" name="start_date" class="form-input" value="{{ tournament.start_date.strftime('%Y-%m-%d') if tournament.start_date else '' }}" style="width: 100%; padding: 0.45rem;">
                             </div>
-                            {% if (not tournament.has_categories and tournament.status == 'setup') or (tournament.has_categories and participant.category and participant.category.status == 'setup') %}
-                            <div class="participant-actions">
-                                <form method="POST" style="margin: 0; padding: 0; display: flex;" class="requires-audit" data-audit-action="Delete Participant">
-                                    <input type="hidden" name="action" value="delete_participant">
-                                    <input type="hidden" name="participant_id" value="{{ participant.id }}">
-                                    <button type="submit" class="btn btn-small" style="background: transparent; border: 1px solid var(--border-color); color: var(--error); padding: 0.25rem 0.5rem; font-size: 0.8rem;">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 2px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                        Remove
+                            <div>
+                                <label class="form-label" style="font-size: 0.82rem; font-weight: 600; margin-bottom: 0.25rem; display: block;">Tournament End Date</label>
+                                <input type="date" id="tournEndDate" name="end_date" class="form-input" value="{{ tournament.end_date.strftime('%Y-%m-%d') if tournament.end_date else '' }}" style="width: 100%; padding: 0.45rem;">
+                            </div>
+                            <div>
+                                <label class="form-label" style="font-size: 0.82rem; font-weight: 600; margin-bottom: 0.25rem; display: block;">Default Daily Start Time</label>
+                                <input type="time" id="defaultStartTime" name="court_operating_start" class="form-input" value="{{ tournament.court_operating_start or '09:00' }}" style="width: 100%; padding: 0.45rem;">
+                            </div>
+                            <div>
+                                <label class="form-label" style="font-size: 0.82rem; font-weight: 600; margin-bottom: 0.25rem; display: block;">Default Daily Cutoff Time</label>
+                                <input type="time" id="defaultEndTime" name="court_operating_end" class="form-input" value="{{ tournament.court_operating_end or '19:00' }}" style="width: 100%; padding: 0.45rem;">
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Daily Operating Hours Box -->
+                        <div id="dynamicDailyScheduleSection" style="margin-bottom: 1.25rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.85rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem;">
+                                <div>
+                                    <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-primary); margin: 0;">
+                                        ⏰ Dynamic Daily Hours (Per Day)
+                                    </h4>
+                                    <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0.15rem 0 0;">
+                                        Customize operating hours for specific tournament days.
+                                    </p>
+                                </div>
+                                <button type="button" class="btn btn-secondary" id="applyDefaultsToAllDaysBtn" style="font-size: 0.75rem; padding: 0.25rem 0.6rem; border-radius: var(--radius-sm);">
+                                    🔄 Apply Defaults to All Days
+                                </button>
+                            </div>
+
+                            <div id="dailyScheduleList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0.65rem;">
+                                <!-- Injected via JavaScript dynamically -->
+                            </div>
+
+                            <div id="dailyScheduleEmptyPrompt" style="display: none; color: var(--text-muted); font-size: 0.82rem; text-align: center; padding: 1.25rem 0;">
+                                📅 Select both Start Date and End Date above to view each day's timings.
+                            </div>
+
+                            <input type="hidden" name="daily_operating_hours" id="dailyOperatingHoursJson" value="{{ tournament.daily_operating_hours or '' }}">
+                        </div>
+
+                        <!-- Court & Player Rest Settings Grid -->
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 0.85rem; margin-bottom: 1.25rem;">
+                            <div>
+                                <label class="form-label" style="font-size: 0.82rem; font-weight: 600; margin-bottom: 0.25rem; display: block;">Total Courts</label>
+                                <input type="number" name="num_courts" min="1" max="50" class="form-input" value="{{ tournament.num_courts or 1 }}" style="width: 100%; padding: 0.45rem;">
+                            </div>
+                            <div>
+                                <label class="form-label" style="font-size: 0.82rem; font-weight: 600; margin-bottom: 0.25rem; display: block;">Court Names</label>
+                                <input type="text" name="court_names" placeholder="Court 1, Court 2, Centre Court" class="form-input" value="{{ tournament.court_names or '' }}" style="width: 100%; padding: 0.45rem;">
+                            </div>
+                            <div>
+                                <label class="form-label" style="font-size: 0.82rem; font-weight: 600; margin-bottom: 0.25rem; display: block;">Min Rest (Mins)</label>
+                                <input type="number" name="min_rest_minutes" min="0" max="300" class="form-input" value="{{ tournament.min_rest_minutes if tournament.min_rest_minutes is not none else '' }}" placeholder="e.g. 0, 15, 30" style="width: 100%; padding: 0.45rem;">
+                            </div>
+                            <div>
+                                <label class="form-label" style="font-size: 0.82rem; font-weight: 600; margin-bottom: 0.25rem; display: block;">Max Matches / Day</label>
+                                <input type="number" name="max_matches_per_player_day" min="1" max="20" class="form-input" value="{{ tournament.max_matches_per_player_day if tournament.max_matches_per_player_day is not none else '' }}" placeholder="Unlimited" style="width: 100%; padding: 0.45rem;">
+                            </div>
+                        </div>
+
+                        <div style="display: flex; justify-content: flex-end;">
+                            <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1.25rem; font-weight: 600; font-size: 0.85rem;">
+                                💾 Save Calendar &amp; Court Settings
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- TAB 3: PLAYERS & APPROVALS -->
+            <div id="tabContentPlayers" style="display: none;">
+                
+                <!-- PENDING APPROVALS SECTION (Displayed if any pending) -->
+                {% if pending_registrations %}
+                <div class="card" style="background: rgba(245, 158, 11, 0.05); border: 1px solid var(--accent-warning); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1.25rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; border-bottom: 1px solid rgba(245, 158, 11, 0.2); padding-bottom: 0.5rem;">
+                        <h3 style="margin: 0; color: var(--accent-warning); font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 0.4rem;">
+                            ⏳ Pending Registrations <span style="background: var(--accent-warning); color: #000; padding: 1px 7px; border-radius: 9999px; font-size: 0.75rem;">{{ pending_registrations|length }}</span>
+                        </h3>
+                        <span style="font-size: 0.8rem; color: var(--text-secondary);">Review and approve player signups</span>
+                    </div>
+
+                    <div style="display: grid; gap: 0.65rem;">
+                        {% for reg in pending_registrations %}
+                        <div style="background: var(--bg-card); padding: 0.85rem 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+                            <div>
+                                <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);">
+                                    {{ reg.player.name }}
+                                    {% if reg.player2 %}
+                                        <span style="color: var(--text-muted);"> &amp; </span> {{ reg.player2.name }}
+                                    {% endif %}
+                                </div>
+                                <div style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                                    <strong>Category:</strong> {{ reg.category.name if reg.category else 'N/A' }}
+                                    &bull; <span style="color: var(--text-muted);">{{ reg.created_at.strftime('%b %d') }}</span>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 0.4rem;">
+                                <form method="POST" style="display: inline; margin: 0;">
+                                    <input type="hidden" name="action" value="approve_registration">
+                                    <input type="hidden" name="registration_id" value="{{ reg.id }}">
+                                    <button type="submit" class="btn btn-small btn-primary" style="background: var(--accent-success); border-color: var(--accent-success); padding: 0.3rem 0.7rem; font-size: 0.8rem;">Approve</button>
+                                </form>
+                                <form method="POST" style="display: inline; margin: 0;">
+                                    <input type="hidden" name="action" value="reject_registration">
+                                    <input type="hidden" name="registration_id" value="{{ reg.id }}">
+                                    <button type="submit" class="btn btn-small btn-secondary" style="color: var(--accent-danger); padding: 0.3rem 0.7rem; font-size: 0.8rem;" onclick="return confirm('Reject this registration?');">Reject</button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- REGISTERED PARTICIPANTS LIST -->
+                <div class="card" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                        <h3 style="margin: 0; font-size: 1.15rem; color: var(--text-primary); font-weight: 700; display: flex; align-items: center; gap: 0.4rem;">
+                            👥 Enrolled Players <span style="background: var(--bg-secondary); padding: 0.15rem 0.55rem; border-radius: 9999px; font-size: 0.8rem; color: var(--text-secondary); border: 1px solid var(--border-color);">{{ total_players }}</span>
+                        </h3>
+                        {% if not tournament.has_categories and tournament.status == 'setup' %}
+                        <!-- Inline quick enrollment for non-category tournaments -->
+                        <form method="POST" style="display: flex; gap: 0.4rem; align-items: center; margin: 0;">
+                            <input type="hidden" name="action" value="add_participant">
+                            <input type="text" name="participant_name" class="form-input" placeholder="Player name" required style="padding: 0.35rem 0.6rem; font-size: 0.82rem;">
+                            <button type="submit" class="btn btn-primary" style="padding: 0.35rem 0.75rem; font-size: 0.82rem;">+ Add</button>
+                        </form>
+                        {% endif %}
+                    </div>
+
+                    {% if participants %}
+                    <!-- Compact scrollable table to avoid infinite scrolling -->
+                    <div style="max-height: 480px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                            <thead style="position: sticky; top: 0; background: var(--bg-secondary); z-index: 10;">
+                                <tr style="border-bottom: 1px solid var(--border-color); text-align: left;">
+                                    <th style="padding: 0.6rem 0.75rem; color: var(--text-muted); font-weight: 600; width: 60px;">Seed</th>
+                                    <th style="padding: 0.6rem 0.75rem; color: var(--text-muted); font-weight: 600;">Player Name</th>
+                                    {% if tournament.has_categories %}
+                                    <th style="padding: 0.6rem 0.75rem; color: var(--text-muted); font-weight: 600;">Category</th>
+                                    {% endif %}
+                                    <th style="padding: 0.6rem 0.75rem; color: var(--text-muted); font-weight: 600;">Email</th>
+                                    {% if tournament.status == 'setup' %}
+                                    <th style="padding: 0.6rem 0.75rem; text-align: right; color: var(--text-muted); font-weight: 600; width: 70px;">Action</th>
+                                    {% endif %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for participant in participants %}
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                                    <td style="padding: 0.6rem 0.75rem; font-weight: 700; color: var(--text-secondary);">
+                                        #{{ participant.seed or loop.index }}
+                                    </td>
+                                    <td style="padding: 0.6rem 0.75rem; font-weight: 600; color: var(--text-primary);">
+                                        {{ participant.name }}
+                                        {% if participant.partner_name %}
+                                        <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 400;">
+                                            Partner: {{ participant.partner_name }}
+                                        </div>
+                                        {% endif %}
+                                    </td>
+                                    {% if tournament.has_categories %}
+                                    <td style="padding: 0.6rem 0.75rem;">
+                                        {% if participant.category %}
+                                        <span style="font-size: 0.75rem; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 2px 7px; border-radius: 12px; font-weight: 500;">
+                                            {{ participant.category.name }}
+                                        </span>
+                                        {% else %}
+                                        <span style="color: var(--text-muted);">-</span>
+                                        {% endif %}
+                                    </td>
+                                    {% endif %}
+                                    <td style="padding: 0.6rem 0.75rem; color: var(--text-secondary); font-size: 0.8rem;">
+                                        {{ participant.email or '-' }}
+                                    </td>
+                                    {% if (not tournament.has_categories and tournament.status == 'setup') or (tournament.has_categories and participant.category and participant.category.status == 'setup') %}
+                                    <td style="padding: 0.6rem 0.75rem; text-align: right;">
+                                        <form method="POST" style="margin: 0; display: inline;" class="requires-audit" data-audit-action="Delete Participant">
+                                            <input type="hidden" name="action" value="delete_participant">
+                                            <input type="hidden" name="participant_id" value="{{ participant.id }}">
+                                            <button type="submit" style="background: none; border: none; color: var(--accent-danger); cursor: pointer; font-size: 0.78rem; font-weight: 600; padding: 0;">
+                                                🗑️
+                                            </button>
+                                        </form>
+                                    </td>
+                                    {% elif tournament.status == 'setup' %}
+                                    <td style="padding: 0.6rem 0.75rem; text-align: right; color: var(--text-muted);">-</td>
+                                    {% endif %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div style="text-align: center; padding: 2.5rem 1rem; color: var(--text-muted);">
+                        <div style="font-size: 2.5rem; margin-bottom: 0.5rem; opacity: 0.5;">👥</div>
+                        <p style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.25rem;">No participants enrolled yet</p>
+                        <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0;">
+                            Open registration or add players directly within categories.
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- TAB 4: SETTINGS & DANGER ZONE -->
+            <div id="tabContentSettings" style="display: none;">
+                <div style="display: grid; gap: 1.25rem;">
+                    
+                    <!-- Tournament Configuration & Auto-Close Timer -->
+                    <div class="card" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem;">
+                        <h3 style="margin: 0 0 1rem; font-size: 1.15rem; color: var(--text-primary); font-weight: 700; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+                            ⚙️ Tournament Configuration
+                        </h3>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                            <div><strong>Organizer:</strong> {{ tournament.creator_name or 'N/A' }}</div>
+                            <div><strong>Game / Sport:</strong> {{ tournament.game_info or 'Tournament' }}</div>
+                            <div><strong>Created:</strong> {{ tournament.created_at.strftime('%b %d, %Y') if tournament.created_at else 'Recent' }}</div>
+                            <div><strong>URL Slug:</strong> <code>{{ tournament.url_slug }}</code></div>
+                        </div>
+
+                        {% if tournament.status == 'setup' %}
+                        <form method="POST" style="border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                            <input type="hidden" name="action" value="open_registration">
+                            <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary); display: block; margin-bottom: 0.35rem;">
+                                Optional: Registration Auto-Close Cutoff
+                            </label>
+                            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                                <input type="hidden" name="tz_offset" id="tz_offset_reg">
+                                <input type="datetime-local" name="registration_closes_at" class="form-input" style="padding: 0.45rem; font-size: 0.85rem; max-width: 250px;">
+                                <button type="submit" class="btn btn-primary" style="padding: 0.45rem 1rem; font-size: 0.85rem; background-color: var(--accent-success); border-color: var(--accent-success); font-weight: 600;">
+                                    🔓 Set Cutoff &amp; Open Registration
+                                </button>
+                            </div>
+                            <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 0.25rem;">Form will automatically disable registrations when this time is reached.</small>
+                        </form>
+                        {% endif %}
+                    </div>
+
+                    <!-- Reset & Danger Zone -->
+                    <div class="card" style="background: rgba(239, 68, 68, 0.03); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: var(--radius-lg); padding: 1.25rem;">
+                        <h3 style="margin: 0 0 0.5rem; font-size: 1.05rem; color: var(--accent-danger); font-weight: 700;">
+                            ⚠️ Danger Zone
+                        </h3>
+                        <p style="color: var(--text-secondary); font-size: 0.82rem; margin-bottom: 1rem;">
+                            High-risk operations requiring authorization.
+                        </p>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; border-top: 1px solid rgba(239,68,68,0.1); padding-top: 0.75rem;">
+                            {% if tournament.status != 'setup' %}
+                            <div>
+                                <strong style="color: var(--text-primary); font-size: 0.85rem;">Reset Tournament to Setup</strong>
+                                <p style="margin: 0.15rem 0 0; color: var(--text-muted); font-size: 0.78rem;">Clears matches and allows editing participants or structure.</p>
+                            </div>
+                            <form method="POST" class="requires-high-risk-audit" data-audit-action="Reset Tournament" style="margin: 0;">
+                                <input type="hidden" name="action" value="reset_tournament">
+                                <button type="submit" class="btn btn-danger" style="padding: 0.4rem 0.85rem; font-size: 0.82rem; font-weight: 600;">
+                                    Reset Bracket
+                                </button>
+                            </form>
+                            {% endif %}
+
+                            <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; {% if tournament.status != 'setup' %}border-top: 1px solid rgba(239,68,68,0.1); padding-top: 0.75rem;{% endif %}">
+                                <div>
+                                    <strong style="color: var(--accent-danger); font-size: 0.85rem;">Delete Entire Tournament</strong>
+                                    <p style="margin: 0.15rem 0 0; color: var(--text-muted); font-size: 0.78rem;">Permanently deletes this tournament, categories, and matches.</p>
+                                </div>
+                                <form method="POST" action="{{ url_for('tournament.delete_tournament', slug=tournament.url_slug) }}" class="requires-high-risk-audit" data-audit-action="Delete Tournament" style="margin: 0;">
+                                    <button type="submit" class="btn btn-danger" style="padding: 0.4rem 0.85rem; font-size: 0.82rem; font-weight: 600;">
+                                        Delete Tournament
                                     </button>
                                 </form>
                             </div>
-                            {% endif %}
                         </div>
-                        {% endfor %}
                     </div>
-                    {% else %}
-                    <div class="empty-state" style="padding: 2rem; text-align: center; border: 1px dashed var(--border-color); border-radius: var(--radius-md);">
-                        <div class="empty-icon" style="font-size: 2rem; opacity: 0.5; margin-bottom: 0.5rem;">👥</div>
-                        <p style="color: var(--text-muted);">No participants yet. Add some to get started!</p>
-                    </div>
-                    {% endif %}
                 </div>
             </div>
 
-            <!-- CREATE CATEGORY CARD -->
-            <div class="card" style="border: 1px solid var(--accent-primary);">
-                <div class="card-header">
-                    <h2 class="card-title" style="display: flex; align-items: center; gap: 0.5rem; color: var(--accent-primary);">📁 Categories</h2>
-                </div>
-                <div class="card-body">
-                    <p style="margin-bottom: 1.5rem; color: var(--text-muted); font-size: 0.95rem;">
-                        Create sub-tournaments within this main tournament. Each category can have different formats and scheduled start times.
-                    </p>
-
-                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
-                        {% if tournament.categories %}
-                            {% for category in tournament.categories %}
-                            <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; position: relative; overflow: hidden;">
-                                <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--accent-primary);"></div>
-                                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                                    <span style="color: var(--text-primary); font-weight: 700; font-size: 1.15rem;">{{ category.name }}</span>
-                                    <span class="tab-badge status-{{ category.status }}" style="font-size: 0.7rem; text-transform: uppercase; padding: 3px 8px; border-radius: 12px; letter-spacing: 0.5px;">{{ category.status.replace('_', ' ').title() }}</span>
-                                </div>
-                                <div style="font-size: 0.85rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 0.25rem;">
-                                    <div><strong>Format:</strong> {{ category.format.replace('_', ' ').title() }}</div>
-                                    <div><strong>Fee:</strong> {% if category.entry_fee > 0 %}₹{{ category.entry_fee }}{% else %}Free{% endif %}</div>
-                                    <div><strong>Starts:</strong> {{ category.start_date_time.strftime('%b %d, %H:%M') if category.start_date_time else 'TBD' }}</div>
-                                </div>
-                                <div style="margin-top: auto; display: flex; gap: 0.5rem;">
-                                    <a href="{{ url_for('category.manage_category', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-primary btn-small" style="flex: 1; text-align: center;">Manage</a>
-                                    <button type="button" class="btn btn-secondary btn-small" title="Rename" onclick="renameCategory({{ category.id }}, '{{ category.name | escape }}')"><i class="fas fa-edit"></i></button>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        {% endif %}
-                        
-                        <!-- ADD NEW CATEGORY CARD -->
-                        <a href="{{ url_for('category.create_category', slug=tournament.url_slug) }}" style="text-decoration: none; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; border: 2px dashed var(--border-color); border-radius: var(--radius-md); color: var(--text-secondary); transition: all 0.2s; min-height: 180px;" onmouseover="this.style.borderColor='var(--accent-primary)'; this.style.color='var(--accent-primary)';" onmouseout="this.style.borderColor='var(--border-color)'; this.style.color='var(--text-secondary)';">
-                            <span style="font-size: 2.5rem; margin-bottom: 0.5rem;">➕</span>
-                            <span style="font-weight: 600;">Add Category</span>
-                        </a>
-                    </div>
-                    
-                    <!-- TOURNAMENT MULTI-DAY CALENDAR & COURT OPERATING SETTINGS -->
-                    <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
-                        <h3 style="font-size: 1.15rem; color: var(--text-primary); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
-                            📅 Tournament Calendar & Court Operating Settings
-                        </h3>
-                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1.25rem;">
-                            Configure multi-day tournament dates, operating hours, courts, and player rest buffers for automatic scheduling and anti-clash protection.
-                        </p>
-                        <form method="POST">
-                            <input type="hidden" name="action" value="update_schedule_settings">
-                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
-                                <div>
-                                    <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Tournament Start Date</label>
-                                    <input type="date" id="tournStartDate" name="start_date" class="form-input" value="{{ tournament.start_date.strftime('%Y-%m-%d') if tournament.start_date else '' }}" style="width: 100%;">
-                                </div>
-                                <div>
-                                    <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Tournament End Date</label>
-                                    <input type="date" id="tournEndDate" name="end_date" class="form-input" value="{{ tournament.end_date.strftime('%Y-%m-%d') if tournament.end_date else '' }}" style="width: 100%;">
-                                </div>
-                                <div>
-                                    <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Default Daily Start Time</label>
-                                    <input type="time" id="defaultStartTime" name="court_operating_start" class="form-input" value="{{ tournament.court_operating_start or '09:00' }}" style="width: 100%;">
-                                </div>
-                                <div>
-                                    <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Default Daily End Time (Cutoff)</label>
-                                    <input type="time" id="defaultEndTime" name="court_operating_end" class="form-input" value="{{ tournament.court_operating_end or '19:00' }}" style="width: 100%;">
-                                </div>
-                            </div>
-
-                            <!-- DYNAMIC DAILY OPERATING SCHEDULE SECTION -->
-                            <div id="dynamicDailyScheduleSection" style="margin-top: 1.25rem; margin-bottom: 1.25rem; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem;">
-                                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.75rem;">
-                                    <div>
-                                        <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.4rem;">
-                                            ⏰ Daily Match Operating Hours (Dynamic Schedule)
-                                        </h4>
-                                        <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0.25rem 0 0;">
-                                            Select custom start and cutoff times for each tournament day (e.g. late afternoon start on Day 1, early finish on final day).
-                                        </p>
-                                    </div>
-                                    <button type="button" class="btn btn-secondary" id="applyDefaultsToAllDaysBtn" style="font-size: 0.75rem; padding: 0.3rem 0.65rem; border-radius: var(--radius-sm);">
-                                        🔄 Reset All Days to Default
-                                    </button>
-                                </div>
-
-                                <div id="dailyScheduleList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.85rem;">
-                                    <!-- Injected via JavaScript dynamically -->
-                                </div>
-
-                                <div id="dailyScheduleEmptyPrompt" style="display: none; color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 1.5rem 0;">
-                                    📅 Select both Start Date and End Date above to set daily timings.
-                                </div>
-
-                                <!-- Hidden input storing complete JSON -->
-                                <input type="hidden" name="daily_operating_hours" id="dailyOperatingHoursJson" value="{{ tournament.daily_operating_hours or '' }}">
-                            </div>
-
-                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
-                                <div>
-                                    <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Total Courts Available</label>
-                                    <input type="number" name="num_courts" min="1" max="50" class="form-input" value="{{ tournament.num_courts or 1 }}" style="width: 100%;">
-                                </div>
-                                <div>
-                                    <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Court Names (Comma separated)</label>
-                                    <input type="text" name="court_names" placeholder="Court 1, Court 2, Centre Court" class="form-input" value="{{ tournament.court_names or '' }}" style="width: 100%;">
-                                </div>
-                                <div>
-                                    <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Min Rest Between Matches (Mins)</label>
-                                    <input type="number" name="min_rest_minutes" min="0" max="300" class="form-input" value="{{ tournament.min_rest_minutes if tournament.min_rest_minutes is not none else '' }}" placeholder="e.g. 0, 5, 15, 30" title="Rest interval enforced if player plays multiple categories. Can be 0 or less than 10." style="width: 100%;">
-                                </div>
-                                <div>
-                                    <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Max Matches / Player / Day</label>
-                                    <input type="number" name="max_matches_per_player_day" min="1" max="20" class="form-input" value="{{ tournament.max_matches_per_player_day if tournament.max_matches_per_player_day is not none else '' }}" placeholder="Leave blank for no limit" style="width: 100%;">
-                                </div>
-                            </div>
-                            <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
-                                <button type="submit" class="btn btn-primary" style="padding: 0.45rem 1.25rem;">💾 Save Tournament Calendar & Courts</button>
-                            </div>
-                        </form>
-                    </div>
-                    
-                    <script>
-                    function renameCategory(categoryId, currentName) {
-                        const newName = prompt("Enter new name for category:", currentName);
-                        if (newName !== null && newName.trim() !== "" && newName !== currentName) {
-                            const form = document.createElement('form');
-                            form.method = 'POST';
-                            form.action = `/tournaments/{{ tournament.url_slug }}/categories/${categoryId}/rename`;
-                            const input = document.createElement('input');
-                            input.type = 'hidden';
-                            input.name = 'new_name';
-                            input.value = newName;
-                            form.appendChild(input);
-                            document.body.appendChild(form);
-                            form.submit();
-                        }
-                    }
-
-                    (function() {
-                        function initDynamicDailySchedule() {
-                            const startInput = document.getElementById('tournStartDate');
-                            const endInput = document.getElementById('tournEndDate');
-                            const defaultStartInput = document.getElementById('defaultStartTime');
-                            const defaultEndInput = document.getElementById('defaultEndTime');
-                            const container = document.getElementById('dailyScheduleList');
-                            const emptyPrompt = document.getElementById('dailyScheduleEmptyPrompt');
-                            const jsonInput = document.getElementById('dailyOperatingHoursJson');
-                            const resetBtn = document.getElementById('applyDefaultsToAllDaysBtn');
-
-                            if (!startInput || !endInput || !container) return;
-
-                            let savedHours = {};
-                            try {
-                                savedHours = {{ (parsed_daily_hours|tojson) if parsed_daily_hours else '{}' }};
-                            } catch (e) {
-                                savedHours = {};
-                            }
-
-                            function formatDisplayDate(dateObj) {
-                                const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-                                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                                return `${days[dateObj.getDay()]}, ${dateObj.getDate()} ${months[dateObj.getMonth()]}`;
-                            }
-
-                            function renderDays() {
-                                const startVal = startInput.value;
-                                const endVal = endInput.value || startVal;
-
-                                if (!startVal) {
-                                    container.innerHTML = '';
-                                    container.style.display = 'none';
-                                    if (emptyPrompt) emptyPrompt.style.display = 'block';
-                                    return;
-                                }
-
-                                const startDate = new Date(startVal + 'T00:00:00');
-                                let endDate = new Date(endVal + 'T00:00:00');
-
-                                if (endDate < startDate) {
-                                    endDate = new Date(startDate);
-                                    endInput.value = startVal;
-                                }
-
-                                container.innerHTML = '';
-                                container.style.display = 'grid';
-                                if (emptyPrompt) emptyPrompt.style.display = 'none';
-
-                                const defaultStart = defaultStartInput ? defaultStartInput.value || '09:00' : '09:00';
-                                const defaultEnd = defaultEndInput ? defaultEndInput.value || '19:00' : '19:00';
-
-                                const curr = new Date(startDate);
-                                let dayIndex = 1;
-
-                                while (curr <= endDate) {
-                                    const yyyy = curr.getFullYear();
-                                    const mm = String(curr.getMonth() + 1).padStart(2, '0');
-                                    const dd = String(curr.getDate()).padStart(2, '0');
-                                    const dateKey = `${yyyy}-${mm}-${dd}`;
-                                    const dateDisplay = formatDisplayDate(curr);
-
-                                    let sVal = defaultStart;
-                                    let eVal = defaultEnd;
-                                    if (savedHours[dateKey] && savedHours[dateKey].start) {
-                                        sVal = savedHours[dateKey].start;
-                                    }
-                                    if (savedHours[dateKey] && savedHours[dateKey].end) {
-                                        eVal = savedHours[dateKey].end;
-                                    }
-
-                                    const card = document.createElement('div');
-                                    card.style.background = 'var(--bg-card)';
-                                    card.style.border = '1px solid var(--border-color)';
-                                    card.style.borderRadius = 'var(--radius-sm)';
-                                    card.style.padding = '0.85rem';
-                                    card.style.display = 'flex';
-                                    card.style.flexDirection = 'column';
-                                    card.style.gap = '0.5rem';
-
-                                    card.innerHTML = `
-                                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                                            <span style="font-weight: 700; font-size: 0.85rem; color: var(--accent-primary);">
-                                                Day ${dayIndex}
-                                            </span>
-                                            <span style="font-size: 0.78rem; color: var(--text-muted); font-weight: 500;">
-                                                ${dateDisplay}
-                                            </span>
-                                        </div>
-                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.25rem;">
-                                            <div>
-                                                <label style="display: block; font-size: 0.72rem; color: var(--text-secondary); margin-bottom: 2px;">Start Time</label>
-                                                <input type="time" name="daily_start_${dateKey}" data-date="${dateKey}" data-type="start" class="form-input daily-time-start" value="${sVal}" style="padding: 0.3rem 0.5rem; font-size: 0.8rem; width: 100%;">
-                                            </div>
-                                            <div>
-                                                <label style="display: block; font-size: 0.72rem; color: var(--text-secondary); margin-bottom: 2px;">Cutoff Time</label>
-                                                <input type="time" name="daily_end_${dateKey}" data-date="${dateKey}" data-type="end" class="form-input daily-time-end" value="${eVal}" style="padding: 0.3rem 0.5rem; font-size: 0.8rem; width: 100%;">
-                                            </div>
-                                        </div>
-                                    `;
-
-                                    container.appendChild(card);
-                                    curr.setDate(curr.getDate() + 1);
-                                    dayIndex++;
-                                }
-
-                                syncToJson();
-                            }
-
-                            function syncToJson() {
-                                const starts = container.querySelectorAll('.daily-time-start');
-                                const result = {};
-                                starts.forEach(input => {
-                                    const dateKey = input.dataset.date;
-                                    const endInput = container.querySelector(`.daily-time-end[data-date="${dateKey}"]`);
-                                    result[dateKey] = {
-                                        start: input.value || (defaultStartInput ? defaultStartInput.value : '09:00'),
-                                        end: endInput ? (endInput.value || (defaultEndInput ? defaultEndInput.value : '19:00')) : '19:00'
-                                    };
-                                });
-                                savedHours = Object.assign({}, savedHours, result);
-                                if (jsonInput) {
-                                    jsonInput.value = JSON.stringify(result);
-                                }
-                            }
-
-                            container.addEventListener('change', syncToJson);
-                            container.addEventListener('input', syncToJson);
-
-                            startInput.addEventListener('change', renderDays);
-                            startInput.addEventListener('input', renderDays);
-                            endInput.addEventListener('change', renderDays);
-                            endInput.addEventListener('input', renderDays);
-
-                            if (defaultStartInput) {
-                                defaultStartInput.addEventListener('change', function() {
-                                    if (Object.keys(savedHours).length === 0) renderDays();
-                                });
-                            }
-                            if (defaultEndInput) {
-                                defaultEndInput.addEventListener('change', function() {
-                                    if (Object.keys(savedHours).length === 0) renderDays();
-                                });
-                            }
-
-                            if (resetBtn) {
-                                resetBtn.addEventListener('click', function() {
-                                    const defS = defaultStartInput ? defaultStartInput.value || '09:00' : '09:00';
-                                    const defE = defaultEndInput ? defaultEndInput.value || '19:00' : '19:00';
-                                    container.querySelectorAll('.daily-time-start').forEach(i => i.value = defS);
-                                    container.querySelectorAll('.daily-time-end').forEach(i => i.value = defE);
-                                    syncToJson();
-                                });
-                            }
-
-                            // Initial render
-                            renderDays();
-                        }
-
-                        document.addEventListener('DOMContentLoaded', initDynamicDailySchedule);
-                        document.addEventListener('turbo:load', initDynamicDailySchedule);
-                    })();
-                    </script>
-                </div>
-            </div>
-
-            {% if not tournament.has_categories %}
-            <div class="card">
-                <div class="card-header">
-                    <h2 class="card-title">Add Participant</h2>
-                </div>
-                <div class="card-body">
-                    <form method="POST" class="inline-form">
-                        <input type="hidden" name="action" value="add_participant">
-                        <div class="form-row">
-                            <div class="form-group flex-grow">
-                                <input type="text" name="participant_name" class="form-input"
-                                    placeholder="Participant name" required>
-                            </div>
-                            <div class="form-group flex-grow">
-                                <input type="email" name="participant_email" class="form-input"
-                                    placeholder="Email (optional)">
-                            </div>
-                            <button type="submit" class="btn btn-primary">Add</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-            {% endif %}
         </div>
 
-        <div class="manage-sidebar">
-            <div class="card">
-                <div class="card-header">
-                    <h2 class="card-title">Tournament Status</h2>
-                </div>
-                <div class="card-body">
-                    <div class="status-badge status-{{ tournament.status }}">
+        <!-- RIGHT COLUMN: STICKY TOURNAMENT CONTROL SIDEBAR -->
+        <div class="dashboard-sidebar" style="position: sticky; top: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+            
+            <!-- Main Action Card -->
+            <div class="card" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.6rem;">
+                    <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Tournament Status</span>
+                    <span class="status-badge status-{{ tournament.status }}" style="font-size: 0.72rem; padding: 2px 8px; border-radius: 9999px; font-weight: 700;">
                         {{ tournament.status.replace('_', ' ').title() }}
-                    </div>
+                    </span>
+                </div>
 
-                    {% if tournament.status == 'setup' %}
-                    <p class="status-description">Add participants and start the tournament when ready.</p>
-
-                    <form method="POST" class="mt-3" style="margin-bottom: 1rem;">
-                        <input type="hidden" name="action" value="open_registration">
-                        
-                        <div class="form-group" style="margin-bottom: 1rem;">
-                            <label style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem; display: block;">Registration Closes On (Optional)</label>
-                            <input type="hidden" name="tz_offset" id="tz_offset_reg">
-                            <input type="datetime-local" name="registration_closes_at" class="form-input" style="width: 100%; padding: 0.5rem; font-size: 0.9rem;">
-                            <small style="color: var(--text-muted); font-size: 0.75rem;">If set, form will auto-close at this time (converted from your local time).</small>
-                        </div>
-                        <script>
-                            document.addEventListener('turbo:load', function() {
-                                const tzInput = document.getElementById('tz_offset_reg');
-                                if (tzInput) tzInput.value = new Date().getTimezoneOffset();
-                            });
-                            document.addEventListener('DOMContentLoaded', function() {
-                                const tzInput = document.getElementById('tz_offset_reg');
-                                if (tzInput) tzInput.value = new Date().getTimezoneOffset();
-                            });
-                        </script>
-
-                        <button type="submit" class="btn btn-primary btn-block" style="background-color: var(--accent-success); border-color: var(--accent-success);">
-                            <span class="btn-icon">🔓</span>
-                            Open Registration
-                        </button>
-                    </form>
-
-                    {% if participants|length >= 2 or tournament.has_categories %}
-                    <form method="POST" class="mt-3">
-                        <input type="hidden" name="action" value="start_tournament">
-                        <button type="submit" class="btn btn-success btn-block">
-                            <span class="btn-icon">🚀</span>
-                            Start Tournament
-                        </button>
-                    </form>
-                    {% else %}
-                    <p class="text-muted mt-3">Need at least 2 participants to start</p>
-                    {% endif %}
-
-                    {% elif tournament.status == 'registration' %}
-                    <p class="status-description" style="color: var(--accent-success); font-weight: 500;">
-                        Registration is open! Share the direct registration link with participants.
+                <!-- Primary Action Based On Stage -->
+                {% if tournament.status == 'setup' %}
+                    <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                        {% if not tournament.categories %}
+                        Add at least 1 category to open registration or add participants.
+                        {% else %}
+                        Categories configured! Open registration to start collecting player signups.
+                        {% endif %}
                     </p>
 
-                    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: var(--radius-sm); padding: 0.75rem; margin-bottom: 1rem;">
-                        <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Registration Share Link:</label>
-                        <div style="display: flex; gap: 0.25rem;">
-                            <input type="text" readonly value="{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug, _external=True) }}" class="form-input" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; flex: 1;">
-                            <button onclick="copyShareLink('{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; background: var(--accent-success); border: none;">Copy</button>
-                        </div>
-                    </div>
+                    {% if not tournament.categories %}
+                    <a href="{{ url_for('category.create_category', slug=tournament.url_slug) }}" class="btn btn-primary" style="width: 100%; text-align: center; font-weight: 600; padding: 0.55rem; font-size: 0.85rem;">
+                        ➕ Add First Category
+                    </a>
+                    {% else %}
+                    <form method="POST" style="margin-bottom: 0.65rem;">
+                        <input type="hidden" name="action" value="open_registration">
+                        <button type="submit" class="btn btn-primary btn-block" style="background-color: var(--accent-success); border-color: var(--accent-success); font-weight: 700; padding: 0.6rem; font-size: 0.85rem; width: 100%;">
+                            🔓 Open Registration Now
+                        </button>
+                    </form>
+                    {% if participants|length >= 2 or tournament.has_categories %}
+                    <form method="POST" style="margin: 0;">
+                        <input type="hidden" name="action" value="start_tournament">
+                        <button type="submit" class="btn btn-success btn-block" style="font-weight: 600; padding: 0.5rem; font-size: 0.82rem; width: 100%; opacity: 0.9;">
+                            🚀 Launch Immediately
+                        </button>
+                    </form>
+                    {% endif %}
+                    {% endif %}
+
+                {% elif tournament.status == 'registration' %}
+                    <p style="font-size: 0.82rem; color: var(--accent-success); font-weight: 600; margin-bottom: 0.75rem;">
+                        Registration is Open! Share the registration link with participants.
+                    </p>
 
                     {% if participants|length >= 2 or tournament.has_categories %}
-                    <form method="POST" class="mt-3">
+                    <form method="POST" style="margin-bottom: 0.65rem;">
                         <input type="hidden" name="action" value="start_tournament">
-                        <button type="submit" class="btn btn-success btn-block">
-                            <span class="btn-icon">🚀</span>
-                            Start Tournament
+                        <button type="submit" class="btn btn-success btn-block" style="font-weight: 700; padding: 0.65rem; font-size: 0.9rem; width: 100%; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);">
+                            🚀 Launch Tournament &amp; Schedule
                         </button>
                     </form>
                     {% endif %}
 
-                    <form method="POST" class="mt-2">
+                    <form method="POST" style="margin: 0;">
                         <input type="hidden" name="action" value="close_registration">
-                        <button type="submit" class="btn btn-secondary btn-block">
-                            <span class="btn-icon">🔒</span>
-                            Close Registration
+                        <button type="submit" class="btn btn-secondary btn-block" style="font-size: 0.8rem; padding: 0.4rem; width: 100%;">
+                            🔒 Pause / Close Registration
                         </button>
                     </form>
 
-                    {% elif tournament.status == 'in_progress' %}
-                    <p class="status-description">Tournament is currently active.</p>
-                    <form method="POST" class="mt-3"
-                        onsubmit="return confirm('Are you sure you want to end the tournament? This will mark it as completed.');">
+                {% elif tournament.status == 'in_progress' %}
+                    <p style="font-size: 0.82rem; color: var(--accent-primary); font-weight: 600; margin-bottom: 0.75rem;">
+                        Tournament is active. Matches are auto-scheduled in Order of Play.
+                    </p>
+                    <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug) }}" class="btn btn-primary" style="width: 100%; text-align: center; font-weight: 600; padding: 0.55rem; font-size: 0.85rem; margin-bottom: 0.65rem; display: block;">
+                        📋 Manage Order of Play
+                    </a>
+                    <form method="POST" onsubmit="return confirm('Are you sure you want to finish the tournament?');" style="margin: 0;">
                         <input type="hidden" name="action" value="finish_tournament">
-                        <button type="submit" class="btn btn-danger btn-block">
-                            <span class="btn-icon">🏁</span>
-                            End Tournament
+                        <button type="submit" class="btn btn-danger btn-block" style="font-size: 0.8rem; padding: 0.4rem; width: 100%;">
+                            🏁 End Tournament
                         </button>
                     </form>
-                    {% endif %}
 
-                    {% if tournament.status != 'setup' %}
-                    <form method="POST" class="mt-3 requires-high-risk-audit" data-audit-action="Reset Tournament">
-                        <input type="hidden" name="action" value="reset_tournament">
-                        <button type="submit" class="btn btn-danger btn-block" style="background: var(--gradient-danger); border: none; margin-top: 10px;">
-                            <span class="btn-icon">⚠️</span>
-                            Stop & Reset bracket
+                {% else %}
+                    <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0;">
+                        Tournament concluded. Results are available in Public View.
+                    </p>
+                {% endif %}
+
+                <!-- Direct Share Link Box in Sidebar -->
+                <div style="margin-top: 1rem; padding-top: 0.85rem; border-top: 1px solid var(--border-color);">
+                    <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 0.35rem;">
+                        {% if tournament.status == 'registration' %}Direct Registration Link:{% else %}Public Tournament Link:{% endif %}
+                    </label>
+                    <div style="display: flex; gap: 0.35rem;">
+                        <input type="text" readonly value="{% if tournament.status == 'registration' %}{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug, _external=True) }}{% else %}{{ url_for('tournament.view_tournament', slug=tournament.url_slug, _external=True) }}{% endif %}" class="form-input" style="font-size: 0.75rem; padding: 0.3rem 0.5rem; flex: 1;">
+                        <button onclick="copyShareLink('{% if tournament.status == 'registration' %}{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug, _external=True) }}{% else %}{{ url_for('tournament.view_tournament', slug=tournament.url_slug, _external=True) }}{% endif %}', this)" class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.78rem;">
+                            Copy
                         </button>
-                    </form>
-                    {% endif %}
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-header">
-                    <h2 class="card-title">Tournament Info</h2>
-                </div>
-                <div class="card-body">
-                    <div class="info-list">
-                        {% if tournament.game_info %}
-                        <div class="info-item">
-                            <span class="info-label">Game</span>
-                            <span class="info-value">{{ tournament.game_info }}</span>
-                        </div>
-                        {% endif %}
-                        {% if tournament.creator_name %}
-                        <div class="info-item">
-                            <span class="info-label">Organizer</span>
-                            <span class="info-value">{{ tournament.creator_name }}</span>
-                        </div>
-                        {% endif %}
-                        <div class="info-item">
-                            <span class="info-label">Created</span>
-                            <span class="info-value">{{ tournament.created_at.strftime('%b %d, %Y') if tournament.created_at else 'Today' }}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Share Link</span>
-                            <span class="info-value" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-                                {% if tournament.status == 'registration' %}
-                                <button onclick="copyShareLink('{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-primary" style="padding: 0.25rem 0.6rem; font-size: 0.8rem; background: var(--accent-success); border-color: var(--accent-success);">🔗 Share Registration Link</button>
-                                {% endif %}
-                                <button onclick="copyShareLink('{{ url_for('tournament.view_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">🔗 Tournament Link</button>
-                            </span>
-                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="card card-danger">
-                <div class="card-header">
-                    <h2 class="card-title">Danger Zone</h2>
-                </div>
-                <div class="card-body">
-                    <p class="text-muted">Permanently delete this tournament and all its data.</p>
-                    <form method="POST" action="{{ url_for('tournament.delete_tournament', slug=tournament.url_slug) }}" class="requires-high-risk-audit" data-audit-action="Delete Tournament">
-                        <button type="submit" class="btn btn-danger btn-block mt-2">Delete Tournament</button>
-                    </form>
-                </div>
+            <!-- Quick Navigation Shortcuts -->
+            <div class="card" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Quick Navigation</span>
+                <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug) }}" style="color: var(--text-secondary); text-decoration: none; font-size: 0.82rem; display: flex; align-items: center; justify-content: space-between; padding: 0.35rem 0;" onmouseover="this.style.color='var(--accent-primary)'" onmouseout="this.style.color='var(--text-secondary)'">
+                    <span>📋 Order of Play Schedule</span>
+                    <span>→</span>
+                </a>
+                <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug, view='bracket') }}" style="color: var(--text-secondary); text-decoration: none; font-size: 0.82rem; display: flex; align-items: center; justify-content: space-between; padding: 0.35rem 0;" onmouseover="this.style.color='var(--accent-primary)'" onmouseout="this.style.color='var(--text-secondary)'">
+                    <span>🏆 Live Public Brackets</span>
+                    <span>→</span>
+                </a>
             </div>
+
         </div>
+
     </div>
 </div>
+
+<!-- JAVASCRIPT: TAB SWITCHER, DYNAMIC SCHEDULE, RENAME & SHARE -->
 <script>
-function toggleParticipants() {
-    const container = document.getElementById('participants-container');
-    const chevron = document.getElementById('participants-chevron');
-    if (container.style.display === 'none') {
-        container.style.display = 'block';
-        chevron.style.transform = 'rotate(0deg)';
-    } else {
-        container.style.display = 'none';
-        chevron.style.transform = 'rotate(180deg)';
+function switchDashboardTab(tabName) {
+    const tabs = ['categories', 'schedule', 'players', 'settings'];
+    tabs.forEach(t => {
+        const btn = document.getElementById('tabBtn' + capitalize(t));
+        const content = document.getElementById('tabContent' + capitalize(t));
+        if (t === tabName) {
+            if (btn) {
+                btn.style.background = 'var(--accent-primary)';
+                btn.style.color = 'white';
+                btn.style.border = 'none';
+            }
+            if (content) content.style.display = 'block';
+        } else {
+            if (btn) {
+                btn.style.background = 'var(--bg-secondary)';
+                btn.style.color = 'var(--text-secondary)';
+                btn.style.border = '1px solid var(--border-color)';
+            }
+            if (content) content.style.display = 'none';
+        }
+    });
+
+    if (history.replaceState) {
+        history.replaceState(null, null, '#' + tabName);
+    }
+}
+
+function capitalize(s) {
+    return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function renameCategory(categoryId, currentName) {
+    const newName = prompt("Enter new name for category:", currentName);
+    if (newName !== null && newName.trim() !== "" && newName !== currentName) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/tournaments/{{ tournament.url_slug }}/categories/${categoryId}/rename`;
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'new_name';
+        input.value = newName;
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
     }
 }
 
@@ -716,8 +649,195 @@ function copyShareLink(url, btn) {
         }, 2000);
     }).catch(err => {
         console.error('Failed to copy: ', err);
-        alert("Failed to copy link: " + url);
+        alert("Link: " + url);
     });
 }
+
+(function() {
+    function initDynamicDailySchedule() {
+        const startInput = document.getElementById('tournStartDate');
+        const endInput = document.getElementById('tournEndDate');
+        const defaultStartInput = document.getElementById('defaultStartTime');
+        const defaultEndInput = document.getElementById('defaultEndTime');
+        const container = document.getElementById('dailyScheduleList');
+        const emptyPrompt = document.getElementById('dailyScheduleEmptyPrompt');
+        const jsonInput = document.getElementById('dailyOperatingHoursJson');
+        const resetBtn = document.getElementById('applyDefaultsToAllDaysBtn');
+
+        if (!startInput || !endInput || !container) return;
+
+        let savedHours = {};
+        try {
+            savedHours = {{ (parsed_daily_hours|tojson) if parsed_daily_hours else '{}' }};
+        } catch (e) {
+            savedHours = {};
+        }
+
+        function formatDisplayDate(dateObj) {
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            return `${days[dateObj.getDay()]}, ${dateObj.getDate()} ${months[dateObj.getMonth()]}`;
+        }
+
+        function renderDays() {
+            const startVal = startInput.value;
+            const endVal = endInput.value || startVal;
+
+            if (!startVal) {
+                container.innerHTML = '';
+                container.style.display = 'none';
+                if (emptyPrompt) emptyPrompt.style.display = 'block';
+                return;
+            }
+
+            const startDate = new Date(startVal + 'T00:00:00');
+            let endDate = new Date(endVal + 'T00:00:00');
+
+            if (endDate < startDate) {
+                endDate = new Date(startDate);
+                endInput.value = startVal;
+            }
+
+            container.innerHTML = '';
+            container.style.display = 'grid';
+            if (emptyPrompt) emptyPrompt.style.display = 'none';
+
+            const defaultStart = defaultStartInput ? defaultStartInput.value || '09:00' : '09:00';
+            const defaultEnd = defaultEndInput ? defaultEndInput.value || '19:00' : '19:00';
+
+            const curr = new Date(startDate);
+            let dayIndex = 1;
+
+            while (curr <= endDate) {
+                const yyyy = curr.getFullYear();
+                const mm = String(curr.getMonth() + 1).padStart(2, '0');
+                const dd = String(curr.getDate()).padStart(2, '0');
+                const dateKey = `${yyyy}-${mm}-${dd}`;
+                const dateDisplay = formatDisplayDate(curr);
+
+                let sVal = defaultStart;
+                let eVal = defaultEnd;
+                if (savedHours[dateKey] && savedHours[dateKey].start) {
+                    sVal = savedHours[dateKey].start;
+                }
+                if (savedHours[dateKey] && savedHours[dateKey].end) {
+                    eVal = savedHours[dateKey].end;
+                }
+
+                const card = document.createElement('div');
+                card.style.background = 'var(--bg-card)';
+                card.style.border = '1px solid var(--border-color)';
+                card.style.borderRadius = 'var(--radius-sm)';
+                card.style.padding = '0.65rem';
+                card.style.display = 'flex';
+                card.style.flexDirection = 'column';
+                card.style.gap = '0.35rem';
+
+                card.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 700; font-size: 0.8rem; color: var(--accent-primary);">
+                            Day ${dayIndex}
+                        </span>
+                        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">
+                            ${dateDisplay}
+                        </span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; margin-top: 0.15rem;">
+                        <div>
+                            <label style="display: block; font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 2px;">Start</label>
+                            <input type="time" name="daily_start_${dateKey}" data-date="${dateKey}" data-type="start" class="form-input daily-time-start" value="${sVal}" style="padding: 0.25rem 0.4rem; font-size: 0.78rem; width: 100%;">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 2px;">Cutoff</label>
+                            <input type="time" name="daily_end_${dateKey}" data-date="${dateKey}" data-type="end" class="form-input daily-time-end" value="${eVal}" style="padding: 0.25rem 0.4rem; font-size: 0.78rem; width: 100%;">
+                        </div>
+                    </div>
+                `;
+
+                container.appendChild(card);
+                curr.setDate(curr.getDate() + 1);
+                dayIndex++;
+            }
+
+            syncToJson();
+        }
+
+        function syncToJson() {
+            const starts = container.querySelectorAll('.daily-time-start');
+            const result = {};
+            starts.forEach(input => {
+                const dateKey = input.dataset.date;
+                const endInput = container.querySelector(`.daily-time-end[data-date="${dateKey}"]`);
+                result[dateKey] = {
+                    start: input.value || (defaultStartInput ? defaultStartInput.value : '09:00'),
+                    end: endInput ? (endInput.value || (defaultEndInput ? defaultEndInput.value : '19:00')) : '19:00'
+                };
+            });
+            savedHours = Object.assign({}, savedHours, result);
+            if (jsonInput) {
+                jsonInput.value = JSON.stringify(result);
+            }
+        }
+
+        container.addEventListener('change', syncToJson);
+        container.addEventListener('input', syncToJson);
+
+        startInput.addEventListener('change', renderDays);
+        startInput.addEventListener('input', renderDays);
+        endInput.addEventListener('change', renderDays);
+        endInput.addEventListener('input', renderDays);
+
+        if (defaultStartInput) {
+            defaultStartInput.addEventListener('change', function() {
+                if (Object.keys(savedHours).length === 0) renderDays();
+            });
+        }
+        if (defaultEndInput) {
+            defaultEndInput.addEventListener('change', function() {
+                if (Object.keys(savedHours).length === 0) renderDays();
+            });
+        }
+
+        if (resetBtn) {
+            resetBtn.addEventListener('click', function() {
+                const defS = defaultStartInput ? defaultStartInput.value || '09:00' : '09:00';
+                const defE = defaultEndInput ? defaultEndInput.value || '19:00' : '19:00';
+                container.querySelectorAll('.daily-time-start').forEach(i => i.value = defS);
+                container.querySelectorAll('.daily-time-end').forEach(i => i.value = defE);
+                syncToJson();
+            });
+        }
+
+        renderDays();
+    }
+
+    function initPage() {
+        initDynamicDailySchedule();
+
+        // Restore active tab from hash
+        const hash = window.location.hash.replace('#', '');
+        if (['categories', 'schedule', 'players', 'settings'].includes(hash)) {
+            switchDashboardTab(hash);
+        }
+
+        // Set timezone offset input
+        const tzInput = document.getElementById('tz_offset_reg');
+        if (tzInput) tzInput.value = new Date().getTimezoneOffset();
+    }
+
+    document.addEventListener('DOMContentLoaded', initPage);
+    document.addEventListener('turbo:load', initPage);
+})();
 </script>
+
+<style>
+@media (max-width: 992px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr !important;
+    }
+    .dashboard-sidebar {
+        order: -1;
+    }
+}
+</style>
 {% endblock %}
