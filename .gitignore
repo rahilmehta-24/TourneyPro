@@ -5,3 +5,7 @@ venv
 .DS_Store
 *.md
 *.pdf
+*.png
+*.webp
+*.gif
+
