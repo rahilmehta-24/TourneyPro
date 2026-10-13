@@ -1049,6 +1049,20 @@ def order_of_play(slug):
                 flash(f'Match moved to {new_court}.', 'success')
             return redirect(url_for('tournament.order_of_play', slug=slug))
 
+        elif action == 'set_match_status':
+            match_id = request.form.get('match_id', type=int)
+            new_status = request.form.get('status')
+            if match_id and new_status in ['pending', 'in_progress']:
+                match = Match.query.get(match_id)
+                if match and match.tournament_id == tournament.id and match.status != 'completed':
+                    match.status = new_status
+                    db.session.commit()
+                    status_label = "In Progress" if new_status == 'in_progress' else "To Play"
+                    flash(f'Match #{match.match_number} marked as {status_label}.', 'success')
+            date_arg = request.form.get('date') or request.args.get('date') or ''
+            court_arg = request.form.get('court') or request.args.get('court') or ''
+            return redirect(url_for('tournament.order_of_play', slug=slug, date=date_arg, court=court_arg))
+
     # Parse optional date filter
     date_param = request.args.get('date')
     filter_date = None

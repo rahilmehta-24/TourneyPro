@@ -276,7 +276,7 @@
             <div class="round-matches">
                 {% for match in round_matches %}
                 <div class="match-card-wrapper {% if not has_vertical %}no-vertical-connector{% endif %}">
-                    <div class="tennis-match {% if match.status == 'completed' %}tennis-match-completed{% endif %} {% if match.participant1 and match.participant2 %}clickable-match{% endif %}" {% if match.participant1 and match.participant2 %}onclick="openMatchModal({{ match.id }}, '{{ match.status }}', '{{ match.scheduled_time.strftime('%Y-%m-%dT%H:%M') if match.scheduled_time else '' }}', '{{ match.participant1.name|escape if match.participant1 else '' }}', {{ match.participant1_id or 'null' }}, '{{ match.participant2.name|escape if match.participant2 else '' }}', {{ match.participant2_id or 'null' }}, {{ 'true' if current_user and current_user.role in ['admin', 'superadmin'] else 'false' }}, '{{ match.score1 or '' }}', '{{ match.score2 or '' }}', '{{ match.scoring_format or '' }}', '{{ match.num_sets or '' }}', '{{ match.games_per_set or '' }}', '{{ match.points_to_win or '' }}', {{ match.winner_id or 'null' }}, {{ match.match_number or 'null' }})" title="Click to view details"{% endif %}>
+                    <div class="tennis-match {% if match.status == 'completed' %}tennis-match-completed{% endif %} {% if match.participant1 and match.participant2 %}clickable-match{% endif %}" id="match-card-{{ match.id }}" data-match-id="{{ match.id }}" {% if match.participant1 and match.participant2 %}onclick="openMatchModal({{ match.id }}, '{{ match.status }}', '{{ match.scheduled_time.strftime('%Y-%m-%dT%H:%M') if match.scheduled_time else '' }}', '{{ match.participant1.name|escape if match.participant1 else '' }}', {{ match.participant1_id or 'null' }}, '{{ match.participant2.name|escape if match.participant2 else '' }}', {{ match.participant2_id or 'null' }}, {{ 'true' if current_user and current_user.role in ['admin', 'superadmin'] else 'false' }}, '{{ match.score1 or '' }}', '{{ match.score2 or '' }}', '{{ match.scoring_format or '' }}', '{{ match.num_sets or '' }}', '{{ match.games_per_set or '' }}', '{{ match.points_to_win or '' }}', {{ match.winner_id or 'null' }}, {{ match.match_number or 'null' }})" title="Click to view details"{% endif %}>
                         <div class="tennis-match-header" style="display: flex; align-items: center; justify-content: space-between;">
                             <span>Match #{{ match.match_number }}</span>
                             <div style="display: flex; align-items: center; gap: 8px;">
@@ -401,7 +401,7 @@
                         <div class="round-matches" style="justify-content: center; height: 100%;">
                             {% for match in grand_finals %}
                             <div class="match-card-wrapper" style="padding: 15px 0;">
-                                <div class="tennis-match {% if match.status == 'completed' %}tennis-match-completed{% endif %} {% if match.participant1 and match.participant2 %}clickable-match{% endif %}" {% if match.participant1 and match.participant2 %}onclick="openMatchModal({{ match.id }}, '{{ match.status }}', '{{ match.scheduled_time.strftime('%Y-%m-%dT%H:%M') if match.scheduled_time else '' }}', '{{ match.participant1.name|escape if match.participant1 else '' }}', {{ match.participant1_id or 'null' }}, '{{ match.participant2.name|escape if match.participant2 else '' }}', {{ match.participant2_id or 'null' }}, {{ 'true' if current_user and current_user.role in ['admin', 'superadmin'] else 'false' }}, '{{ match.score1 or '' }}', '{{ match.score2 or '' }}', '{{ match.scoring_format or '' }}', '{{ match.num_sets or '' }}', '{{ match.games_per_set or '' }}', '{{ match.points_to_win or '' }}', {{ match.winner_id or 'null' }}, {{ match.match_number or 'null' }})" title="Click to view details"{% endif %}>
+                                <div class="tennis-match {% if match.status == 'completed' %}tennis-match-completed{% endif %} {% if match.participant1 and match.participant2 %}clickable-match{% endif %}" id="match-card-{{ match.id }}" data-match-id="{{ match.id }}" {% if match.participant1 and match.participant2 %}onclick="openMatchModal({{ match.id }}, '{{ match.status }}', '{{ match.scheduled_time.strftime('%Y-%m-%dT%H:%M') if match.scheduled_time else '' }}', '{{ match.participant1.name|escape if match.participant1 else '' }}', {{ match.participant1_id or 'null' }}, '{{ match.participant2.name|escape if match.participant2 else '' }}', {{ match.participant2_id or 'null' }}, {{ 'true' if current_user and current_user.role in ['admin', 'superadmin'] else 'false' }}, '{{ match.score1 or '' }}', '{{ match.score2 or '' }}', '{{ match.scoring_format or '' }}', '{{ match.num_sets or '' }}', '{{ match.games_per_set or '' }}', '{{ match.points_to_win or '' }}', {{ match.winner_id or 'null' }}, {{ match.match_number or 'null' }})" title="Click to view details"{% endif %}>
                                     <div class="tennis-match-header" style="display: flex; align-items: center; justify-content: space-between;">
                                         <span>Grand Final {% if match.match_number == 2 %}(Reset Match){% endif %}</span>
                                         <div style="display: flex; align-items: center; gap: 8px;">
@@ -625,7 +625,7 @@
         <h2>Round Robin Matches</h2>
         <div class="matches-list">
             {% for match in rr_matches %}
-            <div class="match-card {% if match.status == 'completed' %}completed{% endif %} {% if match.participant1 and match.participant2 %}clickable-match{% endif %}" {% if match.participant1 and match.participant2 %}onclick="openMatchModal({{ match.id }}, '{{ match.status }}', '{{ match.scheduled_time.strftime('%Y-%m-%dT%H:%M') if match.scheduled_time else '' }}', '{{ match.participant1.name|escape if match.participant1 else '' }}', {{ match.participant1_id or 'null' }}, '{{ match.participant2.name|escape if match.participant2 else '' }}', {{ match.participant2_id or 'null' }}, {{ 'true' if current_user and current_user.role in ['admin', 'superadmin'] else 'false' }}, '{{ match.score1 or '' }}', '{{ match.score2 or '' }}', '{{ match.scoring_format or '' }}', '{{ match.num_sets or '' }}', '{{ match.games_per_set or '' }}', '{{ match.points_to_win or '' }}', {{ match.winner_id or 'null' }}, {{ match.match_number or 'null' }})" title="Click to view details"{% endif %}>
+            <div class="match-card {% if match.status == 'completed' %}completed{% endif %} {% if match.participant1 and match.participant2 %}clickable-match{% endif %}" id="match-card-{{ match.id }}" data-match-id="{{ match.id }}" {% if match.participant1 and match.participant2 %}onclick="openMatchModal({{ match.id }}, '{{ match.status }}', '{{ match.scheduled_time.strftime('%Y-%m-%dT%H:%M') if match.scheduled_time else '' }}', '{{ match.participant1.name|escape if match.participant1 else '' }}', {{ match.participant1_id or 'null' }}, '{{ match.participant2.name|escape if match.participant2 else '' }}', {{ match.participant2_id or 'null' }}, {{ 'true' if current_user and current_user.role in ['admin', 'superadmin'] else 'false' }}, '{{ match.score1 or '' }}', '{{ match.score2 or '' }}', '{{ match.scoring_format or '' }}', '{{ match.num_sets or '' }}', '{{ match.games_per_set or '' }}', '{{ match.points_to_win or '' }}', {{ match.winner_id or 'null' }}, {{ match.match_number or 'null' }})" title="Click to view details"{% endif %}>
                 <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 0.5rem;">
                     <div style="display: flex; align-items: center; gap: 8px;">
                         {% if match.scheduled_time %}
@@ -1445,6 +1445,32 @@ function checkTiebreak(setNum, winThreshold) {
 </div>
 
 <script>
+// Target Match auto-scroll and highlight when arriving with ?match_id=...
+function handleTargetMatchHighlight() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetMatchId = urlParams.get('match_id');
+    const openScore = urlParams.get('open_score');
+    
+    if (targetMatchId) {
+        const matchCard = document.getElementById('match-card-' + targetMatchId);
+        if (matchCard) {
+            setTimeout(() => {
+                matchCard.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+                matchCard.style.outline = '3px solid var(--accent-primary, #f97316)';
+                matchCard.style.boxShadow = '0 0 25px rgba(249, 115, 22, 0.75)';
+                matchCard.style.borderRadius = '8px';
+                matchCard.style.transition = 'all 0.3s ease';
+                
+                // If requested to open score modal and user is admin, trigger click
+                if (openScore === '1' && typeof openMatchModal === 'function') {
+                    matchCard.click();
+                }
+            }, 350);
+        }
+    }
+}
+document.addEventListener('DOMContentLoaded', handleTargetMatchHighlight);
+document.addEventListener('turbo:load', handleTargetMatchHighlight);
 </script>
 
 
