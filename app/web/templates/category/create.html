@@ -19,6 +19,49 @@
     <p class="subtitle" style="margin-bottom: 2rem;">Add a new event or division to <strong style="color: var(--text-primary);">{{ tournament.name }}</strong></p>
 
     <form method="POST" class="form-card">
+        <!-- QUICK SPORT & SCORING PRESETS -->
+        <div style="margin-bottom: 1.75rem; background: var(--bg-secondary); padding: 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                <label style="display: block; font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin: 0;">
+                    ⚡ Quick Sport &amp; Format Presets (Optional)
+                </label>
+                <span style="font-size: 0.78rem; color: var(--text-muted);">1-Click Auto-Configuration</span>
+            </div>
+            <p style="margin: 0 0 1rem; color: var(--text-secondary); font-size: 0.82rem;">Click a preset to instantly configure tournament format, sets, and points, or fill manually below.</p>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem;">
+                <!-- Preset 1: Standard Tennis -->
+                <button type="button" class="preset-btn" onclick="applyPreset('tennis_standard', this)" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.75rem; text-align: left; cursor: pointer; transition: all 0.15s;">
+                    <div style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.2rem; color: var(--text-primary);">🎾 Standard Tennis</div>
+                    <div style="font-size: 0.78rem; color: var(--text-secondary);">Knockout • Best of 3 Sets • 6 Games</div>
+                </button>
+
+                <!-- Preset 2: Fast4 Tennis -->
+                <button type="button" class="preset-btn" onclick="applyPreset('tennis_fast4', this)" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.75rem; text-align: left; cursor: pointer; transition: all 0.15s;">
+                    <div style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.2rem; color: var(--text-primary);">⚡ Fast4 Tennis</div>
+                    <div style="font-size: 0.78rem; color: var(--text-secondary);">Knockout • Best of 3 Sets • 4 Games</div>
+                </button>
+
+                <!-- Preset 3: Badminton 21-pt -->
+                <button type="button" class="preset-btn" onclick="applyPreset('badminton', this)" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.75rem; text-align: left; cursor: pointer; transition: all 0.15s;">
+                    <div style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.2rem; color: var(--text-primary);">🏸 Badminton / TT</div>
+                    <div style="font-size: 0.78rem; color: var(--text-secondary);">Knockout • Points • 21 Pts</div>
+                </button>
+
+                <!-- Preset 4: Pickleball 11-pt -->
+                <button type="button" class="preset-btn" onclick="applyPreset('pickleball', this)" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.75rem; text-align: left; cursor: pointer; transition: all 0.15s;">
+                    <div style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.2rem; color: var(--text-primary);">🏓 Pickleball</div>
+                    <div style="font-size: 0.78rem; color: var(--text-secondary);">Knockout • Points • 11 Pts</div>
+                </button>
+
+                <!-- Preset 5: Group Stage + Knockout -->
+                <button type="button" class="preset-btn" onclick="applyPreset('group_stage', this)" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.75rem; text-align: left; cursor: pointer; transition: all 0.15s;">
+                    <div style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.2rem; color: var(--text-primary);">🎪 Group Stage</div>
+                    <div style="font-size: 0.78rem; color: var(--text-secondary);">Groups (7 Games) + Knockout</div>
+                </button>
+            </div>
+        </div>
+
         <div class="form-group">
             <label for="name">Category Name *</label>
             <input type="text" id="name" name="name" class="form-input"
@@ -189,6 +232,57 @@
 </div>
 
 <script>
+    function applyPreset(type, btn) {
+        document.querySelectorAll('.preset-btn').forEach(b => {
+            b.style.borderColor = 'var(--border-color)';
+            b.style.background = 'var(--bg-card)';
+        });
+        if (btn) {
+            btn.style.borderColor = 'var(--accent-primary)';
+            btn.style.background = 'rgba(59, 130, 246, 0.12)';
+        }
+
+        const formatSelect = document.getElementById('format');
+        const scoringSelect = document.getElementById('scoring_format');
+        const numSets = document.getElementById('num_sets');
+        const gamesPerSet = document.getElementById('games_per_set');
+        const pointsToWin = document.getElementById('points_to_win');
+        const totalGames = document.getElementById('total_games');
+
+        if (type === 'tennis_standard') {
+            if (formatSelect) formatSelect.value = 'single_elimination';
+            if (scoringSelect) scoringSelect.value = 'games';
+            if (numSets) numSets.value = 3;
+            if (gamesPerSet) gamesPerSet.value = 6;
+        } else if (type === 'tennis_fast4') {
+            if (formatSelect) formatSelect.value = 'single_elimination';
+            if (scoringSelect) scoringSelect.value = 'games';
+            if (numSets) numSets.value = 3;
+            if (gamesPerSet) gamesPerSet.value = 4;
+        } else if (type === 'badminton') {
+            if (formatSelect) formatSelect.value = 'single_elimination';
+            if (scoringSelect) scoringSelect.value = 'points';
+            if (pointsToWin) pointsToWin.value = 21;
+        } else if (type === 'pickleball') {
+            if (formatSelect) formatSelect.value = 'single_elimination';
+            if (scoringSelect) scoringSelect.value = 'points';
+            if (pointsToWin) pointsToWin.value = 11;
+        } else if (type === 'group_stage') {
+            if (formatSelect) formatSelect.value = 'group_stage';
+            if (scoringSelect) scoringSelect.value = 'games';
+            if (totalGames) totalGames.value = 7;
+            const numGroups = document.getElementById('num_groups');
+            const teamsPerGroup = document.getElementById('teams_per_group');
+            const qualifiers = document.getElementById('qualifiers_per_group');
+            if (numGroups && !numGroups.value) numGroups.value = 2;
+            if (teamsPerGroup && !teamsPerGroup.value) teamsPerGroup.value = 4;
+            if (qualifiers && !qualifiers.value) qualifiers.value = 2;
+        }
+
+        toggleGroupStageFields();
+        toggleScoringFields();
+    }
+
     function toggleScoringFields() {
         const scoringFormat = document.getElementById('scoring_format').value;
         const legacyScoringFields = document.getElementById('legacy-scoring-fields');

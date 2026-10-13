@@ -1,0 +1,392 @@
+<!-- Shared Match Management & Score Reporting Modal Component -->
+<div id="matchManagementModal" class="glass-modal-overlay" onclick="if(event.target === this) closeMatchModal()">
+    <div class="glass-modal" style="max-height: 90vh; overflow-y: auto;">
+        <span class="close" onclick="closeMatchModal()" style="position: absolute; top: 1rem; right: 1rem; font-size: 2rem; cursor: pointer; color: #94a3b8;">&times;</span>
+        <h3>Match #<span id="modalMatchId"></span></h3>
+        
+        <div class="glass-modal-form-group">
+            <label for="modalMatchStatus">Match Status</label>
+            <select id="modalMatchStatus" onchange="handleStatusChange(this.value)">
+                <option value="pending">Pending</option>
+                <option value="in_progress">In Progress</option>
+                <option value="completed">Completed</option>
+            </select>
+            <div id="modalMatchStatusText" style="display: none; padding: 0.75rem; background: rgba(0,0,0,0.2); border-radius: var(--radius-md); font-weight: 500; font-size: 1.05rem; color: var(--text-primary); border: 1px solid rgba(255,255,255,0.05);"></div>
+        </div>
+        
+        <div class="glass-modal-form-group" style="display: flex; gap: 8px; align-items: flex-end;">
+            <div style="flex-grow: 1;">
+                <label for="modalMatchTime">Scheduled Time</label>
+                <input type="datetime-local" id="modalMatchTime" style="width: 100%;">
+            </div>
+            <button type="button" id="saveTimeBtn" class="glass-btn-primary" onclick="saveDateTimeOnly()" style="padding: 0.75rem; height: 42px; display: flex; align-items: center; justify-content: center; margin-bottom: 2px;" title="Save Date & Time">✔️</button>
+        </div>
+        
+        <form id="reportForm" style="display: none; margin-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1.5rem;">
+            <div class="glass-modal-form-group" style="margin-bottom: 1.5rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: var(--radius-md);">
+                <label style="font-weight: 600; margin-bottom: 0.5rem; display: block; color: var(--text-primary);">Match Scoring Override (Optional)</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label class="form-label" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem; display: block;">Scoring Format</label>
+                        <select id="modalMatchFormat" name="scoring_format" class="form-input" style="width: 100%;" onchange="toggleModalMatchFormat()">
+                            <option value="games">Games (Sets & Games)</option>
+                            <option value="points">Points (Single Target)</option>
+                        </select>
+                    </div>
+                    <div id="modalPointsFields" style="display: none;">
+                        <label class="form-label" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem; display: block;">Points to Win</label>
+                        <input type="number" id="modalMatchPointsToWin" name="points_to_win" class="form-input" style="width: 100%;">
+                    </div>
+                    <div id="modalGamesFields" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; grid-column: span 2;">
+                        <div>
+                            <label class="form-label" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem; display: block;">Num Sets</label>
+                            <input type="number" id="modalMatchNumSets" name="num_sets" max="5" class="form-input" style="width: 100%;" onchange="updateVisibleSets(this.value)">
+                        </div>
+                        <div>
+                            <label class="form-label" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem; display: block;">Games Per Set</label>
+                            <input type="number" id="modalMatchGamesPerSet" name="games_per_set" class="form-input" style="width: 100%;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label class="form-label" style="display: block; margin-bottom: 1rem; font-weight: 600; font-size: 1.1rem;">Select Winner (If Completed)</label>
+                <div class="winner-options" style="display: flex; flex-direction: column; gap: 1rem;">
+                    <label class="winner-option" style="display: flex; align-items: center; padding: 1rem; background: rgba(0,0,0,0.3); border-radius: var(--radius-md); cursor: pointer;">
+                        <input type="radio" name="winner_id" id="winner1" value="" style="margin-right: 1rem; width: 20px; height: 20px;">
+                        <span id="winner1Label" style="font-size: 1.1rem; font-weight: 500;">Participant 1</span>
+                    </label>
+                    <label class="winner-option" style="display: flex; align-items: center; padding: 1rem; background: rgba(0,0,0,0.3); border-radius: var(--radius-md); cursor: pointer;">
+                        <input type="radio" name="winner_id" id="winner2" value="" style="margin-right: 1rem; width: 20px; height: 20px;">
+                        <span id="winner2Label" style="font-size: 1.1rem; font-weight: 500;">Participant 2</span>
+                    </label>
+                </div>
+            </div>
+            
+            <label id="modalSetsLabel" class="form-label" style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; display: block;">Set Scores</label>
+            
+            <div id="modalPointsScore" style="display: none; margin-top: 1rem;">
+                <label class="form-label" style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; display: block;">Points Score</label>
+                <div style="display: flex; gap: 1rem; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: var(--radius-md);">
+                    <div style="text-align: center;">
+                        <span id="p1PointsHeader" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">P1</span>
+                        <input type="number" id="points_p1" name="points_p1" class="form-input" style="width: 80px; text-align: center; font-size: 1.2rem; padding: 0.5rem;">
+                    </div>
+                    <span style="font-weight: bold; font-size: 1.2rem;">-</span>
+                    <div style="text-align: center;">
+                        <span id="p2PointsHeader" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">P2</span>
+                        <input type="number" id="points_p2" name="points_p2" class="form-input" style="width: 80px; text-align: center; font-size: 1.2rem; padding: 0.5rem;">
+                    </div>
+                </div>
+            </div>
+            
+            <table id="modalSetsTable" style="width: 100%; border-collapse: collapse; margin-top: 0.5rem;">
+                <thead>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <th style="padding: 0.5rem; text-align: left; color: var(--text-secondary);">Set</th>
+                        <th id="p1SetHeader" style="padding: 0.5rem; text-align: center; color: var(--text-secondary);">Player 1</th>
+                        <th id="p2SetHeader" style="padding: 0.5rem; text-align: center; color: var(--text-secondary);">Player 2</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set default_games_per_set = category.games_per_set if category else (tournament.games_per_set or 6) %}
+                    {% for s in range(1, 6) %}
+                    <tr id="setRow{{ s }}" style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                        <td style="padding: 0.75rem 0.5rem; font-weight: bold; color: var(--text-secondary);">Set {{ s }}</td>
+                        <td style="padding: 0.75rem 0.5rem; text-align: center;">
+                            <input type="number" name="set{{ s }}_p1" id="set{{ s }}_p1" min="0" class="form-input" style="width: 60px; text-align:center; padding: 4px;" oninput="checkTiebreak({{ s }}, {{ default_games_per_set }})">
+                        </td>
+                        <td style="padding: 0.75rem 0.5rem; text-align: center;">
+                            <input type="number" name="set{{ s }}_p2" id="set{{ s }}_p2" min="0" class="form-input" style="width: 60px; text-align:center; padding: 4px;" oninput="checkTiebreak({{ s }}, {{ default_games_per_set }})">
+                        </td>
+                    </tr>
+                    <tr id="tbRow{{ s }}" style="display: none; background: rgba(255,165,0,0.1);">
+                        <td style="padding: 0.5rem; color: #ffb74d; font-size: 0.85rem; text-align: right;">Tiebreak Pts:</td>
+                        <td style="padding: 0.5rem; text-align: center;">
+                            <input type="number" name="tb{{ s }}_p1" id="tb{{ s }}_p1" min="0" class="form-input" style="width: 60px; text-align:center; padding: 4px; border-color: #ffb74d;">
+                        </td>
+                        <td style="padding: 0.5rem; text-align: center;">
+                            <input type="number" name="tb{{ s }}_p2" id="tb{{ s }}_p2" min="0" class="form-input" style="width: 60px; text-align:center; padding: 4px; border-color: #ffb74d;">
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </form>
+        
+        <div class="glass-modal-actions" style="justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
+            <button type="button" class="glass-btn-secondary" onclick="closeMatchModal()">Cancel</button>
+            <button type="button" id="savePendingBtn" class="glass-btn-primary" onclick="saveMatchAction('pending')">Save Changes</button>
+            <button type="button" id="saveLiveBtn" class="glass-btn-warning" onclick="saveMatchAction('live_score')" style="display: none;">Save Live Score</button>
+            <button type="button" id="completeMatchBtn" class="glass-btn-success" onclick="saveMatchAction('complete_match')" style="display: none;">Complete Match</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentManageMatchId = null;
+let currentManageMatchIsAdmin = false;
+
+function toggleModalMatchFormat() {
+    const format = document.getElementById('modalMatchFormat').value;
+    if (format === 'points') {
+        document.getElementById('modalPointsFields').style.display = 'block';
+        document.getElementById('modalGamesFields').style.display = 'none';
+        document.getElementById('modalSetsTable').style.display = 'none';
+        document.getElementById('modalSetsLabel').style.display = 'none';
+        document.getElementById('modalPointsScore').style.display = 'block';
+    } else {
+        document.getElementById('modalPointsFields').style.display = 'none';
+        document.getElementById('modalGamesFields').style.display = 'grid';
+        document.getElementById('modalSetsTable').style.display = 'table';
+        document.getElementById('modalSetsLabel').style.display = 'block';
+        document.getElementById('modalPointsScore').style.display = 'none';
+        updateVisibleSets(document.getElementById('modalMatchNumSets').value || {{ (category.num_sets if category else None) or tournament.num_sets or 3 }});
+    }
+}
+
+function updateVisibleSets(numSets) {
+    if (!numSets) numSets = {{ (category.num_sets if category else None) or tournament.num_sets or 3 }};
+    for (let s = 1; s <= 5; s++) {
+        const row = document.getElementById('setRow' + s);
+        if (row) {
+            row.style.display = (s <= numSets) ? 'table-row' : 'none';
+        }
+    }
+}
+
+async function saveDateTimeOnly() {
+    if (!currentManageMatchId) return;
+    const timeVal = document.getElementById('modalMatchTime').value;
+    try {
+        const res = await fetch(`/match/${currentManageMatchId}/schedule`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ scheduled_time: timeVal })
+        });
+        const data = await res.json();
+        if (data.success) {
+            const btn = document.getElementById('saveTimeBtn');
+            const originalText = btn.innerText;
+            btn.innerText = '✅';
+            setTimeout(() => { btn.innerText = originalText; }, 1500);
+        } else {
+            alert('Error updating schedule: ' + data.message);
+        }
+    } catch(err) {
+        console.error(err);
+        alert('Network error saving schedule');
+    }
+}
+
+function checkTiebreak(setNum, targetGames) {
+    const p1Input = document.getElementById('set' + setNum + '_p1');
+    const p2Input = document.getElementById('set' + setNum + '_p2');
+    const tbRow = document.getElementById('tbRow' + setNum);
+    if (!p1Input || !p2Input || !tbRow) return;
+    const v1 = parseInt(p1Input.value, 10);
+    const v2 = parseInt(p2Input.value, 10);
+    const limit = targetGames || 6;
+    if (v1 === limit && v2 === limit) {
+        tbRow.style.display = 'table-row';
+    } else {
+        tbRow.style.display = 'none';
+    }
+}
+
+function handleStatusChange(status) {
+    const reportForm = document.getElementById('reportForm');
+    const savePendingBtn = document.getElementById('savePendingBtn');
+    const saveLiveBtn = document.getElementById('saveLiveBtn');
+    const completeMatchBtn = document.getElementById('completeMatchBtn');
+    
+    if (status === 'pending') {
+        reportForm.style.display = 'none';
+        savePendingBtn.style.display = 'inline-block';
+        saveLiveBtn.style.display = 'none';
+        completeMatchBtn.style.display = 'none';
+    } else if (status === 'in_progress') {
+        reportForm.style.display = 'block';
+        savePendingBtn.style.display = 'none';
+        saveLiveBtn.style.display = 'inline-block';
+        completeMatchBtn.style.display = 'none';
+    } else if (status === 'completed') {
+        reportForm.style.display = 'block';
+        savePendingBtn.style.display = 'none';
+        saveLiveBtn.style.display = 'none';
+        completeMatchBtn.style.display = 'inline-block';
+    }
+}
+
+function openMatchModal(matchId, currentStatus, currentScheduledTime, p1Name, p1Id, p2Name, p2Id, isAdmin, score1, score2, matchFormat, matchNumSets, matchGamesPerSet, matchPointsToWin, winnerId, matchNumber) {
+    try {
+        currentManageMatchId = matchId;
+        currentManageMatchIsAdmin = isAdmin;
+        document.getElementById('modalMatchId').innerText = matchNumber || matchId;
+        
+        const statusSelect = document.getElementById('modalMatchStatus');
+        statusSelect.value = currentStatus || 'pending';
+        document.getElementById('modalMatchId').dataset.originalStatus = currentStatus;
+        
+        const statusText = document.getElementById('modalMatchStatusText');
+        const statusMap = { 'pending': 'Pending', 'in_progress': 'In Progress', 'completed': 'Completed' };
+        if (statusText) statusText.innerText = statusMap[currentStatus || 'pending'];
+        
+        const timeInput = document.getElementById('modalMatchTime');
+        timeInput.value = (currentScheduledTime && currentScheduledTime !== 'None') ? currentScheduledTime : '';
+        
+        const form = document.getElementById('reportForm');
+        const slug = '{{ tournament.url_slug }}';
+        const catId = '{{ category.id if category else "null" }}';
+        if (catId && catId !== 'null') {
+            form.action = `/tournaments/${slug}/categories/${catId}/match/${matchId}/report`;
+        } else {
+            form.action = `/tournaments/${slug}/match/${matchId}/report`;
+        }
+        
+        document.getElementById('winner1').value = p1Id || '';
+        document.getElementById('winner2').value = p2Id || '';
+        document.getElementById('winner1Label').innerText = p1Name || 'Participant 1';
+        document.getElementById('winner2Label').innerText = p2Name || 'Participant 2';
+        document.getElementById('p1SetHeader').innerText = p1Name || 'P1';
+        document.getElementById('p2SetHeader').innerText = p2Name || 'P2';
+        document.getElementById('p1PointsHeader').innerText = p1Name || 'P1';
+        document.getElementById('p2PointsHeader').innerText = p2Name || 'P2';
+        
+        if (winnerId && winnerId == p1Id) document.getElementById('winner1').checked = true;
+        else if (winnerId && winnerId == p2Id) document.getElementById('winner2').checked = true;
+        else {
+            document.getElementById('winner1').checked = false;
+            document.getElementById('winner2').checked = false;
+        }
+
+        const formatSelect = document.getElementById('modalMatchFormat');
+        formatSelect.value = matchFormat || 'games';
+        const numSetsSelect = document.getElementById('modalMatchNumSets');
+        numSetsSelect.value = matchNumSets || 3;
+        const gamesPerSetSelect = document.getElementById('modalMatchGamesPerSet');
+        gamesPerSetSelect.value = matchGamesPerSet || 6;
+        const pointsToWinInput = document.getElementById('modalMatchPointsToWin');
+        pointsToWinInput.value = matchPointsToWin || 11;
+        
+        toggleModalMatchFormat();
+        
+        // Populate existing scores if present
+        if (score1 && score1 !== 'N/A') {
+            if (formatSelect.value === 'points') {
+                document.getElementById('points_p1').value = score1 || '';
+                document.getElementById('points_p2').value = score2 || '';
+            } else {
+                const s1Parts = String(score1).split(', ');
+                s1Parts.forEach((st, idx) => {
+                    const sNum = idx + 1;
+                    if (sNum <= 5 && st.includes('-')) {
+                        const games = st.split('-');
+                        const g1 = games[0].split('(')[0];
+                        const g2 = games[1].split('(')[0];
+                        const s1Input = document.getElementById('set' + sNum + '_p1');
+                        const s2Input = document.getElementById('set' + sNum + '_p2');
+                        if (s1Input) s1Input.value = g1;
+                        if (s2Input) s2Input.value = g2;
+                        if (games[0].includes('(') || games[1].includes('(')) {
+                            const tbRow = document.getElementById('tbRow' + sNum);
+                            if (tbRow) tbRow.style.display = 'table-row';
+                        }
+                    }
+                });
+            }
+        }
+        
+        handleStatusChange(currentStatus || 'pending');
+        
+        if (!isAdmin) {
+            statusSelect.style.display = 'none';
+            if (statusText) statusText.style.display = 'block';
+            timeInput.disabled = true;
+            document.getElementById('saveTimeBtn').style.display = 'none';
+            form.querySelectorAll('input, select').forEach(el => el.disabled = true);
+            document.getElementById('savePendingBtn').style.display = 'none';
+            document.getElementById('saveLiveBtn').style.display = 'none';
+            document.getElementById('completeMatchBtn').style.display = 'none';
+        } else {
+            statusSelect.style.display = 'block';
+            if (statusText) statusText.style.display = 'none';
+            timeInput.disabled = false;
+            document.getElementById('saveTimeBtn').style.display = 'flex';
+            form.querySelectorAll('input, select').forEach(el => el.disabled = false);
+        }
+        
+        document.getElementById('matchManagementModal').classList.add('active');
+    } catch(e) {
+        console.error("Match modal error", e);
+        alert("Error opening modal: " + e.message);
+    }
+}
+
+function closeMatchModal() {
+    document.getElementById('matchManagementModal').classList.remove('active');
+}
+
+async function saveMatchAction(actionType) {
+    if (!currentManageMatchIsAdmin) return;
+    const scheduledTime = document.getElementById('modalMatchTime').value;
+    
+    // Schedule update
+    if (scheduledTime) {
+        try {
+            await fetch(`/match/${currentManageMatchId}/schedule`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ scheduled_time: scheduledTime })
+            });
+        } catch(e) { console.error(e); }
+    }
+    
+    if (actionType === 'pending') {
+        try {
+            const res = await fetch(`/match/${currentManageMatchId}/toggle-status`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'pending' })
+            });
+            const data = await res.json();
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert('Status update error: ' + data.message);
+            }
+        } catch(e) {
+            console.error(e);
+            alert('Network error updating status');
+        }
+    } else {
+        if (actionType === 'complete_match' && !validateWinnerSelected()) {
+            return;
+        }
+        const form = document.getElementById('reportForm');
+        const existingAction = form.querySelector('input[name="action"]');
+        if (existingAction) existingAction.remove();
+        
+        const actionInput = document.createElement('input');
+        actionInput.type = 'hidden';
+        actionInput.name = 'action';
+        actionInput.value = actionType;
+        form.appendChild(actionInput);
+        
+        form.method = 'POST';
+        if (form.requestSubmit) form.requestSubmit();
+        else form.submit();
+    }
+}
+
+function validateWinnerSelected() {
+    const w1 = document.getElementById('winner1');
+    const w2 = document.getElementById('winner2');
+    if (!w1.checked && !w2.checked) {
+        alert("Please select a winner to complete the match.");
+        return false;
+    }
+    return true;
+}
+</script>

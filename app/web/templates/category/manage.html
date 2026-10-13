@@ -22,6 +22,18 @@
         </div>
     </div>
 
+    <!-- Sibling Category Navigation -->
+    {% if tournament.categories|length > 1 %}
+    <div style="display: flex; gap: 0.5rem; overflow-x: auto; padding: 0.25rem 0 0.75rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); align-items: center;">
+        <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; margin-right: 0.25rem;">Category:</span>
+        {% for cat in tournament.categories %}
+        <a href="{{ url_for('category.manage_category', slug=tournament.url_slug, category_id=cat.id) }}" class="btn btn-sm {% if cat.id == category.id %}btn-primary{% else %}btn-secondary{% endif %}" style="border-radius: 9999px; white-space: nowrap; padding: 0.3rem 0.85rem; font-size: 0.82rem; font-weight: {% if cat.id == category.id %}600{% else %}500{% endif %};">
+            {{ cat.name }} <span class="status-badge status-{{ cat.status }}" style="font-size: 0.7rem; padding: 0.1rem 0.4rem; margin-left: 0.25rem;">{{ cat.status.title() }}</span>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <!-- Category Header Card with Key Stats -->
     <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.25rem;">
         <div>
@@ -37,6 +49,25 @@
             <p style="margin: 0.35rem 0 0; color: var(--text-secondary); font-size: 0.9rem;">
                 Part of <strong style="color: var(--text-primary);">{{ tournament.name }}</strong>
             </p>
+
+            <!-- Sleek 1-line Category Stage Stepper -->
+            <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.65rem; font-size: 0.78rem;">
+                <span style="color: var(--accent-success); font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem;">
+                    ✓ 1. Rules
+                </span>
+                <span style="color: var(--text-muted); opacity: 0.6;">→</span>
+                <span style="color: {% if participants|length >= 2 %}var(--accent-success){% elif category.status == 'setup' %}var(--accent-primary){% else %}var(--text-muted){% endif %}; font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem;">
+                    {% if participants|length >= 2 %}✓{% else %}2.{% endif %} Players ({{ participants|length }})
+                </span>
+                <span style="color: var(--text-muted); opacity: 0.6;">→</span>
+                <span style="color: {% if category.status in ['in_progress', 'completed'] %}var(--accent-success){% elif category.status == 'setup' and participants|length >= 2 %}var(--accent-primary){% else %}var(--text-muted){% endif %}; font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem;">
+                    {% if category.status in ['in_progress', 'completed'] %}✓{% else %}3.{% endif %} Bracket
+                </span>
+                <span style="color: var(--text-muted); opacity: 0.6;">→</span>
+                <span style="color: {% if category.status == 'completed' %}var(--accent-success){% elif category.status == 'in_progress' %}var(--accent-primary){% else %}var(--text-muted){% endif %}; font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem;">
+                    {% if category.status == 'completed' %}✓{% else %}4.{% endif %} Live & Finals
+                </span>
+            </div>
         </div>
 
         <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
@@ -109,9 +140,18 @@
                         👥 Registered Players <span style="background: var(--bg-secondary); padding: 0.15rem 0.55rem; border-radius: 9999px; font-size: 0.8rem; color: var(--text-secondary); border: 1px solid var(--border-color);">{{ participants|length }}</span>
                     </h3>
                     {% if category.status == 'setup' and participants %}
-                    <a href="{{ url_for('category.manage_seeding', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.25rem 0.65rem; border-radius: var(--radius-sm);">
-                        ⚙️ Edit Seeding
-                    </a>
+                    <form id="inlineSeedingForm" method="POST" action="{{ url_for('category.manage_seeding', slug=tournament.url_slug, category_id=category.id) }}" style="display: none;"></form>
+                    <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
+                        <button type="submit" form="inlineSeedingForm" class="btn btn-primary" style="font-size: 0.8rem; padding: 0.3rem 0.75rem; border-radius: var(--radius-sm); font-weight: 600;">
+                            💾 Save Seeds
+                        </button>
+                        <button type="button" onclick="autoAssignSeeds()" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.3rem 0.65rem; border-radius: var(--radius-sm);" title="Assign seeds 1 to N in order">
+                            ⚡ Auto 1..N
+                        </button>
+                        <button type="button" onclick="clearAllSeeds()" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.3rem 0.65rem; border-radius: var(--radius-sm);" title="Clear all seeds">
+                            ✕ Clear
+                        </button>
+                    </div>
                     {% endif %}
                 </div>
 
@@ -120,7 +160,7 @@
                     <table class="participants-table" style="width: 100%; border-collapse: collapse;">
                         <thead>
                             <tr style="border-bottom: 1px solid var(--border-color); text-align: left;">
-                                <th style="padding: 0.6rem 0.75rem; color: var(--text-muted); font-weight: 600; font-size: 0.85rem; width: 60px;">Seed</th>
+                                <th style="padding: 0.6rem 0.75rem; color: var(--text-muted); font-weight: 600; font-size: 0.85rem; width: 75px;">Seed</th>
                                 <th style="padding: 0.6rem 0.75rem; color: var(--text-muted); font-weight: 600; font-size: 0.85rem;">Name</th>
                                 <th style="padding: 0.6rem 0.75rem; color: var(--text-muted); font-weight: 600; font-size: 0.85rem;">Email</th>
                                 {% if category.status == 'setup' %}
@@ -132,12 +172,16 @@
                             {% for participant in participants %}
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
                                 <td style="padding: 0.65rem 0.75rem; font-weight: bold;">
-                                    {% if participant.manual_seed or participant.seed %}
-                                    <span style="background: var(--bg-secondary); color: var(--accent-secondary); padding: 0.15rem 0.45rem; border-radius: var(--radius-sm); font-size: 0.8rem; border: 1px solid rgba(139, 92, 246, 0.25);">
-                                        #{{ participant.manual_seed or participant.seed }}
-                                    </span>
+                                    {% if category.status == 'setup' %}
+                                    <input type="number" name="seed_{{ participant.id }}" form="inlineSeedingForm" class="form-input seed-input" value="{{ participant.manual_seed or '' }}" min="1" max="{{ participants|length }}" placeholder="-" style="width: 60px; text-align: center; padding: 0.25rem 0.35rem; font-size: 0.85rem; font-weight: 600;">
                                     {% else %}
-                                    <span style="color: var(--text-muted);">-</span>
+                                        {% if participant.manual_seed or participant.seed %}
+                                        <span style="background: var(--bg-secondary); color: var(--accent-secondary); padding: 0.15rem 0.45rem; border-radius: var(--radius-sm); font-size: 0.8rem; border: 1px solid rgba(139, 92, 246, 0.25);">
+                                            #{{ participant.manual_seed or participant.seed }}
+                                        </span>
+                                        {% else %}
+                                        <span style="color: var(--text-muted);">-</span>
+                                        {% endif %}
                                     {% endif %}
                                 </td>
                                 <td style="padding: 0.65rem 0.75rem; font-weight: 500; color: var(--text-primary);">{{ participant.name }}</td>
@@ -396,6 +440,20 @@
             closeRenameModal();
         }
     });
+
+    function autoAssignSeeds() {
+        const inputs = document.querySelectorAll('.seed-input');
+        inputs.forEach((input, index) => {
+            input.value = index + 1;
+        });
+    }
+
+    function clearAllSeeds() {
+        const inputs = document.querySelectorAll('.seed-input');
+        inputs.forEach(input => {
+            input.value = '';
+        });
+    }
 
     function switchCategoryTab(tab) {
         const tabBtnPlayers = document.getElementById('tabBtnPlayers');
