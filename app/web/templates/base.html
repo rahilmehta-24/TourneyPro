@@ -99,29 +99,12 @@
                 <a href="{{ url_for('academy.index') }}" class="nav-link">Academies</a>
                 <a href="{{ url_for('leaderboard.view_leaderboard') }}" class="nav-link">Leaderboard</a>
                 <a href="{{ url_for('main.tournament_list') }}" class="nav-link">Tournaments</a>
-                {% if current_user %}
-                <a href="{{ url_for('player.dashboard') }}" class="nav-link">Player Dashboard</a>
-                {% endif %}
-                {% if current_user and current_user.role == 'superadmin' %}
-                    <a href="{{ url_for('auth.user_management') }}" class="nav-link admin-link">User Management</a>
-                {% endif %}
-                {% if current_user and current_user.role in ['admin', 'superadmin'] %}
-                    <a href="{{ url_for('player.admin_players') }}" class="nav-link admin-link">Player Directory</a>
-                {% endif %}
             </div>
 
             <!-- User Actions (Right) -->
             <div class="nav-user-actions" id="navUserActions">
                 {% if current_user %}
-                    {% if current_user.role == 'user' %}
-                        <form method="POST" action="{{ url_for('auth.request_admin') }}" class="inline-form" style="margin: 0;">
-                            <button type="submit" class="btn btn-outline btn-small request-btn">
-                                {% if current_user.admin_requested %}Cancel Request{% else %}Request Admin{% endif %}
-                            </button>
-                        </form>
-                    {% endif %}
-                    
-                    <!-- Profile Section Dropdown containing Theme Toggle & Logout -->
+                    <!-- Profile Section Dropdown containing Theme Toggle, Admin Links, Dashboard & Logout -->
                     <div class="profile-dropdown-container" id="profileDropdownContainer">
                         <button type="button" id="profileDropdownTrigger" class="profile-dropdown-trigger" aria-expanded="false" aria-haspopup="true">
                             <span>👤</span>
@@ -153,6 +136,14 @@
                                 <a href="{{ url_for('player.admin_players') }}" class="profile-dropdown-item">
                                     <span>📋</span> Player Directory
                                 </a>
+                                {% endif %}
+                                {% if current_user.role == 'user' %}
+                                <form method="POST" action="{{ url_for('auth.request_admin') }}" style="margin: 0; padding: 0.1rem 0;">
+                                    <button type="submit" class="profile-dropdown-item" style="width: calc(100% - 0.7rem); border: none; background: transparent; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 0.6rem; font-family: inherit;">
+                                        <span>🛡️</span>
+                                        <span>{% if current_user.admin_requested %}Cancel Admin Request{% else %}Request Admin Access{% endif %}</span>
+                                    </button>
+                                </form>
                                 {% endif %}
                             </div>
 
