@@ -33,6 +33,35 @@
         </div>
     </div>
 
+    <div class="card" style="max-width: 600px; margin: 0 auto 2rem auto; padding: 2rem;">
+        <h2 style="margin-bottom: 1.5rem;">Preferences & Session</h2>
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <!-- Theme Preference -->
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); flex-wrap: wrap;">
+                <div>
+                    <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.25rem;">Display Theme</div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted);">Switch between dark and light appearance modes.</div>
+                </div>
+                <button type="button" id="profilePageThemeBtn" class="btn btn-outline" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; white-space: nowrap;">
+                    <span id="profilePageThemeIcon">☀️</span>
+                    <span id="profilePageThemeText">Switch to Light Mode</span>
+                </button>
+            </div>
+
+            <!-- Session & Logout -->
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+                <div>
+                    <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.25rem;">Session Management</div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted);">Sign out of your active account session on this device.</div>
+                </div>
+                <a href="{{ url_for('auth.logout') }}" class="btn btn-danger" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1.2rem; white-space: nowrap; font-weight: 600; text-decoration: none;">
+                    <span>🚪</span>
+                    <span>Log Out</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
     {% if user.role == 'superadmin' %}
     <div class="card" style="max-width: 600px; margin: 0 auto; padding: 2rem; border-top: 4px solid var(--error);">
         <h2 style="margin-bottom: 1rem; color: var(--error);">Danger Zone: Clear Data</h2>

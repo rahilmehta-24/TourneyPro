@@ -241,6 +241,91 @@ h6 {
 .role-admin { background: rgba(16, 185, 129, 0.2); color: #34d399; }
 .role-user { background: rgba(249, 115, 22, 0.2); color: #fb923c; }
 
+/* Profile Dropdown Component */
+.profile-dropdown-container {
+    position: relative;
+}
+
+.profile-dropdown-trigger {
+    cursor: pointer;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: var(--radius-md);
+    font-family: inherit;
+    color: var(--text-primary);
+    transition: all 0.2s;
+}
+
+.profile-dropdown-trigger:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="light"] .profile-dropdown-trigger:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.profile-dropdown-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    min-width: 220px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    padding: 0.35rem 0;
+    overflow: hidden;
+    animation: dropdownFadeIn 0.15s ease-out;
+}
+
+@keyframes dropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.profile-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 0.85rem;
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: 0.88rem;
+    border-radius: var(--radius-sm);
+    transition: background 0.15s, color 0.15s;
+    margin: 0 0.35rem;
+}
+
+.profile-dropdown-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="light"] .profile-dropdown-item:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.profile-dropdown-item.logout-item {
+    color: var(--accent-danger);
+    font-weight: 600;
+}
+
+.profile-dropdown-item.logout-item:hover {
+    background: rgba(239, 68, 68, 0.12);
+    color: var(--accent-danger);
+}
+
 .admin-link {
     font-weight: 600;
 }
@@ -1502,10 +1587,22 @@ select option {
         padding-top: 0.75rem;
     }
 
-    .nav-user-actions .user-profile-badge {
+    .nav-user-actions .user-profile-badge,
+    .nav-user-actions .profile-dropdown-trigger {
         width: 100%;
         justify-content: space-between;
         padding: 0.5rem 0.75rem;
+    }
+
+    .nav-user-actions .profile-dropdown-container {
+        width: 100%;
+    }
+
+    .nav-user-actions .profile-dropdown-menu {
+        position: static;
+        width: 100%;
+        box-shadow: none;
+        margin-top: 0.5rem;
     }
 
     .nav-user-actions .btn,
