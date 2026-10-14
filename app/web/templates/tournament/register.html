@@ -120,23 +120,26 @@
             {% else %}
             <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.25); padding: 1rem 1.25rem; border-radius: var(--radius-md); margin-bottom: 1.25rem;">
                 <div style="font-size: 0.9rem; font-weight: 600; color: var(--accent-primary);">
-                    ✨ Quick Instant Registration
+                    ✨ Instant Player Profile Creation
                 </div>
                 <div style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 0.2rem;">
-                    We will automatically track your matches under this profile. Already have an account? <a href="{{ url_for('auth.login', next=request.path) }}" style="color: var(--accent-primary); text-decoration: underline; font-weight: 600;">Sign in here</a>.
+                    Your player profile will be automatically created upon registration to track your tournament standings.
+                    {% if not current_user %}
+                    Already have an account? <a href="{{ url_for('auth.login', next=request.path) }}" style="color: var(--accent-primary); text-decoration: underline; font-weight: 600;">Sign in here</a>.
+                    {% endif %}
                 </div>
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 1rem;">
                 <div class="form-group" style="margin: 0;">
                     <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Full Name *</label>
-                    <input type="text" name="guest_name" class="form-input" required placeholder="e.g. Alex Morgan" style="width: 100%;">
+                    <input type="text" name="guest_name" class="form-input" required placeholder="e.g. Alex Morgan" value="{{ current_user.username if current_user else '' }}" style="width: 100%;">
                 </div>
 
                 <div class="form-row">
                     <div class="form-group" style="margin: 0;">
-                        <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Email Address *</label>
-                        <input type="email" name="guest_email" class="form-input" required placeholder="alex@example.com" style="width: 100%;">
+                        <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Age *</label>
+                        <input type="number" name="guest_age" id="guest_age" class="form-input" required min="4" max="100" placeholder="e.g. 21" style="width: 100%;">
                     </div>
                     <div class="form-group" style="margin: 0;">
                         <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Mobile Number *</label>
@@ -146,6 +149,10 @@
 
                 <div class="form-row">
                     <div class="form-group" style="margin: 0;">
+                        <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Email Address (Optional)</label>
+                        <input type="email" name="guest_email" class="form-input" placeholder="alex@example.com" value="{{ current_user.email if current_user else '' }}" style="width: 100%;">
+                    </div>
+                    <div class="form-group" style="margin: 0;">
                         <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Gender *</label>
                         <select name="guest_gender" class="form-input" required style="width: 100%;">
                             <option value="">Select Gender</option>
@@ -153,10 +160,11 @@
                             <option value="Female">Female</option>
                         </select>
                     </div>
-                    <div class="form-group" style="margin: 0;">
-                        <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Date of Birth *</label>
-                        <input type="date" name="guest_dob" class="form-input" required style="width: 100%;">
-                    </div>
+                </div>
+
+                <div class="form-group" style="margin: 0;">
+                    <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Date of Birth (Optional)</label>
+                    <input type="date" name="guest_dob" id="guest_dob" class="form-input" style="width: 100%;" onchange="autoCalcAgeFromDob(this.value)">
                 </div>
             </div>
             {% endif %}
@@ -216,6 +224,22 @@
 </div>
 
 <script>
+function autoCalcAgeFromDob(dobStr) {
+    if (!dobStr) return;
+    const dob = new Date(dobStr);
+    if (isNaN(dob.getTime())) return;
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const m = today.getMonth() - dob.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+        age--;
+    }
+    const ageInput = document.getElementById('guest_age');
+    if (ageInput && !isNaN(age) && age >= 0) {
+        ageInput.value = age;
+    }
+}
+
 function updateForm() {
     const checkboxes = document.querySelectorAll('input[name="category_id"]:checked');
     const container = document.getElementById('doubles_partners_container');
@@ -225,7 +249,7 @@ function updateForm() {
     // Remember existing partner inputs so user input is preserved
     const existingData = {};
     if (container) {
-        container.querySelectorAll('input').forEach(input => {
+        container.querySelectorAll('input, select').forEach(input => {
             existingData[input.name] = input.value;
         });
         container.innerHTML = '';
@@ -248,23 +272,50 @@ function updateForm() {
                 partnerDiv.style = "margin-bottom: 1.5rem; background: var(--bg-card); padding: 1.25rem; border-radius: var(--radius-lg); border: 1px solid var(--border-color); border-left: 4px solid var(--accent-primary);";
                 
                 const nameInputName = 'partner_name_' + catId;
+                const ageInputName = 'partner_age_' + catId;
                 const mobileInputName = 'partner_mobile_' + catId;
+                const emailInputName = 'partner_email_' + catId;
+                const genderInputName = 'partner_gender_' + catId;
                 
                 const nameVal = existingData[nameInputName] || '';
+                const ageVal = existingData[ageInputName] || '';
                 const mobileVal = existingData[mobileInputName] || '';
+                const emailVal = existingData[emailInputName] || '';
+                const genderVal = existingData[genderInputName] || 'Male';
 
                 partnerDiv.innerHTML = `
                     <h4 style="margin: 0 0 0.25rem; color: var(--text-primary); font-size: 1.05rem; font-weight: 700;">👥 ${cardTitle} Partner Information</h4>
-                    <p style="color: var(--text-secondary); font-size: 0.82rem; margin: 0 0 1rem;">Please provide your doubles partner's contact details for roster verification.</p>
+                    <p style="color: var(--text-secondary); font-size: 0.82rem; margin: 0 0 1rem;">Please provide your doubles partner's details to automatically create their player profile and enroll your team.</p>
                     
-                    <div class="form-row">
-                        <div>
-                            <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Partner Name *</label>
+                    <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+                        <div class="form-group" style="margin: 0;">
+                            <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Partner Full Name *</label>
                             <input type="text" name="${nameInputName}" class="form-input" required value="${nameVal}" placeholder="Partner full name" style="width: 100%;">
                         </div>
-                        <div>
-                            <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Partner Mobile *</label>
-                            <input type="tel" name="${mobileInputName}" class="form-input" required value="${mobileVal}" placeholder="Partner mobile number" style="width: 100%;">
+
+                        <div class="form-row">
+                            <div class="form-group" style="margin: 0;">
+                                <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Partner Age *</label>
+                                <input type="number" name="${ageInputName}" class="form-input" required min="4" max="100" value="${ageVal}" placeholder="e.g. 21" style="width: 100%;">
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Partner Mobile Number *</label>
+                                <input type="tel" name="${mobileInputName}" class="form-input" required value="${mobileVal}" placeholder="Partner mobile number" style="width: 100%;">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group" style="margin: 0;">
+                                <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Partner Email (Optional)</label>
+                                <input type="email" name="${emailInputName}" class="form-input" value="${emailVal}" placeholder="partner@example.com" style="width: 100%;">
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Partner Gender *</label>
+                                <select name="${genderInputName}" class="form-input" required style="width: 100%;">
+                                    <option value="Male" ${genderVal === 'Male' ? 'selected' : ''}>Male</option>
+                                    <option value="Female" ${genderVal === 'Female' ? 'selected' : ''}>Female</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 `;

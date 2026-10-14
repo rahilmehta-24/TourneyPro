@@ -250,6 +250,69 @@ class Player(db.Model):
     tournament_records = db.relationship('PlayerTournamentRecord', backref='player', lazy=True, cascade='all, delete-orphan')
     participants = db.relationship('Participant', foreign_keys='Participant.player_id', backref='player', lazy=True)
 
+    @property
+    def mobile(self):
+        return self.contact_number
+
+    @mobile.setter
+    def mobile(self, val):
+        self.contact_number = val
+
+    @property
+    def age(self):
+        if self.dob:
+            from datetime import date
+            today = date.today()
+            return today.year - self.dob.year - ((today.month, today.day) < (self.dob.month, self.dob.day))
+        return None
+
+def calculate_age_from_dob(dob):
+    if not dob:
+        return None
+    from datetime import date
+    today = date.today()
+    return today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+
+def estimate_dob_from_age(age):
+    if age is None:
+        return None
+    try:
+        age_int = int(age)
+        from datetime import date
+        today = date.today()
+        return date(today.year - age_int, 1, 1)
+    except (ValueError, TypeError):
+        return None
+
+def determine_age_category(age=None, dob=None):
+    if dob and age is None:
+        age = calculate_age_from_dob(dob)
+    if age is None:
+        return 'Open'
+    try:
+        age_int = int(age)
+    except (ValueError, TypeError):
+        return 'Open'
+
+    if age_int <= 8:
+        return 'U8'
+    elif age_int <= 10:
+        return 'U10'
+    elif age_int <= 12:
+        return 'U12'
+    elif age_int <= 14:
+        return 'U14'
+    elif age_int <= 16:
+        return 'U16'
+    elif age_int <= 18:
+        return 'U18'
+    elif age_int >= 45:
+        return '45+'
+    elif age_int >= 35:
+        return '35+'
+    else:
+        return 'Open'
+
 class PlayerTournamentRecord(db.Model):
     __tablename__ = 'player_tournament_records'
 

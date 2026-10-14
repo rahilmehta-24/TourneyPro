@@ -1,6 +1,9 @@
 from app.services.utils.audit import log_audit
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
-from app.domain.models import db, Tournament, Participant, Match, TournamentSettings, Registration, Category, Player, User
+from app.domain.models import (
+    db, Tournament, Participant, Match, TournamentSettings, Registration, Category, Player, User,
+    determine_age_category, estimate_dob_from_age, calculate_age_from_dob
+)
 from app.services.format_engine import get_format
 from app.core.constants import TOURNAMENT_FORMATS
 from app.web.controllers.auth import login_required, role_required, get_current_user, check_tournament_ownership
@@ -228,9 +231,6 @@ def register_for_tournament(slug):
     player = None
     if current_u:
         player = Player.query.filter_by(user_id=current_u.id).first()
-        if not player:
-            flash('You must create your Player Profile before registering for a tournament.', 'error')
-            return redirect(url_for('player.dashboard'))
     
     if request.method == 'POST':
         category_ids = request.form.getlist('category_id', type=int)
@@ -242,44 +242,87 @@ def register_for_tournament(slug):
         
         partners_data = {}
         for cat in selected_categories:
-            if "Doubles" in cat.name:
+            if "Doubles" in cat.name or (cat.format and 'doubles' in cat.format):
                 p_name = request.form.get(f'partner_name_{cat.id}', '').strip()
+                p_age_str = request.form.get(f'partner_age_{cat.id}', '').strip()
                 p_mobile = request.form.get(f'partner_mobile_{cat.id}', '').strip()
-                if not p_name:
-                    flash(f'Partner name is required for {cat.name}.', 'error')
-                    return redirect(url_for('tournament.register_for_tournament', slug=slug))
-                partners_data[cat.id] = {'name': p_name, 'mobile': p_mobile}
+                p_email = request.form.get(f'partner_email_{cat.id}', '').strip()
+                p_gender = request.form.get(f'partner_gender_{cat.id}', '').strip()
                 
-        # Anonymous Free Registration Logic
+                if not p_gender:
+                    if cat.gender in ['Mens', 'Boys', 'Male']:
+                        p_gender = 'Male'
+                    elif cat.gender in ['Womens', 'Girls', 'Female']:
+                        p_gender = 'Female'
+                    else:
+                        p_gender = 'Male'
+
+                if not p_name or not p_age_str or not p_mobile:
+                    flash(f'Partner Name, Age, and Mobile Number are required for {cat.name}.', 'error')
+                    return redirect(url_for('tournament.register_for_tournament', slug=slug))
+
+                try:
+                    p_age = int(p_age_str)
+                except ValueError:
+                    flash(f'Invalid partner age for {cat.name}. Please enter a valid number.', 'error')
+                    return redirect(url_for('tournament.register_for_tournament', slug=slug))
+
+                partners_data[cat.id] = {
+                    'name': p_name,
+                    'age': p_age,
+                    'mobile': p_mobile,
+                    'email': p_email or None,
+                    'gender': p_gender
+                }
 
         participant_name = request.form.get('guest_name', '').strip()
-        participant_email = request.form.get('guest_email', '').strip()
+        participant_age_str = request.form.get('guest_age', '').strip()
         participant_mobile = request.form.get('guest_mobile', '').strip()
+        participant_email = request.form.get('guest_email', '').strip()
         participant_gender = request.form.get('guest_gender', '').strip()
         participant_dob_str = request.form.get('guest_dob', '').strip()
-        
-        # If user is logged in, auto-fill from their profile if fields are empty
+
+        # If user is logged in with profile, auto-fill
         if player:
             participant_name = participant_name or player.name
-            participant_email = participant_email or current_u.email
-            participant_mobile = participant_mobile or (player.mobile if hasattr(player, 'mobile') else None)
+            participant_email = participant_email or player.email or (current_u.email if current_u else None)
+            participant_mobile = participant_mobile or player.contact_number
             participant_gender = participant_gender or player.gender
             participant_dob = player.dob
-        
-        if not participant_name or not participant_email or not participant_gender or not participant_dob_str:
-            flash('Name, Email, Gender, and Date of Birth are required.', 'error')
-            return redirect(url_for('tournament.register_for_tournament', slug=slug))
-            
-        try:
+            participant_age = player.age
+        else:
+            if not participant_name:
+                flash('Full Name is required.', 'error')
+                return redirect(url_for('tournament.register_for_tournament', slug=slug))
+            if not participant_mobile:
+                flash('Mobile Number is required.', 'error')
+                return redirect(url_for('tournament.register_for_tournament', slug=slug))
+            if not participant_age_str and not participant_dob_str:
+                flash('Age is required.', 'error')
+                return redirect(url_for('tournament.register_for_tournament', slug=slug))
+            if not participant_gender:
+                flash('Gender is required.', 'error')
+                return redirect(url_for('tournament.register_for_tournament', slug=slug))
+
+            participant_dob = None
+            participant_age = None
             if participant_dob_str:
-                participant_dob = datetime.strptime(participant_dob_str, '%Y-%m-%d').date()
-        except ValueError:
-            flash('Invalid date format for Date of Birth.', 'error')
-            return redirect(url_for('tournament.register_for_tournament', slug=slug))
+                try:
+                    participant_dob = datetime.strptime(participant_dob_str, '%Y-%m-%d').date()
+                except ValueError:
+                    pass
+            if participant_age_str:
+                try:
+                    participant_age = int(participant_age_str)
+                except ValueError:
+                    pass
+
+            if participant_dob and not participant_age:
+                participant_age = calculate_age_from_dob(participant_dob)
+            elif participant_age and not participant_dob:
+                participant_dob = estimate_dob_from_age(participant_age)
 
         # 1. SMART REGISTRATION: Ensure we have an anonymous dummy user for Registration.user_id 
-        # The Registration table requires a user_id. For unauthenticated (guest) users, we map 
-        # their registrations to a shared 'anonymous_registrations' system account.
         anon_email = 'anonymous@tourneypro.com'
         anon_user = User.query.filter_by(email=anon_email).first()
         if not anon_user:
@@ -290,30 +333,89 @@ def register_for_tournament(slug):
             
         current_u_id = current_u.id if current_u else anon_user.id
             
-        # 2. GUEST PROFILE CREATION: Create a standalone Player profile
-        # If this is a guest registration, we create a Player profile that is intentionally 
-        # NOT linked to a User account (user_id=None). This allows the system to track their 
-        # stats and matches independently.
-        new_player = player if player else Player(
-            user_id=None,
-            name=participant_name,
-            email=participant_email,
-            contact_number=participant_mobile,
-            gender=participant_gender,
-            dob=participant_dob,
-            age_category='Open'
-        )
-        if not player:
-            db.session.add(new_player)
-            db.session.flush()
-            
+        # 2. AUTO PROFILE CREATION: Create or link Player profile
+        if player:
+            new_player = player
+            if participant_mobile and not new_player.contact_number:
+                new_player.contact_number = participant_mobile
+            if participant_email and not new_player.email:
+                new_player.email = participant_email
+            if participant_dob and not new_player.dob:
+                new_player.dob = participant_dob
+        else:
+            existing_player = None
+            if current_u:
+                existing_player = Player.query.filter_by(user_id=current_u.id).first()
+            if not existing_player and participant_mobile:
+                existing_player = Player.query.filter(Player.contact_number == participant_mobile).first()
+            if not existing_player and participant_name and participant_mobile:
+                existing_player = Player.query.filter(Player.name == participant_name, Player.contact_number == participant_mobile).first()
+
+            if existing_player:
+                new_player = existing_player
+                if current_u and not new_player.user_id:
+                    new_player.user_id = current_u.id
+                if participant_email and not new_player.email:
+                    new_player.email = participant_email
+                if participant_dob and not new_player.dob:
+                    new_player.dob = participant_dob
+            else:
+                age_cat = determine_age_category(age=participant_age, dob=participant_dob)
+                new_player = Player(
+                    user_id=current_u.id if current_u else None,
+                    name=participant_name,
+                    email=participant_email or None,
+                    contact_number=participant_mobile,
+                    gender=participant_gender,
+                    dob=participant_dob,
+                    age_category=age_cat
+                )
+                db.session.add(new_player)
+                db.session.flush()
+
+        # 3. AUTO PROFILE CREATION FOR DOUBLES PARTNERS
+        partner_players = {}
+        for cat_id, p_info in partners_data.items():
+            p_name = p_info['name']
+            p_age = p_info['age']
+            p_mobile = p_info['mobile']
+            p_email = p_info.get('email')
+            p_gender = p_info.get('gender') or 'Male'
+            p_dob = estimate_dob_from_age(p_age)
+            p_cat = determine_age_category(age=p_age, dob=p_dob)
+
+            # Check if partner already exists
+            p_player = Player.query.filter(Player.contact_number == p_mobile).first()
+            if not p_player:
+                p_player = Player.query.filter(Player.name == p_name, Player.contact_number == p_mobile).first()
+
+            if not p_player:
+                p_player = Player(
+                    user_id=None,
+                    name=p_name,
+                    email=p_email or None,
+                    contact_number=p_mobile,
+                    gender=p_gender,
+                    dob=p_dob,
+                    age_category=p_cat
+                )
+                db.session.add(p_player)
+                db.session.flush()
+            else:
+                if p_email and not p_player.email:
+                    p_player.email = p_email
+
+            partner_players[cat_id] = p_player
+
         # Create Registrations and Participants for each category
         for cat in selected_categories:
-            cat_partner_name = partners_data.get(cat.id, {}).get('name')
-            cat_partner_mobile = partners_data.get(cat.id, {}).get('mobile')
+            p2_obj = partner_players.get(cat.id)
+            p2_id = p2_obj.id if p2_obj else None
+            cat_partner_name = p2_obj.name if p2_obj else partners_data.get(cat.id, {}).get('name')
+            cat_partner_mobile = p2_obj.contact_number if p2_obj else partners_data.get(cat.id, {}).get('mobile')
             
             cat_fee = cat.entry_fee or 0.0
-            amount_due = cat_fee * 2 if "Doubles" in cat.name else cat_fee
+            amount_due = cat_fee * 2 if ("Doubles" in cat.name or (cat.format and 'doubles' in cat.format)) else cat_fee
             
             transaction_id = request.form.get('transaction_id', '').strip()
             
@@ -321,7 +423,7 @@ def register_for_tournament(slug):
             
             reg = Registration(
                 tournament_id=tournament.id, category_id=cat.id,
-                user_id=current_u_id, player_id=new_player.id,
+                user_id=current_u_id, player_id=new_player.id, player2_id=p2_id,
                 partner_name=cat_partner_name, partner_mobile=cat_partner_mobile,
                 status=reg_status,
                 amount_due=amount_due,
@@ -334,8 +436,8 @@ def register_for_tournament(slug):
                 display_name = f"{participant_name} / {cat_partner_name}" if cat_partner_name else participant_name
                 p = Participant(
                     tournament_id=tournament.id, category_id=cat.id,
-                    player_id=new_player.id,
-                    name=display_name, email=participant_email, mobile=participant_mobile,
+                    player_id=new_player.id, player2_id=p2_id,
+                    name=display_name, email=participant_email or '', mobile=participant_mobile,
                     gender=participant_gender, dob=participant_dob,
                     partner_name=cat_partner_name, partner_mobile=cat_partner_mobile
                 )
@@ -374,7 +476,9 @@ def manage_tournament(slug):
                         category_id=reg.category_id,
                         name=f"{reg.player.name}{' / ' + reg.partner_name if reg.partner_name else ''}",
                         player_id=reg.player_id,
-                        player2_id=reg.player2_id
+                        player2_id=reg.player2_id,
+                        partner_name=reg.partner_name,
+                        partner_mobile=reg.partner_mobile
                     )
                     db.session.add(participant)
                     db.session.commit()
@@ -391,31 +495,124 @@ def manage_tournament(slug):
                 return redirect(url_for('tournament.manage_tournament', slug=slug))
                 
             elif action == 'add_participant':
-                participant_name = request.form.get('participant_name')
-                participant_email = request.form.get('participant_email', '')
-                
+                participant_name = request.form.get('participant_name', '').strip()
+                participant_age_str = request.form.get('participant_age', '').strip()
+                participant_mobile = request.form.get('participant_mobile', '').strip()
+                participant_email = request.form.get('participant_email', '').strip()
+                participant_gender = request.form.get('participant_gender', 'Male').strip()
+                category_id = request.form.get('category_id', type=int)
+                manual_seed = request.form.get('manual_seed', type=int)
+
+                partner_name = request.form.get('partner_name', '').strip()
+                partner_age_str = request.form.get('partner_age', '').strip()
+                partner_mobile = request.form.get('partner_mobile', '').strip()
+                partner_email = request.form.get('partner_email', '').strip()
+                partner_gender = request.form.get('partner_gender', '').strip()
+
+                target_category = Category.query.get(category_id) if category_id else None
+                if target_category and not participant_gender:
+                    participant_gender = target_category.gender
+
                 # Handle comma-separated names
                 names = [n.strip() for n in participant_name.split(',') if n.strip()]
-                
-                from app.domain.models import Player
                 added_names = []
-                
+
                 for name in names:
-                    player_match = Player.query.filter_by(name=name).first()
-                    player_id = player_match.id if player_match else None
-                    
+                    p1_name = name
+                    p2_name = partner_name
+                    p1_age_str = participant_age_str
+                    p2_age_str = partner_age_str
+                    p1_mobile = participant_mobile
+                    p2_mobile = partner_mobile
+
+                    # If slash in name: e.g. "P1 / P2"
+                    if '/' in name and not p2_name:
+                        parts = [p.strip() for p in name.split('/', 1)]
+                        p1_name = parts[0]
+                        p2_name = parts[1]
+
+                    # Auto-create or fetch Player 1
+                    p1_player = None
+                    if p1_mobile:
+                        p1_player = Player.query.filter(Player.contact_number == p1_mobile).first()
+                    if not p1_player:
+                        p1_player = Player.query.filter_by(name=p1_name).first()
+
+                    p1_age = None
+                    if p1_age_str:
+                        try:
+                            p1_age = int(p1_age_str)
+                        except ValueError:
+                            pass
+                    p1_dob = estimate_dob_from_age(p1_age)
+                    p1_cat = determine_age_category(age=p1_age, dob=p1_dob)
+
+                    if not p1_player:
+                        p1_player = Player(
+                            name=p1_name,
+                            contact_number=p1_mobile or None,
+                            email=participant_email if len(names) == 1 else None,
+                            gender=participant_gender or 'Male',
+                            dob=p1_dob,
+                            age_category=p1_cat
+                        )
+                        db.session.add(p1_player)
+                        db.session.flush()
+                    else:
+                        if p1_mobile and not p1_player.contact_number:
+                            p1_player.contact_number = p1_mobile
+                        if participant_email and len(names) == 1 and not p1_player.email:
+                            p1_player.email = participant_email
+
+                    p2_player = None
+                    if p2_name:
+                        p2_age = None
+                        if p2_age_str:
+                            try:
+                                p2_age = int(p2_age_str)
+                            except ValueError:
+                                pass
+                        p2_dob = estimate_dob_from_age(p2_age)
+                        p2_cat = determine_age_category(age=p2_age, dob=p2_dob)
+
+                        if p2_mobile:
+                            p2_player = Player.query.filter(Player.contact_number == p2_mobile).first()
+                        if not p2_player:
+                            p2_player = Player.query.filter_by(name=p2_name).first()
+
+                        if not p2_player:
+                            p2_player = Player(
+                                name=p2_name,
+                                contact_number=p2_mobile or None,
+                                email=partner_email or None,
+                                gender=partner_gender or participant_gender or 'Male',
+                                dob=p2_dob,
+                                age_category=p2_cat
+                            )
+                            db.session.add(p2_player)
+                            db.session.flush()
+
+                    display_name = f"{p1_name} / {p2_name}" if p2_name else p1_name
                     participant = Participant(
                         tournament_id=tournament.id,
-                        player_id=player_id,
-                        name=name,
-                        email=participant_email if len(names) == 1 else ''
+                        category_id=category_id,
+                        player_id=p1_player.id,
+                        player2_id=p2_player.id if p2_player else None,
+                        name=display_name,
+                        email=participant_email if len(names) == 1 else '',
+                        mobile=p1_mobile if len(names) == 1 else '',
+                        gender=participant_gender,
+                        dob=p1_dob,
+                        partner_name=p2_name if p2_name else None,
+                        partner_mobile=p2_mobile if p2_mobile else None,
+                        manual_seed=manual_seed if len(names) == 1 else None
                     )
                     db.session.add(participant)
-                    added_names.append(name)
-                    
+                    added_names.append(display_name)
+
                 db.session.commit()
 
-                flash(f'Added participants: {", ".join(added_names)}', 'success')
+                flash(f'Added participant(s): {", ".join(added_names)}', 'success')
                 return redirect(url_for('tournament.manage_tournament', slug=slug))
 
             elif action == 'delete_participant':

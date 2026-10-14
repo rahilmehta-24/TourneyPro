@@ -97,44 +97,87 @@
     <div id="tabContentPlayers">
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.5rem; align-items: start;">
             
-            {% if category.status == 'setup' %}
-            <!-- Add Player Card -->
+            <!-- Add Player / Late Entry Card -->
             <div class="card" style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 1.5rem; border: 1px solid var(--border-color);">
-                <h3 style="margin: 0 0 1rem; font-size: 1.15rem; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
-                    ➕ Register Player / Team
-                </h3>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+                    <h3 style="margin: 0; font-size: 1.15rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+                        {% if category.status == 'setup' %}
+                        ➕ Register Player / Team
+                        {% else %}
+                        ➕ Add Late Player / Team
+                        {% endif %}
+                    </h3>
+                    {% if category.status != 'setup' %}
+                    <span style="font-size: 0.75rem; background: rgba(245, 158, 11, 0.15); color: var(--accent-warning); padding: 0.2rem 0.5rem; border-radius: 9999px; font-weight: 600;">Late Entry</span>
+                    {% endif %}
+                </div>
+
+                {% if category.status != 'setup' %}
+                <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.85rem; background: rgba(59, 130, 246, 0.08); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid rgba(59, 130, 246, 0.2);">
+                    💡 <strong>Late Addition:</strong> Player profile will be auto-created and enrolled into this category roster. To re-seed or regenerate bracket with this player, use "Reset Category" below.
+                </div>
+                {% endif %}
+
                 <form method="POST" style="display: flex; flex-direction: column; gap: 0.85rem;">
                     <input type="hidden" name="action" value="add_participant">
                     
                     <div class="form-group" style="margin: 0;">
                         <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">
-                            {% if category.format in ['doubles_elimination', 'doubles_round_robin'] %}Team / Player Names (Player 1 / Player 2) *{% else %}Player Name *{% endif %}
+                            {% if category.format in ['doubles_elimination', 'doubles_round_robin'] %}Player 1 Full Name *{% else %}Player Name *{% endif %}
                         </label>
-                        <input type="text" name="participant_name" class="form-input" placeholder="{% if category.format in ['doubles_elimination', 'doubles_round_robin'] %}e.g. John Doe / Jane Smith{% else %}e.g. Roger Federer, Rafael Nadal{% endif %}" required style="width: 100%;">
-                        <small style="display: block; margin-top: 0.35rem; color: var(--text-muted); font-size: 0.78rem;">Multiple entries can be comma-separated.</small>
+                        <input type="text" name="participant_name" class="form-input" placeholder="e.g. John Doe" required style="width: 100%;">
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                         <div class="form-group" style="margin: 0;">
-                            <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Initial Seed (Optional)</label>
-                            <input type="number" name="manual_seed" class="form-input" placeholder="e.g. 1" min="1" style="width: 100%;">
+                            <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Age</label>
+                            <input type="number" name="participant_age" class="form-input" placeholder="e.g. 21" min="4" max="100" style="width: 100%;">
                         </div>
+                        <div class="form-group" style="margin: 0;">
+                            <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Mobile Number</label>
+                            <input type="tel" name="participant_mobile" class="form-input" placeholder="+91 98765 43210" style="width: 100%;">
+                        </div>
+                    </div>
 
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                         <div class="form-group" style="margin: 0;">
                             <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Email (Optional)</label>
                             <input type="email" name="participant_email" class="form-input" placeholder="player@email.com" style="width: 100%;">
                         </div>
+                        <div class="form-group" style="margin: 0;">
+                            <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Initial Seed (Optional)</label>
+                            <input type="number" name="manual_seed" class="form-input" placeholder="e.g. 1" min="1" style="width: 100%;">
+                        </div>
                     </div>
 
+                    {% if category.format in ['doubles_elimination', 'doubles_round_robin'] or 'Doubles' in category.name %}
+                    <div style="margin-top: 0.5rem; padding-top: 0.75rem; border-top: 1px dashed var(--border-color);">
+                        <h4 style="margin: 0 0 0.5rem; font-size: 0.92rem; color: var(--text-primary); font-weight: 700;">👥 Partner Details</h4>
+                        <div class="form-group" style="margin-bottom: 0.75rem;">
+                            <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Partner Full Name *</label>
+                            <input type="text" name="partner_name" class="form-input" placeholder="Partner full name" required style="width: 100%;">
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                            <div class="form-group" style="margin: 0;">
+                                <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Partner Age *</label>
+                                <input type="number" name="partner_age" class="form-input" placeholder="e.g. 22" min="4" max="100" required style="width: 100%;">
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Partner Mobile *</label>
+                                <input type="tel" name="partner_mobile" class="form-input" placeholder="Partner mobile" required style="width: 100%;">
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
                     <button type="submit" class="btn btn-primary" style="margin-top: 0.5rem; padding: 0.65rem 1rem; font-weight: 600; width: 100%;">
-                        Add to Category
+                        {% if category.status == 'setup' %}Add to Category{% else %}Add Late Player to Roster{% endif %}
                     </button>
                 </form>
             </div>
-            {% endif %}
 
             <!-- Registered Players List -->
-            <div class="card" style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 1.5rem; border: 1px solid var(--border-color); {% if category.status != 'setup' %}grid-column: 1 / -1;{% endif %}">
+            <div class="card" style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 1.5rem; border: 1px solid var(--border-color);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
                     <h3 style="margin: 0; font-size: 1.15rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
                         👥 Registered Players <span style="background: var(--bg-secondary); padding: 0.15rem 0.55rem; border-radius: 9999px; font-size: 0.8rem; color: var(--text-secondary); border: 1px solid var(--border-color);">{{ participants|length }}</span>

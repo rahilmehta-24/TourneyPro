@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
-from app.domain.models import db, Tournament, Category, Participant, Match, Group
+from app.domain.models import db, Tournament, Category, Participant, Match, Group, Player, determine_age_category, estimate_dob_from_age
 from app.core.constants import TOURNAMENT_FORMATS
 from app.services.format_engine import get_format
 from app.web.controllers.auth import login_required, role_required, check_tournament_ownership
@@ -328,9 +328,16 @@ def manage_category(slug, category_id):
 
         try:
             if action == 'add_participant':
-                participant_name = request.form.get('participant_name')
-                participant_email = request.form.get('participant_email', '')
+                participant_name = request.form.get('participant_name', '').strip()
+                participant_age_str = request.form.get('participant_age', '').strip()
+                participant_mobile = request.form.get('participant_mobile', '').strip()
+                participant_email = request.form.get('participant_email', '').strip()
                 manual_seed = request.form.get('manual_seed', type=int)
+
+                partner_name = request.form.get('partner_name', '').strip()
+                partner_age_str = request.form.get('partner_age', '').strip()
+                partner_mobile = request.form.get('partner_mobile', '').strip()
+                partner_email = request.form.get('partner_email', '').strip()
 
                 # Handle comma-separated names
                 names = [n.strip() for n in participant_name.split(',') if n.strip()]
@@ -340,59 +347,106 @@ def manage_category(slug, category_id):
                     flash(f'Cannot add participants. Maximum limit of {category.max_participants} would be exceeded.', 'error')
                     return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
 
-                from app.domain.models import Player
-                
                 added_names = []
                 for name in names:
-                    player_id = None
-                    player2_id = None
-                    
-                    if category.format == 'doubles_elimination' and '/' in name:
-                        p1_name, p2_name = [n.strip() for n in name.split('/', 1)]
-                        
-                        # Process P1
+                    p1_name = name
+                    p2_name = partner_name
+                    p1_age_str = participant_age_str
+                    p2_age_str = partner_age_str
+                    p1_mobile = participant_mobile
+                    p2_mobile = partner_mobile
+
+                    is_doubles = category.format in ['doubles_elimination', 'doubles_round_robin'] or 'Doubles' in category.name
+                    if '/' in name and not p2_name:
+                        parts = [n.strip() for n in name.split('/', 1)]
+                        p1_name = parts[0]
+                        p2_name = parts[1]
+
+                    # Process P1
+                    p1_age = int(p1_age_str) if p1_age_str and p1_age_str.isdigit() else None
+                    p1_dob = estimate_dob_from_age(p1_age)
+                    p1_cat = determine_age_category(age=p1_age, dob=p1_dob) if p1_age else category.age_category
+
+                    p1_match = None
+                    if p1_mobile:
+                        p1_match = Player.query.filter(Player.contact_number == p1_mobile).first()
+                    if not p1_match:
                         p1_match = Player.query.filter_by(name=p1_name).first()
-                        if not p1_match:
-                            p1_match = Player(name=p1_name, gender=category.gender, age_category=category.age_category)
-                            db.session.add(p1_match)
-                            db.session.flush()
-                        player_id = p1_match.id
-                        
-                        # Process P2
-                        p2_match = Player.query.filter_by(name=p2_name).first()
+
+                    if not p1_match:
+                        p1_match = Player(
+                            name=p1_name,
+                            gender=category.gender or 'Male',
+                            age_category=p1_cat or 'Open',
+                            contact_number=p1_mobile or None,
+                            email=participant_email if len(names) == 1 else None,
+                            dob=p1_dob
+                        )
+                        db.session.add(p1_match)
+                        db.session.flush()
+                    else:
+                        if p1_mobile and not p1_match.contact_number:
+                            p1_match.contact_number = p1_mobile
+                        if participant_email and len(names) == 1 and not p1_match.email:
+                            p1_match.email = participant_email
+
+                    player_id = p1_match.id
+                    player2_id = None
+
+                    # Process P2 if doubles
+                    if is_doubles and p2_name:
+                        p2_age = int(p2_age_str) if p2_age_str and p2_age_str.isdigit() else None
+                        p2_dob = estimate_dob_from_age(p2_age)
+                        p2_cat = determine_age_category(age=p2_age, dob=p2_dob) if p2_age else category.age_category
+
+                        p2_match = None
+                        if p2_mobile:
+                            p2_match = Player.query.filter(Player.contact_number == p2_mobile).first()
                         if not p2_match:
-                            p2_match = Player(name=p2_name, gender=category.gender, age_category=category.age_category)
+                            p2_match = Player.query.filter_by(name=p2_name).first()
+
+                        if not p2_match:
+                            p2_match = Player(
+                                name=p2_name,
+                                gender=category.gender or 'Male',
+                                age_category=p2_cat or 'Open',
+                                contact_number=p2_mobile or None,
+                                email=partner_email or None,
+                                dob=p2_dob
+                            )
                             db.session.add(p2_match)
                             db.session.flush()
+                        else:
+                            if p2_mobile and not p2_match.contact_number:
+                                p2_match.contact_number = p2_mobile
+                            if partner_email and not p2_match.email:
+                                p2_match.email = partner_email
+
                         player2_id = p2_match.id
-                        
-                        # Use standardized format for display name
-                        name = f"{p1_name} / {p2_name}"
-                        
+                        display_name = f"{p1_name} / {p2_name}"
                     else:
-                        player_match = Player.query.filter_by(name=name).first()
-                        if not player_match:
-                            # Auto-create global player so they appear on leaderboard instantly
-                            player_match = Player(name=name, gender=category.gender, age_category=category.age_category)
-                            db.session.add(player_match)
-                            db.session.flush() # flush to get the ID
-                        player_id = player_match.id
+                        display_name = p1_name
 
                     participant = Participant(
                         tournament_id=tournament.id,
                         category_id=category.id,
                         player_id=player_id,
                         player2_id=player2_id,
-                        name=name,
-                        email=participant_email if len(names) == 1 else '', # Only apply email if single participant added
-                        manual_seed=manual_seed if len(names) == 1 else None # Only apply seed if single participant
+                        name=display_name,
+                        email=participant_email if len(names) == 1 else '',
+                        mobile=p1_mobile if len(names) == 1 else '',
+                        gender=category.gender,
+                        dob=p1_dob,
+                        partner_name=p2_name if player2_id else None,
+                        partner_mobile=p2_mobile if player2_id else None,
+                        manual_seed=manual_seed if len(names) == 1 else None
                     )
                     db.session.add(participant)
-                    added_names.append(name)
-                    
+                    added_names.append(display_name)
+
                 db.session.commit()
 
-                flash(f'Added participants: {", ".join(added_names)}', 'success')
+                flash(f'Added participant(s): {", ".join(added_names)}', 'success')
                 return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
 
             elif action == 'start_category':
