@@ -12,14 +12,14 @@
         <div>
             <h1 style="display: flex; align-items: center; gap: 0.5rem;">
                 Player Leaderboard 
-                <span onclick="document.getElementById('pointsModal').style.display='flex'" style="cursor: pointer; font-size: 1.2rem; color: var(--accent-primary);" title="View Points Distribution">ℹ️</span>
+                <button type="button" onclick="document.getElementById('pointsModal').style.display='flex'" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; color: var(--accent-primary); padding: 0 0.25rem;" title="View Points Distribution" aria-label="View Points Distribution">ℹ️</button>
             </h1>
             <p class="subtitle">Rankings across all categories and genders</p>
         </div>
         <div style="display: flex; align-items: center;">
             {% if current_user and current_user.role == 'superadmin' %}
             <form method="POST" action="{{ url_for('leaderboard.reset_leaderboard') }}" style="margin-right: 1rem; margin-bottom: 0;" onsubmit="return confirm('WARNING: This will delete ALL players and their tournament points completely! Are you absolutely sure?');">
-                <button type="submit" class="btn" style="background: #ef4444; color: white;">Reset Leaderboard</button>
+                <button type="submit" class="btn btn-outline-danger" style="border: 1px solid var(--accent-danger); background: transparent; color: var(--accent-danger); padding: 0.5rem 1rem; font-size: 0.85rem; font-weight: 600;">⚠️ Reset Leaderboard</button>
             </form>
             {% endif %}
             {% if current_user and current_user.role == 'superadmin' %}
@@ -31,42 +31,43 @@
     </div>
 
     <!-- Filters -->
-    <div class="filters" style="background: var(--bg-secondary); padding: 1.5rem; border-radius: var(--radius-lg); margin-bottom: 2rem; display: flex; gap: 1rem; align-items: flex-end;">
-        <form method="GET" action="{{ url_for('leaderboard.view_leaderboard') }}" style="display: flex; gap: 1rem; width: 100%;">
-            <div class="form-group" style="flex: 1; margin: 0;">
-                <label class="form-label">Gender</label>
-                <select name="gender" class="form-input">
-                    <option value="All" {% if current_gender == 'All' %}selected{% endif %}>All</option>
+    <div class="filters" style="background: var(--bg-card); padding: 1.25rem 1.5rem; border-radius: var(--radius-lg); margin-bottom: 1.5rem; border: 1px solid var(--border-color);">
+        <form method="GET" action="{{ url_for('leaderboard.view_leaderboard') }}" style="display: flex; gap: 1rem; width: 100%; align-items: flex-end; flex-wrap: wrap;">
+            <div class="form-group" style="flex: 1; min-width: 180px; margin: 0;">
+                <label class="form-label" style="display: block; margin-bottom: 0.4rem; font-weight: 600; font-size: 0.85rem;">Gender</label>
+                <select name="gender" class="form-input" style="width: 100%; height: 42px;">
+                    <option value="All" {% if current_gender == 'All' %}selected{% endif %}>All Genders</option>
                     {% for g in genders %}
                     <option value="{{ g }}" {% if current_gender == g %}selected{% endif %}>{{ g }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="form-group" style="flex: 1; margin: 0;">
-                <label class="form-label">Category</label>
-                <select name="category" class="form-input">
-                    <option value="All" {% if current_category == 'All' %}selected{% endif %}>All</option>
+            <div class="form-group" style="flex: 1; min-width: 180px; margin: 0;">
+                <label class="form-label" style="display: block; margin-bottom: 0.4rem; font-weight: 600; font-size: 0.85rem;">Category</label>
+                <select name="category" class="form-input" style="width: 100%; height: 42px;">
+                    <option value="All" {% if current_category == 'All' %}selected{% endif %}>All Categories</option>
                     {% for c in categories %}
                     <option value="{{ c }}" {% if current_category == c %}selected{% endif %}>{{ c }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <button type="submit" class="btn btn-secondary" style="height: fit-content; align-self: flex-end;">Filter</button>
+            <button type="submit" class="btn btn-secondary" style="height: 42px; display: inline-flex; align-items: center; justify-content: center; padding: 0 1.5rem; font-weight: 600;">Filter</button>
         </form>
     </div>
 
     {% if current_user and current_user.role == 'superadmin' %}
-    <div class="export-box" style="background: var(--bg-secondary); padding: 1.5rem; border-radius: var(--radius-lg); margin-bottom: 2rem; border-left: 4px solid #10b981;">
-        <form method="GET" action="{{ url_for('leaderboard.export_leaderboard') }}" style="display: flex; gap: 1rem; width: 100%; align-items: flex-end;">
-            <div class="form-group" style="flex: 1; margin: 0;">
-                <label class="form-label" style="color: #10b981; font-weight: bold;">Export Data (Start Date)</label>
-                <input type="date" name="start_date" class="form-input" required>
+    <div class="export-box" style="background: var(--bg-card); padding: 1.25rem 1.5rem; border-radius: var(--radius-lg); margin-bottom: 2rem; border: 1px solid var(--border-color);">
+        <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.75rem;">📊 Export Leaderboard Data</div>
+        <form method="GET" action="{{ url_for('leaderboard.export_leaderboard') }}" style="display: flex; gap: 1rem; width: 100%; align-items: flex-end; flex-wrap: wrap;">
+            <div class="form-group" style="flex: 1; min-width: 180px; margin: 0;">
+                <label class="form-label" style="display: block; margin-bottom: 0.4rem; font-weight: 600; font-size: 0.85rem;">Start Date</label>
+                <input type="date" name="start_date" class="form-input" style="width: 100%; height: 42px;" required>
             </div>
-            <div class="form-group" style="flex: 1; margin: 0;">
-                <label class="form-label" style="color: #10b981; font-weight: bold;">End Date</label>
-                <input type="date" name="end_date" class="form-input" required>
+            <div class="form-group" style="flex: 1; min-width: 180px; margin: 0;">
+                <label class="form-label" style="display: block; margin-bottom: 0.4rem; font-weight: 600; font-size: 0.85rem;">End Date</label>
+                <input type="date" name="end_date" class="form-input" style="width: 100%; height: 42px;" required>
             </div>
-            <button type="submit" class="btn" style="background: #10b981; color: #000; font-weight: bold; height: fit-content; align-self: flex-end;">⬇️ Export to Excel</button>
+            <button type="submit" class="btn btn-primary" style="height: 42px; display: inline-flex; align-items: center; justify-content: center; padding: 0 1.25rem; font-weight: 600; white-space: nowrap;">⬇️ Export to Excel</button>
         </form>
     </div>
     {% endif %}
@@ -113,7 +114,7 @@
                         <button onclick="openAddPointsModal('{{ player.id }}', '{{ player.name }}')" class="btn btn-small btn-secondary">+ Add Points</button>
                         <button onclick="openEditPlayerModal('{{ player.id }}', '{{ player.name|escape }}', '{{ player.gender }}', '{{ player.age_category }}')" class="btn btn-small btn-secondary" style="margin-left: 0.25rem;">✏️ Edit</button>
                         <form method="POST" action="{{ url_for('leaderboard.delete_player', player_id=player.id) }}" style="display: inline-block; margin-left: 0.25rem; margin-bottom: 0;" onsubmit="return confirm('Are you sure you want to delete {{ player.name|escape }}? This cannot be undone.');">
-                            <button type="submit" class="btn btn-small" style="background: #ef4444; color: white;">🗑️</button>
+                            <button type="submit" class="btn btn-small" style="background: #ef4444; color: white;" aria-label="Delete player {{ player.name|escape }}" title="Delete Player">🗑️</button>
                         </form>
                     </td>
                     {% endif %}

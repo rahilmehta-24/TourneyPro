@@ -11,6 +11,7 @@
         {% endif %}
     </div>
 
+    {% if academies %}
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
         {% for academy in academies %}
         <div class="col">
@@ -22,11 +23,17 @@
                 </div>
             </div>
         </div>
-        {% else %}
-        <div class="col-12 text-center py-5">
-            <h4 class="text-muted">No academies found.</h4>
-        </div>
         {% endfor %}
     </div>
+    {% else %}
+    <div class="empty-state-card">
+        <div class="empty-state-icon" aria-hidden="true">🏫</div>
+        <h3 class="empty-state-title">No Academies Registered Yet</h3>
+        <p class="empty-state-desc">Join or register tennis academies and clubs to manage internal tournaments and member rankings.</p>
+        {% if g.current_user and g.current_user.role in ['admin', 'superadmin'] %}
+        <a href="{{ url_for('academy.create') }}" class="btn btn-primary">➕ Register New Academy</a>
+        {% endif %}
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

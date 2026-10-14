@@ -78,7 +78,7 @@
     </div>
 
     <!-- MAIN TWO-COLUMN WORKSPACE: LEFT (70% TABS) + RIGHT (30% STICKY CONTROLS) -->
-    <div class="dashboard-grid" style="display: grid; grid-template-columns: 1fr 340px; gap: 1.25rem; align-items: start;">
+    <div class="dashboard-grid">
         
         <!-- LEFT COLUMN: TABBED MANAGEMENT PANELS -->
         <div class="dashboard-main" style="min-width: 0;">
@@ -143,11 +143,11 @@
                                 <a href="{{ url_for('category.manage_category', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-primary btn-small" style="flex: 1; text-align: center; font-weight: 600; padding: 0.4rem;">
                                     ⚙️ Manage
                                 </a>
-                                <button type="button" class="btn btn-secondary btn-small rename-category-btn" title="Rename Category" data-category-id="{{ category.id }}" data-category-name="{{ category.name | e }}" style="padding: 0.4rem 0.65rem;">
+                                <button type="button" class="btn btn-secondary btn-small rename-category-btn" title="Rename Category" aria-label="Rename Category {{ category.name | e }}" data-category-id="{{ category.id }}" data-category-name="{{ category.name | e }}" style="padding: 0.4rem 0.65rem;">
                                     ✏️
                                 </button>
                                 {% if category.status != 'setup' %}
-                                <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-secondary btn-small" title="View Bracket" style="padding: 0.4rem 0.65rem;">
+                                <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-secondary btn-small" title="View Bracket" aria-label="View Bracket for {{ category.name | e }}" style="padding: 0.4rem 0.65rem;">
                                     🏆
                                 </a>
                                 {% endif %}
@@ -853,14 +853,4 @@ function copyShareLink(url, btn) {
 })();
 </script>
 
-<style>
-@media (max-width: 992px) {
-    .dashboard-grid {
-        grid-template-columns: 1fr !important;
-    }
-    .dashboard-sidebar {
-        order: -1;
-    }
-}
-</style>
 {% endblock %}

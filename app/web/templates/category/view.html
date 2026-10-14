@@ -101,7 +101,7 @@
 
     <!-- Symmetrical Sibling Category Tabs -->
     {% if tournament.categories|length > 1 and not is_export %}
-    <div class="category-nav-tabs" style="display: flex; gap: 0.5rem; overflow-x: auto; padding: 0.25rem 0 0.75rem 0; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color);">
+    <div class="category-nav-tabs" style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color);">
         <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug) }}" class="btn btn-sm btn-secondary" style="border-radius: 9999px; white-space: nowrap; padding: 0.35rem 0.85rem; font-size: 0.82rem; font-weight: 500;">
             ← Tournament Overview
         </a>

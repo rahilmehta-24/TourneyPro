@@ -133,7 +133,7 @@
                     <input type="text" name="guest_name" class="form-input" required placeholder="e.g. Alex Morgan" style="width: 100%;">
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-row">
                     <div class="form-group" style="margin: 0;">
                         <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Email Address *</label>
                         <input type="email" name="guest_email" class="form-input" required placeholder="alex@example.com" style="width: 100%;">
@@ -144,7 +144,7 @@
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-row">
                     <div class="form-group" style="margin: 0;">
                         <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Gender *</label>
                         <select name="guest_gender" class="form-input" required style="width: 100%;">
@@ -257,7 +257,7 @@ function updateForm() {
                     <h4 style="margin: 0 0 0.25rem; color: var(--text-primary); font-size: 1.05rem; font-weight: 700;">👥 ${cardTitle} Partner Information</h4>
                     <p style="color: var(--text-secondary); font-size: 0.82rem; margin: 0 0 1rem;">Please provide your doubles partner's contact details for roster verification.</p>
                     
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-row">
                         <div>
                             <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Partner Name *</label>
                             <input type="text" name="${nameInputName}" class="form-input" required value="${nameVal}" placeholder="Partner full name" style="width: 100%;">

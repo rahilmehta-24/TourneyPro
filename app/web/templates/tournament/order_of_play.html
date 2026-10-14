@@ -81,7 +81,7 @@
   }
 </style>
 
-<div class="container" style="max-width:1150px; margin:0 auto; padding: 1rem 2rem 0;">
+<div class="container">
   <!-- Breadcrumb & Backway Bar -->
   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
     <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem;">
@@ -101,10 +101,9 @@
          target="_blank" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">🖨️ Export PDF</a>
     </div>
   </div>
-</div>
 
-<div class="header" style="max-width:1150px; margin:0 auto; padding: 0 2rem 1.5rem;">
-  <div class="header-content" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+  <div class="header" style="padding-bottom: 1.5rem;">
+    <div class="header-content" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
     <div>
       <div style="display:flex; align-items:center; gap:0.75rem;">
         <h1 style="margin:0; font-size:1.85rem;">📋 Order of Play</h1>
@@ -187,11 +186,11 @@
         </button>
       </form>
     </div>
+    </div>
+    {% endif %}
   </div>
-  {% endif %}
-</div>
 
-<div style="max-width:1150px; margin:0 auto; padding:0 2rem 2rem;">
+  <div class="oop-content-grid" style="padding-bottom: 2rem;">
 {% else %}
 <div class="header">
   <h1>📋 Order of Play</h1>

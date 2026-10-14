@@ -10,20 +10,20 @@
     </div>
 
     <!-- 2-STEP SETUP BANNER -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; background: var(--bg-card); padding: 1.25rem 2rem; border-radius: var(--radius-lg); border: 1px solid var(--border-color); flex-wrap: wrap; gap: 1rem;">
-        <div style="display: flex; align-items: center; gap: 1rem;">
-            <div style="background: var(--accent-primary); color: white; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; font-weight: 700; box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);">1</div>
+    <div class="stepper-container">
+        <div class="stepper-step">
+            <div class="stepper-badge active">1</div>
             <div>
-                <strong style="color: var(--text-primary); font-size: 0.95rem;">Step 1: Tournament Setup</strong>
-                <p style="margin: 0; color: var(--text-secondary); font-size: 0.82rem;">Event name, activity type, and organizer details</p>
+                <span class="stepper-step-title">Step 1: Tournament Setup</span>
+                <p class="stepper-step-desc">Event name, activity type, and organizer details</p>
             </div>
         </div>
-        <div style="color: var(--text-muted); font-size: 1.25rem;">→</div>
-        <div style="display: flex; align-items: center; gap: 1rem; opacity: 0.7;">
-            <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-muted); width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; font-weight: 600;">2</div>
+        <div class="stepper-arrow" aria-hidden="true">→</div>
+        <div class="stepper-step inactive">
+            <div class="stepper-badge inactive">2</div>
             <div>
-                <strong style="color: var(--text-secondary); font-size: 0.95rem;">Step 2: Categories & Schedule</strong>
-                <p style="margin: 0; color: var(--text-muted); font-size: 0.82rem;">Add divisions, set scoring rules, and generate brackets</p>
+                <span class="stepper-step-title">Step 2: Categories & Schedule</span>
+                <p class="stepper-step-desc">Add divisions, set scoring rules, and generate brackets</p>
             </div>
         </div>
     </div>
