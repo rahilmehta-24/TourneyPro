@@ -8,6 +8,11 @@ from app.services.format_engine import get_format
 from app.core.constants import TOURNAMENT_FORMATS
 from app.web.controllers.auth import login_required, role_required, get_current_user, check_tournament_ownership
 from app.services.tennis_logic import validate_and_format_score
+from app.services.utils.validation import (
+    validate_name, validate_mobile, validate_email, validate_age, validate_dob,
+    validate_upi_id, validate_transaction_id, validate_tournament_dates,
+    validate_operating_hours
+)
 import json
 from slugify import slugify
 from datetime import datetime, timedelta
@@ -19,14 +24,29 @@ tournament_bp = Blueprint('tournament', __name__)
 @role_required('admin', 'superadmin')
 def create_tournament():
     """Create new tournament"""
+    academy_id = request.args.get('academy_id')
     if request.method == 'POST':
         name = request.form.get('name')
         creator_name = request.form.get('creator_name', 'Anonymous')
         description = request.form.get('description', '')
         payment_upi_id = request.form.get('payment_upi_id', '').strip()
         game_info = request.form.get('game_info', '')
-        academy_id = request.form.get('academy_id')
+        academy_id = request.form.get('academy_id') or academy_id
         is_internal = request.form.get('is_internal') == 'on'
+
+        ok, clean_name = validate_name(name, min_len=3, max_len=100, field_name="Tournament Name")
+        if not ok:
+            flash(clean_name, 'error')
+            return render_template('tournament/create.html', academy_id=academy_id, formats=TOURNAMENT_FORMATS)
+        name = clean_name
+
+        if payment_upi_id:
+            ok, clean_upi = validate_upi_id(payment_upi_id, required=False)
+            if not ok:
+                flash(clean_upi, 'error')
+                return render_template('tournament/create.html', academy_id=academy_id, formats=TOURNAMENT_FORMATS)
+            payment_upi_id = clean_upi
+
         # Set legacy values for backwards compatibility, but do not prompt for them
         format_type = None
         max_participants = None
@@ -88,7 +108,9 @@ def create_tournament():
 @tournament_bp.route('/tournaments/<slug>')
 def view_tournament(slug):
     """View tournament hub (brackets, schedule, organizer dashboard)"""
-    tournament = Tournament.query.options(db.joinedload(Tournament.categories)).filter_by(url_slug=slug).first_or_404()
+    tournament = Tournament.query.options(
+        db.joinedload(Tournament.categories).joinedload(Category.participants)
+    ).filter_by(url_slug=slug).first_or_404()
     
     # If tournament is in registration phase, visiting/clicking the shared link opens the Registration page
     if tournament.status == 'registration' and request.args.get('view') not in ['bracket', 'manage']:
@@ -240,6 +262,19 @@ def register_for_tournament(slug):
             
         selected_categories = Category.query.filter(Category.id.in_(category_ids)).all()
         
+        # Calculate total fee
+        total_due = sum(
+            (cat.entry_fee or 0.0) * 2 if ("Doubles" in cat.name or (cat.format and 'doubles' in cat.format)) else (cat.entry_fee or 0.0)
+            for cat in selected_categories
+        )
+        transaction_id = request.form.get('transaction_id', '').strip()
+        if total_due > 0 and tournament.payment_upi_id:
+            ok, tx_res = validate_transaction_id(transaction_id, required=True)
+            if not ok:
+                flash(tx_res, 'error')
+                return redirect(url_for('tournament.register_for_tournament', slug=slug))
+            transaction_id = tx_res
+        
         partners_data = {}
         for cat in selected_categories:
             if "Doubles" in cat.name or (cat.format and 'doubles' in cat.format):
@@ -257,20 +292,32 @@ def register_for_tournament(slug):
                     else:
                         p_gender = 'Male'
 
-                if not p_name or not p_age_str or not p_mobile:
-                    flash(f'Partner Name, Age, and Mobile Number are required for {cat.name}.', 'error')
+                ok, clean_p_name = validate_name(p_name, field_name=f"Partner Name for {cat.name}")
+                if not ok:
+                    flash(clean_p_name, 'error')
                     return redirect(url_for('tournament.register_for_tournament', slug=slug))
 
-                try:
-                    p_age = int(p_age_str)
-                except ValueError:
-                    flash(f'Invalid partner age for {cat.name}. Please enter a valid number.', 'error')
+                ok, clean_p_age = validate_age(p_age_str, min_age=4, max_age=100, field_name=f"Partner Age for {cat.name}")
+                if not ok:
+                    flash(clean_p_age, 'error')
                     return redirect(url_for('tournament.register_for_tournament', slug=slug))
+
+                ok, clean_p_mobile = validate_mobile(p_mobile, required=True, field_name=f"Partner Mobile for {cat.name}")
+                if not ok:
+                    flash(clean_p_mobile, 'error')
+                    return redirect(url_for('tournament.register_for_tournament', slug=slug))
+
+                if p_email:
+                    ok, clean_p_email = validate_email(p_email, required=False, field_name=f"Partner Email for {cat.name}")
+                    if not ok:
+                        flash(clean_p_email, 'error')
+                        return redirect(url_for('tournament.register_for_tournament', slug=slug))
+                    p_email = clean_p_email
 
                 partners_data[cat.id] = {
-                    'name': p_name,
-                    'age': p_age,
-                    'mobile': p_mobile,
+                    'name': clean_p_name,
+                    'age': clean_p_age,
+                    'mobile': clean_p_mobile,
                     'email': p_email or None,
                     'gender': p_gender
                 }
@@ -291,15 +338,25 @@ def register_for_tournament(slug):
             participant_dob = player.dob
             participant_age = player.age
         else:
-            if not participant_name:
-                flash('Full Name is required.', 'error')
+            ok, clean_p_name = validate_name(participant_name, field_name="Full Name")
+            if not ok:
+                flash(clean_p_name, 'error')
                 return redirect(url_for('tournament.register_for_tournament', slug=slug))
-            if not participant_mobile:
-                flash('Mobile Number is required.', 'error')
+            participant_name = clean_p_name
+
+            ok, clean_p_mobile = validate_mobile(participant_mobile, required=True, field_name="Mobile Number")
+            if not ok:
+                flash(clean_p_mobile, 'error')
                 return redirect(url_for('tournament.register_for_tournament', slug=slug))
-            if not participant_age_str and not participant_dob_str:
-                flash('Age is required.', 'error')
-                return redirect(url_for('tournament.register_for_tournament', slug=slug))
+            participant_mobile = clean_p_mobile
+
+            if participant_email:
+                ok, clean_p_email = validate_email(participant_email, required=False, field_name="Email Address")
+                if not ok:
+                    flash(clean_p_email, 'error')
+                    return redirect(url_for('tournament.register_for_tournament', slug=slug))
+                participant_email = clean_p_email
+
             if not participant_gender:
                 flash('Gender is required.', 'error')
                 return redirect(url_for('tournament.register_for_tournament', slug=slug))
@@ -307,20 +364,22 @@ def register_for_tournament(slug):
             participant_dob = None
             participant_age = None
             if participant_dob_str:
-                try:
-                    participant_dob = datetime.strptime(participant_dob_str, '%Y-%m-%d').date()
-                except ValueError:
-                    pass
-            if participant_age_str:
-                try:
-                    participant_age = int(participant_age_str)
-                except ValueError:
-                    pass
-
-            if participant_dob and not participant_age:
+                ok, clean_dob = validate_dob(participant_dob_str, field_name="Date of Birth")
+                if not ok:
+                    flash(clean_dob, 'error')
+                    return redirect(url_for('tournament.register_for_tournament', slug=slug))
+                participant_dob = clean_dob
                 participant_age = calculate_age_from_dob(participant_dob)
-            elif participant_age and not participant_dob:
+            elif participant_age_str:
+                ok, clean_age = validate_age(participant_age_str, field_name="Age")
+                if not ok:
+                    flash(clean_age, 'error')
+                    return redirect(url_for('tournament.register_for_tournament', slug=slug))
+                participant_age = clean_age
                 participant_dob = estimate_dob_from_age(participant_age)
+            else:
+                flash('Age or Date of Birth is required.', 'error')
+                return redirect(url_for('tournament.register_for_tournament', slug=slug))
 
         # 1. SMART REGISTRATION: Ensure we have an anonymous dummy user for Registration.user_id 
         anon_email = 'anonymous@tourneypro.com'
@@ -417,8 +476,6 @@ def register_for_tournament(slug):
             cat_fee = cat.entry_fee or 0.0
             amount_due = cat_fee * 2 if ("Doubles" in cat.name or (cat.format and 'doubles' in cat.format)) else cat_fee
             
-            transaction_id = request.form.get('transaction_id', '').strip()
-            
             reg_status = 'pending' if amount_due > 0 else 'approved'
             
             reg = Registration(
@@ -509,12 +566,73 @@ def manage_tournament(slug):
                 partner_email = request.form.get('partner_email', '').strip()
                 partner_gender = request.form.get('partner_gender', '').strip()
 
+                if not participant_name:
+                    flash('Participant name is required.', 'error')
+                    return redirect(url_for('tournament.manage_tournament', slug=slug))
+
+                if manual_seed is not None and manual_seed < 1:
+                    flash('Seed must be a positive integer (1 or greater).', 'error')
+                    return redirect(url_for('tournament.manage_tournament', slug=slug))
+
+                if participant_mobile:
+                    ok, clean_mob = validate_mobile(participant_mobile, required=False)
+                    if not ok:
+                        flash(clean_mob, 'error')
+                        return redirect(url_for('tournament.manage_tournament', slug=slug))
+                    participant_mobile = clean_mob
+
+                if participant_email:
+                    ok, clean_em = validate_email(participant_email, required=False)
+                    if not ok:
+                        flash(clean_em, 'error')
+                        return redirect(url_for('tournament.manage_tournament', slug=slug))
+                    participant_email = clean_em
+
+                if participant_age_str:
+                    ok, clean_age = validate_age(participant_age_str, required=False)
+                    if not ok:
+                        flash(clean_age, 'error')
+                        return redirect(url_for('tournament.manage_tournament', slug=slug))
+
+                if partner_name:
+                    ok, clean_pname = validate_name(partner_name, field_name="Partner Name")
+                    if not ok:
+                        flash(clean_pname, 'error')
+                        return redirect(url_for('tournament.manage_tournament', slug=slug))
+                    partner_name = clean_pname
+
+                    if partner_mobile:
+                        ok, clean_pmob = validate_mobile(partner_mobile, required=False, field_name="Partner Mobile")
+                        if not ok:
+                            flash(clean_pmob, 'error')
+                            return redirect(url_for('tournament.manage_tournament', slug=slug))
+                        partner_mobile = clean_pmob
+
+                    if partner_email:
+                        ok, clean_pem = validate_email(partner_email, required=False, field_name="Partner Email")
+                        if not ok:
+                            flash(clean_pem, 'error')
+                            return redirect(url_for('tournament.manage_tournament', slug=slug))
+                        partner_email = clean_pem
+
+                    if partner_age_str:
+                        ok, clean_page = validate_age(partner_age_str, required=False, field_name="Partner Age")
+                        if not ok:
+                            flash(clean_page, 'error')
+                            return redirect(url_for('tournament.manage_tournament', slug=slug))
+
                 target_category = Category.query.get(category_id) if category_id else None
                 if target_category and not participant_gender:
                     participant_gender = target_category.gender
 
                 # Handle comma-separated names
                 names = [n.strip() for n in participant_name.split(',') if n.strip()]
+                for n in names:
+                    ok, clean_n = validate_name(n, field_name="Participant Name")
+                    if not ok:
+                        flash(clean_n, 'error')
+                        return redirect(url_for('tournament.manage_tournament', slug=slug))
+
                 added_names = []
 
                 for name in names:
@@ -751,33 +869,50 @@ def manage_tournament(slug):
                     return redirect(url_for('tournament.manage_tournament', slug=slug))
 
             elif action == 'update_schedule_settings':
-                start_date_str = request.form.get('start_date')
-                end_date_str = request.form.get('end_date')
-                if start_date_str:
-                    try:
-                        tournament.start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-                    except ValueError:
-                        pass
-                if end_date_str:
-                    try:
-                        tournament.end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-                    except ValueError:
-                        pass
-                if tournament.start_date and tournament.end_date and tournament.end_date < tournament.start_date:
-                    tournament.end_date = tournament.start_date
+                start_date_str = request.form.get('start_date', '').strip()
+                end_date_str = request.form.get('end_date', '').strip()
+                if start_date_str or end_date_str:
+                    ok, dates_or_err = validate_tournament_dates(start_date_str, end_date_str)
+                    if not ok:
+                        flash(dates_or_err, 'error')
+                        return redirect(url_for('tournament.manage_tournament', slug=slug))
+                    tournament.start_date, tournament.end_date = dates_or_err
 
-                tournament.num_courts = request.form.get('num_courts', type=int, default=1)
-                tournament.court_names = request.form.get('court_names', '')
-                tournament.court_operating_start = request.form.get('court_operating_start', '08:00')
-                tournament.court_operating_end = request.form.get('court_operating_end', '20:00')
-                tournament.avg_match_duration = request.form.get('avg_match_duration', type=int, default=60)
-                tournament.court_buffer_minutes = request.form.get('court_buffer_minutes', type=int, default=10)
-                
+                num_courts_val = request.form.get('num_courts', type=int, default=1)
+                tournament.num_courts = max(1, num_courts_val) if num_courts_val else 1
+                tournament.court_names = request.form.get('court_names', '').strip()
+
+                court_operating_start = request.form.get('court_operating_start', '08:00').strip()
+                court_operating_end = request.form.get('court_operating_end', '20:00').strip()
+                ok, hours_or_err = validate_operating_hours(court_operating_start, court_operating_end)
+                if not ok:
+                    flash(hours_or_err, 'error')
+                    return redirect(url_for('tournament.manage_tournament', slug=slug))
+                tournament.court_operating_start, tournament.court_operating_end = hours_or_err
+
+                avg_dur = request.form.get('avg_match_duration', type=int, default=60)
+                tournament.avg_match_duration = max(10, min(360, avg_dur if avg_dur else 60))
+
+                buffer_mins = request.form.get('court_buffer_minutes', type=int, default=10)
+                tournament.court_buffer_minutes = max(0, min(120, buffer_mins if buffer_mins is not None else 10))
+
                 min_rest_str = request.form.get('min_rest_minutes')
-                tournament.min_rest_minutes = int(min_rest_str) if min_rest_str and min_rest_str.strip() != '' else 0
-                
+                if min_rest_str and min_rest_str.strip() != '':
+                    try:
+                        tournament.min_rest_minutes = max(0, min(240, int(min_rest_str)))
+                    except ValueError:
+                        tournament.min_rest_minutes = 0
+                else:
+                    tournament.min_rest_minutes = 0
+
                 max_matches_str = request.form.get('max_matches_per_player_day')
-                tournament.max_matches_per_player_day = int(max_matches_str) if max_matches_str and max_matches_str.strip() != '' else None
+                if max_matches_str and max_matches_str.strip() != '':
+                    try:
+                        tournament.max_matches_per_player_day = max(1, min(20, int(max_matches_str)))
+                    except ValueError:
+                        tournament.max_matches_per_player_day = None
+                else:
+                    tournament.max_matches_per_player_day = None
 
                 # Parse dynamic daily operating hours
                 daily_dict = {}
@@ -933,6 +1068,9 @@ def report_match_result(slug, match_id):
                 except ValueError:
                     raise ValueError("Score must be integers.")
                     
+                if g1 < 0 or g2 < 0:
+                    raise ValueError("Scores cannot be negative.")
+
                 if not is_live_update:
                     if g1 + g2 != total_games_target:
                         raise ValueError(f"Total games must sum to {total_games_target}. You entered {g1} and {g2} (sum: {g1+g2}).")
@@ -961,6 +1099,9 @@ def report_match_result(slug, match_id):
                     g2 = int(g2_val)
                 except ValueError:
                     raise ValueError("Score must be integers.")
+
+                if g1 < 0 or g2 < 0:
+                    raise ValueError("Scores cannot be negative.")
                     
                 if not is_live_update:
                     winning_score = max(g1, g2)

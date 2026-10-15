@@ -16,8 +16,12 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
-        rel="stylesheet">
+        rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    </noscript>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <!-- Turbo.js for instant page navigation -->
     <script type="module" src="https://unpkg.com/@hotwired/turbo@8.0.4/dist/turbo.es2017-umd.js"></script>
@@ -487,8 +491,12 @@
                     }
                 }
 
-                // Periodic refresh every 3 seconds
-                window.tourneyAutoRefreshInterval = setInterval(performScoreRefresh, 3000);
+                // Periodic refresh every 6 seconds if tab is active
+                window.tourneyAutoRefreshInterval = setInterval(() => {
+                    if (!document.hidden) {
+                        performScoreRefresh();
+                    }
+                }, 6000);
 
                 // Immediate refresh as soon as user returns to the tab
                 if (!window._tourneyVisibilityListenerAttached) {

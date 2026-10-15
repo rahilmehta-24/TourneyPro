@@ -5,7 +5,9 @@ from app.services.format_engine import get_format
 from app.web.controllers.auth import login_required, role_required, check_tournament_ownership
 from app.services.tennis_logic import validate_and_format_score
 from datetime import datetime
-from app.web.controllers.export import get_category_winners
+from app.services.utils.validation import (
+    validate_name, validate_mobile, validate_email, validate_age
+)
 
 category_bp = Blueprint('category', __name__)
 
@@ -133,6 +135,29 @@ def create_category(slug):
         preferred_start_day = request.form.get('preferred_start_day', type=int, default=1)
         pin_finals_to_last_day = request.form.get('pin_finals_to_last_day') == 'on'
         entry_fee = request.form.get('entry_fee', type=float, default=0.0)
+
+        ok, clean_name = validate_name(name, min_len=2, max_len=80, field_name="Category Name")
+        if not ok:
+            flash(clean_name, 'error')
+            return render_template('category/create.html', tournament=tournament, formats=TOURNAMENT_FORMATS)
+        name = clean_name
+
+        if entry_fee is not None and entry_fee < 0:
+            flash("Entry fee cannot be negative.", 'error')
+            return render_template('category/create.html', tournament=tournament, formats=TOURNAMENT_FORMATS)
+        entry_fee = max(0.0, float(entry_fee or 0.0))
+
+        if max_participants is not None and max_participants < 2:
+            flash("Max participants must be at least 2.", 'error')
+            return render_template('category/create.html', tournament=tournament, formats=TOURNAMENT_FORMATS)
+
+        if total_games is not None and total_games < 1:
+            flash("Total games must be a positive integer.", 'error')
+            return render_template('category/create.html', tournament=tournament, formats=TOURNAMENT_FORMATS)
+
+        if points_to_win is not None and points_to_win < 1:
+            flash("Points to win must be a positive integer.", 'error')
+            return render_template('category/create.html', tournament=tournament, formats=TOURNAMENT_FORMATS)
 
         category = Category(
             tournament_id=tournament.id,
@@ -339,9 +364,69 @@ def manage_category(slug, category_id):
                 partner_mobile = request.form.get('partner_mobile', '').strip()
                 partner_email = request.form.get('partner_email', '').strip()
 
+                if not participant_name:
+                    flash('Participant name is required.', 'error')
+                    return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
+
+                if manual_seed is not None and manual_seed < 1:
+                    flash('Seed must be a positive integer (1 or greater).', 'error')
+                    return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
+
+                if participant_mobile:
+                    ok, clean_mob = validate_mobile(participant_mobile, required=False)
+                    if not ok:
+                        flash(clean_mob, 'error')
+                        return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
+                    participant_mobile = clean_mob
+
+                if participant_email:
+                    ok, clean_em = validate_email(participant_email, required=False)
+                    if not ok:
+                        flash(clean_em, 'error')
+                        return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
+                    participant_email = clean_em
+
+                if participant_age_str:
+                    ok, clean_age = validate_age(participant_age_str, required=False)
+                    if not ok:
+                        flash(clean_age, 'error')
+                        return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
+
+                if partner_name:
+                    ok, clean_pname = validate_name(partner_name, field_name="Partner Name")
+                    if not ok:
+                        flash(clean_pname, 'error')
+                        return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
+                    partner_name = clean_pname
+
+                    if partner_mobile:
+                        ok, clean_pmob = validate_mobile(partner_mobile, required=False, field_name="Partner Mobile")
+                        if not ok:
+                            flash(clean_pmob, 'error')
+                            return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
+                        partner_mobile = clean_pmob
+
+                    if partner_email:
+                        ok, clean_pem = validate_email(partner_email, required=False, field_name="Partner Email")
+                        if not ok:
+                            flash(clean_pem, 'error')
+                            return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
+                        partner_email = clean_pem
+
+                    if partner_age_str:
+                        ok, clean_page = validate_age(partner_age_str, required=False, field_name="Partner Age")
+                        if not ok:
+                            flash(clean_page, 'error')
+                            return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
+
                 # Handle comma-separated names
                 names = [n.strip() for n in participant_name.split(',') if n.strip()]
-                
+                for n in names:
+                    ok, clean_n = validate_name(n, field_name="Participant Name")
+                    if not ok:
+                        flash(clean_n, 'error')
+                        return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
+
                 # Check max participants limit against multiple additions
                 if category.max_participants and len(participants) + len(names) > category.max_participants:
                     flash(f'Cannot add participants. Maximum limit of {category.max_participants} would be exceeded.', 'error')
@@ -726,12 +811,13 @@ def rename_category(slug, category_id):
     check_tournament_ownership(tournament)
     category = Category.query.get_or_404(category_id)
     new_name = request.form.get('new_name')
-    if new_name and new_name.strip():
-        category.name = new_name.strip()
+    ok, clean_name = validate_name(new_name, min_len=2, max_len=80, field_name="Category Name")
+    if not ok:
+        flash(clean_name, "error")
+    else:
+        category.name = clean_name
         db.session.commit()
         flash(f"Category renamed to '{category.name}'", 'success')
-    else:
-        flash("Invalid category name.", "error")
     return redirect(request.referrer or url_for('tournament.manage_tournament', slug=slug))
 
 @category_bp.route('/tournaments/<slug>/categories/<int:category_id>/delete', methods=['POST'])
@@ -881,7 +967,10 @@ def report_category_match_result(slug, category_id, match_id):
                     p2_score = p2_score or 0
                 else:
                     raise ValueError("Scores for both players are required.")
-                
+
+            if p1_score < 0 or p2_score < 0:
+                raise ValueError("Scores cannot be negative.")
+
             if not is_live_update:
                 if winner_id == match.participant1_id and p1_score <= p2_score:
                     raise ValueError("Winner must have a higher score.")
@@ -984,7 +1073,11 @@ def update_grid_scores(slug, category_id):
                         match_updates[match_id] = {}
                         
                     if value and value.strip() != '':
-                        match_updates[match_id][player_idx] = int(value)
+                        v_int = int(value)
+                        if v_int >= 0:
+                            match_updates[match_id][player_idx] = v_int
+                        else:
+                            continue
                     else:
                         match_updates[match_id][player_idx] = None
                 except ValueError:

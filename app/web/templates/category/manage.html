@@ -125,7 +125,7 @@
                         <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">
                             {% if category.format in ['doubles_elimination', 'doubles_round_robin'] %}Player 1 Full Name *{% else %}Player Name *{% endif %}
                         </label>
-                        <input type="text" name="participant_name" class="form-input" placeholder="e.g. John Doe" required style="width: 100%;">
+                        <input type="text" name="participant_name" class="form-input" minlength="2" maxlength="100" placeholder="e.g. John Doe" required style="width: 100%;">
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
@@ -135,7 +135,7 @@
                         </div>
                         <div class="form-group" style="margin: 0;">
                             <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Mobile Number</label>
-                            <input type="tel" name="participant_mobile" class="form-input" placeholder="+91 98765 43210" style="width: 100%;">
+                            <input type="tel" name="participant_mobile" class="form-input" pattern="[0-9+ -]{10,15}" placeholder="+91 98765 43210" style="width: 100%;">
                         </div>
                     </div>
 
@@ -155,7 +155,7 @@
                         <h4 style="margin: 0 0 0.5rem; font-size: 0.92rem; color: var(--text-primary); font-weight: 700;">👥 Partner Details</h4>
                         <div class="form-group" style="margin-bottom: 0.75rem;">
                             <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Partner Full Name *</label>
-                            <input type="text" name="partner_name" class="form-input" placeholder="Partner full name" required style="width: 100%;">
+                            <input type="text" name="partner_name" class="form-input" minlength="2" maxlength="100" placeholder="Partner full name" required style="width: 100%;">
                         </div>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                             <div class="form-group" style="margin: 0;">
@@ -164,7 +164,7 @@
                             </div>
                             <div class="form-group" style="margin: 0;">
                                 <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Partner Mobile *</label>
-                                <input type="tel" name="partner_mobile" class="form-input" placeholder="Partner mobile" required style="width: 100%;">
+                                <input type="tel" name="partner_mobile" class="form-input" pattern="[0-9+ -]{10,15}" placeholder="Partner mobile" required style="width: 100%;">
                             </div>
                         </div>
                     </div>

@@ -14,7 +14,7 @@
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
                 <div class="form-group">
                     <label for="username" class="form-label">Username *</label>
-                    <input type="text" id="username" name="username" class="form-input" required placeholder="Choose a username">
+                    <input type="text" id="username" name="username" class="form-input" required minlength="3" maxlength="30" pattern="[a-zA-Z0-9_]+" placeholder="e.g. rahil_mehta">
                 </div>
                 
                 <div class="form-group">
@@ -24,7 +24,7 @@
                 
                 <div class="form-group">
                     <label for="password" class="form-label">Password *</label>
-                    <input type="password" id="password" name="password" class="form-input" required placeholder="Create a strong password">
+                    <input type="password" id="password" name="password" class="form-input" required minlength="8" placeholder="Minimum 8 characters">
                 </div>
             </div>
 
@@ -35,7 +35,7 @@
                 <!-- Basic Info -->
                 <div class="form-group">
                     <label class="form-label">Full Name *</label>
-                    <input type="text" name="name" class="form-input" required placeholder="Your full name">
+                    <input type="text" name="name" class="form-input" required minlength="2" maxlength="100" placeholder="Your full name">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Gender *</label>
@@ -51,7 +51,7 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Contact Number</label>
-                    <input type="tel" name="contact_number" class="form-input" placeholder="e.g. +1 234 567 8900">
+                    <input type="tel" name="contact_number" class="form-input" pattern="[0-9+ -]{10,15}" placeholder="e.g. +91 98765 43210">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Nationality</label>

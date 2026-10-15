@@ -9,7 +9,7 @@
         <div class="card-body" style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 2rem; padding: 2rem;">
             <div class="player-avatar" style="flex-shrink: 0; position: relative;">
                 {% if player.avatar_url %}
-                    <img src="{{ player.avatar_url }}" alt="{{ player.name }}" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 4px solid var(--primary);">
+                    <img src="{{ player.avatar_url }}" alt="{{ player.name }}" loading="lazy" decoding="async" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 4px solid var(--primary);">
                 {% else %}
                     <div style="width: 150px; height: 150px; border-radius: 50%; background: var(--bg-hover); display: flex; align-items: center; justify-content: center; border: 4px solid var(--primary);">
                         <span style="font-size: 4rem; color: var(--text-secondary);">{{ player.name[0] | upper }}</span>

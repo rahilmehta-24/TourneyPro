@@ -38,16 +38,16 @@
                         </div>
                         <div id="modalPointsFields" style="display: none;">
                             <label class="form-label" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem; display: block;">Points to Win</label>
-                            <input type="number" id="modalMatchPointsToWin" name="points_to_win" class="form-input" style="width: 100%;">
+                            <input type="number" id="modalMatchPointsToWin" name="points_to_win" min="1" max="100" class="form-input" style="width: 100%;">
                         </div>
                         <div id="modalGamesFields" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; grid-column: span 2;">
                             <div>
                                 <label class="form-label" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem; display: block;">Num Sets</label>
-                                <input type="number" id="modalMatchNumSets" name="num_sets" max="5" class="form-input" style="width: 100%;" onchange="updateVisibleSets(this.value)">
+                                <input type="number" id="modalMatchNumSets" name="num_sets" min="1" max="5" class="form-input" style="width: 100%;" onchange="updateVisibleSets(this.value)">
                             </div>
                             <div>
                                 <label class="form-label" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem; display: block;">Games Per Set</label>
-                                <input type="number" id="modalMatchGamesPerSet" name="games_per_set" class="form-input" style="width: 100%;">
+                                <input type="number" id="modalMatchGamesPerSet" name="games_per_set" min="1" max="10" class="form-input" style="width: 100%;">
                             </div>
                         </div>
                     </div>
@@ -74,12 +74,12 @@
                     <div style="display: flex; gap: 1rem; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: var(--radius-md);">
                         <div style="text-align: center;">
                             <span id="p1PointsHeader" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">P1</span>
-                            <input type="number" id="points_p1" name="points_p1" class="form-input" style="width: 80px; text-align: center; font-size: 1.2rem; padding: 0.5rem;">
+                            <input type="number" id="points_p1" name="points_p1" min="0" max="200" class="form-input" style="width: 80px; text-align: center; font-size: 1.2rem; padding: 0.5rem;">
                         </div>
                         <span style="font-weight: bold; font-size: 1.2rem;">-</span>
                         <div style="text-align: center;">
                             <span id="p2PointsHeader" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">P2</span>
-                            <input type="number" id="points_p2" name="points_p2" class="form-input" style="width: 80px; text-align: center; font-size: 1.2rem; padding: 0.5rem;">
+                            <input type="number" id="points_p2" name="points_p2" min="0" max="200" class="form-input" style="width: 80px; text-align: center; font-size: 1.2rem; padding: 0.5rem;">
                         </div>
                     </div>
                 </div>

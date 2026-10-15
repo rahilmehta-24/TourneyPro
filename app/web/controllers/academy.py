@@ -3,6 +3,7 @@ import csv
 from app import db
 from app.domain.models import Academy, AcademyMember, AcademyAnnouncement, Tournament, User
 from app.web.controllers.auth import login_required, get_current_user
+from app.services.utils.validation import validate_name
 
 academy_bp = Blueprint('academy', __name__, url_prefix='/academies')
 
@@ -23,7 +24,13 @@ def create():
 
     if request.method == 'POST':
         name = request.form.get('name')
-        description = request.form.get('description')
+        description = request.form.get('description', '')
+
+        ok, clean_name = validate_name(name, min_len=3, max_len=100, field_name="Academy Name")
+        if not ok:
+            flash(clean_name, 'error')
+            return render_template('academy/create.html')
+        name = clean_name
         
         # Generate slug
         import re

@@ -2,6 +2,10 @@ import os
 from functools import wraps
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, g, abort
 from app.domain.models import db, User
+from app.services.utils.validation import (
+    validate_name, validate_username, validate_email, validate_password,
+    validate_dob, validate_mobile
+)
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -98,8 +102,40 @@ def register():
         username = request.form.get('username', '').strip()
         email = request.form.get('email', '').strip()
         password = request.form.get('password')
+        name = request.form.get('name', username).strip() or username
+        contact_number = request.form.get('contact_number', '').strip()
 
-        # Validation
+        ok, u_clean = validate_username(username)
+        if not ok:
+            flash(u_clean, 'error')
+            return render_template('auth/register.html')
+        username = u_clean
+
+        ok, e_clean = validate_email(email, required=True)
+        if not ok:
+            flash(e_clean, 'error')
+            return render_template('auth/register.html')
+        email = e_clean
+
+        ok, p_clean = validate_password(password, min_len=8)
+        if not ok:
+            flash(p_clean, 'error')
+            return render_template('auth/register.html')
+
+        ok, n_clean = validate_name(name, min_len=2, field_name="Full Name")
+        if not ok:
+            flash(n_clean, 'error')
+            return render_template('auth/register.html')
+        name = n_clean
+
+        if contact_number:
+            ok, mob_clean = validate_mobile(contact_number, required=False)
+            if not ok:
+                flash(mob_clean, 'error')
+                return render_template('auth/register.html')
+            contact_number = mob_clean
+
+        # Check existing
         if User.query.filter_by(username=username).first():
             flash('Username already exists.', 'error')
             return render_template('auth/register.html')
@@ -116,44 +152,43 @@ def register():
         
         # Create initial Player profile
         from app.domain.models import Player
-        from datetime import datetime
+        from datetime import date
         
-        name = request.form.get('name', username)
         gender = request.form.get('gender', 'Male')
         if gender not in ['Male', 'Female']:
             gender = 'Male'
             
-        dob_str = request.form.get('dob')
+        dob_str = request.form.get('dob', '').strip()
         dob = None
         age_category = 'Open'
         
         if dob_str:
-            try:
-                dob = datetime.strptime(dob_str, '%Y-%m-%d').date()
-                from datetime import date
-                today = date.today()
-                age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
-                
-                if age <= 8:
-                    age_category = 'U8'
-                elif age <= 10:
-                    age_category = 'U10'
-                elif age <= 12:
-                    age_category = 'U12'
-                elif age <= 14:
-                    age_category = 'U14'
-                elif age <= 16:
-                    age_category = 'U16'
-                elif age <= 18:
-                    age_category = 'U18'
-                elif age >= 45:
-                    age_category = '45+'
-                elif age >= 35:
-                    age_category = '35+'
-                else:
-                    age_category = 'Open'
-            except ValueError:
-                pass
+            ok, dob_res = validate_dob(dob_str, field_name="Date of Birth")
+            if not ok:
+                flash(dob_res, 'error')
+                return render_template('auth/register.html')
+            dob = dob_res
+            today = date.today()
+            age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+            
+            if age <= 8:
+                age_category = 'U8'
+            elif age <= 10:
+                age_category = 'U10'
+            elif age <= 12:
+                age_category = 'U12'
+            elif age <= 14:
+                age_category = 'U14'
+            elif age <= 16:
+                age_category = 'U16'
+            elif age <= 18:
+                age_category = 'U18'
+            elif age >= 45:
+                age_category = '45+'
+            elif age >= 35:
+                age_category = '35+'
+            else:
+                age_category = 'Open'
                 
         # Parse new fields
         contact_number = request.form.get('contact_number')

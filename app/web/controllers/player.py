@@ -1,6 +1,9 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for
 from app.web.controllers.auth import login_required, get_current_user, role_required
 from app.domain.models import Player, db
+from app.services.utils.validation import (
+    validate_name, validate_mobile, validate_email, validate_dob
+)
 
 player_bp = Blueprint('player', __name__)
 
@@ -72,14 +75,23 @@ def dashboard():
                 return None
             
         def populate_player_from_request(p):
-            p.name = request.form.get('name', p.name)
+            raw_name = request.form.get('name', p.name).strip()
+            ok, clean_name = validate_name(raw_name, min_len=2, field_name="Player Name")
+            if not ok:
+                return False, clean_name
+            p.name = clean_name
+
             p.gender = request.form.get('gender', p.gender)
-            
-            p.dob = parse_date(request.form.get('dob'))
-            if p.dob:
+
+            dob_str = request.form.get('dob', '').strip()
+            if dob_str:
+                ok, dob_res = validate_dob(dob_str, field_name="Date of Birth")
+                if not ok:
+                    return False, dob_res
+                p.dob = dob_res
                 from datetime import date
                 today = date.today()
-                age = today.year - p.dob.year - ((today.month, today.day) < (p.dob.month, p.dob.day))
+                age = today.year - p.dob.year - ((today.month, today.day) < (dob.month, dob.day))
                 if age <= 8:
                     p.age_category = 'U8'
                 elif age <= 10:
@@ -98,24 +110,43 @@ def dashboard():
                     p.age_category = '35+'
                 else:
                     p.age_category = 'Open'
-            
-            p.email = request.form.get('email', p.email)
-            p.contact_number = request.form.get('contact_number', p.contact_number)
-            p.height = request.form.get('height', p.height)
-            p.weight = request.form.get('weight', p.weight)
+
+            raw_email = request.form.get('email', '').strip()
+            if raw_email:
+                ok, clean_email = validate_email(raw_email, required=False)
+                if not ok:
+                    return False, clean_email
+                p.email = clean_email
+            else:
+                p.email = None
+
+            raw_mobile = request.form.get('contact_number', '').strip()
+            if raw_mobile:
+                ok, clean_mob = validate_mobile(raw_mobile, required=False)
+                if not ok:
+                    return False, clean_mob
+                p.contact_number = clean_mob
+            else:
+                p.contact_number = None
+
+            p.height = request.form.get('height', '').strip() or None
+            p.weight = request.form.get('weight', '').strip() or None
             p.blood_group = request.form.get('blood_group', p.blood_group)
             p.nationality = request.form.get('nationality', p.nationality)
             p.address = request.form.get('address', p.address)
             p.coach = request.form.get('coach', p.coach)
             p.academy = request.form.get('academy', p.academy)
+            return True, None
             
         action = request.form.get('action')
         
         if action == 'update_profile':
-            
             player_id = request.form.get('player_id', type=int)
             player = Player.query.filter_by(id=player_id, user_id=current_user.id).first_or_404()
-            populate_player_from_request(player)
+            ok, err_msg = populate_player_from_request(player)
+            if not ok:
+                flash(err_msg, 'error')
+                return redirect(url_for('player.dashboard'))
             
             # Handle profile photo (Vercel is read-only, so we accept a URL instead of a file)
             avatar_url = request.form.get('avatar_url')

@@ -119,19 +119,19 @@
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
                             <div class="form-group">
                                 <label class="form-label">Full Name *</label>
-                                <input type="text" name="name" class="form-input" value="{{ player.name }}" required>
+                                <input type="text" name="name" class="form-input" value="{{ player.name }}" required minlength="2" maxlength="100">
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Email</label>
-                                <input type="email" name="email" class="form-input" value="{{ player.email or '' }}">
+                                <input type="email" name="email" class="form-input" value="{{ player.email or '' }}" maxlength="120">
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Date of Birth *</label>
-                                <input type="date" name="dob" class="form-input" value="{{ player.dob.strftime('%Y-%m-%d') if player.dob else '' }}" required>
+                                <input type="date" name="dob" class="form-input" value="{{ player.dob.strftime('%Y-%m-%d') if player.dob else '' }}" required min="1920-01-01">
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Contact Number</label>
-                                <input type="text" name="contact_number" class="form-input" value="{{ player.contact_number or '' }}">
+                                <input type="tel" name="contact_number" class="form-input" value="{{ player.contact_number or '' }}" pattern="[0-9+ -]{10,15}" placeholder="+91 9876543210">
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Gender *</label>
@@ -156,31 +156,31 @@
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Height</label>
-                                <input type="text" name="height" class="form-input" value="{{ player.height or '' }}">
+                                <input type="text" name="height" class="form-input" value="{{ player.height or '' }}" maxlength="20" placeholder="e.g. 5 ft 10 in">
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Weight</label>
-                                <input type="text" name="weight" class="form-input" value="{{ player.weight or '' }}">
+                                <input type="text" name="weight" class="form-input" value="{{ player.weight or '' }}" maxlength="20" placeholder="e.g. 65 kg">
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Nationality</label>
-                                <input type="text" name="nationality" class="form-input" value="{{ player.nationality or '' }}">
+                                <input type="text" name="nationality" class="form-input" value="{{ player.nationality or '' }}" maxlength="50">
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Coach Name</label>
-                                <input type="text" name="coach" class="form-input" value="{{ player.coach or '' }}">
+                                <input type="text" name="coach" class="form-input" value="{{ player.coach or '' }}" maxlength="100">
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Academy Name</label>
-                                <input type="text" name="academy" class="form-input" value="{{ player.academy or '' }}">
+                                <input type="text" name="academy" class="form-input" value="{{ player.academy or '' }}" maxlength="100">
                             </div>
                             <div class="form-group" style="grid-column: 1 / -1;">
                                 <label class="form-label">Profile Photo URL</label>
                                 <div style="display: flex; align-items: center; gap: 1rem;">
                                     {% if player.avatar_url %}
-                                        <img src="{{ player.avatar_url }}" alt="Profile Photo" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+                                        <img src="{{ player.avatar_url }}" alt="Profile Photo" loading="lazy" decoding="async" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
                                     {% endif %}
-                                    <input type="url" name="avatar_url" class="form-input" placeholder="https://example.com/your-image.jpg" value="{{ player.avatar_url or '' }}" style="flex: 1;">
+                                    <input type="url" name="avatar_url" class="form-input" placeholder="https://example.com/your-image.jpg" value="{{ player.avatar_url or '' }}" style="flex: 1;" maxlength="500">
                                 </div>
                                 <small style="color: var(--text-muted); margin-top: 0.5rem; display: block;">Since the platform is hosted on a read-only server (Vercel), please provide a direct link to an image (e.g. from Imgur or Google Photos).</small>
                             </div>
@@ -188,7 +188,7 @@
 
                         <div class="form-group" style="margin-top: 1rem;">
                             <label class="form-label">Full Address</label>
-                            <textarea name="address" class="form-input" rows="3">{{ player.address or '' }}</textarea>
+                            <textarea name="address" class="form-input" rows="3" maxlength="300">{{ player.address or '' }}</textarea>
                         </div>
                         
                         <div class="form-actions" style="margin-top: 1.5rem;">

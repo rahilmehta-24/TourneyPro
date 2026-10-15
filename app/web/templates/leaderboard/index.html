@@ -156,7 +156,7 @@
         <form id="editPlayerForm" method="POST">
             <div class="form-group">
                 <label class="form-label">Player Name</label>
-                <input type="text" id="editPlayerName" name="name" class="form-input" required>
+                <input type="text" id="editPlayerName" name="name" class="form-input" required minlength="2" maxlength="100">
             </div>
             <div class="form-group">
                 <label class="form-label">Gender</label>
@@ -190,7 +190,7 @@
         <form method="POST" action="{{ url_for('leaderboard.add_player') }}">
             <div class="form-group">
                 <label class="form-label">Player Name</label>
-                <input type="text" name="name" class="form-input" required>
+                <input type="text" name="name" class="form-input" required minlength="2" maxlength="100">
             </div>
             <div class="form-group">
                 <label class="form-label">Gender</label>
@@ -224,7 +224,7 @@
         <form id="addPointsForm" method="POST">
             <div class="form-group">
                 <label class="form-label">Tournament Name</label>
-                <input type="text" name="tournament_name" class="form-input" required placeholder="e.g., State Championship 2026">
+                <input type="text" name="tournament_name" class="form-input" required placeholder="e.g., State Championship 2026" minlength="2" maxlength="100">
             </div>
             <div class="form-group">
                 <label class="form-label">Level</label>
@@ -245,11 +245,11 @@
             <div style="display: flex; gap: 1rem;">
                 <div class="form-group" style="flex: 1;">
                     <label class="form-label">Matches Won</label>
-                    <input type="number" name="matches_won" class="form-input" value="0" min="0">
+                    <input type="number" name="matches_won" class="form-input" value="0" min="0" max="100">
                 </div>
                 <div class="form-group" style="flex: 1;">
                     <label class="form-label">Matches Lost</label>
-                    <input type="number" name="matches_lost" class="form-input" value="0" min="0">
+                    <input type="number" name="matches_lost" class="form-input" value="0" min="0" max="100">
                 </div>
             </div>
             <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem;">

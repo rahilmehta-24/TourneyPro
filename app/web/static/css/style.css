@@ -2542,3 +2542,27 @@ body.pdf-export-mode .bracket-round:not(:first-child) .tennis-match::before {
     }
 }
 
+/* ==========================================================================
+   Modern Input Validation Feedback & Lazy Rendering
+   ========================================================================== */
+.form-input:user-invalid,
+.form-textarea:user-invalid,
+select.form-input:user-invalid {
+    border-color: #ef4444 !important;
+    background-color: rgba(239, 68, 68, 0.04) !important;
+    box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.25) !important;
+}
+
+.form-input:user-valid:not([type="checkbox"]):not([type="radio"]):not(:placeholder-shown),
+.form-textarea:user-valid:not(:placeholder-shown) {
+    border-color: rgba(16, 185, 129, 0.5) !important;
+}
+
+/* Content visibility for offscreen bracket rounds and dense data */
+.bracket-round:not(:first-child),
+.group-standings-section {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 450px;
+}
+
+

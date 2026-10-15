@@ -43,21 +43,14 @@ document.head.appendChild(style);
 
 // Form validation helper
 function validateForm(formId) {
-    const form = document.getElementById(formId);
+    const form = typeof formId === 'string' ? document.getElementById(formId) : formId;
     if (!form) return true;
     
-    const inputs = form.querySelectorAll('[required]');
-    let isValid = true;
-    
-    inputs.forEach(input => {
-        if (!input.value.trim()) {
-            input.style.borderColor = 'var(--accent-danger)';
-            isValid = false;
-        } else {
-            input.style.borderColor = '';
-        }
-    });
-    return isValid;
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return false;
+    }
+    return true;
 }
 
 // Smooth scroll to element
