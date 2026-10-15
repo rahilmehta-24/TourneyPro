@@ -29,61 +29,444 @@
 
 {% if not is_export %}
 <style>
+  /* -------------------------------------------------------------
+     ORDER OF PLAY: MODERN RESPONSIVE STYLING (DESKTOP & MOBILE)
+     ------------------------------------------------------------- */
+  
+  /* Breadcrumb & Navigation */
+  .oop-nav-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  /* Header Section */
+  .oop-header-block {
+    margin-bottom: 1.5rem;
+  }
+  .oop-header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+  }
+  .oop-filter-group {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .oop-filter-group .form-input {
+    height: 38px !important;
+    padding: 0.4rem 0.85rem !important;
+    font-size: 0.85rem !important;
+    line-height: normal !important;
+  }
+
+  /* Multi-Day Navigation Tabs */
+  .oop-day-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .oop-day-tab {
+    text-decoration: none;
+    padding: 0.55rem 1.25rem !important;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 0.875rem;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .oop-day-tab.active {
+    background: var(--accent-primary) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 10px rgba(249, 115, 22, 0.35);
+  }
+  .oop-day-tab.inactive {
+    background: var(--bg-secondary) !important;
+    color: var(--text-secondary) !important;
+    border: 1px solid var(--border-color);
+  }
+  .oop-day-tab.inactive:hover {
+    color: var(--text-primary) !important;
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  /* Organizer Dispatch Toolbar */
+  .oop-dispatch-toolbar {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 0.9rem 1.25rem;
+    margin-bottom: 1.75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .oop-dispatch-actions {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  /* Court Block & Header */
+  .court-block {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    margin-bottom: 2rem;
+    border: 1px solid var(--border-color);
+  }
+  .oop-court-header {
+    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  .oop-court-operating-pill {
+    background: rgba(0, 0, 0, 0.22);
+    backdrop-filter: blur(4px);
+    padding: 0.35rem 0.85rem;
+    border-radius: 9999px;
+    color: #ffffff;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+  }
+
+  /* Desktop Table Layout */
+  .oop-table-responsive {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+  }
+  .oop-matches-table {
+    width: 100%;
+    min-width: 860px;
+    border-collapse: collapse;
+    table-layout: auto;
+  }
+  .oop-matches-table th {
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    padding: 0.9rem 1.25rem !important;
+    text-align: left;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .oop-matches-table td {
+    padding: 1rem 1.25rem !important;
+    vertical-align: middle;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    color: var(--text-primary);
+  }
   .oop-match-row {
-    transition: background 0.15s;
+    transition: background 0.15s ease;
   }
   .oop-match-row:hover {
-    background: rgba(255, 255, 255, 0.03) !important;
+    background: rgba(255, 255, 255, 0.035) !important;
   }
+
+  /* Badge & Link Elements */
   .oop-status-badge {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 0.25rem 0.65rem;
+    gap: 5px;
+    padding: 0.35rem 0.85rem !important;
     border-radius: 9999px;
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     font-weight: 600;
+    white-space: nowrap;
+    line-height: normal;
   }
   .oop-status-badge.pending {
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.08);
     color: var(--text-muted);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
   }
   .oop-status-badge.in-progress {
-    background: rgba(245, 158, 11, 0.18);
+    background: rgba(245, 158, 11, 0.2);
     color: #f59e0b;
-    border: 1px solid rgba(245, 158, 11, 0.4);
+    border: 1px solid rgba(245, 158, 11, 0.45);
     animation: oopLivePulse 2s infinite ease-in-out;
   }
   .oop-status-badge.completed {
-    background: rgba(16, 185, 129, 0.15);
+    background: rgba(16, 185, 129, 0.18);
     color: #10b981;
-    border: 1px solid rgba(16, 185, 129, 0.3);
+    border: 1px solid rgba(16, 185, 129, 0.35);
   }
   @keyframes oopLivePulse {
     0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
     70% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
     100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
   }
+
+  .oop-round-badge {
+    background: rgba(249, 115, 22, 0.15);
+    color: var(--accent-primary);
+    padding: 0.3rem 0.75rem !important;
+    border-radius: 9999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+    display: inline-block;
+    border: 1px solid rgba(249, 115, 22, 0.3);
+    line-height: normal;
+  }
+
+  .oop-cat-badge {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-secondary);
+    padding: 0.25rem 0.65rem !important;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: inline-block;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    line-height: normal;
+  }
+
+  .oop-vs-pill {
+    background: var(--bg-tertiary);
+    color: var(--text-muted);
+    padding: 0.15rem 0.5rem !important;
+    border-radius: 9999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    line-height: normal;
+  }
+
+  .oop-player-link {
+    color: var(--text-primary);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.15s;
+  }
+  .oop-player-link:hover {
+    color: var(--accent-primary);
+    text-decoration: underline;
+  }
+
   .oop-bracket-link {
     display: inline-flex;
     align-items: center;
-    gap: 3px;
-    font-size: 0.75rem;
+    gap: 4px;
+    font-size: 0.78rem;
     color: var(--accent-primary);
     text-decoration: none;
-    font-weight: 500;
-    transition: color 0.15s;
+    font-weight: 600;
+    transition: all 0.15s;
+    padding: 3px 6px;
+    border-radius: 4px;
   }
   .oop-bracket-link:hover {
     text-decoration: underline;
     color: #fb923c;
+    background: rgba(249, 115, 22, 0.08);
+  }
+
+  .oop-dispatch-select {
+    padding: 0.35rem 0.65rem !important;
+    font-size: 0.825rem !important;
+    height: 34px !important;
+    min-height: 34px !important;
+    width: 110px;
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    line-height: normal !important;
+  }
+
+  /* Mobile Match Cards (Hidden on desktop) */
+  .oop-mobile-cards {
+    display: none;
+  }
+
+  /* -------------------------------------------------------------
+     MOBILE SPECIFIC RESPONSIVE OVERRIDES (<= 768px)
+     ------------------------------------------------------------- */
+  @media (max-width: 768px) {
+    /* Hide wide table on mobile to avoid horizontal squishing */
+    .oop-table-responsive {
+      display: none !important;
+    }
+
+    /* Show mobile-friendly touch cards */
+    .oop-mobile-cards {
+      display: flex !important;
+      flex-direction: column;
+      gap: 0.9rem;
+      padding: 0.9rem;
+    }
+
+    .oop-match-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 1.1rem;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      transition: border-color 0.15s;
+    }
+    .oop-match-card:hover {
+      border-color: rgba(249, 115, 22, 0.4);
+    }
+
+    .oop-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .oop-card-matchup {
+      padding: 0.85rem 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .oop-card-player {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.35;
+    }
+
+    .oop-card-vs {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      margin: 0.15rem 0;
+    }
+    .oop-card-vs::before, .oop-card-vs::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .oop-card-bottom {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .oop-card-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .oop-card-actions .btn {
+      flex: 1;
+      text-align: center;
+      justify-content: center;
+      min-height: 38px !important;
+      font-size: 0.85rem !important;
+      border-radius: var(--radius-sm);
+    }
+
+    .oop-card-dispatch {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 0.6rem 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .oop-card-dispatch select {
+      flex: 1;
+      max-width: 160px;
+      height: 36px !important;
+      min-height: 36px !important;
+      padding: 0.3rem 0.6rem !important;
+      font-size: 0.825rem !important;
+    }
+
+    /* Filter Bar Responsive Stack */
+    .oop-filter-group {
+      flex-direction: column !important;
+      align-items: stretch !important;
+      width: 100% !important;
+      gap: 0.65rem !important;
+    }
+    .oop-filter-group > * {
+      width: 100% !important;
+    }
+    .oop-filter-group input,
+    .oop-filter-group select,
+    .oop-filter-group form {
+      width: 100% !important;
+      min-width: 0 !important;
+    }
+
+    /* Dispatch Toolbar Responsive Stack */
+    .oop-dispatch-toolbar {
+      flex-direction: column !important;
+      align-items: stretch !important;
+      gap: 0.85rem !important;
+      padding: 1rem !important;
+    }
+    .oop-dispatch-actions {
+      flex-direction: column !important;
+      width: 100% !important;
+      gap: 0.65rem !important;
+    }
+    .oop-dispatch-actions form,
+    .oop-dispatch-actions select,
+    .oop-dispatch-actions button {
+      width: 100% !important;
+    }
   }
 </style>
 
 <div class="container">
   <!-- Breadcrumb & Backway Bar -->
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
+  <div class="oop-nav-bar">
     <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem;">
       <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug) }}" style="color: var(--text-secondary); text-decoration: none; font-weight: 500; transition: color 0.15s;" onmouseover="this.style.color='var(--accent-primary)'" onmouseout="this.style.color='var(--text-secondary)'">
         ← {{ tournament.name }}
@@ -93,63 +476,65 @@
     </div>
     <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
       {% if current_user and current_user.role in ['admin', 'superadmin'] %}
-      <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">
+      <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}" class="btn btn-secondary btn-sm">
         ⚙️ Organizer Controls
       </a>
       {% endif %}
       <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug, court=selected_court or '', date=active_date.strftime('%Y-%m-%d') if active_date else '', export='1') }}"
-         target="_blank" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">🖨️ Export PDF</a>
+         target="_blank" class="btn btn-secondary btn-sm">🖨️ Export PDF</a>
     </div>
   </div>
 
-  <div class="header" style="padding-bottom: 1.5rem;">
-    <div class="header-content" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
-    <div>
-      <div style="display:flex; align-items:center; gap:0.75rem;">
-        <h1 style="margin:0; font-size:1.85rem;">📋 Order of Play</h1>
-        <span class="live-indicator-badge" title="Schedule auto-refreshes"><span class="live-indicator-dot"></span> Live</span>
-      </div>
-      <p class="subtitle" style="margin:0.25rem 0 0; color:var(--text-secondary);">
-        {{ tournament.name }} &bull; {{ total_matches_scheduled }} match{{ 'es' if total_matches_scheduled != 1 else '' }} scheduled
-      </p>
-    </div>
-
-    <!-- Filters & Search -->
-    <div class="action-group" style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:center;">
-      <!-- Player Finder Search -->
-      <div style="position:relative;">
-        <input type="text" id="playerScheduleSearch" placeholder="🔍 Search player schedule..." class="form-input" style="padding:0.4rem 0.75rem; font-size:0.85rem; min-width:200px;" oninput="applyScheduleFilters()">
+  <!-- Header & Filters -->
+  <div class="oop-header-block">
+    <div class="oop-header-content">
+      <div>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <h1 style="margin: 0; font-size: 1.85rem;">📋 Order of Play</h1>
+          <span class="live-indicator-badge" title="Schedule auto-refreshes"><span class="live-indicator-dot"></span> Live</span>
+        </div>
+        <p class="subtitle" style="margin: 0.35rem 0 0; color: var(--text-secondary);">
+          {{ tournament.name }} &bull; {{ total_matches_scheduled }} match{{ 'es' if total_matches_scheduled != 1 else '' }} scheduled
+        </p>
       </div>
 
-      <!-- Category Filter -->
-      <select id="categoryScheduleFilter" class="form-input" style="padding:0.4rem 0.75rem; font-size:0.85rem; min-width:150px;" onchange="applyScheduleFilters()">
-        <option value="">All Categories</option>
-        {% for cat in tournament.categories %}
-        <option value="{{ cat.name|lower }}">{{ cat.name }}</option>
-        {% endfor %}
-      </select>
+      <!-- Filters & Search -->
+      <div class="oop-filter-group">
+        <!-- Player Finder Search -->
+        <div style="position: relative; flex: 1;">
+          <input type="text" id="playerScheduleSearch" placeholder="🔍 Search player schedule..." class="form-input" style="min-width: 200px;" oninput="applyScheduleFilters()">
+        </div>
 
-      <!-- Court Filter -->
-      <form method="GET" style="display:flex; align-items:center; gap:0.5rem;">
-        {% if active_date %}
-        <input type="hidden" name="date" value="{{ active_date.strftime('%Y-%m-%d') }}">
-        {% endif %}
-        <select name="court" class="form-input" style="padding:0.4rem 0.75rem; font-size:0.85rem; min-width:140px;" onchange="this.form.submit()">
-          <option value="">All Courts</option>
-          {% for c in all_courts %}
-          <option value="{{ c }}" {% if selected_court == c %}selected{% endif %}>{{ c }}</option>
+        <!-- Category Filter -->
+        <select id="categoryScheduleFilter" class="form-input" style="min-width: 150px;" onchange="applyScheduleFilters()">
+          <option value="">All Categories</option>
+          {% for cat in tournament.categories %}
+          <option value="{{ cat.name|lower }}">{{ cat.name }}</option>
           {% endfor %}
         </select>
-      </form>
+
+        <!-- Court Filter -->
+        <form method="GET" style="display: flex; align-items: center; margin: 0;">
+          {% if active_date %}
+          <input type="hidden" name="date" value="{{ active_date.strftime('%Y-%m-%d') }}">
+          {% endif %}
+          <select name="court" class="form-input" style="min-width: 140px;" onchange="this.form.submit()">
+            <option value="">All Courts</option>
+            {% for c in all_courts %}
+            <option value="{{ c }}" {% if selected_court == c %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+          </select>
+        </form>
+      </div>
     </div>
   </div>
 
   <!-- MULTI-DAY TABS NAVIGATION -->
   {% if days_meta and days_meta|length > 1 %}
-  <div style="display:flex; gap:0.5rem; margin-top:1.5rem; overflow-x:auto; padding-bottom:0.5rem; border-bottom:1px solid var(--border-color);">
+  <div class="oop-day-tabs">
     {% for dm in days_meta %}
     <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug, date=dm.date_str, court=selected_court or '') }}"
-       style="text-decoration:none; padding:0.5rem 1.15rem; border-radius:var(--radius-md); font-weight:600; font-size:0.875rem; white-space:nowrap; transition:all 0.15s; display:inline-flex; align-items:center; gap:0.4rem; {% if dm.is_active %}background:var(--accent-primary); color:white; box-shadow:0 2px 8px rgba(249,115,22,0.3);{% else %}background:var(--bg-secondary); color:var(--text-secondary); border:1px solid var(--border-color);{% endif %}">
+       class="oop-day-tab {% if dm.is_active %}active{% else %}inactive{% endif %}">
       📅 {{ dm.label }}
     </a>
     {% endfor %}
@@ -158,37 +543,36 @@
 
   <!-- ORGANIZER SCHEDULE TOOLBAR (Rain delay, Auto-schedule) -->
   {% if current_user and current_user.role in ['admin', 'superadmin'] %}
-  <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:0.85rem 1.25rem; margin-top:1.25rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
-    <div style="display:flex; align-items:center; gap:0.5rem; font-size:0.85rem; color:var(--text-secondary);">
+  <div class="oop-dispatch-toolbar">
+    <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-secondary);">
       <span>⚡ <strong>Tournament Dispatch:</strong></span>
       <span>Anti-clash rest buffer active ({{ tournament.min_rest_minutes or 30 }} mins)</span>
     </div>
-    <div style="display:flex; gap:0.6rem; align-items:center; flex-wrap:wrap;">
+    <div class="oop-dispatch-actions">
       <!-- Rain Delay Quick Trigger -->
-      <form method="POST" style="display:inline-flex; align-items:center; gap:0.4rem;">
+      <form method="POST" style="display: inline-flex; align-items: center; gap: 0.4rem; margin: 0;">
         <input type="hidden" name="action" value="apply_delay">
-        <select name="delay_minutes" class="form-input" style="padding:0.25rem 0.5rem; font-size:0.8rem; height:32px;">
+        <select name="delay_minutes" class="form-input form-input-sm" style="min-width: 140px;">
           <option value="15">+15 Mins Delay</option>
           <option value="30" selected>+30 Mins Delay</option>
           <option value="45">+45 Mins Delay</option>
           <option value="60">+60 Mins Delay</option>
         </select>
-        <button type="submit" class="btn btn-secondary" style="padding:0.25rem 0.65rem; font-size:0.8rem; height:32px;" onclick="return confirm('Shift all remaining pending matches by this delay?');">
+        <button type="submit" class="btn btn-secondary btn-sm" onclick="return confirm('Shift all remaining pending matches by this delay?');">
           🌧️ Apply Delay
         </button>
       </form>
 
       <!-- Global Reschedule / Anti-Clash Recalculate -->
-      <form method="POST" style="display:inline;">
+      <form method="POST" style="display: inline; margin: 0;">
         <input type="hidden" name="action" value="reschedule_all">
-        <button type="submit" class="btn btn-primary" style="padding:0.25rem 0.75rem; font-size:0.8rem; height:32px;" onclick="return confirm('Recalculate schedule across all categories with anti-clash protection?');">
+        <button type="submit" class="btn btn-primary btn-sm" onclick="return confirm('Recalculate schedule across all categories with anti-clash protection?');">
           🔄 Auto-Schedule All
         </button>
       </form>
     </div>
-    </div>
-    {% endif %}
   </div>
+  {% endif %}
 
   <div class="oop-content-grid" style="padding-bottom: 2rem;">
 {% else %}
@@ -200,55 +584,56 @@
 
 {% if courts %}
   {% for court_name, matches in courts.items() %}
-  <div class="court-block" {% if not is_export %}style="background:var(--bg-card); border-radius:var(--radius-lg); overflow:hidden; box-shadow:var(--shadow-md); margin-bottom:2rem; border:1px solid var(--border-color);"{% endif %}>
+  <div class="court-block">
     
     {% if not is_export %}
-    <div style="background:linear-gradient(135deg, #f97316, #ea580c); padding:1rem 1.5rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
-      <div style="display:flex; align-items:center; gap:0.75rem;">
-        <span style="font-size:1.4rem;">🎾</span>
+    <!-- Court Header -->
+    <div class="oop-court-header">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span style="font-size: 1.4rem;">🎾</span>
         <div>
-          <h2 style="margin:0; color:white; font-size:1.2rem; font-weight:700;">{{ court_name }}</h2>
-          <p style="margin:0; color:rgba(255,255,255,0.85); font-size:0.825rem;">
+          <h2 style="margin: 0; color: #ffffff; font-size: 1.25rem; font-weight: 700;">{{ court_name }}</h2>
+          <p style="margin: 0.2rem 0 0; color: rgba(255, 255, 255, 0.9); font-size: 0.825rem;">
             {{ matches|length }} match{{ 'es' if matches|length != 1 else '' }} scheduled {% if active_date %}&bull; {{ active_date.strftime('%d %b %Y') }}{% endif %}
           </p>
         </div>
       </div>
-      <div style="background:rgba(0,0,0,0.15); padding:0.25rem 0.65rem; border-radius:9999px; color:white; font-size:0.75rem; font-weight:600;">
+      <div class="oop-court-operating-pill">
         Operating: {{ active_day_start or tournament.court_operating_start or '09:00' }} &ndash; {{ active_day_end or tournament.court_operating_end or '19:00' }}
       </div>
     </div>
 
-    <div style="overflow-x:auto;">
-    <table class="oop-matches-table" style="width:100%; border-collapse:collapse;">
+    <!-- 1. DESKTOP / TABLET MATCHES TABLE (Screen > 768px) -->
+    <div class="oop-table-responsive">
+    <table class="oop-matches-table">
       <thead>
-        <tr style="background:var(--bg-secondary); border-bottom:1px solid var(--border-color);">
-          <th style="padding:0.85rem 1rem; text-align:left; color:var(--text-muted); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.8px; width:125px;">Time</th>
-          <th style="padding:0.85rem 1rem; text-align:left; color:var(--text-muted); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.8px;">Category</th>
-          <th style="padding:0.85rem 1rem; text-align:left; color:var(--text-muted); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.8px; width:80px;">Round</th>
-          <th style="padding:0.85rem 1rem; text-align:left; color:var(--text-muted); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.8px;">Match</th>
-          <th style="padding:0.85rem 1rem; text-align:center; color:var(--text-muted); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.8px; min-width:180px;">Status & Live Controls</th>
+        <tr>
+          <th style="width: 135px;">Time</th>
+          <th style="width: 140px;">Category</th>
+          <th style="width: 120px;">Round</th>
+          <th style="min-width: 260px;">Match</th>
+          <th style="min-width: 210px; text-align: center;">Status & Live Controls</th>
           {% if current_user and current_user.role in ['admin', 'superadmin'] %}
-          <th style="padding:0.85rem 1rem; text-align:right; color:var(--text-muted); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.8px; width:100px;">Dispatch</th>
+          <th style="width: 125px; text-align: right;">Dispatch</th>
           {% endif %}
         </tr>
       </thead>
       <tbody>
         {% for item in matches %}
-        <tr class="oop-match-row" data-p1="{{ item.p1|lower }}" data-p2="{{ item.p2|lower }}" data-cat="{{ item.category_name|lower }}"
-            style="border-bottom:1px solid rgba(255,255,255,0.06); transition: background 0.15s;">
+        <tr class="oop-match-row" data-p1="{{ item.p1|lower }}" data-p2="{{ item.p2|lower }}" data-cat="{{ item.category_name|lower }}">
           
           <!-- Match Time & 'Not Before' indication -->
-          <td style="padding:0.85rem 1rem; vertical-align:middle;">
-            <div style="display:flex; flex-direction:column; gap:2px;">
-              <span style="font-weight:700; font-size:1.1rem; color:var(--accent-primary);">
+          <td>
+            <div style="display: flex; flex-direction: column; gap: 3px;">
+              <span style="font-weight: 700; font-size: 1.15rem; color: var(--accent-primary); line-height: 1.2;">
                 {{ item.time }}
               </span>
               {% if item.is_not_before %}
-              <span style="font-size:0.72rem; color:var(--accent-warning); font-weight:600; display:inline-flex; align-items:center; gap:2px;">
+              <span style="font-size: 0.75rem; color: var(--accent-warning); font-weight: 600; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap;">
                 ⏱️ Not Before
               </span>
               {% else %}
-              <span style="font-size:0.72rem; color:var(--accent-success); font-weight:600;">
+              <span style="font-size: 0.75rem; color: var(--accent-success); font-weight: 600; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap;">
                 🎾 First Match
               </span>
               {% endif %}
@@ -256,44 +641,44 @@
           </td>
 
           <!-- Category -->
-          <td style="padding:0.85rem 1rem; color:var(--text-secondary); font-size:0.9rem; vertical-align:middle;">
+          <td>
             {% if item.category_id %}
-            <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=item.category_id, match_id=item.match.id) }}" style="color:inherit; text-decoration:none;" onmouseover="this.style.color='var(--accent-primary)'" onmouseout="this.style.color='inherit'">
-              <strong>{{ item.category_name }}</strong>
+            <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=item.category_id, match_id=item.match.id) }}" class="oop-cat-badge" style="text-decoration: none;" title="View category">
+              {{ item.category_name }}
             </a>
             {% else %}
-            <strong>{{ item.category_name }}</strong>
+            <span class="oop-cat-badge">{{ item.category_name }}</span>
             {% endif %}
           </td>
 
           <!-- Round -->
-          <td style="padding:0.85rem 1rem; vertical-align:middle;">
-            <span style="background:rgba(249,115,22,0.12); color:var(--accent-primary); padding:0.2rem 0.55rem; border-radius:9999px; font-size:0.78rem; font-weight:600;">
+          <td>
+            <span class="oop-round-badge">
               {{ item.round_name }}
             </span>
           </td>
 
           <!-- Players / Teams & Bracket Link -->
-          <td style="padding:0.85rem 1rem; vertical-align:middle;">
-            <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
-              <span style="font-weight:600; color:var(--text-primary); font-size:0.95rem;">
+          <td>
+            <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; line-height: 1.35;">
+              <span style="font-size: 0.95rem; font-weight: 600;">
                 {% if item.p1_player_id %}
-                <a href="{{ url_for('player.view_player', player_id=item.p1_player_id) }}" style="color:inherit; text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">{{ item.p1 }}</a>
+                <a href="{{ url_for('player.view_player', player_id=item.p1_player_id) }}" class="oop-player-link">{{ item.p1 }}</a>
                 {% else %}
-                {{ item.p1 }}
+                <span style="color: var(--text-primary);">{{ item.p1 }}</span>
                 {% endif %}
               </span>
-              <span style="background:var(--bg-tertiary); color:var(--text-muted); padding:0.12rem 0.45rem; border-radius:9999px; font-size:0.72rem; font-weight:600;">vs</span>
-              <span style="font-weight:600; color:var(--text-primary); font-size:0.95rem;">
+              <span class="oop-vs-pill">vs</span>
+              <span style="font-size: 0.95rem; font-weight: 600;">
                 {% if item.p2_player_id %}
-                <a href="{{ url_for('player.view_player', player_id=item.p2_player_id) }}" style="color:inherit; text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">{{ item.p2 }}</a>
+                <a href="{{ url_for('player.view_player', player_id=item.p2_player_id) }}" class="oop-player-link">{{ item.p2 }}</a>
                 {% else %}
-                {{ item.p2 }}
+                <span style="color: var(--text-primary);">{{ item.p2 }}</span>
                 {% endif %}
               </span>
             </div>
             {% if item.category_id %}
-            <div style="margin-top:0.35rem;">
+            <div style="margin-top: 0.45rem;">
               <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=item.category_id, match_id=item.match.id) }}" class="oop-bracket-link" title="Jump to this match on the category bracket">
                 🎯 View in Bracket ↗
               </a>
@@ -302,17 +687,17 @@
           </td>
 
           <!-- Status & Live Controls -->
-          <td style="padding:0.85rem 1rem; text-align:center; vertical-align:middle;">
+          <td style="text-align: center;">
             {% if item.status == 'completed' %}
               <span class="oop-status-badge completed">✓ Completed</span>
               {% if item.match.score1 %}
-              <div style="font-weight:700; font-size:0.85rem; color:var(--text-primary); margin-top:3px; letter-spacing:0.3px;">
+              <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-top: 5px; letter-spacing: 0.3px;">
                 {{ item.match.score1 }}
               </div>
               {% endif %}
               {% if current_user and current_user.role in ['admin', 'superadmin'] and item.category_id %}
-              <div style="margin-top:4px;">
-                <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=item.category_id, match_id=item.match.id) }}" style="font-size:0.72rem; color:var(--text-secondary); text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+              <div style="margin-top: 5px;">
+                <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=item.category_id, match_id=item.match.id) }}" style="font-size: 0.75rem; color: var(--text-secondary); text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
                   Bracket details ↗
                 </a>
               </div>
@@ -320,13 +705,13 @@
             {% elif item.status == 'in_progress' %}
               <span class="oop-status-badge in-progress">🔴 IN PROGRESS</span>
               {% if current_user and current_user.role in ['admin', 'superadmin'] %}
-              <div style="display:flex; justify-content:center; gap:5px; margin-top:6px; flex-wrap:wrap;">
+              <div style="display: flex; justify-content: center; gap: 6px; margin-top: 8px; flex-wrap: wrap;">
                 {% if item.category_id %}
-                <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=item.category_id, match_id=item.match.id, open_score=1) }}" class="btn btn-primary" style="padding:0.25rem 0.65rem; font-size:0.74rem; background:var(--accent-success); border-color:var(--accent-success); border-radius:9999px; text-decoration:none; font-weight:600; box-shadow:0 2px 6px rgba(16,185,129,0.3);" title="Go to bracket to enter final score">
+                <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=item.category_id, match_id=item.match.id, open_score=1) }}" class="btn btn-primary btn-sm" style="background: var(--accent-success); border-color: var(--accent-success); border-radius: 9999px; text-decoration: none; font-weight: 600; box-shadow: 0 2px 6px rgba(16,185,129,0.3);" title="Go to bracket to enter final score">
                   🏁 Score & Complete ↗
                 </a>
                 {% endif %}
-                <button type="button" onclick="quickToggleStatus({{ item.match.id }}, 'pending', this)" class="btn btn-secondary" style="padding:0.22rem 0.5rem; font-size:0.7rem; border-radius:9999px;" title="Reset back to To Play">
+                <button type="button" onclick="quickToggleStatus({{ item.match.id }}, 'pending', this)" class="btn btn-secondary btn-sm" style="border-radius: 9999px;" title="Reset back to To Play">
                   ⏸ Pause
                 </button>
               </div>
@@ -334,8 +719,8 @@
             {% else %}
               <span class="oop-status-badge pending">📅 To Play</span>
               {% if current_user and current_user.role in ['admin', 'superadmin'] %}
-              <div style="display:flex; justify-content:center; gap:4px; margin-top:6px;">
-                <button type="button" onclick="quickToggleStatus({{ item.match.id }}, 'in_progress', this)" class="btn btn-primary" style="padding:0.25rem 0.65rem; font-size:0.74rem; background:#f59e0b; border-color:#f59e0b; border-radius:9999px; font-weight:600; box-shadow:0 2px 6px rgba(245,158,11,0.25);" title="Start match and mark court as active">
+              <div style="display: flex; justify-content: center; gap: 6px; margin-top: 8px;">
+                <button type="button" onclick="quickToggleStatus({{ item.match.id }}, 'in_progress', this)" class="btn btn-primary btn-sm" style="background: #f59e0b; border-color: #f59e0b; border-radius: 9999px; font-weight: 600; box-shadow: 0 2px 6px rgba(245,158,11,0.25);" title="Start match and mark court as active">
                   ▶ Start Match
                 </button>
               </div>
@@ -345,12 +730,12 @@
 
           <!-- Quick Move / Dispatch Menu for Organizers -->
           {% if current_user and current_user.role in ['admin', 'superadmin'] %}
-          <td style="padding:0.85rem 1rem; text-align:right; vertical-align:middle;">
+          <td style="text-align: right; white-space: nowrap;">
             {% if item.status != 'completed' %}
-            <form method="POST" style="display:inline-flex; align-items:center; gap:3px;">
+            <form method="POST" style="display: inline-flex; align-items: center; margin: 0;">
               <input type="hidden" name="action" value="reassign_court">
               <input type="hidden" name="match_id" value="{{ item.match.id }}">
-              <select name="new_court" class="form-input" style="padding:0.2rem 0.4rem; font-size:0.75rem; height:28px; width:85px;" onchange="this.form.submit()">
+              <select name="new_court" class="form-input oop-dispatch-select" onchange="this.form.submit()">
                 <option value="" disabled selected>Move ⤾</option>
                 {% for oc in all_courts %}
                 {% if oc != court_name %}
@@ -368,6 +753,113 @@
     </table>
     </div>
 
+    <!-- 2. MOBILE MATCH CARDS VIEW (Screen <= 768px) -->
+    <div class="oop-mobile-cards">
+      {% for item in matches %}
+      <div class="oop-match-card" data-p1="{{ item.p1|lower }}" data-p2="{{ item.p2|lower }}" data-cat="{{ item.category_name|lower }}">
+        <!-- Card Top Row: Time, Category & Round -->
+        <div class="oop-card-top">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-weight: 700; font-size: 1.15rem; color: var(--accent-primary);">{{ item.time }}</span>
+            {% if item.is_not_before %}
+            <span style="font-size: 0.72rem; color: var(--accent-warning); font-weight: 600; display: inline-flex; align-items: center; gap: 2px;">⏱️ Not Before</span>
+            {% else %}
+            <span style="font-size: 0.72rem; color: var(--accent-success); font-weight: 600; display: inline-flex; align-items: center; gap: 2px;">🎾 First Match</span>
+            {% endif %}
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.4rem;">
+            <span class="oop-cat-badge">{{ item.category_name }}</span>
+            <span class="oop-round-badge">{{ item.round_name }}</span>
+          </div>
+        </div>
+
+        <!-- Card Matchup: Players -->
+        <div class="oop-card-matchup">
+          <div class="oop-card-player">
+            <span style="color: var(--accent-primary); font-size: 0.85rem;">👤</span>
+            {% if item.p1_player_id %}
+            <a href="{{ url_for('player.view_player', player_id=item.p1_player_id) }}" class="oop-player-link">{{ item.p1 }}</a>
+            {% else %}
+            <span>{{ item.p1 }}</span>
+            {% endif %}
+          </div>
+          <div class="oop-card-vs">vs</div>
+          <div class="oop-card-player">
+            <span style="color: var(--accent-primary); font-size: 0.85rem;">👤</span>
+            {% if item.p2_player_id %}
+            <a href="{{ url_for('player.view_player', player_id=item.p2_player_id) }}" class="oop-player-link">{{ item.p2 }}</a>
+            {% else %}
+            <span>{{ item.p2 }}</span>
+            {% endif %}
+          </div>
+
+          {% if item.category_id %}
+          <div style="margin-top: 0.4rem;">
+            <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=item.category_id, match_id=item.match.id) }}" class="oop-bracket-link">
+              🎯 View in Bracket ↗
+            </a>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Card Bottom Row: Status & Live Controls -->
+        <div class="oop-card-bottom">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+              {% if item.status == 'completed' %}
+                <span class="oop-status-badge completed">✓ Completed</span>
+                {% if item.match.score1 %}
+                <span style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-left: 0.5rem;">{{ item.match.score1 }}</span>
+                {% endif %}
+              {% elif item.status == 'in_progress' %}
+                <span class="oop-status-badge in-progress">🔴 IN PROGRESS</span>
+              {% else %}
+                <span class="oop-status-badge pending">📅 To Play</span>
+              {% endif %}
+            </div>
+          </div>
+
+          {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+          <div class="oop-card-actions">
+            {% if item.status == 'in_progress' %}
+              {% if item.category_id %}
+              <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=item.category_id, match_id=item.match.id, open_score=1) }}" class="btn btn-primary" style="background: var(--accent-success); border-color: var(--accent-success); color: white; font-weight: 600;">
+                🏁 Score & Complete ↗
+              </a>
+              {% endif %}
+              <button type="button" onclick="quickToggleStatus({{ item.match.id }}, 'pending', this)" class="btn btn-secondary">
+                ⏸ Pause
+              </button>
+            {% elif item.status != 'completed' %}
+              <button type="button" onclick="quickToggleStatus({{ item.match.id }}, 'in_progress', this)" class="btn btn-primary" style="background: #f59e0b; border-color: #f59e0b; font-weight: 600;">
+                ▶ Start Match
+              </button>
+            {% endif %}
+          </div>
+
+          {% if item.status != 'completed' %}
+          <div class="oop-card-dispatch">
+            <span style="color: var(--text-muted); font-size: 0.8rem; font-weight: 500;">Reassign Court:</span>
+            <form method="POST" style="margin: 0; display: inline-flex;">
+              <input type="hidden" name="action" value="reassign_court">
+              <input type="hidden" name="match_id" value="{{ item.match.id }}">
+              <select name="new_court" class="form-input" style="height: 36px !important; min-height: 36px !important; padding: 0.25rem 0.6rem !important; font-size: 0.825rem !important;" onchange="this.form.submit()">
+                <option value="" disabled selected>Move to... ⤾</option>
+                {% for oc in all_courts %}
+                {% if oc != court_name %}
+                <option value="{{ oc }}">{{ oc }}</option>
+                {% endif %}
+                {% endfor %}
+              </select>
+            </form>
+          </div>
+          {% endif %}
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
     {% else %}
     {# PDF Export Mode #}
     <div class="court-block">
@@ -375,13 +867,13 @@
       <table class="oop-table">
         <thead>
           <tr>
-            <th style="width:85px;">Time</th>
+            <th style="width: 85px;">Time</th>
             <th>Category</th>
-            <th style="width:45px;">Round</th>
+            <th style="width: 45px;">Round</th>
             <th>Player 1</th>
-            <th style="width:25px;"></th>
+            <th style="width: 25px;"></th>
             <th>Player 2</th>
-            <th style="width:75px;">Status</th>
+            <th style="width: 75px;">Status</th>
           </tr>
         </thead>
         <tbody>
@@ -394,7 +886,7 @@
             <td>{{ item.category_name }}</td>
             <td><span class="round-badge">{{ item.round_name }}</span></td>
             <td>{{ item.p1 }}</td>
-            <td style="text-align:center;"><span class="vs-badge">vs</span></td>
+            <td style="text-align: center;"><span class="vs-badge">vs</span></td>
             <td>{{ item.p2 }}</td>
             <td class="status-{{ item.status }}">
               {% if item.status == 'completed' %}✓ Done
@@ -412,10 +904,10 @@
 
 {% else %}
   {% if not is_export %}
-  <div class="card" style="text-align:center; padding:4rem 2rem; background:var(--bg-card); border-radius:var(--radius-lg); border:1px solid var(--border-color);">
-    <div style="font-size:3.5rem; margin-bottom:1rem; opacity:0.5;">📋</div>
+  <div class="card" style="text-align: center; padding: 4rem 2rem; background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border-color);">
+    <div style="font-size: 3.5rem; margin-bottom: 1rem; opacity: 0.5;">📋</div>
     <h2>No Scheduled Matches Found</h2>
-    <p style="color:var(--text-secondary); max-width:450px; margin:1rem auto;">
+    <p style="color: var(--text-secondary); max-width: 450px; margin: 1rem auto;">
       {% if active_date %}
       No matches are scheduled for <strong>{{ active_date.strftime('%d %B %Y') }}</strong>. Use the day tabs above to view other dates.
       {% else %}
@@ -424,30 +916,32 @@
     </p>
   </div>
   {% else %}
-  <p style="text-align:center; color:#888; margin-top:2rem;">No matches scheduled yet.</p>
+  <p style="text-align: center; color: #888; margin-top: 2rem;">No matches scheduled yet.</p>
   {% endif %}
 {% endif %}
 
 {% if not is_export %}
-</div>
+  </div> <!-- close .oop-content-grid -->
+</div> <!-- close .container -->
+
 <script>
 function applyScheduleFilters() {
     const playerQuery = (document.getElementById('playerScheduleSearch')?.value || '').trim().toLowerCase();
     const catQuery = (document.getElementById('categoryScheduleFilter')?.value || '').trim().toLowerCase();
-    const rows = document.querySelectorAll('.oop-match-row');
+    const elements = document.querySelectorAll('.oop-match-row, .oop-match-card');
     
-    rows.forEach(r => {
-        const p1 = r.dataset.p1 || '';
-        const p2 = r.dataset.p2 || '';
-        const cat = r.dataset.cat || '';
+    elements.forEach(el => {
+        const p1 = el.dataset.p1 || '';
+        const p2 = el.dataset.p2 || '';
+        const cat = el.dataset.cat || '';
         
         const matchesPlayer = !playerQuery || p1.includes(playerQuery) || p2.includes(playerQuery);
         const matchesCat = !catQuery || cat === catQuery || cat.includes(catQuery);
         
         if (matchesPlayer && matchesCat) {
-            r.style.display = '';
+            el.style.display = '';
         } else {
-            r.style.display = 'none';
+            el.style.display = 'none';
         }
     });
 }

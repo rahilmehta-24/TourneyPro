@@ -2313,6 +2313,34 @@ body.pdf-export-mode .bracket-round:not(:first-child) .tennis-match::before {
     padding: 0.5rem 1rem !important;
 }
 
+.btn-sm,
+.btn-xs,
+.btn-compact,
+.oop-matches-table .btn,
+.oop-mobile-cards .btn,
+.oop-dispatch-toolbar .btn {
+    padding: 0.35rem 0.75rem !important;
+    font-size: 0.8rem !important;
+    height: auto !important;
+    min-height: 32px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    line-height: normal !important;
+}
+
+.form-input-sm,
+select.form-input-sm,
+.oop-dispatch-select,
+.oop-matches-table select,
+.oop-dispatch-toolbar select {
+    padding: 0.3rem 0.65rem !important;
+    height: auto !important;
+    min-height: 34px !important;
+    font-size: 0.825rem !important;
+    line-height: normal !important;
+}
+
 .dashboard-grid, .manage-grid {
     gap: 2rem !important;
 }
