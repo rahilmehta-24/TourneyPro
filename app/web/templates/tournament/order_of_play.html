@@ -662,18 +662,32 @@
           <td>
             <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; line-height: 1.35;">
               <span style="font-size: 0.95rem; font-weight: 600;">
-                {% if item.p1_player_id %}
-                <a href="{{ url_for('player.view_player', player_id=item.p1_player_id) }}" class="oop-player-link">{{ item.p1 }}</a>
+                {% if item.p1_players %}
+                  {% for pl in item.p1_players %}
+                    {% if pl.player_id %}
+                    <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-link" title="View {{ pl.name }} profile">{{ pl.name }}</a>
+                    {% else %}
+                    <span style="color: var(--text-primary);">{{ pl.name }}</span>
+                    {% endif %}
+                    {% if not loop.last %}<span style="color: var(--text-muted); margin: 0 0.25rem; font-weight: 400;">/</span>{% endif %}
+                  {% endfor %}
                 {% else %}
-                <span style="color: var(--text-primary);">{{ item.p1 }}</span>
+                  <span style="color: var(--text-primary);">{{ item.p1 }}</span>
                 {% endif %}
               </span>
               <span class="oop-vs-pill">vs</span>
               <span style="font-size: 0.95rem; font-weight: 600;">
-                {% if item.p2_player_id %}
-                <a href="{{ url_for('player.view_player', player_id=item.p2_player_id) }}" class="oop-player-link">{{ item.p2 }}</a>
+                {% if item.p2_players %}
+                  {% for pl in item.p2_players %}
+                    {% if pl.player_id %}
+                    <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-link" title="View {{ pl.name }} profile">{{ pl.name }}</a>
+                    {% else %}
+                    <span style="color: var(--text-primary);">{{ pl.name }}</span>
+                    {% endif %}
+                    {% if not loop.last %}<span style="color: var(--text-muted); margin: 0 0.25rem; font-weight: 400;">/</span>{% endif %}
+                  {% endfor %}
                 {% else %}
-                <span style="color: var(--text-primary);">{{ item.p2 }}</span>
+                  <span style="color: var(--text-primary);">{{ item.p2 }}</span>
                 {% endif %}
               </span>
             </div>
@@ -777,20 +791,38 @@
         <div class="oop-card-matchup">
           <div class="oop-card-player">
             <span style="color: var(--accent-primary); font-size: 0.85rem;">👤</span>
-            {% if item.p1_player_id %}
-            <a href="{{ url_for('player.view_player', player_id=item.p1_player_id) }}" class="oop-player-link">{{ item.p1 }}</a>
-            {% else %}
-            <span>{{ item.p1 }}</span>
-            {% endif %}
+            <div>
+              {% if item.p1_players %}
+                {% for pl in item.p1_players %}
+                  {% if pl.player_id %}
+                  <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-link" title="View {{ pl.name }} profile">{{ pl.name }}</a>
+                  {% else %}
+                  <span>{{ pl.name }}</span>
+                  {% endif %}
+                  {% if not loop.last %}<span style="color: var(--text-muted); margin: 0 0.25rem;">/</span>{% endif %}
+                {% endfor %}
+              {% else %}
+                <span>{{ item.p1 }}</span>
+              {% endif %}
+            </div>
           </div>
           <div class="oop-card-vs">vs</div>
           <div class="oop-card-player">
             <span style="color: var(--accent-primary); font-size: 0.85rem;">👤</span>
-            {% if item.p2_player_id %}
-            <a href="{{ url_for('player.view_player', player_id=item.p2_player_id) }}" class="oop-player-link">{{ item.p2 }}</a>
-            {% else %}
-            <span>{{ item.p2 }}</span>
-            {% endif %}
+            <div>
+              {% if item.p2_players %}
+                {% for pl in item.p2_players %}
+                  {% if pl.player_id %}
+                  <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-link" title="View {{ pl.name }} profile">{{ pl.name }}</a>
+                  {% else %}
+                  <span>{{ pl.name }}</span>
+                  {% endif %}
+                  {% if not loop.last %}<span style="color: var(--text-muted); margin: 0 0.25rem;">/</span>{% endif %}
+                {% endfor %}
+              {% else %}
+                <span>{{ item.p2 }}</span>
+              {% endif %}
+            </div>
           </div>
 
           {% if item.category_id %}

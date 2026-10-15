@@ -25,7 +25,7 @@ Features:
 
 import json
 from datetime import datetime, date, time, timedelta
-from app.domain.models import db, Match, Category, Tournament, Participant, Group
+from app.domain.models import db, Match, Category, Tournament, Participant, Group, Player
 
 
 def parse_time_str(time_str: str, default: time = time(9, 0)) -> time:
@@ -364,6 +364,50 @@ def reassign_match_court(match_id: int, new_court_name: str, new_time: datetime 
     return True
 
 
+def extract_participant_players(participant: Participant | None) -> list[dict]:
+    """
+    Extracts individual players for singles or doubles pairs.
+    Returns list of dicts: [{'name': 'Player Name', 'player_id': int | None}, ...]
+    """
+    if not participant:
+        return [{"name": "TBD", "player_id": None}]
+
+    raw_name = participant.name or "TBD"
+
+    # Check for doubles pair separated by ' / '
+    if " / " in raw_name:
+        parts = [part.strip() for part in raw_name.split(" / ", 1)]
+        p1_name = parts[0]
+        p2_name = parts[1] if len(parts) > 1 else (participant.partner_name or "")
+
+        p1_id = participant.player_id
+        p2_id = participant.player2_id
+        if not p2_id and p2_name:
+            matched = Player.query.filter_by(name=p2_name).first()
+            if matched:
+                p2_id = matched.id
+
+        return [
+            {"name": p1_name, "player_id": p1_id},
+            {"name": p2_name, "player_id": p2_id}
+        ]
+    elif participant.partner_name:
+        p1_name = raw_name
+        p2_name = participant.partner_name
+        p1_id = participant.player_id
+        p2_id = participant.player2_id
+        if not p2_id and p2_name:
+            matched = Player.query.filter_by(name=p2_name).first()
+            if matched:
+                p2_id = matched.id
+        return [
+            {"name": p1_name, "player_id": p1_id},
+            {"name": p2_name, "player_id": p2_id}
+        ]
+    else:
+        return [{"name": raw_name, "player_id": participant.player_id}]
+
+
 def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> dict:
     """
     Returns structured Order of Play for tournament with day filtering,
@@ -446,6 +490,9 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
         p1_player_id = match.participant1.player_id if match.participant1 else None
         p2_player_id = match.participant2.player_id if match.participant2 else None
 
+        p1_players = extract_participant_players(match.participant1)
+        p2_players = extract_participant_players(match.participant2)
+
         time_str = match.scheduled_time.strftime("%H:%M") if match.scheduled_time else "TBD"
         is_nb = getattr(match, 'is_not_before', False)
 
@@ -462,6 +509,8 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
             "p2": p2,
             "p1_player_id": p1_player_id,
             "p2_player_id": p2_player_id,
+            "p1_players": p1_players,
+            "p2_players": p2_players,
             "round": match.round,
             "round_name": get_match_round_name(match),
             "match_number": match.match_number,
