@@ -15,21 +15,309 @@
         
         /* Hide UI components completely */
         .page-actions, .header-actions, .navbar, .footer, .btn, .flash-messages, .mobile-menu-btn, .no-print,
-        .mobile-bracket-tabs, .meta-row, .back-link, .status-badge { 
+        .mobile-bracket-tabs, .meta-row, .back-link, .status-badge, .bracket-toolbar, #bracketViewportControls,
+        .category-nav-tabs, #live-indicator, .live-indicator-badge { 
             display: none !important; 
         }
         
+        /* Section Banner for Print Draw Sheets */
+        .print-draw-banner {
+            display: block;
+            margin: 0 0 10px 0;
+            padding: 6px 14px;
+            background: #f8fafc;
+            border: 1.5px solid #0f172a;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .print-draw-banner-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .print-draw-title,
+        body.pdf-export-mode .print-draw-title {
+            font-size: 13pt !important;
+            font-weight: 900 !important;
+            color: #000000 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.5px !important;
+        }
+        .print-draw-badge,
+        body.pdf-export-mode .print-draw-badge {
+            background: #f1f5f9 !important;
+            color: #0f172a !important;
+            border: 1.5px solid #0f172a !important;
+            padding: 3px 12px !important;
+            border-radius: 9999px !important;
+            font-size: 9pt !important;
+            font-weight: 800 !important;
+            letter-spacing: 0.3px !important;
+            display: inline-block !important;
+        }
+        .print-draw-sub,
+        body.pdf-export-mode .print-draw-sub {
+            font-size: 9pt !important;
+            color: #334155 !important;
+            font-weight: 700 !important;
+            font-style: normal !important;
+        }
+
+        /* High-density printable draw sheets for body.pdf-export-mode (screen preview & print) */
+        body.pdf-export-mode {
+            background: #f8fafc !important;
+            color: #000000 !important;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+        }
+
+        body.pdf-export-mode .page-break {
+            background: #ffffff !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+            margin: 20px auto 40px auto;
+            padding: 16px 20px;
+            max-width: 1200px;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        body.pdf-export-mode .bracket-viewport,
+        body.pdf-export-mode .bracket-canvas {
+            overflow: visible !important;
+            transform: none !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            border: none !important;
+            background: transparent !important;
+        }
+
+        body.pdf-export-mode .bracket {
+            display: flex !important;
+            flex-direction: row !important;
+            gap: 16px !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            zoom: 1 !important;
+            width: 100% !important;
+            align-items: stretch !important;
+        }
+
+        body.pdf-export-mode .bracket-round {
+            flex: 1 1 0 !important;
+            min-width: 190px !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+
+        body.pdf-export-mode .bracket-round .round-title,
+        body.pdf-export-mode .round-title {
+            background: #f1f5f9 !important;
+            background-color: #f1f5f9 !important;
+            color: #000000 !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+            border-radius: 4px !important;
+            border: 1.5px solid #000000 !important;
+            font-size: 9.5pt !important;
+            font-weight: 900 !important;
+            letter-spacing: 0.5px !important;
+            text-transform: uppercase !important;
+            padding: 6px 10px !important;
+            margin: 0 0 10px 0 !important;
+            text-align: center !important;
+        }
+
+        body.pdf-export-mode .round-matches {
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: stretch !important;
+            flex: 1 !important;
+        }
+
+        body.pdf-export-mode .match-card-wrapper {
+            padding: 3px 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            flex: 1 !important;
+            position: relative !important;
+        }
+
+        body.pdf-export-mode .tennis-match {
+            width: 100% !important;
+            height: 60px !important;
+            min-height: 60px !important;
+            max-height: 60px !important;
+            background: #ffffff !important;
+            border: 1.5px solid #000000 !important;
+            border-radius: 4px !important;
+            box-shadow: none !important;
+            display: flex !important;
+            flex-direction: column !important;
+            box-sizing: border-box !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
+
+        body.pdf-export-mode .tennis-match-header {
+            height: 18px !important;
+            padding: 0 8px !important;
+            font-size: 7.5pt !important;
+            font-weight: 800 !important;
+            border-bottom: 1px solid #cbd5e1 !important;
+            background: #f1f5f9 !important;
+            color: #0f172a !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            box-sizing: border-box !important;
+        }
+
+        body.pdf-export-mode .tennis-match-body {
+            flex: 1 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            box-sizing: border-box !important;
+        }
+
+        body.pdf-export-mode .tennis-player-row {
+            height: 20px !important;
+            padding: 0 8px !important;
+            font-size: 9pt !important;
+            background: #ffffff !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            border-bottom: 1px solid #e2e8f0 !important;
+            box-sizing: border-box !important;
+        }
+        body.pdf-export-mode .tennis-player-row:last-child {
+            border-bottom: none !important;
+        }
+        body.pdf-export-mode .tennis-player-row.winner {
+            background: #f8fafc !important;
+        }
+
+        body.pdf-export-mode .tennis-player-info {
+            display: flex !important;
+            align-items: center !important;
+            flex: 1 !important;
+            min-width: 0 !important;
+            overflow: hidden !important;
+        }
+
+        body.pdf-export-mode .tennis-player-name {
+            font-weight: 700 !important;
+            color: #000000 !important;
+            font-size: 9pt !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            flex: 1 !important;
+            min-width: 0 !important;
+        }
+
+        body.pdf-export-mode .tennis-player-row.winner .tennis-player-name {
+            font-weight: 900 !important;
+            color: #000000 !important;
+        }
+
+        body.pdf-export-mode .tennis-player-seed {
+            font-size: 7.5pt !important;
+            font-weight: 800 !important;
+            color: #0f172a !important;
+            background: #e2e8f0 !important;
+            padding: 1px 5px !important;
+            border-radius: 3px !important;
+            margin-right: 5px !important;
+            display: inline-block !important;
+        }
+
+        body.pdf-export-mode .tennis-set-scores {
+            display: flex !important;
+            gap: 2px !important;
+            align-items: center !important;
+        }
+
+        body.pdf-export-mode .tennis-set-box {
+            width: 17px !important;
+            height: 17px !important;
+            line-height: 17px !important;
+            font-size: 8.5pt !important;
+            text-align: center !important;
+            border: 1px solid #334155 !important;
+            border-radius: 2px !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            font-weight: 800 !important;
+        }
+
+        body.pdf-export-mode .tennis-set-box.set-winner {
+            background: #0f172a !important;
+            color: #ffffff !important;
+            border-color: #0f172a !important;
+            font-weight: 900 !important;
+        }
+
+        body.pdf-export-mode .tennis-set-box.empty {
+            color: #94a3b8 !important;
+            border: 1px dashed #cbd5e1 !important;
+            background: transparent !important;
+        }
+
+        /* Crisp Black Connectors for Print */
+        body.pdf-export-mode .match-card-wrapper::after, 
+        body.pdf-export-mode .match-card-wrapper::before, 
+        body.pdf-export-mode .bracket-round:not(:first-child) .tennis-match::before {
+            background: #000000 !important;
+            z-index: 5 !important;
+        }
+
+        /* Hide incoming connectors on the first visible round */
+        body.pdf-export-mode .bracket-round.first-visible-round .tennis-match::before,
+        body.pdf-export-mode .bracket-round.first-visible-round .match-card-wrapper::before,
+        .bracket-round.first-visible-round .tennis-match::before,
+        .bracket-round.first-visible-round .match-card-wrapper::before {
+            display: none !important;
+            content: none !important;
+            width: 0 !important;
+        }
+
+        /* Hide outgoing connectors on the last visible round of a section */
+        body.pdf-export-mode .bracket-round.last-visible-round .match-card-wrapper::after,
+        .bracket-round.last-visible-round .match-card-wrapper::after {
+            display: none !important;
+            content: none !important;
+            width: 0 !important;
+        }
+
+        /* Complete hide for paginated items */
+        .print-hidden,
+        body.pdf-export-mode .print-hidden,
+        body.pdf-export-mode .bracket-round.print-hidden,
+        body.pdf-export-mode .match-card-wrapper.print-hidden {
+            display: none !important;
+        }
+
         @media print {
             @page {
                 size: A4 landscape;
-                margin: 10mm;
+                margin: 8mm;
             }
             body {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
+                background: #ffffff !important;
+                color: #000000 !important;
             }
-            .page-break {
-                break-after: page;
+            body.pdf-export-mode .page-break {
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                max-width: 100% !important;
+                border-radius: 0 !important;
+                page-break-after: always !important;
+                break-after: page !important;
             }
             
             /* Modern Header adjustments for print */
@@ -38,32 +326,31 @@
                 color: #000000 !important;
                 border: none !important;
                 box-shadow: none !important;
-                padding: 1rem 0 !important;
-                margin-bottom: 0 !important;
+                padding: 0.25rem 0 0.5rem 0 !important;
+                margin-bottom: 0.5rem !important;
+                border-bottom: 2px solid #000000 !important;
             }
             .modern-header h1 {
                 font-weight: 800 !important;
                 color: #000000 !important;
+                font-size: 18pt !important;
+                margin: 0 !important;
             }
             
             /* Bracket Section Page Breaks */
             .bracket-section {
-                break-before: page;
+                break-before: auto !important;
             }
-            /* Remove page break if it's the very first element (unlikely, but safe) */
             .container > .bracket-section:first-child {
-                break-before: auto;
-            }
-            
-            .bracket-round.first-visible-round .tennis-match::before {
-                display: none !important;
+                break-before: auto !important;
             }
         }
     </style>
     
     <script>
         /**
-         * Dynamically splits a massive bracket into printable pages
+         * Dynamically splits a bracket into scalable printable pages based on draw size
+         * Universally handles 8, 16, 32, 64, and 128+ draws with official tournament sectioning
          * @param {HTMLElement} container - The DOM element containing the .bracket
          * @returns {HTMLElement[]} - An array of paginated DOM elements
          */
@@ -77,102 +364,265 @@
             const r1Matches = rounds[0].querySelectorAll('.match-card-wrapper').length;
             const totalRounds = rounds.length;
 
+            // Category title helper
+            const headerTitle = container.querySelector('.modern-header h1, h1, h2');
+            const categoryTitle = headerTitle ? headerTitle.innerText.trim() : 'Bracket';
+
+            function createBanner(titleText, subtitleText) {
+                const banner = document.createElement('div');
+                banner.className = 'print-draw-banner';
+                banner.innerHTML = `
+                    <div class="print-draw-banner-inner">
+                        <span class="print-draw-title">${categoryTitle}</span>
+                        <span class="print-draw-badge">${titleText}</span>
+                        ${subtitleText ? `<span class="print-draw-sub">${subtitleText}</span>` : ''}
+                    </div>
+                `;
+                return banner;
+            }
+
+            function cleanupNonFirstPage(pageNode) {
+                const podium = pageNode.querySelector('.podium-container');
+                if (podium) podium.remove();
+                const winnerSec = pageNode.querySelector('.winner-section');
+                if (winnerSec) winnerSec.remove();
+                const modHeader = pageNode.querySelector('.modern-header');
+                if (modHeader) modHeader.remove();
+                const mobileTabs = pageNode.querySelector('.mobile-bracket-tabs');
+                if (mobileTabs) mobileTabs.remove();
+                const pageHeader = pageNode.querySelector('.bracket-section > .page-header');
+                if (pageHeader) pageHeader.remove();
+            }
+
+            // CASE 1: Small draws: 8 or 16 players (r1Matches <= 8, max 4 rounds)
+            // Fits cleanly on 1 A4 Landscape page using the high-density print profile!
+            if (r1Matches <= 8 && totalRounds <= 4) {
+                const page = container.cloneNode(true);
+                page.classList.add('page-break');
+                const banner = createBanner('Full Tournament Draw', 'Official Championship Bracket');
+                const target = page.querySelector('.bracket-section') || page;
+                target.insertBefore(banner, target.firstChild);
+                return [page];
+            }
+
             let pages = [];
 
-            // A draw of 64 players has 32 matches in R1. That's too big for one page.
-            if (r1Matches > 16) {
-                // Determine where to break horizontally (usually Quarterfinals)
-                // If totalRounds=6 (64-draw), break at 3 (so QF is the start of the "Finals" page)
-                const splitRoundIndex = Math.max(0, totalRounds - 3);
+            // CASE 2: 32 Players (r1Matches <= 16, 5 rounds) -> Top Half, Bottom Half, Finals Stage = 3 Pages
+            if (r1Matches <= 16) {
+                const splitRoundIndex = Math.max(1, totalRounds - 2); // Round 2 (QF) is the last round on half pages
 
                 // Page 1: Top Half
                 const topHalf = container.cloneNode(true);
-                const topRounds = topHalf.querySelectorAll('.bracket-round');
-                for (let i = 0; i < topRounds.length; i++) {
-                    if (i >= splitRoundIndex) {
-                        topRounds[i].style.display = 'none';
+                cleanupNonFirstPage(topHalf);
+                const topRounds = Array.from(topHalf.querySelectorAll('.bracket-round'));
+                for (let r = topRounds.length - 1; r >= 0; r--) {
+                    if (r >= splitRoundIndex) {
+                        topRounds[r].remove();
                         continue;
                     }
-                    const matches = topRounds[i].querySelectorAll('.match-card-wrapper');
-                    const half = Math.ceil(matches.length / 2);
-                    for (let j = half; j < matches.length; j++) {
-                        matches[j].style.display = 'none';
+                    if (r === splitRoundIndex - 1) {
+                        topRounds[r].classList.add('last-visible-round');
+                    }
+                    const matches = Array.from(topRounds[r].querySelectorAll('.match-card-wrapper'));
+                    const halfCount = Math.ceil(matches.length / 2);
+                    for (let m = matches.length - 1; m >= halfCount; m--) {
+                        matches[m].remove();
                     }
                 }
-                
-                // Add a title to differentiate
-                const topTitle = document.createElement('h3');
-                topTitle.innerText = "Top Half Bracket";
-                topTitle.style.textAlign = 'center';
-                topTitle.style.marginBottom = '20px';
-                topHalf.insertBefore(topTitle, topHalf.firstChild);
+                const topBanner = createBanner('Top Half (Seeds 1–16)', 'Top 2 advance to Championship Stage (Quarterfinals)');
+                const topTarget = topHalf.querySelector('.bracket-section') || topHalf;
+                topTarget.insertBefore(topBanner, topTarget.firstChild);
+                topHalf.classList.add('page-break');
                 pages.push(topHalf);
 
                 // Page 2: Bottom Half
-                const bottomHalf = container.cloneNode(true);
-                const botRounds = bottomHalf.querySelectorAll('.bracket-round');
-                for (let i = 0; i < botRounds.length; i++) {
-                    if (i >= splitRoundIndex) {
-                        botRounds[i].style.display = 'none';
+                const botHalf = container.cloneNode(true);
+                cleanupNonFirstPage(botHalf);
+                const botRounds = Array.from(botHalf.querySelectorAll('.bracket-round'));
+                for (let r = botRounds.length - 1; r >= 0; r--) {
+                    if (r >= splitRoundIndex) {
+                        botRounds[r].remove();
                         continue;
                     }
-                    const matches = botRounds[i].querySelectorAll('.match-card-wrapper');
-                    const half = Math.ceil(matches.length / 2);
-                    for (let j = 0; j < half; j++) {
-                        matches[j].style.display = 'none';
+                    if (r === splitRoundIndex - 1) {
+                        botRounds[r].classList.add('last-visible-round');
+                    }
+                    const matches = Array.from(botRounds[r].querySelectorAll('.match-card-wrapper'));
+                    const halfCount = Math.ceil(matches.length / 2);
+                    for (let m = halfCount - 1; m >= 0; m--) {
+                        matches[m].remove();
                     }
                 }
-                const botTitle = document.createElement('h3');
-                botTitle.innerText = "Bottom Half Bracket";
-                botTitle.style.textAlign = 'center';
-                botTitle.style.marginBottom = '20px';
-                bottomHalf.insertBefore(botTitle, bottomHalf.firstChild);
-                pages.push(bottomHalf);
+                const botBanner = createBanner('Bottom Half (Seeds 17–32)', 'Top 2 advance to Championship Stage (Quarterfinals)');
+                const botTarget = botHalf.querySelector('.bracket-section') || botHalf;
+                botTarget.insertBefore(botBanner, botTarget.firstChild);
+                botHalf.classList.add('page-break');
+                pages.push(botHalf);
 
-                // Page 3: Finals (Quarterfinals -> Finals)
+                // Page 3: Finals Stage (Quarterfinals -> Semifinals -> Final + Podium)
                 const finalsPage = container.cloneNode(true);
-                const finRounds = finalsPage.querySelectorAll('.bracket-round');
-                for (let i = 0; i < finRounds.length; i++) {
-                    if (i < splitRoundIndex) {
-                        finRounds[i].style.display = 'none';
+                cleanupNonFirstPage(finalsPage);
+                const originalPodium = container.querySelector('.podium-container');
+                if (originalPodium) {
+                    const finalsTarget = finalsPage.querySelector('.bracket-section') || finalsPage;
+                    finalsTarget.appendChild(originalPodium.cloneNode(true));
+                }
+
+                const finalsStartRound = Math.max(0, totalRounds - 3); // Quarterfinals
+                const finRounds = Array.from(finalsPage.querySelectorAll('.bracket-round'));
+                for (let r = 0; r < finalsStartRound; r++) {
+                    if (finRounds[r]) finRounds[r].remove();
+                }
+                const remainingFinRounds = finalsPage.querySelectorAll('.bracket-round');
+                if (remainingFinRounds.length > 0) {
+                    remainingFinRounds[0].classList.add('first-visible-round');
+                }
+                const finBanner = createBanner('Championship Stage', 'Quarterfinals • Semifinals • Final');
+                const finBracket = finalsPage.querySelector('.bracket-section') || finalsPage;
+                finBracket.insertBefore(finBanner, finBracket.firstChild);
+                finalsPage.classList.add('page-break');
+                pages.push(finalsPage);
+
+                return pages;
+            }
+
+            // CASE 3: 64 Players (r1Matches <= 32, 6 rounds) -> 4 Quarters + Finals Stage = 5 Pages
+            if (r1Matches <= 32) {
+                const numQuarters = 4;
+                const qfRoundIndex = Math.max(1, totalRounds - 3); // Quarterfinals index
+                const quarterNames = ['1st Quarter', '2nd Quarter', '3rd Quarter', '4th Quarter'];
+                const totalPlayers = r1Matches * 2;
+                const playersPerQuarter = totalPlayers / numQuarters;
+
+                for (let q = 0; q < numQuarters; q++) {
+                    const qPage = container.cloneNode(true);
+                    cleanupNonFirstPage(qPage);
+                    const qRounds = Array.from(qPage.querySelectorAll('.bracket-round'));
+
+                    for (let r = qRounds.length - 1; r >= 0; r--) {
+                        if (r > qfRoundIndex) {
+                            qRounds[r].remove();
+                            continue;
+                        }
+                        if (r === qfRoundIndex) {
+                            qRounds[r].classList.add('last-visible-round');
+                        }
+                        const matches = Array.from(qRounds[r].querySelectorAll('.match-card-wrapper'));
+                        const matchesPerQuarter = Math.max(1, Math.floor(matches.length / numQuarters));
+                        const startIdx = q * matchesPerQuarter;
+                        const endIdx = (q + 1) * matchesPerQuarter;
+
+                        for (let m = matches.length - 1; m >= 0; m--) {
+                            if (m < startIdx || m >= endIdx) {
+                                matches[m].remove();
+                            }
+                        }
+                    }
+
+                    const seedStart = q * playersPerQuarter + 1;
+                    const seedEnd = (q + 1) * playersPerQuarter;
+                    const qBanner = createBanner(
+                        `${quarterNames[q]} (Seeds ${seedStart}–${seedEnd})`,
+                        `Winner advances to Semifinal ${Math.floor(q / 2) + 1}`
+                    );
+                    const qBracket = qPage.querySelector('.bracket-section') || qPage;
+                    qBracket.insertBefore(qBanner, qBracket.firstChild);
+                    qPage.classList.add('page-break');
+                    pages.push(qPage);
+                }
+
+                // Finals Page for 64 Players
+                const finalsPage = container.cloneNode(true);
+                cleanupNonFirstPage(finalsPage);
+                const originalPodium = container.querySelector('.podium-container');
+                if (originalPodium) {
+                    const finalsTarget = finalsPage.querySelector('.bracket-section') || finalsPage;
+                    finalsTarget.appendChild(originalPodium.cloneNode(true));
+                }
+
+                const finRounds = Array.from(finalsPage.querySelectorAll('.bracket-round'));
+                for (let r = 0; r < qfRoundIndex; r++) {
+                    if (finRounds[r]) finRounds[r].remove();
+                }
+                const remainingFinRounds = finalsPage.querySelectorAll('.bracket-round');
+                if (remainingFinRounds.length > 0) {
+                    remainingFinRounds[0].classList.add('first-visible-round');
+                }
+                const finBanner = createBanner('Championship Stage', 'Quarterfinals • Semifinals • Final');
+                const finBracket = finalsPage.querySelector('.bracket-section') || finalsPage;
+                finBracket.insertBefore(finBanner, finBracket.firstChild);
+                finalsPage.classList.add('page-break');
+                pages.push(finalsPage);
+
+                return pages;
+            }
+
+            // CASE 4: 128+ Players (r1Matches >= 64, 7+ rounds) -> 8 Sections + Finals Stage = 9 Pages
+            const numSections = 8;
+            const r16RoundIndex = Math.max(1, totalRounds - 4); // Round of 16 (Section Final)
+            const qfRoundIndex = Math.max(1, totalRounds - 3);  // Quarterfinals
+            const totalPlayers = r1Matches * 2;
+            const playersPerSection = totalPlayers / numSections;
+
+            for (let s = 0; s < numSections; s++) {
+                const sPage = container.cloneNode(true);
+                cleanupNonFirstPage(sPage);
+                const sRounds = Array.from(sPage.querySelectorAll('.bracket-round'));
+
+                for (let r = sRounds.length - 1; r >= 0; r--) {
+                    if (r > r16RoundIndex) {
+                        sRounds[r].remove();
+                        continue;
+                    }
+                    if (r === r16RoundIndex) {
+                        sRounds[r].classList.add('last-visible-round');
+                    }
+                    const matches = Array.from(sRounds[r].querySelectorAll('.match-card-wrapper'));
+                    const matchesPerSection = Math.max(1, Math.floor(matches.length / numSections));
+                    const startIdx = s * matchesPerSection;
+                    const endIdx = (s + 1) * matchesPerSection;
+
+                    for (let m = matches.length - 1; m >= 0; m--) {
+                        if (m < startIdx || m >= endIdx) {
+                            matches[m].remove();
+                        }
                     }
                 }
-                // Hide incoming connectors for the first visible round
-                const firstVisible = finRounds[splitRoundIndex];
-                if (firstVisible) {
-                    firstVisible.classList.add('first-visible-round');
-                }
-                
-                const finTitle = document.createElement('h3');
-                finTitle.innerText = "Final Stages";
-                finTitle.style.textAlign = 'center';
-                finTitle.style.marginBottom = '20px';
-                finalsPage.insertBefore(finTitle, finalsPage.firstChild);
-                pages.push(finalsPage);
-                
-            } else if (totalRounds > 6) {
-                // Horizontal Split Only (e.g., very long draw but not vertically massive)
-                const leftPage = container.cloneNode(true);
-                const leftRounds = leftPage.querySelectorAll('.bracket-round');
-                for (let i = 4; i < leftRounds.length; i++) {
-                    leftRounds[i].style.display = 'none';
-                }
-                pages.push(leftPage);
 
-                const rightPage = container.cloneNode(true);
-                const rightRounds = rightPage.querySelectorAll('.bracket-round');
-                for (let i = 0; i < 4; i++) {
-                    rightRounds[i].style.display = 'none';
-                }
-                if (rightRounds[4]) {
-                    rightRounds[4].classList.add('first-visible-round');
-                }
-                pages.push(rightPage);
-                
-            } else {
-                // Fits perfectly
-                pages.push(container.cloneNode(true));
+                const seedStart = s * playersPerSection + 1;
+                const seedEnd = (s + 1) * playersPerSection;
+                const sBanner = createBanner(
+                    `Section ${s + 1} (Seeds ${seedStart}–${seedEnd})`,
+                    `Winner advances to Quarterfinal ${Math.floor(s / 2) + 1}`
+                );
+                const sBracket = sPage.querySelector('.bracket-section') || sPage;
+                sBracket.insertBefore(sBanner, sBracket.firstChild);
+                sPage.classList.add('page-break');
+                pages.push(sPage);
             }
+
+            // Finals Page for 128 Players
+            const finalsPage = container.cloneNode(true);
+            cleanupNonFirstPage(finalsPage);
+            const originalPodium = container.querySelector('.podium-container');
+            if (originalPodium) {
+                const finalsTarget = finalsPage.querySelector('.bracket-section') || finalsPage;
+                finalsTarget.appendChild(originalPodium.cloneNode(true));
+            }
+
+            const finRounds = Array.from(finalsPage.querySelectorAll('.bracket-round'));
+            for (let r = 0; r < qfRoundIndex; r++) {
+                if (finRounds[r]) finRounds[r].remove();
+            }
+            const remainingFinRounds = finalsPage.querySelectorAll('.bracket-round');
+            if (remainingFinRounds.length > 0) {
+                remainingFinRounds[0].classList.add('first-visible-round');
+            }
+            const finBanner = createBanner('Championship Stage', 'Quarterfinals • Semifinals • Final');
+            const finBracket = finalsPage.querySelector('.bracket-section') || finalsPage;
+            finBracket.insertBefore(finBanner, finBracket.firstChild);
+            finalsPage.classList.add('page-break');
+            pages.push(finalsPage);
 
             return pages;
         }
@@ -184,39 +634,38 @@
                 return;
             }
 
-            // Otherwise, automatically paginate the single category bracket
+            // Automatically paginate the single category bracket
             const container = document.getElementById('category-export-content') || document.querySelector('.main-content .container');
             if (container) {
                 const paginated = paginateBracket(container);
                 if (paginated.length > 1) {
                     const parent = container.parentNode;
-                    // Remove original container
                     container.remove();
                     
-                    // Insert paginated parts
-                    paginated.forEach((page, index) => {
-                        // Remove podium and header from pages other than page 1
-                        if (index > 0) {
-                            const podium = page.querySelector('.podium-container');
-                            if (podium) podium.remove();
-                            const winnerSec = page.querySelector('.winner-section');
-                            if (winnerSec) winnerSec.remove();
-                            const modHeader = page.querySelector('.modern-header');
-                            if (modHeader) modHeader.remove();
-                        }
+                    paginated.forEach((page) => {
                         parent.appendChild(page);
                     });
                 }
             }
             
-            // Allow CSS rendering to catch up before printing
-            setTimeout(() => {
-                window.print();
-            }, 500);
+            // Auto-trigger print dialog only if explicit autoprint=1 or print=1 query param is set
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('autoprint') === '1' || urlParams.get('print') === '1') {
+                setTimeout(() => {
+                    window.print();
+                }, 500);
+            }
         };
     </script>
 </head>
 <body class="pdf-export-mode" id="print-body">
+    <!-- Floating Print Actions Bar (Hidden during actual print) -->
+    <div class="print-actions-bar no-print" style="position: fixed; top: 16px; right: 24px; z-index: 9999; display: flex; gap: 12px; align-items: center; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); padding: 8px 18px; border-radius: 9999px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2);">
+        <span style="color: #ffffff; font-size: 0.85rem; font-weight: 600; letter-spacing: 0.3px;">📄 Print / PDF Preview</span>
+        <button type="button" onclick="window.print()" style="background: #3b82f6; color: #ffffff; border: none; padding: 6px 16px; border-radius: 9999px; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4); transition: transform 0.15s ease;">
+            <span>🖨️ Print / Save as PDF</span>
+        </button>
+    </div>
     <main class="main-content" style="padding-top: 0;">
         {% block content %}{% endblock %}
     </main>

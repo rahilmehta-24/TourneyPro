@@ -26,29 +26,11 @@
             
             const content = doc.getElementById('category-export-content') || doc.querySelector('.main-content .container');
             if (content) {
-                // Pass the single category container through the pagination engine
+                // Pass the single category container through the universal pagination engine
                 const paginatedPages = paginateBracket(content);
-                
-                paginatedPages.forEach((page, index) => {
-                    const catBlock = document.createElement('div');
-                    catBlock.className = 'category-export-block page-break';
-                    catBlock.innerHTML = page.innerHTML;
-                    
-                    // Add page break logic: CSS will handle break-before for bracket wrapper
-                    // but we ensure each category splits on a new page natively.
-                    catBlock.classList.add('page-break');
-                    
-                    if (index > 0) {
-                        // Remove podium and header from subsequent split pages of the same category
-                        const podium = catBlock.querySelector('.podium-container');
-                        if (podium) podium.remove();
-                        const winnerSec = catBlock.querySelector('.winner-section');
-                        if (winnerSec) winnerSec.remove();
-                        const modHeader = catBlock.querySelector('.modern-header');
-                        if (modHeader) modHeader.remove();
-                    }
-                    
-                    container.appendChild(catBlock);
+                paginatedPages.forEach((page) => {
+                    page.classList.add('category-export-block');
+                    container.appendChild(page);
                 });
             }
         }

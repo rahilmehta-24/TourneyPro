@@ -254,6 +254,7 @@
     {% endmacro %}
 
     {% macro render_bracket_tree(rounds_dict) %}
+    {% if not is_export %}
     <div class="mobile-bracket-tabs">
         {% set sorted_keys = rounds_dict.keys()|sort %}
         {% set total_rounds = sorted_keys|max if sorted_keys else 0 %}
@@ -270,7 +271,10 @@
             </button>
         {% endfor %}
     </div>
-    <div class="bracket">
+    <div class="bracket-viewport" id="bracketViewport">
+        <div class="bracket-canvas" id="bracketCanvas">
+    {% endif %}
+    <div class="bracket" id="bracketMainTree">
         {% set sorted_keys = rounds_dict.keys()|sort %}
         {% for round_num in sorted_keys %}
         {% set round_matches = rounds_dict[round_num] %}
@@ -292,28 +296,35 @@
             </h3>
             <div class="round-matches">
                 {% for match in round_matches %}
-                <div class="match-card-wrapper {% if not has_vertical %}no-vertical-connector{% endif %}">
-                    <div class="tennis-match {% if match.status == 'completed' %}tennis-match-completed{% endif %} {% if match.participant1 and match.participant2 %}clickable-match{% endif %}" id="match-card-{{ match.id }}" data-match-id="{{ match.id }}" {% if match.participant1 and match.participant2 %}onclick="openMatchModal({{ match.id }}, '{{ match.status }}', '{{ match.scheduled_time.strftime('%Y-%m-%dT%H:%M') if match.scheduled_time else '' }}', '{{ match.participant1.name|escape if match.participant1 else '' }}', {{ match.participant1_id or 'null' }}, '{{ match.participant2.name|escape if match.participant2 else '' }}', {{ match.participant2_id or 'null' }}, {{ 'true' if current_user and current_user.role in ['admin', 'superadmin'] else 'false' }}, '{{ match.score1 or '' }}', '{{ match.score2 or '' }}', '{{ match.scoring_format or '' }}', '{{ match.num_sets or '' }}', '{{ match.games_per_set or '' }}', '{{ match.points_to_win or '' }}', {{ match.winner_id or 'null' }}, {{ match.match_number or 'null' }})" title="Click to view details"{% endif %}>
+                {% set p1_name = match.participant1.name if match.participant1 else '' %}
+                {% set p2_name = match.participant2.name if match.participant2 else '' %}
+                <div class="match-card-wrapper {% if not has_vertical %}no-vertical-connector{% endif %} {% if loop.index % 2 == 1 %}match-pair-top{% else %}match-pair-bottom{% endif %}" data-match-id="{{ match.id }}" data-round="{{ round_num }}" data-match-idx="{{ loop.index0 }}" data-p1="{{ p1_name|lower }}" data-p2="{{ p2_name|lower }}">
+                    <div class="tennis-match {% if match.status == 'completed' %}tennis-match-completed{% endif %} {% if match.participant1 and match.participant2 %}clickable-match{% endif %}" id="match-card-{{ match.id }}" data-match-id="{{ match.id }}" data-p1-id="{{ match.participant1_id or '' }}" data-p2-id="{{ match.participant2_id or '' }}" onmouseenter="highlightPlayerPath(this)" onmouseleave="clearPlayerPath(this)" {% if match.participant1 and match.participant2 %}onclick="openMatchModal({{ match.id }}, '{{ match.status }}', '{{ match.scheduled_time.strftime('%Y-%m-%dT%H:%M') if match.scheduled_time else '' }}', '{{ match.participant1.name|escape if match.participant1 else '' }}', {{ match.participant1_id or 'null' }}, '{{ match.participant2.name|escape if match.participant2 else '' }}', {{ match.participant2_id or 'null' }}, {{ 'true' if current_user and current_user.role in ['admin', 'superadmin'] else 'false' }}, '{{ match.score1 or '' }}', '{{ match.score2 or '' }}', '{{ match.scoring_format or '' }}', '{{ match.num_sets or '' }}', '{{ match.games_per_set or '' }}', '{{ match.points_to_win or '' }}', {{ match.winner_id or 'null' }}, {{ match.match_number or 'null' }})" title="Click to view details"{% endif %}>
                         <div class="tennis-match-header" style="display: flex; align-items: center; justify-content: space-between;">
                             <span>Match #{{ match.match_number }}</span>
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                {% if match.scheduled_time %}
-                                    <span class="match-status-badge badge-pending">📅 {{ match.scheduled_time.strftime('%d/%m/%Y %H:%M %p') }}{% if match.court_name %} | 🏟️ {{ match.court_name }}{% endif %}</span>
-                                {% endif %}
+                            <div style="display: flex; align-items: center; gap: 6px;">
                                 {% if match.status == 'completed' %}
+                                    {% if match.court_name %}
+                                        <span class="match-status-badge badge-pending" title="{{ match.scheduled_time.strftime('%d/%m/%Y %I:%M %p') if match.scheduled_time else '' }}">🏟️ {{ match.court_name }}</span>
+                                    {% elif match.scheduled_time %}
+                                        <span class="match-status-badge badge-pending" title="{{ match.scheduled_time.strftime('%d/%m/%Y %I:%M %p') }}">📅 {{ match.scheduled_time.strftime('%d/%m') }}</span>
+                                    {% endif %}
                                     <span class="match-status-badge badge-completed">✓ Complete</span>
                                 {% elif match.status == 'in_progress' %}
+                                    {% if match.court_name %}
+                                        <span class="match-status-badge badge-pending">🏟️ {{ match.court_name }}</span>
+                                    {% endif %}
                                     <span class="match-status-badge badge-inprogress">● In Progress</span>
-                                {% elif not match.scheduled_time %}
+                                {% elif match.scheduled_time %}
+                                    <span class="match-status-badge badge-pending" title="{{ match.scheduled_time.strftime('%d/%m/%Y %I:%M %p') }}">📅 {{ match.scheduled_time.strftime('%d/%m %I:%M %p') }}{% if match.court_name %} | 🏟️ {{ match.court_name }}{% endif %}</span>
+                                {% else %}
                                     <span class="match-status-badge badge-pending">📅 To be played</span>
                                 {% endif %}
-                                
-                                
                             </div>
                         </div>
                         <div class="tennis-match-body">
                             <!-- Player 1 Row -->
-                            <div class="tennis-player-row {% if match.winner_id and match.winner_id == match.participant1_id %}winner{% endif %}">
+                            <div class="tennis-player-row {% if match.winner_id and match.winner_id == match.participant1_id %}winner{% endif %}" data-player-id="{{ match.participant1_id or '' }}">
                                 <div class="tennis-player-info">
                                     {% if match.participant1 %}
                                         <span class="tennis-player-seed">#{{ match.participant1.manual_seed or match.participant1.seed or loop.index }}</span>
@@ -336,7 +347,7 @@
                                 </div>
                             </div>
                             <!-- Player 2 Row -->
-                            <div class="tennis-player-row {% if match.winner_id and match.winner_id == match.participant2_id %}winner{% endif %}">
+                            <div class="tennis-player-row {% if match.winner_id and match.winner_id == match.participant2_id %}winner{% endif %}" data-player-id="{{ match.participant2_id or '' }}">
                                 <div class="tennis-player-info">
                                     {% if match.participant2 %}
                                         <span class="tennis-player-seed">#{{ match.participant2.manual_seed or match.participant2.seed or loop.index }}</span>
@@ -369,6 +380,10 @@
         </div>
         {% endfor %}
     </div>
+    {% if not is_export %}
+        </div>
+    </div>
+    {% endif %}
     {% endmacro %}
 
     <div class="bracket-section">
@@ -402,6 +417,65 @@
             </div>
         </div>
 
+        {% if not is_export %}
+        <!-- Bracket Controls & Navigation Toolbar -->
+        <div class="bracket-toolbar" id="bracketToolbar">
+            <!-- View & Zoom Controls -->
+            <div class="bracket-toolbar-group">
+                <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-right: 4px;">ZOOM:</span>
+                <button type="button" class="bracket-tool-btn" onclick="bracketCanvasZoom(-0.15)" title="Zoom Out (Ctrl + Scroll Down)">
+                    <span>🔍−</span>
+                </button>
+                <button type="button" class="bracket-tool-btn" id="bracketZoomLevel" onclick="bracketCanvasResetZoom()" title="Reset to 100%">
+                    100%
+                </button>
+                <button type="button" class="bracket-tool-btn" onclick="bracketCanvasZoom(0.15)" title="Zoom In (Ctrl + Scroll Up)">
+                    <span>🔍+</span>
+                </button>
+                <button type="button" class="bracket-tool-btn" onclick="bracketCanvasFitToScreen()" title="Fit Entire Bracket on Screen">
+                    <span>⛶ Fit</span>
+                </button>
+                <div style="width: 1px; height: 18px; background: rgba(255,255,255,0.15); margin: 0 4px;"></div>
+                <!-- Density Toggle -->
+                <button type="button" class="bracket-tool-btn" id="bracketDensityBtn" onclick="toggleBracketDensity()" title="Toggle Compact / Standard View Density">
+                    <span>↔️ <span id="bracketDensityText">Compact View</span></span>
+                </button>
+            </div>
+
+            <!-- Section / Quarter Filters for 16, 32, 64, 128 draws -->
+            {% set r1_match_count = rounds[1]|length if rounds and 1 in rounds else (winners_rounds[1]|length if winners_rounds and 1 in winners_rounds else 0) %}
+            {% if r1_match_count >= 8 %}
+            <div class="bracket-toolbar-group bracket-section-nav" id="bracketSectionFilter">
+                <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-right: 4px;">SECTION:</span>
+                <button type="button" class="bracket-tool-btn active" data-section="all" onclick="filterBracketSection('all', this)">All Draw</button>
+                {% if r1_match_count <= 8 %}
+                <button type="button" class="bracket-tool-btn" data-section="top" onclick="filterBracketSection('top', this)">Top Half</button>
+                <button type="button" class="bracket-tool-btn" data-section="bottom" onclick="filterBracketSection('bottom', this)">Bottom Half</button>
+                {% elif r1_match_count <= 16 %}
+                <button type="button" class="bracket-tool-btn" data-section="top" onclick="filterBracketSection('top', this)">Top Half</button>
+                <button type="button" class="bracket-tool-btn" data-section="bottom" onclick="filterBracketSection('bottom', this)">Bottom Half</button>
+                <button type="button" class="bracket-tool-btn" data-section="finals" onclick="filterBracketSection('finals', this)">🏆 Finals</button>
+                {% else %}
+                <button type="button" class="bracket-tool-btn" data-section="q1" onclick="filterBracketSection('q1', this)">1st Qtr</button>
+                <button type="button" class="bracket-tool-btn" data-section="q2" onclick="filterBracketSection('q2', this)">2nd Qtr</button>
+                <button type="button" class="bracket-tool-btn" data-section="q3" onclick="filterBracketSection('q3', this)">3rd Qtr</button>
+                <button type="button" class="bracket-tool-btn" data-section="q4" onclick="filterBracketSection('q4', this)">4th Qtr</button>
+                <button type="button" class="bracket-tool-btn" data-section="finals" onclick="filterBracketSection('finals', this)">🏆 Finals</button>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Quick Player Search -->
+            <div class="bracket-toolbar-group">
+                <div class="bracket-search-box">
+                    <span class="bracket-search-icon">🔍</span>
+                    <input type="text" id="bracketPlayerSearchInput" class="bracket-search-input" placeholder="Find player..." oninput="searchBracketPlayer(this.value)">
+                    <button type="button" id="bracketSearchClearBtn" onclick="clearBracketSearch()" style="display: none; position: absolute; right: 6px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.75rem;">✕</button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         {% if category.format == 'double_elimination' %}
             <!-- WINNERS BRACKET -->
             <div style="margin-top: 1.5rem; margin-bottom: 3rem;">
@@ -420,26 +494,31 @@
             <div style="margin-bottom: 2rem;">
                 <h3 style="margin-bottom: 1rem; color: #fbbf24; font-size: 1.5rem; border-left: 4px solid #fbbf24; padding-left: 10px;">👑 Grand Finals</h3>
                 <div class="bracket">
-                    <div class="bracket-round" style="min-width: 280px;">
+                    <div class="bracket-round" style="min-width: 360px;">
                         <div class="round-matches" style="justify-content: center; height: 100%;">
                             {% for match in grand_finals %}
                             <div class="match-card-wrapper" style="padding: 15px 0;">
                                 <div class="tennis-match {% if match.status == 'completed' %}tennis-match-completed{% endif %} {% if match.participant1 and match.participant2 %}clickable-match{% endif %}" id="match-card-{{ match.id }}" data-match-id="{{ match.id }}" {% if match.participant1 and match.participant2 %}onclick="openMatchModal({{ match.id }}, '{{ match.status }}', '{{ match.scheduled_time.strftime('%Y-%m-%dT%H:%M') if match.scheduled_time else '' }}', '{{ match.participant1.name|escape if match.participant1 else '' }}', {{ match.participant1_id or 'null' }}, '{{ match.participant2.name|escape if match.participant2 else '' }}', {{ match.participant2_id or 'null' }}, {{ 'true' if current_user and current_user.role in ['admin', 'superadmin'] else 'false' }}, '{{ match.score1 or '' }}', '{{ match.score2 or '' }}', '{{ match.scoring_format or '' }}', '{{ match.num_sets or '' }}', '{{ match.games_per_set or '' }}', '{{ match.points_to_win or '' }}', {{ match.winner_id or 'null' }}, {{ match.match_number or 'null' }})" title="Click to view details"{% endif %}>
                                     <div class="tennis-match-header" style="display: flex; align-items: center; justify-content: space-between;">
                                         <span>Grand Final {% if match.match_number == 2 %}(Reset Match){% endif %}</span>
-                                        <div style="display: flex; align-items: center; gap: 8px;">
-                                            {% if match.scheduled_time %}
-                                                <span class="match-status-badge badge-pending">📅 {{ match.scheduled_time.strftime('%d/%m/%Y %H:%M %p') }}{% if match.court_name %} | 🏟️ {{ match.court_name }}{% endif %}</span>
-                                            {% endif %}
+                                        <div style="display: flex; align-items: center; gap: 6px;">
                                             {% if match.status == 'completed' %}
+                                                {% if match.court_name %}
+                                                    <span class="match-status-badge badge-pending" title="{{ match.scheduled_time.strftime('%d/%m/%Y %I:%M %p') if match.scheduled_time else '' }}">🏟️ {{ match.court_name }}</span>
+                                                {% elif match.scheduled_time %}
+                                                    <span class="match-status-badge badge-pending" title="{{ match.scheduled_time.strftime('%d/%m/%Y %I:%M %p') }}">📅 {{ match.scheduled_time.strftime('%d/%m') }}</span>
+                                                {% endif %}
                                                 <span class="match-status-badge badge-completed">✓ Complete</span>
                                             {% elif match.status == 'in_progress' %}
+                                                {% if match.court_name %}
+                                                    <span class="match-status-badge badge-pending">🏟️ {{ match.court_name }}</span>
+                                                {% endif %}
                                                 <span class="match-status-badge badge-inprogress">● In Progress</span>
-                                            {% elif not match.scheduled_time %}
+                                            {% elif match.scheduled_time %}
+                                                <span class="match-status-badge badge-pending" title="{{ match.scheduled_time.strftime('%d/%m/%Y %I:%M %p') }}">📅 {{ match.scheduled_time.strftime('%d/%m %I:%M %p') }}{% if match.court_name %} | 🏟️ {{ match.court_name }}{% endif %}</span>
+                                            {% else %}
                                                 <span class="match-status-badge badge-pending">📅 To be played</span>
                                             {% endif %}
-                                            
-                                            
                                         </div>
                                     </div>
                                     <div class="tennis-match-body">
@@ -956,7 +1035,295 @@ document.addEventListener('DOMContentLoaded', handleTargetMatchHighlight);
 document.addEventListener('turbo:load', handleTargetMatchHighlight);
 </script>
 
+<script>
+// ===== BRACKET INTERACTIVE SUITE (ZOOM, PAN, DENSITY, SECTIONS, SEARCH, TRAIL) =====
+let bracketZoom = 1.0;
+let isPanning = false;
+let startX = 0, startY = 0;
+let scrollStartLeft = 0, scrollStartTop = 0;
 
+function updateBracketZoomUI() {
+    const canvas = document.getElementById('bracketCanvas');
+    const zoomLabel = document.getElementById('bracketZoomLevel');
+    if (canvas) {
+        canvas.style.transform = `scale(${bracketZoom})`;
+        canvas.style.transformOrigin = '0 0';
+    }
+    if (zoomLabel) {
+        zoomLabel.innerText = Math.round(bracketZoom * 100) + '%';
+    }
+}
 
+function bracketCanvasZoom(delta) {
+    bracketZoom = Math.min(1.6, Math.max(0.35, Math.round((bracketZoom + delta) * 100) / 100));
+    updateBracketZoomUI();
+}
+
+function bracketCanvasResetZoom() {
+    bracketZoom = 1.0;
+    updateBracketZoomUI();
+}
+
+function bracketCanvasFitToScreen() {
+    const viewport = document.getElementById('bracketViewport');
+    const canvas = document.getElementById('bracketCanvas');
+    const bracket = document.getElementById('bracketMainTree') || (canvas ? canvas.querySelector('.bracket') : null);
+    if (!viewport || !bracket) return;
+
+    // Temporarily reset transform to measure natural dimensions
+    canvas.style.transform = 'none';
+    const naturalWidth = bracket.scrollWidth || bracket.offsetWidth;
+    const naturalHeight = bracket.scrollHeight || bracket.offsetHeight;
+    const availableWidth = viewport.clientWidth - 32;
+    const availableHeight = Math.max(450, window.innerHeight - 320);
+
+    const scaleX = availableWidth / naturalWidth;
+    const scaleY = availableHeight / naturalHeight;
+    bracketZoom = Math.min(1.0, Math.max(0.35, Math.min(scaleX, scaleY)));
+    updateBracketZoomUI();
+}
+
+// Density Toggle (Standard vs Compact)
+function toggleBracketDensity(forceDensity) {
+    const bracket = document.getElementById('bracketMainTree') || document.querySelector('.bracket');
+    const densityText = document.getElementById('bracketDensityText');
+    if (!bracket) return;
+
+    let isCompact = bracket.classList.contains('bracket-compact');
+    if (forceDensity !== undefined) {
+        isCompact = !forceDensity; // Will be inverted below
+    }
+
+    if (isCompact) {
+        bracket.classList.remove('bracket-compact');
+        if (densityText) densityText.innerText = 'Compact View';
+        localStorage.setItem('tourneypro_bracket_density', 'standard');
+    } else {
+        bracket.classList.add('bracket-compact');
+        if (densityText) densityText.innerText = 'Standard View';
+        localStorage.setItem('tourneypro_bracket_density', 'compact');
+    }
+}
+
+// Section & Quarter Filter
+function filterBracketSection(sectionKey, btnElement) {
+    const bracket = document.getElementById('bracketMainTree') || document.querySelector('.bracket');
+    if (!bracket) return;
+
+    // Update active tab button state
+    const nav = document.getElementById('bracketSectionFilter');
+    if (nav) {
+        nav.querySelectorAll('.bracket-tool-btn').forEach(b => b.classList.remove('active'));
+        if (btnElement) btnElement.classList.add('active');
+    }
+
+    const rounds = Array.from(bracket.querySelectorAll('.bracket-round'));
+    if (rounds.length === 0) return;
+
+    // "all": show everything
+    if (sectionKey === 'all') {
+        bracket.querySelectorAll('.match-card-wrapper').forEach(w => w.style.display = '');
+        rounds.forEach(r => r.style.display = '');
+        return;
+    }
+
+    const totalRounds = rounds.length;
+
+    // "finals": Show only Quarter-Finals, Semi-Finals, and Final
+    if (sectionKey === 'finals') {
+        const finalsStartRound = Math.max(0, totalRounds - 3);
+        rounds.forEach((roundEl, rIdx) => {
+            if (rIdx < finalsStartRound) {
+                roundEl.style.display = 'none';
+            } else {
+                roundEl.style.display = '';
+                roundEl.querySelectorAll('.match-card-wrapper').forEach(w => w.style.display = '');
+            }
+        });
+        return;
+    }
+
+    // Halves or Quarters
+    rounds.forEach(r => r.style.display = ''); // ensure columns visible
+
+    let numDivisions = 2;
+    let divisionIndex = 0;
+
+    if (sectionKey === 'top') {
+        numDivisions = 2;
+        divisionIndex = 0;
+    } else if (sectionKey === 'bottom') {
+        numDivisions = 2;
+        divisionIndex = 1;
+    } else if (sectionKey === 'q1') {
+        numDivisions = 4;
+        divisionIndex = 0;
+    } else if (sectionKey === 'q2') {
+        numDivisions = 4;
+        divisionIndex = 1;
+    } else if (sectionKey === 'q3') {
+        numDivisions = 4;
+        divisionIndex = 2;
+    } else if (sectionKey === 'q4') {
+        numDivisions = 4;
+        divisionIndex = 3;
+    }
+
+    // Limit round depth to quarter-final or semi-final
+    const maxVisibleRound = (numDivisions === 4) ? Math.max(1, totalRounds - 3) : Math.max(1, totalRounds - 2);
+
+    rounds.forEach((roundEl, rIdx) => {
+        if (rIdx > maxVisibleRound) {
+            roundEl.style.display = 'none';
+            return;
+        }
+        const matches = Array.from(roundEl.querySelectorAll('.match-card-wrapper'));
+        const matchesPerDiv = Math.max(1, Math.floor(matches.length / numDivisions));
+        const start = divisionIndex * matchesPerDiv;
+        const end = (divisionIndex + 1) * matchesPerDiv;
+
+        matches.forEach((m, mIdx) => {
+            if (mIdx >= start && mIdx < end) {
+                m.style.display = '';
+            } else {
+                m.style.display = 'none';
+            }
+        });
+    });
+}
+
+// Player Search in Bracket
+function searchBracketPlayer(query) {
+    const bracket = document.getElementById('bracketMainTree') || document.querySelector('.bracket');
+    const clearBtn = document.getElementById('bracketSearchClearBtn');
+    if (!bracket) return;
+
+    const trimmed = (query || '').trim().toLowerCase();
+    if (clearBtn) clearBtn.style.display = trimmed ? 'block' : 'none';
+
+    if (!trimmed) {
+        bracket.classList.remove('has-search');
+        bracket.querySelectorAll('.tennis-match').forEach(m => m.classList.remove('search-matched'));
+        return;
+    }
+
+    bracket.classList.add('has-search');
+    let firstMatch = null;
+
+    bracket.querySelectorAll('.match-card-wrapper').forEach(wrapper => {
+        const p1 = wrapper.getAttribute('data-p1') || '';
+        const p2 = wrapper.getAttribute('data-p2') || '';
+        const matchCard = wrapper.querySelector('.tennis-match');
+
+        if (p1.includes(trimmed) || p2.includes(trimmed)) {
+            if (matchCard) matchCard.classList.add('search-matched');
+            if (!firstMatch && matchCard) firstMatch = matchCard;
+        } else {
+            if (matchCard) matchCard.classList.remove('search-matched');
+        }
+    });
+
+    if (firstMatch) {
+        firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+    }
+}
+
+function clearBracketSearch() {
+    const input = document.getElementById('bracketPlayerSearchInput');
+    if (input) {
+        input.value = '';
+        searchBracketPlayer('');
+        input.focus();
+    }
+}
+
+// Player Path / Bracket Trail Highlighting
+function highlightPlayerPath(cardElement) {
+    const p1Id = cardElement.getAttribute('data-p1-id');
+    const p2Id = cardElement.getAttribute('data-p2-id');
+    if (!p1Id && !p2Id) return;
+
+    const bracket = document.getElementById('bracketMainTree') || document.querySelector('.bracket');
+    if (!bracket) return;
+
+    const matches = bracket.querySelectorAll('.tennis-match');
+    matches.forEach(m => {
+        const mp1 = m.getAttribute('data-p1-id');
+        const mp2 = m.getAttribute('data-p2-id');
+        if ((p1Id && (mp1 === p1Id || mp2 === p1Id)) || (p2Id && (mp1 === p2Id || mp2 === p2Id))) {
+            m.classList.add('path-highlighted');
+        }
+    });
+}
+
+function clearPlayerPath() {
+    const bracket = document.getElementById('bracketMainTree') || document.querySelector('.bracket');
+    if (!bracket) return;
+    bracket.querySelectorAll('.tennis-match.path-highlighted').forEach(m => m.classList.remove('path-highlighted'));
+}
+
+// Drag-to-Pan Event Handlers
+function setupBracketPan() {
+    const viewport = document.getElementById('bracketViewport');
+    if (!viewport) return;
+
+    viewport.addEventListener('mousedown', (e) => {
+        // Only pan if clicking on empty canvas/background, not on interactive cards or buttons
+        if (e.target.closest('.tennis-match') || e.target.closest('button') || e.target.closest('a') || e.target.closest('input')) {
+            return;
+        }
+        isPanning = true;
+        viewport.classList.add('is-dragging');
+        startX = e.pageX - viewport.offsetLeft;
+        startY = e.pageY - viewport.offsetTop;
+        scrollStartLeft = viewport.scrollLeft;
+        scrollStartTop = viewport.scrollTop;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isPanning || !viewport) return;
+        e.preventDefault();
+        const x = e.pageX - viewport.offsetLeft;
+        const y = e.pageY - viewport.offsetTop;
+        const walkX = (x - startX);
+        const walkY = (y - startY);
+        viewport.scrollLeft = scrollStartLeft - walkX;
+        viewport.scrollTop = scrollStartTop - walkY;
+    });
+
+    window.addEventListener('mouseup', () => {
+        if (isPanning && viewport) {
+            isPanning = false;
+            viewport.classList.remove('is-dragging');
+        }
+    });
+
+    // Wheel zoom with Ctrl or Cmd
+    viewport.addEventListener('wheel', (e) => {
+        if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            const delta = e.deltaY < 0 ? 0.08 : -0.08;
+            bracketCanvasZoom(delta);
+        }
+    }, { passive: false });
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+    setupBracketPan();
+
+    // Auto-select initial density
+    const savedDensity = localStorage.getItem('tourneypro_bracket_density');
+    const bracket = document.getElementById('bracketMainTree') || document.querySelector('.bracket');
+    if (bracket) {
+        const r1Matches = bracket.querySelector('.bracket-round') ? bracket.querySelector('.bracket-round').querySelectorAll('.match-card-wrapper').length : 0;
+        if (savedDensity === 'compact' || (!savedDensity && r1Matches >= 8)) {
+            toggleBracketDensity(true);
+        } else {
+            toggleBracketDensity(false);
+        }
+    }
+});
+</script>
 
 {% endblock %}

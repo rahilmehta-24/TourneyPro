@@ -1300,7 +1300,7 @@ select option {
 .bracket-round {
     display: flex;
     flex-direction: column;
-    min-width: 280px;
+    min-width: 360px;
 }
 
 .round-matches {
@@ -1312,7 +1312,7 @@ select option {
 
 .match-card-wrapper {
     position: relative;
-    padding: 20px 0; /* Vertical breathing room for connectors */
+    padding: 16px 0; /* Vertical breathing room for connectors */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1369,12 +1369,14 @@ select option {
 }
 
 /* Odd matches: vertical connector goes down to meet the midpoint */
+.match-card-wrapper.match-pair-top::before,
 .match-card-wrapper:nth-child(odd)::before {
     top: 50%;
     bottom: 0;
 }
 
 /* Even matches: vertical connector goes up to meet the midpoint */
+.match-card-wrapper.match-pair-bottom::before,
 .match-card-wrapper:nth-child(even)::before {
     top: 0;
     bottom: 50%;
@@ -1386,8 +1388,9 @@ select option {
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: var(--radius-md);
     overflow: hidden;
-    width: 280px;
-    height: 130px; /* Fixed height for pixel-perfect vertical connector alignment */
+    width: 360px;
+    height: 104px;
+    min-height: 104px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
     position: relative;
     transition: all 0.2s ease-in-out;
@@ -1398,21 +1401,63 @@ select option {
 
 .tennis-match:hover {
     border-color: var(--accent-primary);
-    box-shadow: 0 0 15px rgba(99, 102, 241, 0.25);
+    box-shadow: 0 0 18px rgba(249, 115, 22, 0.35);
     transform: translateY(-1px);
 }
 
 .tennis-match-header {
-    background: rgba(255, 255, 255, 0.02);
-    padding: 4px 12px;
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 0 12px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    height: 26px;
+    height: 32px;
     box-sizing: border-box;
+    gap: 8px;
+    overflow: hidden;
+    flex-wrap: nowrap;
+}
+
+.tennis-match-header > span:first-child {
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+.tennis-match-header > div {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    overflow: hidden;
+    justify-content: flex-end;
+    flex-shrink: 1;
+    flex-wrap: nowrap;
+}
+
+.tennis-match-header .match-status-badge {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.72rem;
+    padding: 2px 7px;
+    line-height: normal;
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 1;
+    min-width: 0;
+    border-radius: 4px;
+}
+
+.tennis-match-header .match-status-badge.badge-completed,
+.tennis-match-header .match-status-badge.badge-inprogress {
+    flex-shrink: 0;
 }
 
 .tennis-match-body {
@@ -1427,58 +1472,79 @@ select option {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 12px;
+    padding: 0 10px;
     background: var(--bg-secondary);
-    font-size: 0.9rem;
+    font-size: 0.94rem;
     position: relative;
     box-sizing: border-box;
+    min-height: 36px;
+    height: 36px;
 }
 
 .tennis-player-row:not(:last-child) {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .match-actions {
-    padding: 4px 12px;
-    background: rgba(255, 255, 255, 0.01);
-    border-top: 1px solid rgba(255, 255, 255, 0.03);
-    height: 36px;
-    box-sizing: border-box;
-    display: flex;
-    align-items: center;
+    display: none;
 }
 
 .tennis-player-info {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     flex: 1;
+    min-width: 0;
     overflow: hidden;
+    padding: 1px 0;
 }
 
 .tennis-player-seed {
-    font-size: 0.7rem;
-    background: rgba(255, 255, 255, 0.06);
-    color: var(--text-muted);
+    font-size: 0.74rem;
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--text-primary);
     padding: 2px 6px;
     border-radius: 4px;
     font-weight: 700;
-    min-width: 20px;
+    min-width: 22px;
     text-align: center;
-    border: 1px solid rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+    line-height: normal;
 }
 
 .tennis-player-name {
-    color: var(--text-secondary);
-    font-weight: 500;
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.89rem;
+    line-height: 1.35;
+    letter-spacing: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    min-width: 0;
+    flex: 0 1 auto;
+    padding: 2px 0 3px 0;
+}
+
+.tennis-player-info:has(.tennis-player-name ~ .tennis-player-name) .tennis-player-name {
+    flex: 0 1 auto;
+    max-width: 60%;
+    min-width: 0;
+}
+
+.tennis-player-info:not(:has(.tennis-player-name ~ .tennis-player-name)) .tennis-player-name {
+    flex: 1 1 auto;
+    max-width: none;
 }
 
 .tennis-match-completed .tennis-player-row.winner .tennis-player-name {
-    font-weight: 700;
+    font-weight: 800;
     color: #ffffff;
+}
+
+[data-theme="light"] .tennis-match-completed .tennis-player-row.winner .tennis-player-name {
+    color: #000000;
 }
 
 .tennis-player-row.winner::before {
@@ -1487,13 +1553,13 @@ select option {
     left: 0;
     top: 0;
     bottom: 0;
-    width: 3px;
+    width: 3.5px;
     background: var(--accent-success);
 }
 
 .tennis-set-scores {
     display: flex;
-    gap: 3px;
+    gap: 4px;
     align-items: center;
     margin-left: var(--spacing-sm);
 }
@@ -1504,26 +1570,325 @@ select option {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(255, 255, 255, 0.08);
     border-radius: 4px;
-    font-size: 0.8rem;
-    font-weight: 700;
-    color: var(--text-muted);
-    border: 1px solid rgba(255, 255, 255, 0.02);
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .tennis-set-box.set-winner {
-    background: rgba(16, 185, 129, 0.15);
-    color: var(--accent-success);
-    border-color: rgba(16, 185, 129, 0.2);
+    background: rgba(16, 185, 129, 0.25);
+    color: #10b981;
+    font-weight: 800;
+    border-color: rgba(16, 185, 129, 0.45);
 }
 
 .tennis-set-box.empty {
-    color: rgba(255, 255, 255, 0.15);
+    color: var(--text-muted);
     background: transparent;
-    border: 1px dashed rgba(255, 255, 255, 0.1);
-    font-weight: 400;
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+    font-weight: 500;
 }
+
+/* ===== BRACKET STICKY HEADERS & COMPACT DENSITY ===== */
+.bracket-round .round-title {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--bg-card);
+    backdrop-filter: blur(10px);
+    padding: 9px 14px;
+    margin-bottom: 12px;
+    border-radius: var(--radius-sm);
+    border-bottom: 2px solid var(--accent-primary);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.25);
+    text-align: center;
+    color: var(--text-primary);
+    font-weight: 800;
+    font-size: 1rem;
+    letter-spacing: 0.5px;
+}
+
+/* Compact Density Mode for Brackets (16, 32, 64, 128 draws) */
+.bracket.bracket-compact {
+    gap: 36px;
+    padding: var(--spacing-md) var(--spacing-sm);
+}
+
+.bracket.bracket-compact .bracket-round {
+    min-width: 246px;
+    max-width: 260px;
+}
+
+.bracket.bracket-compact .match-card-wrapper {
+    padding: 10px 0;
+}
+
+.bracket.bracket-compact .match-card-wrapper::after {
+    right: -18px;
+    width: 18px;
+}
+
+.bracket.bracket-compact .bracket-round:not(:first-child) .tennis-match::before {
+    left: -18px;
+    width: 18px;
+}
+
+.bracket.bracket-compact .match-card-wrapper::before {
+    right: -18px;
+}
+
+.bracket.bracket-compact .tennis-match {
+    width: 246px;
+    height: 80px;
+    min-height: 80px;
+    border-radius: var(--radius-sm);
+    box-sizing: border-box;
+}
+
+.bracket.bracket-compact .tennis-match-header {
+    height: 24px;
+    padding: 0 10px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-sizing: border-box;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.bracket.bracket-compact .tennis-match-header > span:first-child {
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.bracket.bracket-compact .tennis-match-header .match-status-badge {
+    font-size: 0.68rem;
+    padding: 1px 6px;
+    line-height: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 135px;
+}
+
+.bracket.bracket-compact .tennis-match-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+
+.bracket.bracket-compact .tennis-player-row {
+    height: 27px;
+    min-height: 27px;
+    padding: 0 10px;
+    font-size: 0.88rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-sizing: border-box;
+}
+
+.bracket.bracket-compact .tennis-player-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+    padding: 1px 0;
+}
+
+.bracket.bracket-compact .tennis-player-name {
+    font-size: 0.88rem;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
+    padding: 1px 0;
+}
+
+.bracket.bracket-compact .tennis-player-seed {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    padding: 1px 5px;
+    min-width: 20px;
+    height: 18px;
+    line-height: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+
+.bracket.bracket-compact .tennis-set-scores {
+    display: flex;
+    gap: 3px;
+    align-items: center;
+    margin-left: 6px;
+    flex-shrink: 0;
+}
+
+.bracket.bracket-compact .tennis-set-box {
+    width: 20px;
+    height: 20px;
+    font-size: 0.82rem;
+    font-weight: 800;
+    line-height: 20px;
+    color: var(--text-primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+
+/* Interactive Canvas & Viewport */
+.bracket-viewport {
+    position: relative;
+    width: 100%;
+    overflow: auto;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-lg);
+    background: var(--bg-card);
+    user-select: none;
+    cursor: grab;
+    transition: background var(--transition-base);
+}
+
+.bracket-viewport.is-dragging {
+    cursor: grabbing !important;
+}
+
+.bracket-canvas {
+    transform-origin: 0 0;
+    transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+    width: max-content;
+    min-width: 100%;
+    display: inline-block;
+}
+
+/* Bracket Controls Toolbar */
+.bracket-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    background: var(--bg-card);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-md);
+    flex-wrap: wrap;
+}
+
+.bracket-toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.bracket-tool-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 10px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.bracket-tool-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--accent-primary);
+}
+
+.bracket-tool-btn.active {
+    background: var(--accent-primary);
+    color: #ffffff;
+    border-color: var(--accent-primary);
+}
+
+.bracket-search-box {
+    display: inline-flex;
+    align-items: center;
+    position: relative;
+}
+
+.bracket-search-input {
+    background: var(--bg-secondary);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    padding: 5px 10px 5px 28px;
+    font-size: 0.82rem;
+    border-radius: var(--radius-sm);
+    outline: none;
+    width: 180px;
+    transition: all 0.2s ease;
+}
+
+.bracket-search-input:focus {
+    width: 230px;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.25);
+}
+
+.bracket-search-icon {
+    position: absolute;
+    left: 8px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+/* Bracket Section & Quarter Filters */
+.bracket-section-nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+/* Trail and Search Match Highlighting */
+.tennis-match.path-highlighted {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 16px rgba(99, 102, 241, 0.45) !important;
+    transform: scale(1.02);
+    z-index: 8;
+}
+
+.tennis-match.search-matched {
+    border-color: #10b981 !important;
+    box-shadow: 0 0 18px rgba(16, 185, 129, 0.5) !important;
+    transform: scale(1.03);
+    z-index: 9;
+}
+
+.bracket.has-search .tennis-match:not(.search-matched) {
+    opacity: 0.3;
+}
+
 /* ===== MOBILE MENU & RESPONSIVE LAYOUTS ===== */
 @media (max-width: 900px) {
     /* Navbar adjustments */
@@ -1763,17 +2128,6 @@ select option {
 .standings-table td:nth-child(1) {
     color: var(--primary);
     font-weight: 700;
-}
-
-/* Fix for match header date cutting off */
-.tennis-match-header {
-    flex-wrap: wrap;
-    gap: 4px;
-}
-.match-status-badge {
-    white-space: normal;
-    text-align: right;
-    word-break: break-word;
 }
 
 /* Match Management Modal */
@@ -2196,22 +2550,16 @@ body.pdf-export-mode .bracket-round:not(:first-child) .tennis-match::before {
 }
 
 @media print {
-    /* Ensure bracket always starts on a new page after headers/podiums */
-    .bracket-wrapper {
-        break-before: page;
-        page-break-before: always;
-    }
-
     /* Prevent bracket from being cut off horizontally */
-    .bracket-wrapper, .bracket-container {
+    .bracket-wrapper, .bracket-container, .bracket-viewport, .bracket-canvas {
         overflow: visible !important;
         page-break-inside: avoid;
         break-inside: avoid;
+        transform: none !important;
     }
     
-    /* Optional: scale down the bracket slightly so it fits better on landscape A4 */
     .bracket {
-        zoom: 0.6;
+        zoom: 1 !important;
     }
 }
 

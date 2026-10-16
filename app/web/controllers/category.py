@@ -8,6 +8,7 @@ from datetime import datetime
 from app.services.utils.validation import (
     validate_name, validate_mobile, validate_email, validate_age
 )
+from app.web.controllers.export import get_category_winners
 
 category_bp = Blueprint('category', __name__)
 
