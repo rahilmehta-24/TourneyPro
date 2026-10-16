@@ -196,11 +196,163 @@ class CourtSchedule(list):
         self.total_matches = len(matches)
 
 
+def enforce_order_of_play_day_progression(tournament_id: int) -> int:
+    """
+    Ensures that matches on Day N cannot be marked completed or in_progress
+    if Day N-1 (or any earlier day) matches have not been completed.
+    Also ensures that within each category, Round R+1 cannot be completed
+    if Round R matches have not been completed.
+    
+    If any downstream match on a future day/round was prematurely marked completed
+    while earlier matches are pending/unstarted, this function resets the premature match
+    to 'pending', clears premature scores, and clears unearned downstream bracket participant
+    slots so that the Order of Play strictly reflects valid tournament progression.
+    Returns the count of sanitized matches.
+    """
+    tournament = Tournament.query.get(tournament_id)
+    if not tournament:
+        return 0
+
+    all_matches = (
+        Match.query.filter_by(tournament_id=tournament_id)
+        .filter(Match.scheduled_time.isnot(None))
+        .order_by(Match.scheduled_time)
+        .all()
+    )
+    if not all_matches:
+        return 0
+
+    unique_dates = sorted(list({m.scheduled_time.date() for m in all_matches}))
+    sanitized = 0
+
+    def clear_downstream(m: Match):
+        if not m.category_id or not m.round:
+            return
+        next_round = m.round + 1
+        next_match_num = (m.match_number + 1) // 2
+        next_m = Match.query.filter_by(
+            category_id=m.category_id,
+            round=next_round,
+            match_number=next_match_num,
+            bracket_type=m.bracket_type or 'main'
+        ).first()
+        if next_m:
+            if m.match_number % 2 == 1:
+                next_m.participant1_id = None
+            else:
+                next_m.participant2_id = None
+            if next_m.status != 'pending':
+                next_m.status = 'pending'
+                next_m.score1 = None
+                next_m.score2 = None
+                next_m.winner_id = None
+                next_m.completed_at = None
+            clear_downstream(next_m)
+
+    # 1. Day-to-Day Progression: Find earliest date with pending matches
+    if len(unique_dates) > 1:
+        first_incomplete_date = None
+        for d in unique_dates:
+            day_matches = [m for m in all_matches if m.scheduled_time.date() == d]
+            if any(m.status != 'completed' for m in day_matches):
+                first_incomplete_date = d
+                break
+
+        if first_incomplete_date:
+            future_premature = [
+                m for m in all_matches
+                if m.scheduled_time.date() > first_incomplete_date and m.status in ('completed', 'in_progress')
+            ]
+            for fm in future_premature:
+                fm.status = 'pending'
+                fm.score1 = None
+                fm.score2 = None
+                fm.winner_id = None
+                fm.completed_at = None
+                clear_downstream(fm)
+                sanitized += 1
+
+    # 2. Bracket Round Progression per category: Round R+1 cannot be completed if Round R is pending
+    for cat_id in {m.category_id for m in all_matches if m.category_id}:
+        cat_matches = [m for m in all_matches if m.category_id == cat_id]
+        cat_rounds = sorted(list({m.round for m in cat_matches}))
+        earliest_incomplete_round = None
+        for r in cat_rounds:
+            r_matches = [m for m in cat_matches if m.round == r]
+            if any(m.status != 'completed' for m in r_matches):
+                earliest_incomplete_round = r
+                break
+        if earliest_incomplete_round is not None:
+            for m in cat_matches:
+                if m.round > earliest_incomplete_round and m.status in ('completed', 'in_progress'):
+                    m.status = 'pending'
+                    m.score1 = None
+                    m.score2 = None
+                    m.winner_id = None
+                    m.completed_at = None
+                    clear_downstream(m)
+                    sanitized += 1
+
+    if sanitized > 0:
+        db.session.commit()
+
+    return sanitized
+
+
+def check_match_progression_allowed(match: Match) -> tuple[bool, str | None]:
+    """
+    Checks if a match is legally allowed to start (in_progress) or complete (completed)
+    based on:
+    1. Day-to-Day tournament progression: Matches on Day D cannot start if Day < D matches are incomplete.
+    2. Category bracket round progression: Matches in Round R cannot start if Round < R matches in the category are incomplete.
+    
+    Returns (True, None) if allowed, or (False, error_message) if locked/premature.
+    """
+    if not match:
+        return True, None
+
+    # 1. Day-to-Day progression check
+    if match.scheduled_time and match.tournament_id:
+        match_date = match.scheduled_time.date()
+        earlier_day_pending = (
+            Match.query.filter(
+                Match.tournament_id == match.tournament_id,
+                Match.scheduled_time.isnot(None),
+                Match.scheduled_time < datetime.combine(match_date, time.min),
+                Match.status != 'completed'
+            )
+            .order_by(Match.scheduled_time)
+            .first()
+        )
+        if earlier_day_pending and earlier_day_pending.scheduled_time:
+            earlier_d_str = earlier_day_pending.scheduled_time.strftime('%d %b')
+            return False, f"Matches on {earlier_d_str} must be completed before starting this match."
+
+    # 2. Category Round progression check
+    if match.category_id and match.round and match.round > 1:
+        earlier_round_pending = (
+            Match.query.filter(
+                Match.category_id == match.category_id,
+                Match.round < match.round,
+                Match.status != 'completed'
+            )
+            .order_by(Match.round)
+            .first()
+        )
+        if earlier_round_pending:
+            return False, f"Round {earlier_round_pending.round} matches in this category must be completed first."
+
+    return True, None
+
+
 def auto_schedule_tournament(tournament_id: int) -> dict:
     """
     Globally schedule all categories in a tournament across all days and courts
     with multi-category anti-clash, rest buffers, and daily operating windows.
     """
+    # Enforce chronological progression before scheduling
+    enforce_order_of_play_day_progression(tournament_id)
+
     tournament = Tournament.query.get_or_404(tournament_id)
     categories = Category.query.filter_by(tournament_id=tournament_id).all()
     if not categories and tournament.has_categories:
@@ -560,9 +712,12 @@ def extract_participant_players(participant: Participant | None) -> list[dict]:
 def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> dict:
     """
     Returns structured Order of Play for tournament with day filtering,
-    'Not Before' indicators, and court schedules.
+    'Not Before' indicators, court schedules, and day progression enforcement.
     """
     tournament = Tournament.query.filter_by(url_slug=tournament_slug).first_or_404()
+
+    # Enforce day-to-day and bracket progression before presenting schedule
+    enforce_order_of_play_day_progression(tournament.id)
 
     # Query all matches with court assignment
     query = (
@@ -594,6 +749,19 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
         matches = [m for m in all_matches if m.scheduled_time.date() == active_date]
     else:
         matches = all_matches
+
+    # Progression & Provisional Check:
+    # A day is provisional if ANY matches scheduled on an earlier calendar day are incomplete.
+    earlier_pending = [
+        m for m in all_matches
+        if m.scheduled_time and active_date and m.scheduled_time.date() < active_date and m.status != 'completed'
+    ]
+    earlier_pending_count = len(earlier_pending)
+    is_provisional = (earlier_pending_count > 0)
+
+    current_day_number = (unique_dates.index(active_date) + 1) if (active_date and active_date in unique_dates) else 1
+    previous_day_number = max(1, current_day_number - 1)
+    previous_day_label = f"Day {previous_day_number}"
 
     # Map max round per category (or overall tournament) for knockout round naming
     # so that round names match the brackets exactly: Final, Semi-Final, Quarter-Final, Round X
@@ -661,6 +829,7 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
         session_type = 'evening' if is_evening else 'day'
         session_label = 'Evening Session' if is_evening else 'Day Session'
         session_icon = '🌙' if is_evening else '☀️'
+        is_locked = bool(is_provisional and match.status != 'completed')
 
         order[court].append({
             "match": match,
@@ -673,6 +842,7 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
             "session_label": session_label,
             "session_icon": session_icon,
             "is_evening": is_evening,
+            "is_locked": is_locked,
             "date": match.scheduled_time.strftime("%d %b %Y") if match.scheduled_time else "",
             "raw_date": match.scheduled_time.date() if match.scheduled_time else None,
             "p1": p1,
@@ -714,6 +884,10 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
         day_cnt = day_matches_per_date.get(d, 0)
         eve_cnt = eve_matches_per_date.get(d, 0)
         label = f"Day {idx + 1} ({d.strftime('%d %b')})"
+        day_is_provisional = any(
+            m.scheduled_time and m.scheduled_time.date() < d and m.status != 'completed'
+            for m in all_matches
+        )
         days_meta.append({
             "date": d,
             "date_str": d.strftime("%Y-%m-%d"),
@@ -721,7 +895,8 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
             "match_count": count,
             "day_session_count": day_cnt,
             "evening_session_count": eve_cnt,
-            "is_active": (d == active_date)
+            "is_active": (d == active_date),
+            "is_provisional": day_is_provisional
         })
 
     # Discover active day's operating hours
@@ -749,5 +924,10 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
         "day_session_count": total_day_session,
         "evening_session_count": total_evening_session,
         "days_meta": days_meta,
-        "total_matches_scheduled": len(all_matches)
+        "total_matches_scheduled": len(all_matches),
+        "is_provisional": is_provisional,
+        "earlier_pending_count": earlier_pending_count,
+        "current_day_number": current_day_number,
+        "previous_day_number": previous_day_number,
+        "previous_day_label": previous_day_label,
     }

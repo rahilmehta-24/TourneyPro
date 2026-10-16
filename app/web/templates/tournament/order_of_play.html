@@ -197,6 +197,79 @@
     border: 1px solid rgba(99, 102, 241, 0.25);
   }
 
+  /* -------------------------------------------------------------
+     PROVISIONAL SCHEDULE BANNER (Awaiting Previous Day Results)
+     ------------------------------------------------------------- */
+  .oop-provisional-banner {
+    background: linear-gradient(135deg, rgba(234, 179, 8, 0.12) 0%, rgba(249, 115, 22, 0.08) 100%);
+    border: 1px solid rgba(234, 179, 8, 0.35);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.35rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+    box-shadow: 0 3px 12px rgba(234, 179, 8, 0.08);
+  }
+  .oop-provisional-main {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    flex: 1;
+    min-width: 260px;
+  }
+  .oop-provisional-icon {
+    font-size: 1.6rem;
+    line-height: 1;
+    filter: drop-shadow(0 2px 4px rgba(234, 179, 8, 0.3));
+  }
+  .oop-provisional-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fde047;
+    margin: 0 0 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .oop-provisional-desc {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.45;
+  }
+  .oop-provisional-badge {
+    background: rgba(234, 179, 8, 0.18);
+    color: #fef08a;
+    border: 1px solid rgba(234, 179, 8, 0.4);
+    border-radius: 9999px;
+    padding: 0.4rem 0.95rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+  }
+  .oop-locked-pill {
+    background: rgba(148, 163, 184, 0.12);
+    color: #94a3b8;
+    border: 1px dashed rgba(148, 163, 184, 0.35);
+    border-radius: 9999px;
+    padding: 0.35rem 0.8rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    white-space: nowrap;
+    cursor: not-allowed;
+    user-select: none;
+  }
+
   /* Court Session Divider Headers & Declarative Session Filtering */
   .oop-court-session-block {
     display: block;
@@ -794,6 +867,9 @@
     <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug, date=dm.date_str, court=selected_court or '', session=session_filter or 'all') }}"
        class="oop-day-tab {% if dm.is_active %}active{% else %}inactive{% endif %}">
       📅 {{ dm.label }}
+      {% if dm.is_provisional %}
+      <span style="font-size: 0.72rem; padding: 1px 6px; border-radius: 9999px; background: rgba(234, 179, 8, 0.25); color: #fde047; font-weight: 700; margin-left: 2px;" title="Schedule is provisional awaiting earlier day results">⏳ Provisional</span>
+      {% endif %}
       {% if dm.match_count is defined %}
       <span style="font-size: 0.78rem; padding: 2px 7px; border-radius: 9999px; background: rgba(255, 255, 255, 0.12); margin-left: 4px; font-weight: 700;">{{ dm.match_count }}</span>
       {% endif %}
@@ -1004,7 +1080,13 @@
       {% endif %}
     {% else %}
       <span class="oop-status-badge pending">📅 To Play</span>
-      {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+      {% if item.is_locked %}
+      <div style="display: flex; justify-content: center; gap: 6px; margin-top: 8px;">
+        <span class="oop-locked-pill" title="Cannot start match until {{ previous_day_label }} matches are completed">
+          🔒 Awaiting {{ previous_day_label }}
+        </span>
+      </div>
+      {% elif current_user and current_user.role in ['admin', 'superadmin'] %}
       <div style="display: flex; justify-content: center; gap: 6px; margin-top: 8px;">
         <button type="button" onclick="quickToggleStatus({{ item.match.id }}, 'in_progress', this)" class="btn btn-primary btn-sm" style="background: #f59e0b; border-color: #f59e0b; border-radius: 9999px; font-weight: 600; box-shadow: 0 2px 6px rgba(245,158,11,0.25);" title="Start match and mark court as active">
           ▶ Start Match
@@ -1147,9 +1229,15 @@
           ⏸ Pause
         </button>
       {% elif item.status != 'completed' %}
+        {% if item.is_locked %}
+        <span class="oop-locked-pill" title="Cannot start match until {{ previous_day_label }} matches are completed">
+          🔒 Awaiting {{ previous_day_label }}
+        </span>
+        {% else %}
         <button type="button" onclick="quickToggleStatus({{ item.match.id }}, 'in_progress', this)" class="btn btn-primary" style="background: #f59e0b; border-color: #f59e0b; font-weight: 600;">
           ▶ Start Match
         </button>
+        {% endif %}
       {% endif %}
     </div>
 
@@ -1174,6 +1262,29 @@
   </div>
 </div>
 {% endmacro %}
+
+  <!-- PROVISIONAL SCHEDULE BANNER (When previous day matches are incomplete) -->
+  {% if is_provisional %}
+  <div class="oop-provisional-banner">
+    <div class="oop-provisional-main">
+      <span class="oop-provisional-icon">⏳</span>
+      <div>
+        <h4 class="oop-provisional-title">
+          <span>Provisional Schedule &bull; Day {{ current_day_number }}</span>
+          <span style="font-size: 0.75rem; font-weight: 600; padding: 2px 8px; border-radius: 9999px; background: rgba(234, 179, 8, 0.2); color: #fde047;">
+            Awaiting {{ previous_day_label }} Results
+          </span>
+        </h4>
+        <p class="oop-provisional-desc">
+          The order of play for <strong>Day {{ current_day_number }}</strong> is determined by completed matches from <strong>{{ previous_day_label }}</strong>. There {{ 'is' if earlier_pending_count == 1 else 'are' }} currently <strong>{{ earlier_pending_count }} match{{ 'es' if earlier_pending_count != 1 else '' }}</strong> pending completion on {{ previous_day_label }}. Day {{ current_day_number }} matches cannot be started or completed prematurely.
+        </p>
+      </div>
+    </div>
+    <div class="oop-provisional-badge">
+      <span>🔒</span> Matches Locked Until {{ previous_day_label }} Finishes
+    </div>
+  </div>
+  {% endif %}
 
 {% if courts %}
   {% for court_name, matches in courts.items() %}

@@ -52,6 +52,12 @@ def report_match(match_id):
         p2_sets = []
         # In this simplified API version, we expect the frontend to send parsed scores.
         # e.g., "6(7)", "4"
+        if match.status != 'completed':
+            from app.services.utils.scheduler import check_match_progression_allowed
+            allowed, reason = check_match_progression_allowed(match)
+            if not allowed:
+                return jsonify({"success": False, "message": reason}), 400
+
         score1 = data.get('score1', '')
         score2 = data.get('score2', '')
         

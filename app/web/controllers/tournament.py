@@ -1006,6 +1006,14 @@ def report_match_result(slug, match_id):
     is_live_update = (action == 'live_score')
     winner_id = request.form.get('winner_id', type=int) if not is_live_update else None
 
+    # Check Day-to-Day and Bracket progression if match is not already completed
+    if match.status != 'completed':
+        from app.services.utils.scheduler import check_match_progression_allowed
+        allowed, reason = check_match_progression_allowed(match)
+        if not allowed:
+            flash(f"Progression locked: {reason}", 'error')
+            return redirect(url_for('tournament.view_tournament', slug=slug))
+
     # Extract set scores from request
     form_data = {
         'set1_p1': request.form.get('set1_p1', ''),
@@ -1212,6 +1220,12 @@ def toggle_match_status(match_id):
     
     if new_status not in ['pending', 'in_progress']:
         return jsonify({'success': False, 'message': 'Invalid status.'}), 400
+
+    if new_status == 'in_progress':
+        from app.services.utils.scheduler import check_match_progression_allowed
+        allowed, reason = check_match_progression_allowed(match)
+        if not allowed:
+            return jsonify({'success': False, 'message': reason}), 400
         
     match.status = new_status
     
@@ -1348,6 +1362,11 @@ def court_schedule(slug):
         evening_session_count=data.get('evening_session_count', 0),
         session_filter='all',
         total_matches_scheduled=data.get('total_matches_scheduled', 0),
+        is_provisional=data.get('is_provisional', False),
+        earlier_pending_count=data.get('earlier_pending_count', 0),
+        current_day_number=data.get('current_day_number', 1),
+        previous_day_number=data.get('previous_day_number', 1),
+        previous_day_label=data.get('previous_day_label', 'Day 1'),
         selected_court=None,
         is_export=request.args.get('export', '0') == '1',
     )
@@ -1402,6 +1421,14 @@ def order_of_play(slug):
             if match_id and new_status in ['pending', 'in_progress']:
                 match = Match.query.get(match_id)
                 if match and match.tournament_id == tournament.id and match.status != 'completed':
+                    if new_status == 'in_progress':
+                        from app.services.utils.scheduler import check_match_progression_allowed
+                        allowed, reason = check_match_progression_allowed(match)
+                        if not allowed:
+                            flash(reason, 'error')
+                            date_arg = request.form.get('date') or request.args.get('date') or ''
+                            court_arg = request.form.get('court') or request.args.get('court') or ''
+                            return redirect(url_for('tournament.order_of_play', slug=slug, date=date_arg, court=court_arg))
                     match.status = new_status
                     db.session.commit()
                     status_label = "In Progress" if new_status == 'in_progress' else "To Play"
@@ -1447,5 +1474,10 @@ def order_of_play(slug):
         evening_session_count=data.get('evening_session_count', 0),
         session_filter=session_filter,
         total_matches_scheduled=data['total_matches_scheduled'],
+        is_provisional=data.get('is_provisional', False),
+        earlier_pending_count=data.get('earlier_pending_count', 0),
+        current_day_number=data.get('current_day_number', 1),
+        previous_day_number=data.get('previous_day_number', 1),
+        previous_day_label=data.get('previous_day_label', 'Day 1'),
         is_export=is_export,
     )

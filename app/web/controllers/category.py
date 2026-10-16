@@ -905,6 +905,13 @@ def report_category_match_result(slug, category_id, match_id):
                 reason=reason,
                 explanation=explanation
             )
+        else:
+            # Check Day-to-Day and Bracket progression
+            from app.services.utils.scheduler import check_match_progression_allowed
+            allowed, reason = check_match_progression_allowed(match)
+            if not allowed:
+                flash(f"Progression locked: {reason}", "error")
+                return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
 
         # Process overrides
         scoring_format_override = request.form.get('scoring_format')
