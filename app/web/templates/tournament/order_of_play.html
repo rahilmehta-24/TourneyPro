@@ -264,6 +264,78 @@
     line-height: normal;
   }
 
+  /* Matchup & Player Chips */
+  .oop-matchup-container {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    line-height: 1.35;
+  }
+
+  .oop-team-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+  }
+
+  .oop-player-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0.22rem 0.55rem;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 9999px;
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: 0.92rem;
+    font-weight: 600;
+    transition: all 0.15s ease-in-out;
+    cursor: pointer;
+  }
+
+  .oop-player-chip:hover {
+    background: rgba(249, 115, 22, 0.18);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    text-decoration: none;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(249, 115, 22, 0.25);
+  }
+
+  .oop-player-chip.static {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    cursor: default;
+  }
+
+  .oop-player-chip.static:hover {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+    transform: none;
+    box-shadow: none;
+  }
+
+  .oop-chip-icon {
+    font-size: 0.78rem;
+    opacity: 0.75;
+  }
+
+  .oop-player-chip:hover .oop-chip-icon {
+    opacity: 1;
+  }
+
+  .oop-pair-sep {
+    color: var(--text-muted);
+    font-weight: 700;
+    font-size: 0.85rem;
+    margin: 0 1px;
+    user-select: none;
+  }
+
   .oop-player-link {
     color: var(--text-primary);
     text-decoration: none;
@@ -660,36 +732,56 @@
 
           <!-- Players / Teams & Bracket Link -->
           <td>
-            <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; line-height: 1.35;">
-              <span style="font-size: 0.95rem; font-weight: 600;">
+            <div class="oop-matchup-container">
+              <div class="oop-team-group">
                 {% if item.p1_players %}
                   {% for pl in item.p1_players %}
                     {% if pl.player_id %}
-                    <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-link" title="View {{ pl.name }} profile">{{ pl.name }}</a>
+                    <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-chip" title="View {{ pl.name }} profile">
+                      <span class="oop-chip-icon">👤</span>
+                      <span>{{ pl.name }}</span>
+                    </a>
                     {% else %}
-                    <span style="color: var(--text-primary);">{{ pl.name }}</span>
+                    <span class="oop-player-chip static">
+                      <span class="oop-chip-icon">👤</span>
+                      <span>{{ pl.name }}</span>
+                    </span>
                     {% endif %}
-                    {% if not loop.last %}<span style="color: var(--text-muted); margin: 0 0.25rem; font-weight: 400;">/</span>{% endif %}
+                    {% if not loop.last %}<span class="oop-pair-sep">&</span>{% endif %}
                   {% endfor %}
                 {% else %}
-                  <span style="color: var(--text-primary);">{{ item.p1 }}</span>
+                  <span class="oop-player-chip static">
+                    <span class="oop-chip-icon">👤</span>
+                    <span>{{ item.p1 }}</span>
+                  </span>
                 {% endif %}
-              </span>
+              </div>
+
               <span class="oop-vs-pill">vs</span>
-              <span style="font-size: 0.95rem; font-weight: 600;">
+
+              <div class="oop-team-group">
                 {% if item.p2_players %}
                   {% for pl in item.p2_players %}
                     {% if pl.player_id %}
-                    <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-link" title="View {{ pl.name }} profile">{{ pl.name }}</a>
+                    <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-chip" title="View {{ pl.name }} profile">
+                      <span class="oop-chip-icon">👤</span>
+                      <span>{{ pl.name }}</span>
+                    </a>
                     {% else %}
-                    <span style="color: var(--text-primary);">{{ pl.name }}</span>
+                    <span class="oop-player-chip static">
+                      <span class="oop-chip-icon">👤</span>
+                      <span>{{ pl.name }}</span>
+                    </span>
                     {% endif %}
-                    {% if not loop.last %}<span style="color: var(--text-muted); margin: 0 0.25rem; font-weight: 400;">/</span>{% endif %}
+                    {% if not loop.last %}<span class="oop-pair-sep">&</span>{% endif %}
                   {% endfor %}
                 {% else %}
-                  <span style="color: var(--text-primary);">{{ item.p2 }}</span>
+                  <span class="oop-player-chip static">
+                    <span class="oop-chip-icon">👤</span>
+                    <span>{{ item.p2 }}</span>
+                  </span>
                 {% endif %}
-              </span>
+              </div>
             </div>
             {% if item.category_id %}
             <div style="margin-top: 0.45rem;">
@@ -789,38 +881,54 @@
 
         <!-- Card Matchup: Players -->
         <div class="oop-card-matchup">
-          <div class="oop-card-player">
-            <span style="color: var(--accent-primary); font-size: 0.85rem;">👤</span>
-            <div>
+          <div class="oop-card-player" style="gap: 0.4rem; align-items: center;">
+            <div class="oop-team-group" style="width: 100%;">
               {% if item.p1_players %}
                 {% for pl in item.p1_players %}
                   {% if pl.player_id %}
-                  <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-link" title="View {{ pl.name }} profile">{{ pl.name }}</a>
+                  <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-chip" title="View {{ pl.name }} profile">
+                    <span class="oop-chip-icon">👤</span>
+                    <span>{{ pl.name }}</span>
+                  </a>
                   {% else %}
-                  <span>{{ pl.name }}</span>
+                  <span class="oop-player-chip static">
+                    <span class="oop-chip-icon">👤</span>
+                    <span>{{ pl.name }}</span>
+                  </span>
                   {% endif %}
-                  {% if not loop.last %}<span style="color: var(--text-muted); margin: 0 0.25rem;">/</span>{% endif %}
+                  {% if not loop.last %}<span class="oop-pair-sep">&</span>{% endif %}
                 {% endfor %}
               {% else %}
-                <span>{{ item.p1 }}</span>
+                <span class="oop-player-chip static">
+                  <span class="oop-chip-icon">👤</span>
+                  <span>{{ item.p1 }}</span>
+                </span>
               {% endif %}
             </div>
           </div>
           <div class="oop-card-vs">vs</div>
-          <div class="oop-card-player">
-            <span style="color: var(--accent-primary); font-size: 0.85rem;">👤</span>
-            <div>
+          <div class="oop-card-player" style="gap: 0.4rem; align-items: center;">
+            <div class="oop-team-group" style="width: 100%;">
               {% if item.p2_players %}
                 {% for pl in item.p2_players %}
                   {% if pl.player_id %}
-                  <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-link" title="View {{ pl.name }} profile">{{ pl.name }}</a>
+                  <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-chip" title="View {{ pl.name }} profile">
+                    <span class="oop-chip-icon">👤</span>
+                    <span>{{ pl.name }}</span>
+                  </a>
                   {% else %}
-                  <span>{{ pl.name }}</span>
+                  <span class="oop-player-chip static">
+                    <span class="oop-chip-icon">👤</span>
+                    <span>{{ pl.name }}</span>
+                  </span>
                   {% endif %}
-                  {% if not loop.last %}<span style="color: var(--text-muted); margin: 0 0.25rem;">/</span>{% endif %}
+                  {% if not loop.last %}<span class="oop-pair-sep">&</span>{% endif %}
                 {% endfor %}
               {% else %}
-                <span>{{ item.p2 }}</span>
+                <span class="oop-player-chip static">
+                  <span class="oop-chip-icon">👤</span>
+                  <span>{{ item.p2 }}</span>
+                </span>
               {% endif %}
             </div>
           </div>

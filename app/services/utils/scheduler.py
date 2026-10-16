@@ -368,44 +368,58 @@ def extract_participant_players(participant: Participant | None) -> list[dict]:
     """
     Extracts individual players for singles or doubles pairs.
     Returns list of dicts: [{'name': 'Player Name', 'player_id': int | None}, ...]
+    Handles ' / ', '/', ' & ', ' and ', and partner_name attribute.
     """
     if not participant:
         return [{"name": "TBD", "player_id": None}]
 
-    raw_name = participant.name or "TBD"
+    raw_name = (participant.name or "TBD").strip()
+    if raw_name in ("TBD", "Bye", ""):
+        return [{"name": raw_name or "TBD", "player_id": None}]
 
-    # Check for doubles pair separated by ' / '
+    p1_name, p2_name = None, None
+
+    # Check for doubles pair separators
     if " / " in raw_name:
         parts = [part.strip() for part in raw_name.split(" / ", 1)]
-        p1_name = parts[0]
-        p2_name = parts[1] if len(parts) > 1 else (participant.partner_name or "")
-
-        p1_id = participant.player_id
-        p2_id = participant.player2_id
-        if not p2_id and p2_name:
-            matched = Player.query.filter_by(name=p2_name).first()
-            if matched:
-                p2_id = matched.id
-
-        return [
-            {"name": p1_name, "player_id": p1_id},
-            {"name": p2_name, "player_id": p2_id}
-        ]
+        p1_name, p2_name = parts[0], parts[1]
+    elif "/" in raw_name:
+        parts = [part.strip() for part in raw_name.split("/", 1)]
+        p1_name, p2_name = parts[0], parts[1]
+    elif " & " in raw_name:
+        parts = [part.strip() for part in raw_name.split(" & ", 1)]
+        p1_name, p2_name = parts[0], parts[1]
     elif participant.partner_name:
         p1_name = raw_name
-        p2_name = participant.partner_name
+        p2_name = participant.partner_name.strip()
+
+    if p1_name and p2_name:
         p1_id = participant.player_id
         p2_id = participant.player2_id
+
+        if not p1_id and p1_name:
+            matched1 = Player.query.filter_by(name=p1_name).first()
+            if matched1:
+                p1_id = matched1.id
+
         if not p2_id and p2_name:
-            matched = Player.query.filter_by(name=p2_name).first()
-            if matched:
-                p2_id = matched.id
+            matched2 = Player.query.filter_by(name=p2_name).first()
+            if matched2:
+                p2_id = matched2.id
+
         return [
             {"name": p1_name, "player_id": p1_id},
             {"name": p2_name, "player_id": p2_id}
         ]
-    else:
-        return [{"name": raw_name, "player_id": participant.player_id}]
+
+    # Singles participant
+    p_id = participant.player_id
+    if not p_id and raw_name:
+        matched = Player.query.filter_by(name=raw_name).first()
+        if matched:
+            p_id = matched.id
+
+    return [{"name": raw_name, "player_id": p_id}]
 
 
 def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> dict:

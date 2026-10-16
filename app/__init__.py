@@ -76,6 +76,11 @@ def create_app(config_class=Config):
         import re
         return re.sub(r'\((\d+)\)', r'<sup>\1</sup>', score_str)
 
+    @app.template_filter('participant_players')
+    def participant_players_filter(participant):
+        from app.services.utils.scheduler import extract_participant_players
+        return extract_participant_players(participant)
+
     # Cache Control Middleware for static assets & Security Headers
     @app.after_request
     def add_cache_headers(response):
