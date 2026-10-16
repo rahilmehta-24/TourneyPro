@@ -113,6 +113,52 @@ def get_participant_player_keys(p: Participant | None) -> set:
     return keys
 
 
+def get_earliest_day_index(round_num: int, max_rounds: int, num_days: int) -> int:
+    """
+    Returns the target day index (0-indexed) where round_num should ideally start.
+    Ensures multi-day distribution across available tournament days:
+      - Finals always target concluding day.
+      - Semifinals target concluding day (morning) or penultimate day.
+      - Earlier rounds staged proportionally across earlier days.
+    """
+    if num_days <= 1 or max_rounds <= 1:
+        return 0
+
+    # Finals always on the concluding day if multi-day
+    if round_num >= max_rounds:
+        return num_days - 1
+
+    # In a 2-day tournament:
+    if num_days == 2:
+        if round_num >= max_rounds - 1 and max_rounds > 2:
+            return 1
+        return 0
+
+    # In a 3-day tournament:
+    if num_days == 3:
+        if max_rounds <= 3:
+            return min(round_num - 1, 2)
+        elif max_rounds == 4:
+            if round_num == 1:
+                return 0
+            elif round_num == 2:
+                return 1
+            else:
+                return 2
+        else:
+            if round_num == 1:
+                return 0
+            elif round_num in (2, 3):
+                return 1
+            else:
+                return 2
+
+    # In 4+ day tournaments:
+    day_span = num_days - 1
+    step = day_span / max(max_rounds - 1, 1)
+    return min(int((round_num - 1) * step), num_days - 1)
+
+
 def auto_schedule_tournament(tournament_id: int) -> dict:
     """
     Globally schedule all categories in a tournament across all days and courts
@@ -157,27 +203,25 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
         return {"scheduled": 0, "message": "No uncompleted matches to schedule"}
 
     # 4. Sort and prioritize matches for smart scheduling:
-    # Priority:
-    #   - Preferred start day (earlier days first)
-    #   - Round number (earlier rounds e.g. R1, R2, QF before SF, Finals)
-    #   - Singles before Doubles for same round (stamina optimization)
-    #   - Non-final before Final (pinned finals go to last day)
     cat_map = {c.id: c for c in categories}
+    max_rounds_by_cat: dict[int | None, int] = {}
+    for om in all_matches:
+        cid = om.category_id
+        if cid not in max_rounds_by_cat or om.round > max_rounds_by_cat[cid]:
+            max_rounds_by_cat[cid] = om.round
 
     def match_priority_key(m: Match):
         cat = cat_map.get(m.category_id)
         pref_day = getattr(cat, 'preferred_start_day', 1) or 1
         is_doubles = 1 if (cat and 'doubles' in (cat.format or '')) else 0
         
-        # Check if this is the final round for this category
-        all_cat_rounds = [om.round for om in all_matches if om.category_id == m.category_id]
-        max_round = max(all_cat_rounds) if all_cat_rounds else 1
-        is_final = 1 if (m.round == max_round and getattr(cat, 'pin_finals_to_last_day', True)) else 0
+        max_round = max_rounds_by_cat.get(m.category_id, 1)
+        target_day_idx = get_earliest_day_index(m.round, max_round, len(tournament_days))
 
         # Match type priority (group stage before knockout)
         type_priority = 0 if m.match_type in ('group_stage', 'round_robin') else 1
 
-        return (is_final, pref_day, type_priority, m.round, is_doubles, m.match_number)
+        return (target_day_idx, pref_day, type_priority, m.round, is_doubles, m.match_number)
 
     sorted_matches = sorted(all_matches, key=match_priority_key)
 
@@ -210,19 +254,25 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
         p2 = match.participant2
         p_keys = get_participant_player_keys(p1).union(get_participant_player_keys(p2))
 
-        # Check if category finals are pinned to last day
-        all_cat_rounds = [om.round for om in all_matches if om.category_id == match.category_id]
-        max_round = max(all_cat_rounds) if all_cat_rounds else 1
-        is_pinned_final = (match.round == max_round and getattr(cat, 'pin_finals_to_last_day', True) and len(tournament_days) > 1)
-
-        target_days = [last_day] if is_pinned_final else tournament_days
+        # Multi-day round distribution across tournament calendar
+        max_round = max_rounds_by_cat.get(match.category_id, 1)
+        if len(tournament_days) > 1 and match.match_type not in ('group_stage', 'round_robin'):
+            min_day_idx = get_earliest_day_index(match.round, max_round, len(tournament_days))
+            target_days = tournament_days[min_day_idx:]
+        elif len(tournament_days) > 1 and match.match_type in ('group_stage', 'round_robin'):
+            min_day_idx = min(max(match.round - 1, 0), len(tournament_days) - 1)
+            target_days = tournament_days[min_day_idx:]
+        else:
+            target_days = tournament_days
 
         # Determine earliest possible start from category settings or previous round
         earliest_time = datetime.min
         if cat and cat.start_date_time:
             earliest_time = max(earliest_time, cat.start_date_time)
         if (match.category_id, match.round - 1) in round_ready_at:
-            earliest_time = max(earliest_time, round_ready_at[(match.category_id, match.round - 1)])
+            prev_round_end = round_ready_at[(match.category_id, match.round - 1)]
+            same_day_round_rest = max(player_rest_buffer, timedelta(minutes=45))
+            earliest_time = max(earliest_time, prev_round_end + same_day_round_rest)
 
         # Search for best available (day, court, slot) that respects:
         # - Daily closing time (dynamically per day)
@@ -437,13 +487,22 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
 
     all_matches = query.order_by(Match.scheduled_time).all()
 
-    # Discover all unique match dates
-    unique_dates = sorted(list({m.scheduled_time.date() for m in all_matches if m.scheduled_time}))
-    
-    # If filter_date is not specified, default to first available date or today
+    # Discover all operating tournament dates:
+    # Include all calendar dates between tournament.start_date and tournament.end_date, plus any match dates
+    calendar_dates = set()
+    if tournament.start_date and tournament.end_date and tournament.start_date <= tournament.end_date:
+        num_calendar_days = (tournament.end_date - tournament.start_date).days + 1
+        calendar_dates = {tournament.start_date + timedelta(days=i) for i in range(num_calendar_days)}
+
+    match_dates = {m.scheduled_time.date() for m in all_matches if m.scheduled_time}
+    all_dates_set = calendar_dates.union(match_dates)
+    unique_dates = sorted(list(all_dates_set)) if all_dates_set else sorted(list(match_dates))
+
+    # If filter_date is not specified, default to first date with matches or first calendar day
     active_date = filter_date
     if not active_date and unique_dates:
-        active_date = unique_dates[0]
+        dates_with_matches = sorted(list(match_dates))
+        active_date = dates_with_matches[0] if dates_with_matches else unique_dates[0]
 
     # Filter matches by active date
     if active_date:
@@ -537,12 +596,20 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
 
     # Build days metadata list for UI tabs
     days_meta = []
+    matches_per_date: dict[date, int] = {}
+    for m in all_matches:
+        if m.scheduled_time:
+            d = m.scheduled_time.date()
+            matches_per_date[d] = matches_per_date.get(d, 0) + 1
+
     for idx, d in enumerate(unique_dates):
+        count = matches_per_date.get(d, 0)
         label = f"Day {idx + 1} ({d.strftime('%d %b')})"
         days_meta.append({
             "date": d,
             "date_str": d.strftime("%Y-%m-%d"),
             "label": label,
+            "match_count": count,
             "is_active": (d == active_date)
         })
 

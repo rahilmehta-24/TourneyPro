@@ -608,6 +608,9 @@
     <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug, date=dm.date_str, court=selected_court or '') }}"
        class="oop-day-tab {% if dm.is_active %}active{% else %}inactive{% endif %}">
       📅 {{ dm.label }}
+      {% if dm.match_count is defined %}
+      <span style="font-size: 0.78rem; padding: 2px 7px; border-radius: 9999px; background: rgba(255, 255, 255, 0.12); margin-left: 4px; font-weight: 700;">{{ dm.match_count }}</span>
+      {% endif %}
     </a>
     {% endfor %}
   </div>
