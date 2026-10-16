@@ -159,6 +159,43 @@ def get_earliest_day_index(round_num: int, max_rounds: int, num_days: int) -> in
     return min(int((round_num - 1) * step), num_days - 1)
 
 
+def get_target_session(round_num: int, max_rounds: int, num_days: int) -> str:
+    """
+    Returns 'day' or 'evening' target session for the round in multi-day events.
+    - If multiple rounds occur on the same day:
+      Earlier round -> 'day'
+      Later marquee round (Quarter-Finals on Day 2, Grand Finals on Day 3) -> 'evening'
+    """
+    if num_days >= 3:
+        # On Day 2 (rounds 2 & 3 for 5-round brackets): QF targets evening
+        if max_rounds >= 4 and round_num == max_rounds - 2:
+            return 'evening'
+        # On Day 3 (SF & Finals): Grand Finals target evening
+        if round_num >= max_rounds and max_rounds >= 3:
+            return 'evening'
+    elif num_days == 2:
+        # On Day 2: Finals target evening
+        if round_num >= max_rounds and max_rounds >= 2:
+            return 'evening'
+    return 'day'
+
+
+class CourtSchedule(list):
+    """
+    List of matches on a court that also provides session subdivisions:
+    day_matches, evening_matches, day_count, evening_count, etc.
+    Inherits from list for complete backward compatibility.
+    """
+    def __init__(self, matches=(), day_matches=(), evening_matches=()):
+        super().__init__(matches)
+        self.matches = list(matches)
+        self.day_matches = list(day_matches)
+        self.evening_matches = list(evening_matches)
+        self.day_count = len(day_matches)
+        self.evening_count = len(evening_matches)
+        self.total_matches = len(matches)
+
+
 def auto_schedule_tournament(tournament_id: int) -> dict:
     """
     Globally schedule all categories in a tournament across all days and courts
@@ -217,11 +254,13 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
         
         max_round = max_rounds_by_cat.get(m.category_id, 1)
         target_day_idx = get_earliest_day_index(m.round, max_round, len(tournament_days))
+        target_session = get_target_session(m.round, max_round, len(tournament_days))
+        target_session_idx = 1 if target_session == 'evening' else 0
 
         # Match type priority (group stage before knockout)
         type_priority = 0 if m.match_type in ('group_stage', 'round_robin') else 1
 
-        return (target_day_idx, pref_day, type_priority, m.round, is_doubles, m.match_number)
+        return (target_day_idx, target_session_idx, pref_day, type_priority, m.round, is_doubles, m.match_number)
 
     sorted_matches = sorted(all_matches, key=match_priority_key)
 
@@ -274,6 +313,10 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
             same_day_round_rest = max(player_rest_buffer, timedelta(minutes=45))
             earliest_time = max(earliest_time, prev_round_end + same_day_round_rest)
 
+        # Session targeting (Day Session vs Evening Session)
+        target_session = get_target_session(match.round, max_round, len(tournament_days))
+        evening_start_time = parse_time_str(getattr(tournament, 'evening_session_start', '16:00'), default=time(16, 0))
+
         # Search for best available (day, court, slot) that respects:
         # - Daily closing time (dynamically per day)
         # - Court availability
@@ -291,9 +334,51 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
             day_end_dt = datetime.combine(current_day, current_day_end)
 
             # Find court with earliest available slot
-            # Sort courts by next available time on this day
             sorted_courts = sorted(courts, key=lambda c: court_next_available[current_day][c])
 
+            # 1. If round targets evening session, attempt scheduling in the evening session first
+            evening_start_dt = datetime.combine(current_day, evening_start_time)
+            prefer_evening = (target_session == 'evening' and earliest_time <= evening_start_dt)
+
+            if prefer_evening:
+                for court_name in sorted_courts:
+                    court_ready = court_next_available[current_day][court_name]
+                    tentative_start = max(court_ready, evening_start_dt)
+                    if earliest_time.date() == current_day:
+                        tentative_start = max(tentative_start, earliest_time)
+                    elif earliest_time.date() > current_day:
+                        continue
+
+                    for pk in p_keys:
+                        if pk in player_next_available and player_next_available[pk].date() == current_day:
+                            tentative_start = max(tentative_start, player_next_available[pk])
+
+                    tentative_end = tentative_start + match_duration
+                    if tentative_end <= day_end_dt:
+                        # Found valid evening slot!
+                        match.scheduled_time = tentative_start
+                        match.scheduled_date = current_day
+                        match.scheduled_end_time = tentative_end
+                        match.court_name = court_name
+                        match.is_not_before = True
+
+                        court_next_available[current_day][court_name] = tentative_end + court_buffer
+                        player_free_time = tentative_end + player_rest_buffer
+                        for pk in p_keys:
+                            player_next_available[pk] = player_free_time
+                            player_daily_count[current_day][pk] = player_daily_count[current_day].get(pk, 0) + 1
+
+                        curr_round_max = round_ready_at.get((match.category_id, match.round), datetime.min)
+                        round_ready_at[(match.category_id, match.round)] = max(curr_round_max, tentative_end)
+
+                        scheduled_count += 1
+                        assigned = True
+                        break
+
+            if assigned:
+                break
+
+            # 2. Standard slot search (day session or fallback)
             for court_name in sorted_courts:
                 court_ready = court_next_available[current_day][court_name]
                 
@@ -547,6 +632,10 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
             else:
                 return f"Round {m.round}"
 
+    # Evening session cutoff configuration (default: 16:00 / 4:00 PM)
+    evening_start_str = getattr(tournament, 'evening_session_start', None) or '16:00'
+    evening_cutoff = parse_time_str(evening_start_str, default=time(16, 0))
+
     # Group by court
     order: dict[str, list] = {}
     for match in matches:
@@ -568,6 +657,10 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
 
         time_str = match.scheduled_time.strftime("%H:%M") if match.scheduled_time else "TBD"
         is_nb = getattr(match, 'is_not_before', False)
+        is_evening = bool(match.scheduled_time and match.scheduled_time.time() >= evening_cutoff)
+        session_type = 'evening' if is_evening else 'day'
+        session_label = 'Evening Session' if is_evening else 'Day Session'
+        session_icon = '🌙' if is_evening else '☀️'
 
         order[court].append({
             "match": match,
@@ -576,6 +669,10 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
             "time": time_str,
             "is_not_before": is_nb,
             "time_display": f"NB {time_str}" if is_nb else time_str,
+            "session": session_type,
+            "session_label": session_label,
+            "session_icon": session_icon,
+            "is_evening": is_evening,
             "date": match.scheduled_time.strftime("%d %b %Y") if match.scheduled_time else "",
             "raw_date": match.scheduled_time.date() if match.scheduled_time else None,
             "p1": p1,
@@ -591,25 +688,39 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
             "court": court,
         })
 
-    # Naturally sort courts (Court 1, Court 2, ...)
-    sorted_order = dict(sorted(order.items()))
+    # Naturally sort courts (Court 1, Court 2, ...) and wrap in CourtSchedule
+    sorted_order = {}
+    for court, c_matches in sorted(order.items()):
+        day_m = [m for m in c_matches if m.get("session") == "day"]
+        eve_m = [m for m in c_matches if m.get("session") == "evening"]
+        sorted_order[court] = CourtSchedule(c_matches, day_m, eve_m)
 
     # Build days metadata list for UI tabs
     days_meta = []
     matches_per_date: dict[date, int] = {}
+    day_matches_per_date: dict[date, int] = {}
+    eve_matches_per_date: dict[date, int] = {}
     for m in all_matches:
         if m.scheduled_time:
             d = m.scheduled_time.date()
             matches_per_date[d] = matches_per_date.get(d, 0) + 1
+            if m.scheduled_time.time() < evening_cutoff:
+                day_matches_per_date[d] = day_matches_per_date.get(d, 0) + 1
+            else:
+                eve_matches_per_date[d] = eve_matches_per_date.get(d, 0) + 1
 
     for idx, d in enumerate(unique_dates):
         count = matches_per_date.get(d, 0)
+        day_cnt = day_matches_per_date.get(d, 0)
+        eve_cnt = eve_matches_per_date.get(d, 0)
         label = f"Day {idx + 1} ({d.strftime('%d %b')})"
         days_meta.append({
             "date": d,
             "date_str": d.strftime("%Y-%m-%d"),
             "label": label,
             "match_count": count,
+            "day_session_count": day_cnt,
+            "evening_session_count": eve_cnt,
             "is_active": (d == active_date)
         })
 
@@ -622,6 +733,11 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
             active_day_start = act_sched["start"].strftime("%H:%M")
             active_day_end = act_sched["end"].strftime("%H:%M")
 
+    # Active day session totals across all courts
+    active_day_matches = [m for m in matches if m.scheduled_time and m.scheduled_time.date() == active_date] if active_date else matches
+    total_day_session = sum(1 for m in active_day_matches if m.scheduled_time and m.scheduled_time.time() < evening_cutoff)
+    total_evening_session = sum(1 for m in active_day_matches if m.scheduled_time and m.scheduled_time.time() >= evening_cutoff)
+
     return {
         "courts": sorted_order,
         "tournament": tournament,
@@ -629,6 +745,9 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
         "active_date": active_date,
         "active_day_start": active_day_start,
         "active_day_end": active_day_end,
+        "evening_session_start": evening_start_str,
+        "day_session_count": total_day_session,
+        "evening_session_count": total_evening_session,
         "days_meta": days_meta,
         "total_matches_scheduled": len(all_matches)
     }

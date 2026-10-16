@@ -1339,6 +1339,15 @@ def court_schedule(slug):
         courts=data['courts'],
         all_courts=list(data['courts'].keys()),
         tournament=data['tournament'],
+        days_meta=data.get('days_meta', []),
+        active_date=data.get('active_date'),
+        active_day_start=data.get('active_day_start'),
+        active_day_end=data.get('active_day_end'),
+        evening_session_start=data.get('evening_session_start', '16:00'),
+        day_session_count=data.get('day_session_count', 0),
+        evening_session_count=data.get('evening_session_count', 0),
+        session_filter='all',
+        total_matches_scheduled=data.get('total_matches_scheduled', 0),
         selected_court=None,
         is_export=request.args.get('export', '0') == '1',
     )
@@ -1412,6 +1421,9 @@ def order_of_play(slug):
 
     data = get_order_of_play(slug, filter_date=filter_date)
     selected_court = request.args.get('court', None)
+    session_filter = request.args.get('session', 'all')
+    if session_filter not in ('all', 'day', 'evening'):
+        session_filter = 'all'
     is_export = request.args.get('export', '0') == '1'
 
     courts = data['courts']
@@ -1430,6 +1442,10 @@ def order_of_play(slug):
         active_date=data['active_date'],
         active_day_start=data.get('active_day_start'),
         active_day_end=data.get('active_day_end'),
+        evening_session_start=data.get('evening_session_start', '16:00'),
+        day_session_count=data.get('day_session_count', 0),
+        evening_session_count=data.get('evening_session_count', 0),
+        session_filter=session_filter,
         total_matches_scheduled=data['total_matches_scheduled'],
         is_export=is_export,
     )

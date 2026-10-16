@@ -484,6 +484,10 @@
                                 }
                             }
                         });
+                        // Re-evaluate client schedule filters (session, search, category) after live update
+                        if (typeof window.applyScheduleFilters === 'function') {
+                            window.applyScheduleFilters();
+                        }
                     } catch (err) {
                         // Silent fail for network glitches
                     } finally {

@@ -106,6 +106,189 @@
     border-color: rgba(255, 255, 255, 0.2);
   }
 
+  /* -------------------------------------------------------------
+     SESSION SELECTOR BAR (Day Session vs Evening Session)
+     ------------------------------------------------------------- */
+  .oop-session-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 0.85rem 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  }
+  .oop-session-pills {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .oop-session-pill {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    padding: 0.5rem 1.1rem;
+    border-radius: 9999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    transition: all 0.2s ease;
+  }
+  .oop-session-pill:hover {
+    color: var(--text-primary);
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
+  }
+  .oop-session-pill.active {
+    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+    color: #ffffff;
+    border-color: #f97316;
+    box-shadow: 0 2px 8px rgba(249, 115, 22, 0.4);
+  }
+  .oop-session-pill.active[data-session="day"] {
+    background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
+    border-color: #eab308;
+    box-shadow: 0 2px 8px rgba(234, 179, 8, 0.4);
+  }
+  .oop-session-pill.active[data-session="evening"] {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    border-color: #6366f1;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+  }
+  .oop-session-pill-badge {
+    font-size: 0.75rem;
+    padding: 2px 7px;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.18);
+    font-weight: 700;
+  }
+  .oop-session-legend {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    flex-wrap: wrap;
+  }
+  .oop-session-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+  }
+  .oop-session-legend-item.day {
+    background: rgba(234, 179, 8, 0.1);
+    color: #facc15;
+    border: 1px solid rgba(234, 179, 8, 0.25);
+  }
+  .oop-session-legend-item.evening {
+    background: rgba(99, 102, 241, 0.12);
+    color: #a5b4fc;
+    border: 1px solid rgba(99, 102, 241, 0.25);
+  }
+
+  /* Court Session Divider Headers & Declarative Session Filtering */
+  .oop-court-session-block {
+    display: block;
+    transition: opacity 0.2s ease;
+  }
+  .oop-content-grid[data-active-session="day"] .oop-court-session-block[data-session="evening"] {
+    display: none !important;
+  }
+  .oop-content-grid[data-active-session="evening"] .oop-court-session-block[data-session="day"] {
+    display: none !important;
+  }
+  .oop-session-divider {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1.25rem;
+    font-weight: 700;
+    font-size: 0.9rem;
+    letter-spacing: 0.3px;
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+  }
+  .oop-session-divider.day-session-divider {
+    background: linear-gradient(90deg, rgba(234, 179, 8, 0.12) 0%, rgba(249, 115, 22, 0.04) 100%);
+    border-left: 4px solid #eab308;
+    color: #fbbf24;
+  }
+  .oop-session-divider.evening-session-divider {
+    background: linear-gradient(90deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.05) 100%);
+    border-left: 4px solid #818cf8;
+    color: #c7d2fe;
+  }
+  .oop-session-divider-title {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .oop-session-title-text {
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+  .oop-session-title-sub {
+    font-size: 0.75rem;
+    opacity: 0.8;
+    font-weight: 500;
+    margin-left: 0.35rem;
+  }
+  .oop-session-badge {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.65rem;
+    border-radius: 9999px;
+    font-weight: 600;
+  }
+  .oop-session-badge.day {
+    background: rgba(234, 179, 8, 0.2);
+    color: #fde047;
+    border: 1px solid rgba(234, 179, 8, 0.3);
+  }
+  .oop-session-badge.evening {
+    background: rgba(99, 102, 241, 0.2);
+    color: #c7d2fe;
+    border: 1px solid rgba(99, 102, 241, 0.35);
+  }
+  .oop-session-tag {
+    font-size: 0.72rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    width: fit-content;
+  }
+  .oop-session-tag.day {
+    background: rgba(234, 179, 8, 0.15);
+    color: #facc15;
+    border: 1px solid rgba(234, 179, 8, 0.3);
+  }
+  .oop-session-tag.evening {
+    background: rgba(99, 102, 241, 0.2);
+    color: #c7d2fe;
+    border: 1px solid rgba(99, 102, 241, 0.35);
+  }
+  .oop-empty-session-notice {
+    padding: 1.25rem 1.5rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.825rem;
+    font-style: italic;
+    background: rgba(255, 255, 255, 0.015);
+  }
+
   /* Organizer Dispatch Toolbar */
   .oop-dispatch-toolbar {
     background: var(--bg-card);
@@ -552,7 +735,7 @@
         ⚙️ Organizer Controls
       </a>
       {% endif %}
-      <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug, court=selected_court or '', date=active_date.strftime('%Y-%m-%d') if active_date else '', export='1') }}"
+      <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug, court=selected_court or '', date=active_date.strftime('%Y-%m-%d') if active_date else '', session=session_filter or 'all', export='1') }}"
          target="_blank" class="btn btn-secondary btn-sm">🖨️ Export PDF</a>
     </div>
   </div>
@@ -590,6 +773,9 @@
           {% if active_date %}
           <input type="hidden" name="date" value="{{ active_date.strftime('%Y-%m-%d') }}">
           {% endif %}
+          {% if session_filter and session_filter != 'all' %}
+          <input type="hidden" name="session" value="{{ session_filter }}">
+          {% endif %}
           <select name="court" class="form-input" style="min-width: 140px;" onchange="this.form.submit()">
             <option value="">All Courts</option>
             {% for c in all_courts %}
@@ -605,7 +791,7 @@
   {% if days_meta and days_meta|length > 1 %}
   <div class="oop-day-tabs">
     {% for dm in days_meta %}
-    <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug, date=dm.date_str, court=selected_court or '') }}"
+    <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug, date=dm.date_str, court=selected_court or '', session=session_filter or 'all') }}"
        class="oop-day-tab {% if dm.is_active %}active{% else %}inactive{% endif %}">
       📅 {{ dm.label }}
       {% if dm.match_count is defined %}
@@ -615,6 +801,32 @@
     {% endfor %}
   </div>
   {% endif %}
+
+  <!-- SESSION SELECTOR BAR (Day Session vs Evening Session) -->
+  <div class="oop-session-bar">
+    <div class="oop-session-pills">
+      <button type="button" class="oop-session-pill {% if session_filter == 'all' or not session_filter %}active{% endif %}" data-session="all" onclick="selectSession('all')">
+        <span>🌐</span> All Sessions
+        <span class="oop-session-pill-badge">{{ (day_session_count or 0) + (evening_session_count or 0) }}</span>
+      </button>
+      <button type="button" class="oop-session-pill {% if session_filter == 'day' %}active{% endif %}" data-session="day" onclick="selectSession('day')">
+        <span>☀️</span> Day Session
+        <span class="oop-session-pill-badge">{{ day_session_count or 0 }}</span>
+      </button>
+      <button type="button" class="oop-session-pill {% if session_filter == 'evening' %}active{% endif %}" data-session="evening" onclick="selectSession('evening')">
+        <span>🌙</span> Evening Session
+        <span class="oop-session-pill-badge">{{ evening_session_count or 0 }}</span>
+      </button>
+    </div>
+    <div class="oop-session-legend">
+      <span class="oop-session-legend-item day">
+        ☀️ Day Session: {{ active_day_start or '09:00' }} &ndash; {{ evening_session_start or '16:00' }}
+      </span>
+      <span class="oop-session-legend-item evening">
+        🌙 Evening Session: Not Before {{ evening_session_start or '16:00' }} (4:00 PM) &ndash; {{ active_day_end or '20:00' }}
+      </span>
+    </div>
+  </div>
 
   <!-- ORGANIZER SCHEDULE TOOLBAR (Rain delay, Auto-schedule) -->
   {% if current_user and current_user.role in ['admin', 'superadmin'] %}
@@ -649,13 +861,319 @@
   </div>
   {% endif %}
 
-  <div class="oop-content-grid" style="padding-bottom: 2rem;">
+  <div class="oop-content-grid" data-active-session="{{ session_filter or 'all' }}" style="padding-bottom: 2rem;">
 {% else %}
 <div class="header">
   <h1>📋 Order of Play</h1>
   <p>{{ tournament.name }} &mdash; {% if active_date %}Date: {{ active_date.strftime('%d %B %Y') }}{% endif %}</p>
 </div>
 {% endif %}
+
+{% macro render_match_row(item, court_name) %}
+<tr class="oop-match-row" data-p1="{{ item.p1|lower }}" data-p2="{{ item.p2|lower }}" data-cat="{{ item.category_name|lower }}" data-session="{{ item.session }}">
+  <!-- Match Time & 'Not Before' indication -->
+  <td>
+    <div style="display: flex; flex-direction: column; gap: 3px;">
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <span style="font-weight: 700; font-size: 1.15rem; color: var(--accent-primary); line-height: 1.2;">
+          {{ item.time }}
+        </span>
+        <span class="oop-session-tag {{ item.session }}">{{ item.session_icon }} {{ 'Evening' if item.session == 'evening' else 'Day' }}</span>
+      </div>
+      {% if item.is_not_before %}
+      <span style="font-size: 0.75rem; color: var(--accent-warning); font-weight: 600; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap;">
+        ⏱️ Not Before
+      </span>
+      {% else %}
+      <span style="font-size: 0.75rem; color: var(--accent-success); font-weight: 600; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap;">
+        🎾 First Match
+      </span>
+      {% endif %}
+    </div>
+  </td>
+
+  <!-- Category -->
+  <td>
+    {% if item.category_id %}
+    <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=item.category_id, match_id=item.match.id) }}" class="oop-cat-badge" style="text-decoration: none;" title="View category">
+      {{ item.category_name }}
+    </a>
+    {% else %}
+    <span class="oop-cat-badge">{{ item.category_name }}</span>
+    {% endif %}
+  </td>
+
+  <!-- Round -->
+  <td>
+    <span class="oop-round-badge">
+      {{ item.round_name }}
+    </span>
+  </td>
+
+  <!-- Players / Teams & Bracket Link -->
+  <td>
+    <div class="oop-matchup-container">
+      <div class="oop-team-group">
+        {% if item.p1_players %}
+          {% for pl in item.p1_players %}
+            {% if pl.player_id %}
+            <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-chip" title="View {{ pl.name }} profile">
+              <span class="oop-chip-icon">👤</span>
+              <span>{{ pl.name }}</span>
+            </a>
+            {% else %}
+            <span class="oop-player-chip static">
+              <span class="oop-chip-icon">👤</span>
+              <span>{{ pl.name }}</span>
+            </span>
+            {% endif %}
+            {% if not loop.last %}<span class="oop-pair-sep">&</span>{% endif %}
+          {% endfor %}
+        {% else %}
+          <span class="oop-player-chip static">
+            <span class="oop-chip-icon">👤</span>
+            <span>{{ item.p1 }}</span>
+          </span>
+        {% endif %}
+      </div>
+
+      <span class="oop-vs-pill">vs</span>
+
+      <div class="oop-team-group">
+        {% if item.p2_players %}
+          {% for pl in item.p2_players %}
+            {% if pl.player_id %}
+            <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-chip" title="View {{ pl.name }} profile">
+              <span class="oop-chip-icon">👤</span>
+              <span>{{ pl.name }}</span>
+            </a>
+            {% else %}
+            <span class="oop-player-chip static">
+              <span class="oop-chip-icon">👤</span>
+              <span>{{ pl.name }}</span>
+            </span>
+            {% endif %}
+            {% if not loop.last %}<span class="oop-pair-sep">&</span>{% endif %}
+          {% endfor %}
+        {% else %}
+          <span class="oop-player-chip static">
+            <span class="oop-chip-icon">👤</span>
+            <span>{{ item.p2 }}</span>
+          </span>
+        {% endif %}
+      </div>
+    </div>
+    {% if item.category_id %}
+    <div style="margin-top: 0.45rem;">
+      <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=item.category_id, match_id=item.match.id) }}" class="oop-bracket-link" title="Jump to this match on the category bracket">
+        🎯 View in Bracket ↗
+      </a>
+    </div>
+    {% endif %}
+  </td>
+
+  <!-- Status & Live Controls -->
+  <td style="text-align: center;">
+    {% if item.status == 'completed' %}
+      <span class="oop-status-badge completed">✓ Completed</span>
+      {% if item.match.score1 %}
+      <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-top: 5px; letter-spacing: 0.3px;">
+        {{ item.match.score1 }}
+      </div>
+      {% endif %}
+      {% if current_user and current_user.role in ['admin', 'superadmin'] and item.category_id %}
+      <div style="margin-top: 5px;">
+        <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=item.category_id, match_id=item.match.id) }}" style="font-size: 0.75rem; color: var(--text-secondary); text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+          Bracket details ↗
+        </a>
+      </div>
+      {% endif %}
+    {% elif item.status == 'in_progress' %}
+      <span class="oop-status-badge in-progress">🔴 IN PROGRESS</span>
+      {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+      <div style="display: flex; justify-content: center; gap: 6px; margin-top: 8px; flex-wrap: wrap;">
+        {% if item.category_id %}
+        <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=item.category_id, match_id=item.match.id, open_score=1) }}" class="btn btn-primary btn-sm" style="background: var(--accent-success); border-color: var(--accent-success); border-radius: 9999px; text-decoration: none; font-weight: 600; box-shadow: 0 2px 6px rgba(16,185,129,0.3);" title="Go to bracket to enter final score">
+          🏁 Score & Complete ↗
+        </a>
+        {% endif %}
+        <button type="button" onclick="quickToggleStatus({{ item.match.id }}, 'pending', this)" class="btn btn-secondary btn-sm" style="border-radius: 9999px;" title="Reset back to To Play">
+          ⏸ Pause
+        </button>
+      </div>
+      {% endif %}
+    {% else %}
+      <span class="oop-status-badge pending">📅 To Play</span>
+      {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+      <div style="display: flex; justify-content: center; gap: 6px; margin-top: 8px;">
+        <button type="button" onclick="quickToggleStatus({{ item.match.id }}, 'in_progress', this)" class="btn btn-primary btn-sm" style="background: #f59e0b; border-color: #f59e0b; border-radius: 9999px; font-weight: 600; box-shadow: 0 2px 6px rgba(245,158,11,0.25);" title="Start match and mark court as active">
+          ▶ Start Match
+        </button>
+      </div>
+      {% endif %}
+    {% endif %}
+  </td>
+
+  <!-- Quick Move / Dispatch Menu for Organizers -->
+  {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+  <td style="text-align: right; white-space: nowrap;">
+    {% if item.status != 'completed' %}
+    <form method="POST" style="display: inline-flex; align-items: center; margin: 0;">
+      <input type="hidden" name="action" value="reassign_court">
+      <input type="hidden" name="match_id" value="{{ item.match.id }}">
+      <select name="new_court" class="form-input oop-dispatch-select" onchange="this.form.submit()">
+        <option value="" disabled selected>Move ⤾</option>
+        {% for oc in all_courts %}
+        {% if oc != court_name %}
+        <option value="{{ oc }}">{{ oc }}</option>
+        {% endif %}
+        {% endfor %}
+      </select>
+    </form>
+    {% endif %}
+  </td>
+  {% endif %}
+</tr>
+{% endmacro %}
+
+{% macro render_match_card(item, court_name) %}
+<div class="oop-match-card" data-p1="{{ item.p1|lower }}" data-p2="{{ item.p2|lower }}" data-cat="{{ item.category_name|lower }}" data-session="{{ item.session }}">
+  <!-- Card Top Row: Time, Session, Category & Round -->
+  <div class="oop-card-top">
+    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+      <span style="font-weight: 700; font-size: 1.15rem; color: var(--accent-primary);">{{ item.time }}</span>
+      <span class="oop-session-tag {{ item.session }}">{{ item.session_icon }} {{ 'Evening' if item.session == 'evening' else 'Day' }}</span>
+      {% if item.is_not_before %}
+      <span style="font-size: 0.72rem; color: var(--accent-warning); font-weight: 600; display: inline-flex; align-items: center; gap: 2px;">⏱️ Not Before</span>
+      {% else %}
+      <span style="font-size: 0.72rem; color: var(--accent-success); font-weight: 600; display: inline-flex; align-items: center; gap: 2px;">🎾 First Match</span>
+      {% endif %}
+    </div>
+    <div style="display: flex; align-items: center; gap: 0.4rem;">
+      <span class="oop-cat-badge">{{ item.category_name }}</span>
+      <span class="oop-round-badge">{{ item.round_name }}</span>
+    </div>
+  </div>
+
+  <!-- Card Matchup: Players -->
+  <div class="oop-card-matchup">
+    <div class="oop-card-player" style="gap: 0.4rem; align-items: center;">
+      <div class="oop-team-group" style="width: 100%;">
+        {% if item.p1_players %}
+          {% for pl in item.p1_players %}
+            {% if pl.player_id %}
+            <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-chip" title="View {{ pl.name }} profile">
+              <span class="oop-chip-icon">👤</span>
+              <span>{{ pl.name }}</span>
+            </a>
+            {% else %}
+            <span class="oop-player-chip static">
+              <span class="oop-chip-icon">👤</span>
+              <span>{{ pl.name }}</span>
+            </span>
+            {% endif %}
+            {% if not loop.last %}<span class="oop-pair-sep">&</span>{% endif %}
+          {% endfor %}
+        {% else %}
+          <span class="oop-player-chip static">
+            <span class="oop-chip-icon">👤</span>
+            <span>{{ item.p1 }}</span>
+          </span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="oop-card-vs">vs</div>
+    <div class="oop-card-player" style="gap: 0.4rem; align-items: center;">
+      <div class="oop-team-group" style="width: 100%;">
+        {% if item.p2_players %}
+          {% for pl in item.p2_players %}
+            {% if pl.player_id %}
+            <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-chip" title="View {{ pl.name }} profile">
+              <span class="oop-chip-icon">👤</span>
+              <span>{{ pl.name }}</span>
+            </a>
+            {% else %}
+            <span class="oop-player-chip static">
+              <span class="oop-chip-icon">👤</span>
+              <span>{{ pl.name }}</span>
+            </span>
+            {% endif %}
+            {% if not loop.last %}<span class="oop-pair-sep">&</span>{% endif %}
+          {% endfor %}
+        {% else %}
+          <span class="oop-player-chip static">
+            <span class="oop-chip-icon">👤</span>
+            <span>{{ item.p2 }}</span>
+          </span>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if item.category_id %}
+    <div style="margin-top: 0.4rem;">
+      <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=item.category_id, match_id=item.match.id) }}" class="oop-bracket-link">
+        🎯 View in Bracket ↗
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Card Bottom Row: Status & Live Controls -->
+  <div class="oop-card-bottom">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+      <div>
+        {% if item.status == 'completed' %}
+          <span class="oop-status-badge completed">✓ Completed</span>
+          {% if item.match.score1 %}
+          <span style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-left: 0.5rem;">{{ item.match.score1 }}</span>
+          {% endif %}
+        {% elif item.status == 'in_progress' %}
+          <span class="oop-status-badge in-progress">🔴 IN PROGRESS</span>
+        {% else %}
+          <span class="oop-status-badge pending">📅 To Play</span>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+    <div class="oop-card-actions">
+      {% if item.status == 'in_progress' %}
+        {% if item.category_id %}
+        <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=item.category_id, match_id=item.match.id, open_score=1) }}" class="btn btn-primary" style="background: var(--accent-success); border-color: var(--accent-success); color: white; font-weight: 600;">
+          🏁 Score & Complete ↗
+        </a>
+        {% endif %}
+        <button type="button" onclick="quickToggleStatus({{ item.match.id }}, 'pending', this)" class="btn btn-secondary">
+          ⏸ Pause
+        </button>
+      {% elif item.status != 'completed' %}
+        <button type="button" onclick="quickToggleStatus({{ item.match.id }}, 'in_progress', this)" class="btn btn-primary" style="background: #f59e0b; border-color: #f59e0b; font-weight: 600;">
+          ▶ Start Match
+        </button>
+      {% endif %}
+    </div>
+
+    {% if item.status != 'completed' %}
+    <div class="oop-card-dispatch">
+      <span style="color: var(--text-muted); font-size: 0.8rem; font-weight: 500;">Reassign Court:</span>
+      <form method="POST" style="margin: 0; display: inline-flex;">
+        <input type="hidden" name="action" value="reassign_court">
+        <input type="hidden" name="match_id" value="{{ item.match.id }}">
+        <select name="new_court" class="form-input" style="height: 36px !important; min-height: 36px !important; padding: 0.25rem 0.6rem !important; font-size: 0.825rem !important;" onchange="this.form.submit()">
+          <option value="" disabled selected>Move to... ⤾</option>
+          {% for oc in all_courts %}
+          {% if oc != court_name %}
+          <option value="{{ oc }}">{{ oc }}</option>
+          {% endif %}
+          {% endfor %}
+        </select>
+      </form>
+    </div>
+    {% endif %}
+    {% endif %}
+  </div>
+</div>
+{% endmacro %}
 
 {% if courts %}
   {% for court_name, matches in courts.items() %}
@@ -669,7 +1187,9 @@
         <div>
           <h2 style="margin: 0; color: #ffffff; font-size: 1.25rem; font-weight: 700;">{{ court_name }}</h2>
           <p style="margin: 0.2rem 0 0; color: rgba(255, 255, 255, 0.9); font-size: 0.825rem;">
-            {{ matches|length }} match{{ 'es' if matches|length != 1 else '' }} scheduled {% if active_date %}&bull; {{ active_date.strftime('%d %b %Y') }}{% endif %}
+            {{ matches|length }} match{{ 'es' if matches|length != 1 else '' }} scheduled
+            &bull; ☀️ {{ matches.day_count }} Day &bull; 🌙 {{ matches.evening_count }} Evening
+            {% if active_date %}&bull; {{ active_date.strftime('%d %b %Y') }}{% endif %}
           </p>
         </div>
       </div>
@@ -678,335 +1198,119 @@
       </div>
     </div>
 
-    <!-- 1. DESKTOP / TABLET MATCHES TABLE (Screen > 768px) -->
-    <div class="oop-table-responsive">
-    <table class="oop-matches-table">
-      <thead>
-        <tr>
-          <th style="width: 135px;">Time</th>
-          <th style="width: 140px;">Category</th>
-          <th style="width: 120px;">Round</th>
-          <th style="min-width: 260px;">Match</th>
-          <th style="min-width: 210px; text-align: center;">Status & Live Controls</th>
-          {% if current_user and current_user.role in ['admin', 'superadmin'] %}
-          <th style="width: 125px; text-align: right;">Dispatch</th>
-          {% endif %}
-        </tr>
-      </thead>
-      <tbody>
-        {% for item in matches %}
-        <tr class="oop-match-row" data-p1="{{ item.p1|lower }}" data-p2="{{ item.p2|lower }}" data-cat="{{ item.category_name|lower }}">
-          
-          <!-- Match Time & 'Not Before' indication -->
-          <td>
-            <div style="display: flex; flex-direction: column; gap: 3px;">
-              <span style="font-weight: 700; font-size: 1.15rem; color: var(--accent-primary); line-height: 1.2;">
-                {{ item.time }}
-              </span>
-              {% if item.is_not_before %}
-              <span style="font-size: 0.75rem; color: var(--accent-warning); font-weight: 600; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap;">
-                ⏱️ Not Before
-              </span>
-              {% else %}
-              <span style="font-size: 0.75rem; color: var(--accent-success); font-weight: 600; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap;">
-                🎾 First Match
-              </span>
-              {% endif %}
-            </div>
-          </td>
+    <!-- 1. DAY SESSION BLOCK -->
+    <div class="oop-court-session-block" data-session="day" {% if session_filter == 'evening' %}style="display: none;"{% endif %}>
+      <div class="oop-session-divider day-session-divider">
+        <div class="oop-session-divider-title">
+          <span style="font-size: 1.15rem;">☀️</span>
+          <div>
+            <span class="oop-session-title-text">Day Session</span>
+            <span class="oop-session-title-sub">Starting at {{ active_day_start or '09:00' }}</span>
+          </div>
+        </div>
+        <span class="oop-session-badge day">
+          {{ matches.day_count }} match{{ 'es' if matches.day_count != 1 else '' }}
+        </span>
+      </div>
 
-          <!-- Category -->
-          <td>
-            {% if item.category_id %}
-            <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=item.category_id, match_id=item.match.id) }}" class="oop-cat-badge" style="text-decoration: none;" title="View category">
-              {{ item.category_name }}
-            </a>
-            {% else %}
-            <span class="oop-cat-badge">{{ item.category_name }}</span>
-            {% endif %}
-          </td>
-
-          <!-- Round -->
-          <td>
-            <span class="oop-round-badge">
-              {{ item.round_name }}
-            </span>
-          </td>
-
-          <!-- Players / Teams & Bracket Link -->
-          <td>
-            <div class="oop-matchup-container">
-              <div class="oop-team-group">
-                {% if item.p1_players %}
-                  {% for pl in item.p1_players %}
-                    {% if pl.player_id %}
-                    <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-chip" title="View {{ pl.name }} profile">
-                      <span class="oop-chip-icon">👤</span>
-                      <span>{{ pl.name }}</span>
-                    </a>
-                    {% else %}
-                    <span class="oop-player-chip static">
-                      <span class="oop-chip-icon">👤</span>
-                      <span>{{ pl.name }}</span>
-                    </span>
-                    {% endif %}
-                    {% if not loop.last %}<span class="oop-pair-sep">&</span>{% endif %}
-                  {% endfor %}
-                {% else %}
-                  <span class="oop-player-chip static">
-                    <span class="oop-chip-icon">👤</span>
-                    <span>{{ item.p1 }}</span>
-                  </span>
-                {% endif %}
-              </div>
-
-              <span class="oop-vs-pill">vs</span>
-
-              <div class="oop-team-group">
-                {% if item.p2_players %}
-                  {% for pl in item.p2_players %}
-                    {% if pl.player_id %}
-                    <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-chip" title="View {{ pl.name }} profile">
-                      <span class="oop-chip-icon">👤</span>
-                      <span>{{ pl.name }}</span>
-                    </a>
-                    {% else %}
-                    <span class="oop-player-chip static">
-                      <span class="oop-chip-icon">👤</span>
-                      <span>{{ pl.name }}</span>
-                    </span>
-                    {% endif %}
-                    {% if not loop.last %}<span class="oop-pair-sep">&</span>{% endif %}
-                  {% endfor %}
-                {% else %}
-                  <span class="oop-player-chip static">
-                    <span class="oop-chip-icon">👤</span>
-                    <span>{{ item.p2 }}</span>
-                  </span>
-                {% endif %}
-              </div>
-            </div>
-            {% if item.category_id %}
-            <div style="margin-top: 0.45rem;">
-              <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=item.category_id, match_id=item.match.id) }}" class="oop-bracket-link" title="Jump to this match on the category bracket">
-                🎯 View in Bracket ↗
-              </a>
-            </div>
-            {% endif %}
-          </td>
-
-          <!-- Status & Live Controls -->
-          <td style="text-align: center;">
-            {% if item.status == 'completed' %}
-              <span class="oop-status-badge completed">✓ Completed</span>
-              {% if item.match.score1 %}
-              <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-top: 5px; letter-spacing: 0.3px;">
-                {{ item.match.score1 }}
-              </div>
-              {% endif %}
-              {% if current_user and current_user.role in ['admin', 'superadmin'] and item.category_id %}
-              <div style="margin-top: 5px;">
-                <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=item.category_id, match_id=item.match.id) }}" style="font-size: 0.75rem; color: var(--text-secondary); text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
-                  Bracket details ↗
-                </a>
-              </div>
-              {% endif %}
-            {% elif item.status == 'in_progress' %}
-              <span class="oop-status-badge in-progress">🔴 IN PROGRESS</span>
+      {% if matches.day_matches %}
+      <!-- Desktop Table (Screen > 768px) -->
+      <div class="oop-table-responsive">
+        <table class="oop-matches-table">
+          <thead>
+            <tr>
+              <th style="width: 145px;">Time & Session</th>
+              <th style="width: 140px;">Category</th>
+              <th style="width: 120px;">Round</th>
+              <th style="min-width: 260px;">Match</th>
+              <th style="min-width: 210px; text-align: center;">Status & Live Controls</th>
               {% if current_user and current_user.role in ['admin', 'superadmin'] %}
-              <div style="display: flex; justify-content: center; gap: 6px; margin-top: 8px; flex-wrap: wrap;">
-                {% if item.category_id %}
-                <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=item.category_id, match_id=item.match.id, open_score=1) }}" class="btn btn-primary btn-sm" style="background: var(--accent-success); border-color: var(--accent-success); border-radius: 9999px; text-decoration: none; font-weight: 600; box-shadow: 0 2px 6px rgba(16,185,129,0.3);" title="Go to bracket to enter final score">
-                  🏁 Score & Complete ↗
-                </a>
-                {% endif %}
-                <button type="button" onclick="quickToggleStatus({{ item.match.id }}, 'pending', this)" class="btn btn-secondary btn-sm" style="border-radius: 9999px;" title="Reset back to To Play">
-                  ⏸ Pause
-                </button>
-              </div>
+              <th style="width: 125px; text-align: right;">Dispatch</th>
               {% endif %}
-            {% else %}
-              <span class="oop-status-badge pending">📅 To Play</span>
-              {% if current_user and current_user.role in ['admin', 'superadmin'] %}
-              <div style="display: flex; justify-content: center; gap: 6px; margin-top: 8px;">
-                <button type="button" onclick="quickToggleStatus({{ item.match.id }}, 'in_progress', this)" class="btn btn-primary btn-sm" style="background: #f59e0b; border-color: #f59e0b; border-radius: 9999px; font-weight: 600; box-shadow: 0 2px 6px rgba(245,158,11,0.25);" title="Start match and mark court as active">
-                  ▶ Start Match
-                </button>
-              </div>
-              {% endif %}
-            {% endif %}
-          </td>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in matches.day_matches %}
+              {{ render_match_row(item, court_name) }}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
 
-          <!-- Quick Move / Dispatch Menu for Organizers -->
-          {% if current_user and current_user.role in ['admin', 'superadmin'] %}
-          <td style="text-align: right; white-space: nowrap;">
-            {% if item.status != 'completed' %}
-            <form method="POST" style="display: inline-flex; align-items: center; margin: 0;">
-              <input type="hidden" name="action" value="reassign_court">
-              <input type="hidden" name="match_id" value="{{ item.match.id }}">
-              <select name="new_court" class="form-input oop-dispatch-select" onchange="this.form.submit()">
-                <option value="" disabled selected>Move ⤾</option>
-                {% for oc in all_courts %}
-                {% if oc != court_name %}
-                <option value="{{ oc }}">{{ oc }}</option>
-                {% endif %}
-                {% endfor %}
-              </select>
-            </form>
-            {% endif %}
-          </td>
-          {% endif %}
-        </tr>
+      <!-- Mobile Touch Cards (Screen <= 768px) -->
+      <div class="oop-mobile-cards">
+        {% for item in matches.day_matches %}
+          {{ render_match_card(item, court_name) }}
         {% endfor %}
-      </tbody>
-    </table>
+      </div>
+      {% else %}
+      <div class="oop-empty-session-notice">
+        ☀️ No Day Session matches scheduled on {{ court_name }}.
+      </div>
+      {% endif %}
     </div>
 
-    <!-- 2. MOBILE MATCH CARDS VIEW (Screen <= 768px) -->
-    <div class="oop-mobile-cards">
-      {% for item in matches %}
-      <div class="oop-match-card" data-p1="{{ item.p1|lower }}" data-p2="{{ item.p2|lower }}" data-cat="{{ item.category_name|lower }}">
-        <!-- Card Top Row: Time, Category & Round -->
-        <div class="oop-card-top">
-          <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <span style="font-weight: 700; font-size: 1.15rem; color: var(--accent-primary);">{{ item.time }}</span>
-            {% if item.is_not_before %}
-            <span style="font-size: 0.72rem; color: var(--accent-warning); font-weight: 600; display: inline-flex; align-items: center; gap: 2px;">⏱️ Not Before</span>
-            {% else %}
-            <span style="font-size: 0.72rem; color: var(--accent-success); font-weight: 600; display: inline-flex; align-items: center; gap: 2px;">🎾 First Match</span>
-            {% endif %}
-          </div>
-          <div style="display: flex; align-items: center; gap: 0.4rem;">
-            <span class="oop-cat-badge">{{ item.category_name }}</span>
-            <span class="oop-round-badge">{{ item.round_name }}</span>
+    <!-- 2. EVENING SESSION BLOCK -->
+    <div class="oop-court-session-block" data-session="evening" {% if session_filter == 'day' %}style="display: none;"{% endif %}>
+      <div class="oop-session-divider evening-session-divider">
+        <div class="oop-session-divider-title">
+          <span style="font-size: 1.15rem;">🌙</span>
+          <div>
+            <span class="oop-session-title-text">Evening Session</span>
+            <span class="oop-session-title-sub">Not Before {{ evening_session_start or '16:00' }} (4:00 PM)</span>
           </div>
         </div>
-
-        <!-- Card Matchup: Players -->
-        <div class="oop-card-matchup">
-          <div class="oop-card-player" style="gap: 0.4rem; align-items: center;">
-            <div class="oop-team-group" style="width: 100%;">
-              {% if item.p1_players %}
-                {% for pl in item.p1_players %}
-                  {% if pl.player_id %}
-                  <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-chip" title="View {{ pl.name }} profile">
-                    <span class="oop-chip-icon">👤</span>
-                    <span>{{ pl.name }}</span>
-                  </a>
-                  {% else %}
-                  <span class="oop-player-chip static">
-                    <span class="oop-chip-icon">👤</span>
-                    <span>{{ pl.name }}</span>
-                  </span>
-                  {% endif %}
-                  {% if not loop.last %}<span class="oop-pair-sep">&</span>{% endif %}
-                {% endfor %}
-              {% else %}
-                <span class="oop-player-chip static">
-                  <span class="oop-chip-icon">👤</span>
-                  <span>{{ item.p1 }}</span>
-                </span>
-              {% endif %}
-            </div>
-          </div>
-          <div class="oop-card-vs">vs</div>
-          <div class="oop-card-player" style="gap: 0.4rem; align-items: center;">
-            <div class="oop-team-group" style="width: 100%;">
-              {% if item.p2_players %}
-                {% for pl in item.p2_players %}
-                  {% if pl.player_id %}
-                  <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-chip" title="View {{ pl.name }} profile">
-                    <span class="oop-chip-icon">👤</span>
-                    <span>{{ pl.name }}</span>
-                  </a>
-                  {% else %}
-                  <span class="oop-player-chip static">
-                    <span class="oop-chip-icon">👤</span>
-                    <span>{{ pl.name }}</span>
-                  </span>
-                  {% endif %}
-                  {% if not loop.last %}<span class="oop-pair-sep">&</span>{% endif %}
-                {% endfor %}
-              {% else %}
-                <span class="oop-player-chip static">
-                  <span class="oop-chip-icon">👤</span>
-                  <span>{{ item.p2 }}</span>
-                </span>
-              {% endif %}
-            </div>
-          </div>
-
-          {% if item.category_id %}
-          <div style="margin-top: 0.4rem;">
-            <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=item.category_id, match_id=item.match.id) }}" class="oop-bracket-link">
-              🎯 View in Bracket ↗
-            </a>
-          </div>
-          {% endif %}
-        </div>
-
-        <!-- Card Bottom Row: Status & Live Controls -->
-        <div class="oop-card-bottom">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-            <div>
-              {% if item.status == 'completed' %}
-                <span class="oop-status-badge completed">✓ Completed</span>
-                {% if item.match.score1 %}
-                <span style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-left: 0.5rem;">{{ item.match.score1 }}</span>
-                {% endif %}
-              {% elif item.status == 'in_progress' %}
-                <span class="oop-status-badge in-progress">🔴 IN PROGRESS</span>
-              {% else %}
-                <span class="oop-status-badge pending">📅 To Play</span>
-              {% endif %}
-            </div>
-          </div>
-
-          {% if current_user and current_user.role in ['admin', 'superadmin'] %}
-          <div class="oop-card-actions">
-            {% if item.status == 'in_progress' %}
-              {% if item.category_id %}
-              <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=item.category_id, match_id=item.match.id, open_score=1) }}" class="btn btn-primary" style="background: var(--accent-success); border-color: var(--accent-success); color: white; font-weight: 600;">
-                🏁 Score & Complete ↗
-              </a>
-              {% endif %}
-              <button type="button" onclick="quickToggleStatus({{ item.match.id }}, 'pending', this)" class="btn btn-secondary">
-                ⏸ Pause
-              </button>
-            {% elif item.status != 'completed' %}
-              <button type="button" onclick="quickToggleStatus({{ item.match.id }}, 'in_progress', this)" class="btn btn-primary" style="background: #f59e0b; border-color: #f59e0b; font-weight: 600;">
-                ▶ Start Match
-              </button>
-            {% endif %}
-          </div>
-
-          {% if item.status != 'completed' %}
-          <div class="oop-card-dispatch">
-            <span style="color: var(--text-muted); font-size: 0.8rem; font-weight: 500;">Reassign Court:</span>
-            <form method="POST" style="margin: 0; display: inline-flex;">
-              <input type="hidden" name="action" value="reassign_court">
-              <input type="hidden" name="match_id" value="{{ item.match.id }}">
-              <select name="new_court" class="form-input" style="height: 36px !important; min-height: 36px !important; padding: 0.25rem 0.6rem !important; font-size: 0.825rem !important;" onchange="this.form.submit()">
-                <option value="" disabled selected>Move to... ⤾</option>
-                {% for oc in all_courts %}
-                {% if oc != court_name %}
-                <option value="{{ oc }}">{{ oc }}</option>
-                {% endif %}
-                {% endfor %}
-              </select>
-            </form>
-          </div>
-          {% endif %}
-          {% endif %}
-        </div>
+        <span class="oop-session-badge evening">
+          {{ matches.evening_count }} match{{ 'es' if matches.evening_count != 1 else '' }}
+        </span>
       </div>
-      {% endfor %}
+
+      {% if matches.evening_matches %}
+      <!-- Desktop Table (Screen > 768px) -->
+      <div class="oop-table-responsive">
+        <table class="oop-matches-table">
+          <thead>
+            <tr>
+              <th style="width: 145px;">Time & Session</th>
+              <th style="width: 140px;">Category</th>
+              <th style="width: 120px;">Round</th>
+              <th style="min-width: 260px;">Match</th>
+              <th style="min-width: 210px; text-align: center;">Status & Live Controls</th>
+              {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+              <th style="width: 125px; text-align: right;">Dispatch</th>
+              {% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in matches.evening_matches %}
+              {{ render_match_row(item, court_name) }}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Mobile Touch Cards (Screen <= 768px) -->
+      <div class="oop-mobile-cards">
+        {% for item in matches.evening_matches %}
+          {{ render_match_card(item, court_name) }}
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="oop-empty-session-notice">
+        🌙 No Evening Session matches scheduled on {{ court_name }}.
+      </div>
+      {% endif %}
     </div>
 
     {% else %}
     {# PDF Export Mode #}
     <div class="court-block">
-      <div class="court-title">{{ court_name }} &mdash; {{ matches|length }} Match{{ 'es' if matches|length != 1 else '' }}</div>
+      <div class="court-title">{{ court_name }} &mdash; {{ matches|length }} Match{{ 'es' if matches|length != 1 else '' }} (☀️ {{ matches.day_count }} Day &bull; 🌙 {{ matches.evening_count }} Evening)</div>
+
+      {% if matches.day_matches and session_filter != 'evening' %}
+      <div style="background: #fff7ed; border-left: 4px solid #f97316; padding: 6px 12px; font-weight: bold; font-size: 11px; color: #c2410c; margin-top: 10px;">
+        ☀️ DAY SESSION &mdash; Starting at {{ active_day_start or '09:00' }} ({{ matches.day_matches|length }} match{{ 'es' if matches.day_matches|length != 1 else '' }})
+      </div>
       <table class="oop-table">
         <thead>
           <tr>
@@ -1020,7 +1324,7 @@
           </tr>
         </thead>
         <tbody>
-          {% for item in matches %}
+          {% for item in matches.day_matches %}
           <tr>
             <td>
               <strong>{{ item.time }}</strong>
@@ -1040,6 +1344,46 @@
           {% endfor %}
         </tbody>
       </table>
+      {% endif %}
+
+      {% if matches.evening_matches and session_filter != 'day' %}
+      <div style="background: #eef2ff; border-left: 4px solid #4f46e5; padding: 6px 12px; font-weight: bold; font-size: 11px; color: #3730a3; margin-top: 14px;">
+        🌙 EVENING SESSION &mdash; Not Before {{ evening_session_start or '16:00' }} (4:00 PM) ({{ matches.evening_matches|length }} match{{ 'es' if matches.evening_matches|length != 1 else '' }})
+      </div>
+      <table class="oop-table">
+        <thead>
+          <tr>
+            <th style="width: 85px;">Time</th>
+            <th>Category</th>
+            <th style="width: 45px;">Round</th>
+            <th>Player 1</th>
+            <th style="width: 25px;"></th>
+            <th>Player 2</th>
+            <th style="width: 75px;">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in matches.evening_matches %}
+          <tr>
+            <td>
+              <strong>{{ item.time }}</strong>
+              {% if item.is_not_before %}<span class="nb-badge">NB</span>{% endif %}
+            </td>
+            <td>{{ item.category_name }}</td>
+            <td><span class="round-badge" style="background: #4f46e5;">{{ item.round_name }}</span></td>
+            <td>{{ item.p1 }}</td>
+            <td style="text-align: center;"><span class="vs-badge">vs</span></td>
+            <td>{{ item.p2 }}</td>
+            <td class="status-{{ item.status }}">
+              {% if item.status == 'completed' %}✓ Done
+              {% elif item.status == 'in_progress' %}● Live
+              {% else %}Pending{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
     </div>
     {% endif %}
   </div>
@@ -1068,6 +1412,59 @@
 </div> <!-- close .container -->
 
 <script>
+let currentSessionFilter = '{{ session_filter or "all" }}';
+
+function selectSession(session) {
+    currentSessionFilter = session;
+
+    // Declarative attribute update on container
+    const grid = document.querySelector('.oop-content-grid');
+    if (grid) {
+        grid.setAttribute('data-active-session', session);
+    }
+    
+    // Update active pill styling
+    document.querySelectorAll('.oop-session-pill').forEach(btn => {
+        if (btn.dataset.session === session) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+
+    // Toggle session blocks under each court
+    document.querySelectorAll('.oop-court-session-block').forEach(block => {
+        const blockSession = block.dataset.session;
+        if (session === 'all' || blockSession === session) {
+            block.style.display = '';
+        } else {
+            block.style.display = 'none';
+        }
+    });
+
+    // Update URL query parameter without full reload
+    const url = new URL(window.location);
+    if (session === 'all') {
+        url.searchParams.delete('session');
+    } else {
+        url.searchParams.set('session', session);
+    }
+    window.history.replaceState({}, '', url);
+
+    // Re-evaluate player/category search filter visibility
+    applyScheduleFilters();
+}
+
+// Expose on window for auto-refresh hook in base.html
+window.selectSession = selectSession;
+window.applyScheduleFilters = applyScheduleFilters;
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (currentSessionFilter && currentSessionFilter !== 'all') {
+        selectSession(currentSessionFilter);
+    }
+});
+
 function applyScheduleFilters() {
     const playerQuery = (document.getElementById('playerScheduleSearch')?.value || '').trim().toLowerCase();
     const catQuery = (document.getElementById('categoryScheduleFilter')?.value || '').trim().toLowerCase();
@@ -1077,11 +1474,13 @@ function applyScheduleFilters() {
         const p1 = el.dataset.p1 || '';
         const p2 = el.dataset.p2 || '';
         const cat = el.dataset.cat || '';
+        const session = el.dataset.session || '';
         
         const matchesPlayer = !playerQuery || p1.includes(playerQuery) || p2.includes(playerQuery);
         const matchesCat = !catQuery || cat === catQuery || cat.includes(catQuery);
+        const matchesSession = currentSessionFilter === 'all' || session === currentSessionFilter;
         
-        if (matchesPlayer && matchesCat) {
+        if (matchesPlayer && matchesCat && matchesSession) {
             el.style.display = '';
         } else {
             el.style.display = 'none';
