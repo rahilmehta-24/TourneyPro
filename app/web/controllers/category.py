@@ -414,6 +414,7 @@ def manage_category(slug, category_id):
     """Manage category participants and settings"""
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
     check_tournament_ownership(tournament)
+    category = Category.query.get_or_404(category_id)
     if category.format == 'group_stage':
         participants = Participant.query.filter_by(category_id=category_id).order_by(Participant.id).all()
     else:
