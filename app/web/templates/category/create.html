@@ -18,57 +18,153 @@
     <h1>Create New Category</h1>
     <p class="subtitle" style="margin-bottom: 2rem;">Add a new event or division to <strong style="color: var(--text-primary);">{{ tournament.name }}</strong></p>
 
+    <style>
+        .preset-card-btn {
+            position: relative;
+            background: var(--bg-card);
+            border: 1.5px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 0.95rem;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .preset-card-btn:hover {
+            border-color: var(--accent-primary) !important;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+        }
+        .preset-card-btn.active {
+            border-color: var(--accent-primary) !important;
+            background: rgba(59, 130, 246, 0.1) !important;
+            box-shadow: 0 0 0 1.5px var(--accent-primary) !important;
+        }
+    </style>
+
     <form method="POST" class="form-card">
-        <!-- QUICK SPORT & SCORING PRESETS -->
-        <div style="margin-bottom: 1.75rem; background: var(--bg-secondary); padding: 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
-                <label style="display: block; font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin: 0;">
-                    ⚡ Quick Sport &amp; Format Presets (Optional)
+        <!-- UNIFIED TOURNAMENT FORMAT & SPORT PRESETS -->
+        <div style="margin-bottom: 1.75rem; background: var(--bg-secondary); padding: 1.35rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; flex-wrap: wrap; gap: 0.5rem;">
+                <label style="display: block; font-size: 1.05rem; font-weight: 700; color: var(--text-primary); margin: 0;">
+                    🏆 Tournament Format &amp; Scoring Presets *
                 </label>
-                <span style="font-size: 0.78rem; color: var(--text-muted);">1-Click Auto-Configuration</span>
+                <span style="font-size: 0.8rem; color: var(--accent-primary); font-weight: 600;">1-Click Format &amp; Rules Selection</span>
             </div>
-            <p style="margin: 0 0 1rem; color: var(--text-secondary); font-size: 0.82rem;">Click a preset to instantly configure tournament format, sets, and points, or fill manually below.</p>
+            <p style="margin: 0 0 1rem; color: var(--text-secondary); font-size: 0.84rem;">
+                Select your tournament format below. All brackets, match scoring, sets, and team rules configure automatically without extra steps.
+            </p>
             
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem;">
-                <!-- Preset 1: Standard Tennis -->
-                <button type="button" class="preset-btn" onclick="applyPreset('tennis_standard', this)" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.75rem; text-align: left; cursor: pointer; transition: all 0.15s;">
-                    <div style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.2rem; color: var(--text-primary);">🎾 Standard Tennis</div>
-                    <div style="font-size: 0.78rem; color: var(--text-secondary);">Knockout • Best of 3 Sets • 6 Games</div>
+            <!-- Hidden Format Input populated directly from card selection -->
+            <input type="hidden" id="format" name="format" value="group_stage">
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 0.85rem;">
+                <!-- Preset 1: Group Stage (Team Event) -->
+                <button type="button" class="preset-card-btn" data-preset="group_stage" onclick="applyPreset('group_stage', this)">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.35rem;">
+                            <span style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary);">🎪 Group Stage</span>
+                            <span class="selected-badge" style="display: none; background: var(--accent-primary); color: #fff; font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 9999px;">✓ Selected</span>
+                        </div>
+                        <div style="font-size: 0.78rem; font-weight: 600; color: var(--accent-primary); margin-bottom: 0.3rem;">Team Event (5-Player Squads)</div>
+                        <div style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.35;">3 Rubbers (1S + 2D) • Total 7 Games per Rubber • Groups + Knockout</div>
+                    </div>
                 </button>
 
-                <!-- Preset 2: Fast4 Tennis -->
-                <button type="button" class="preset-btn" onclick="applyPreset('tennis_fast4', this)" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.75rem; text-align: left; cursor: pointer; transition: all 0.15s;">
-                    <div style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.2rem; color: var(--text-primary);">⚡ Fast4 Tennis</div>
-                    <div style="font-size: 0.78rem; color: var(--text-secondary);">Knockout • Best of 3 Sets • 4 Games</div>
+                <!-- Preset 2: Standard Tennis -->
+                <button type="button" class="preset-card-btn" data-preset="tennis_standard" onclick="applyPreset('tennis_standard', this)">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.35rem;">
+                            <span style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary);">🎾 Standard Tennis</span>
+                            <span class="selected-badge" style="display: none; background: var(--accent-primary); color: #fff; font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 9999px;">✓ Selected</span>
+                        </div>
+                        <div style="font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.3rem;">Knockout • Sets &amp; Games</div>
+                        <div style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.35;">Best of 3 Sets • 6 Games per Set • Standard Tiebreak at 6-6</div>
+                    </div>
                 </button>
 
-                <!-- Preset 3: Badminton 21-pt -->
-                <button type="button" class="preset-btn" onclick="applyPreset('badminton', this)" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.75rem; text-align: left; cursor: pointer; transition: all 0.15s;">
-                    <div style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.2rem; color: var(--text-primary);">🏸 Badminton / TT</div>
-                    <div style="font-size: 0.78rem; color: var(--text-secondary);">Knockout • Points • 21 Pts</div>
+                <!-- Preset 3: Fast4 Tennis -->
+                <button type="button" class="preset-card-btn" data-preset="tennis_fast4" onclick="applyPreset('tennis_fast4', this)">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.35rem;">
+                            <span style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary);">⚡ Fast4 Tennis</span>
+                            <span class="selected-badge" style="display: none; background: var(--accent-primary); color: #fff; font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 9999px;">✓ Selected</span>
+                        </div>
+                        <div style="font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.3rem;">Knockout • Short Sets</div>
+                        <div style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.35;">Best of 3 Sets • 4 Games per Set • Fast Tiebreak at 3-3</div>
+                    </div>
                 </button>
 
-                <!-- Preset 4: Pickleball 11-pt -->
-                <button type="button" class="preset-btn" onclick="applyPreset('pickleball', this)" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.75rem; text-align: left; cursor: pointer; transition: all 0.15s;">
-                    <div style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.2rem; color: var(--text-primary);">🏓 Pickleball</div>
-                    <div style="font-size: 0.78rem; color: var(--text-secondary);">Knockout • Points • 11 Pts</div>
+                <!-- Preset 4: Badminton / TT -->
+                <button type="button" class="preset-card-btn" data-preset="badminton" onclick="applyPreset('badminton', this)">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.35rem;">
+                            <span style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary);">🏸 Badminton / TT</span>
+                            <span class="selected-badge" style="display: none; background: var(--accent-primary); color: #fff; font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 9999px;">✓ Selected</span>
+                        </div>
+                        <div style="font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.3rem;">Knockout • Target Points</div>
+                        <div style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.35;">Single Target Match • First to 21 Points • Rallies Scoring</div>
+                    </div>
                 </button>
 
-                <!-- Preset 5: Group Stage + Knockout -->
-                <button type="button" class="preset-btn" onclick="applyPreset('group_stage', this)" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.75rem; text-align: left; cursor: pointer; transition: all 0.15s;">
-                    <div style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.2rem; color: var(--text-primary);">🎪 Group Stage</div>
-                    <div style="font-size: 0.78rem; color: var(--text-secondary);">Groups (7 Games) + Knockout</div>
+                <!-- Preset 5: Pickleball -->
+                <button type="button" class="preset-card-btn" data-preset="pickleball" onclick="applyPreset('pickleball', this)">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.35rem;">
+                            <span style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary);">🏓 Pickleball</span>
+                            <span class="selected-badge" style="display: none; background: var(--accent-primary); color: #fff; font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 9999px;">✓ Selected</span>
+                        </div>
+                        <div style="font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.3rem;">Knockout • Target Points</div>
+                        <div style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.35;">Single Target Match • First to 11 Points • Side-out Scoring</div>
+                    </div>
                 </button>
+
+                <!-- Preset 6: Round Robin (League) -->
+                <button type="button" class="preset-card-btn" data-preset="round_robin" onclick="applyPreset('round_robin', this)">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.35rem;">
+                            <span style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary);">🔄 Round Robin</span>
+                            <span class="selected-badge" style="display: none; background: var(--accent-primary); color: #fff; font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 9999px;">✓ Selected</span>
+                        </div>
+                        <div style="font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.3rem;">League Stage Pools</div>
+                        <div style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.35;">All-play-all in groups • Standings table • Optional Knockout</div>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Active Selected Format Confirmation Bar -->
+            <div id="active-format-bar" style="margin-top: 1rem; padding: 0.75rem 1rem; background: var(--bg-card); border-radius: var(--radius-md); border: 1px solid var(--accent-primary); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.6rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Active Format:</span>
+                    <span id="active-format-label" style="font-size: 0.95rem; font-weight: 700; color: var(--accent-primary);">🎪 Group Stage Team Event</span>
+                </div>
+                <span style="font-size: 0.78rem; color: var(--text-muted);">Settings below adapt automatically</span>
             </div>
         </div>
 
         <div class="form-group">
             <label for="name">Category Name *</label>
             <input type="text" id="name" name="name" class="form-input" minlength="2" maxlength="80"
-                placeholder="e.g., Men's Singles, Women's Doubles" required>
+                placeholder="e.g., Premier Team Cup, Men's Singles, Mixed Doubles" required>
         </div>
 
-        <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <!-- Team Event Notice (shown when Group Stage is active: Gender is not required) -->
+        <div id="team-gender-notice" style="display: none; padding: 0.9rem 1.15rem; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: var(--radius-md); margin-bottom: 1.5rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <span style="font-size: 1.4rem;">👥</span>
+                <div>
+                    <strong style="color: var(--text-primary); font-size: 0.95rem;">Team Event (Open / Mixed Squads)</strong>
+                    <div style="color: var(--text-secondary); font-size: 0.82rem; margin-top: 2px;">
+                        Gender and age categories are <strong>not required</strong> for team events. Teams can register players of any gender into squad rosters.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gender & Age Category (shown for Singles/Doubles & Round Robin) -->
+        <div id="gender-age-row" class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
             <div>
                 <label for="gender">Gender *</label>
                 <select id="gender" name="gender" class="form-input" required onchange="toggleAgeCategory(this, 'age_category')">
@@ -78,6 +174,7 @@
                     <option value="Mens">Mens</option>
                     <option value="Womens">Womens</option>
                     <option value="Mix">Mix</option>
+                    <option value="Open">Open</option>
                 </select>
                 <small>Used for leaderboard filtering</small>
             </div>
@@ -94,16 +191,6 @@
                 </select>
                 <small>Used for leaderboard filtering</small>
             </div>
-        </div>
-
-        <div class="form-group">
-            <label for="format">Tournament Format *</label>
-            <select id="format" name="format" class="form-input" required onchange="toggleGroupStageFields()">
-                <option value="">Select a format</option>
-                <option value="single_elimination">🏆 Knockout (Single Elimination)</option>
-                <option value="group_stage">🎪 Group Stage + Knockout</option>
-                <option value="round_robin">🔄 Round Robin (League)</option>
-            </select>
         </div>
 
         <div id="knockout-subformat-fields" style="display: none; margin-bottom: 1.5rem;">
@@ -288,42 +375,37 @@
     }
 
     function applyPreset(type, btn) {
-        document.querySelectorAll('.preset-btn').forEach(b => {
+        // 1. Sync visual state on all format preset cards
+        document.querySelectorAll('.preset-card-btn').forEach(b => {
+            b.classList.remove('active');
             b.style.borderColor = 'var(--border-color)';
             b.style.background = 'var(--bg-card)';
+            b.style.boxShadow = 'none';
+            const badge = b.querySelector('.selected-badge');
+            if (badge) badge.style.display = 'none';
         });
-        if (btn) {
-            btn.style.borderColor = 'var(--accent-primary)';
-            btn.style.background = 'rgba(59, 130, 246, 0.12)';
+
+        const activeBtn = btn || document.querySelector(`[data-preset="${type}"]`);
+        if (activeBtn) {
+            activeBtn.classList.add('active');
+            activeBtn.style.borderColor = 'var(--accent-primary)';
+            activeBtn.style.background = 'rgba(59, 130, 246, 0.1)';
+            activeBtn.style.boxShadow = '0 0 0 1.5px var(--accent-primary)';
+            const badge = activeBtn.querySelector('.selected-badge');
+            if (badge) badge.style.display = 'inline-block';
         }
 
-        const formatSelect = document.getElementById('format');
+        const formatInput = document.getElementById('format');
+        const activeFormatLabel = document.getElementById('active-format-label');
         const scoringSelect = document.getElementById('scoring_format');
         const numSets = document.getElementById('num_sets');
         const gamesPerSet = document.getElementById('games_per_set');
         const pointsToWin = document.getElementById('points_to_win');
         const totalGames = document.getElementById('total_games');
 
-        if (type === 'tennis_standard') {
-            if (formatSelect) formatSelect.value = 'single_elimination';
-            if (scoringSelect) scoringSelect.value = 'games';
-            if (numSets) numSets.value = 3;
-            if (gamesPerSet) gamesPerSet.value = 6;
-        } else if (type === 'tennis_fast4') {
-            if (formatSelect) formatSelect.value = 'single_elimination';
-            if (scoringSelect) scoringSelect.value = 'games';
-            if (numSets) numSets.value = 3;
-            if (gamesPerSet) gamesPerSet.value = 4;
-        } else if (type === 'badminton') {
-            if (formatSelect) formatSelect.value = 'single_elimination';
-            if (scoringSelect) scoringSelect.value = 'points';
-            if (pointsToWin) pointsToWin.value = 21;
-        } else if (type === 'pickleball') {
-            if (formatSelect) formatSelect.value = 'single_elimination';
-            if (scoringSelect) scoringSelect.value = 'points';
-            if (pointsToWin) pointsToWin.value = 11;
-        } else if (type === 'group_stage') {
-            if (formatSelect) formatSelect.value = 'group_stage';
+        if (type === 'group_stage') {
+            if (formatInput) formatInput.value = 'group_stage';
+            if (activeFormatLabel) activeFormatLabel.innerHTML = '🎪 Group Stage Team Event';
             if (scoringSelect) scoringSelect.value = 'games';
             if (totalGames) totalGames.value = 7;
             const numGroups = document.getElementById('num_groups');
@@ -336,6 +418,34 @@
             if (teamSize) teamSize.value = 5;
             if (qualifiers) qualifiers.value = 2;
             if (luckyLosers) luckyLosers.checked = true;
+        } else if (type === 'tennis_standard') {
+            if (formatInput) formatInput.value = 'single_elimination';
+            if (activeFormatLabel) activeFormatLabel.innerHTML = '🎾 Standard Tennis Knockout';
+            if (scoringSelect) scoringSelect.value = 'games';
+            if (numSets) numSets.value = 3;
+            if (gamesPerSet) gamesPerSet.value = 6;
+        } else if (type === 'tennis_fast4') {
+            if (formatInput) formatInput.value = 'single_elimination';
+            if (activeFormatLabel) activeFormatLabel.innerHTML = '⚡ Fast4 Tennis Knockout';
+            if (scoringSelect) scoringSelect.value = 'games';
+            if (numSets) numSets.value = 3;
+            if (gamesPerSet) gamesPerSet.value = 4;
+        } else if (type === 'badminton') {
+            if (formatInput) formatInput.value = 'single_elimination';
+            if (activeFormatLabel) activeFormatLabel.innerHTML = '🏸 Badminton / TT Knockout (21 Pts)';
+            if (scoringSelect) scoringSelect.value = 'points';
+            if (pointsToWin) pointsToWin.value = 21;
+        } else if (type === 'pickleball') {
+            if (formatInput) formatInput.value = 'single_elimination';
+            if (activeFormatLabel) activeFormatLabel.innerHTML = '🏓 Pickleball Knockout (11 Pts)';
+            if (scoringSelect) scoringSelect.value = 'points';
+            if (pointsToWin) pointsToWin.value = 11;
+        } else if (type === 'round_robin') {
+            if (formatInput) formatInput.value = 'round_robin';
+            if (activeFormatLabel) activeFormatLabel.innerHTML = '🔄 Round Robin (League)';
+            if (scoringSelect) scoringSelect.value = 'games';
+            if (numSets) numSets.value = 1;
+            if (gamesPerSet) gamesPerSet.value = 6;
         }
 
         toggleGroupStageFields();
@@ -343,8 +453,8 @@
     }
 
     function toggleScoringFields() {
-        const formatSelect = document.getElementById('format');
-        const format = formatSelect ? formatSelect.value : '';
+        const formatInput = document.getElementById('format');
+        const format = formatInput ? formatInput.value : '';
         const scoringFormatSelect = document.getElementById('scoring_format');
         const scoringFormat = scoringFormatSelect ? scoringFormatSelect.value : 'games';
         const scoringFormatContainer = document.getElementById('scoring-format-container');
@@ -385,8 +495,8 @@
     }
 
     function toggleGroupStageFields() {
-        const formatSelect = document.getElementById('format');
-        const format = formatSelect ? formatSelect.value : '';
+        const formatInput = document.getElementById('format');
+        const format = formatInput ? formatInput.value : '';
         const groupFields = document.getElementById('group-stage-fields');
         const teamBanner = document.getElementById('group-stage-team-banner');
         const teamSizeContainer = document.getElementById('team-size-container');
@@ -406,13 +516,31 @@
         const maxPlayersContainer = document.getElementById('max-players-container');
         const maxParticipantsContainer = document.getElementById('max-participants-container');
 
+        // Gender & Age elements
+        const teamGenderNotice = document.getElementById('team-gender-notice');
+        const genderAgeRow = document.getElementById('gender-age-row');
+        const genderSelect = document.getElementById('gender');
+        const ageSelect = document.getElementById('age_category');
+
         if (format === 'group_stage') {
-            // 1. Hide irrelevant standalone fields
+            // 1. Team event: Gender & Age Category are NOT required
+            if (teamGenderNotice) teamGenderNotice.style.display = 'block';
+            if (genderAgeRow) genderAgeRow.style.display = 'none';
+            if (genderSelect) {
+                genderSelect.required = false;
+                genderSelect.value = 'Open';
+            }
+            if (ageSelect) {
+                ageSelect.required = false;
+                ageSelect.value = 'Open';
+            }
+
+            // 2. Hide irrelevant standalone fields
             if (knockoutSubformatFields) knockoutSubformatFields.style.display = 'none';
             if (maxPlayersContainer) maxPlayersContainer.style.display = 'none';
             if (maxParticipantsContainer) maxParticipantsContainer.style.display = 'none';
 
-            // 2. Show dedicated group stage team container
+            // 3. Show dedicated group stage team container
             if (groupFields) groupFields.style.display = 'block';
             if (teamBanner) teamBanner.style.display = 'block';
             if (teamSizeContainer) teamSizeContainer.style.display = 'block';
@@ -422,12 +550,12 @@
             if (qualifiersContainer) qualifiersContainer.style.display = 'block';
             if (rrKnockoutContainer) rrKnockoutContainer.style.display = 'none';
 
-            // 3. Titles and labels
+            // 4. Titles and labels
             if (configTitle) configTitle.innerHTML = '<span>⚙️</span> Group Stage Team Event Setup';
             if (numGroupsLabel) numGroupsLabel.innerText = 'Number of Groups *';
             if (teamsPerGroupLabel) teamsPerGroupLabel.innerText = 'Teams Per Group *';
 
-            // 4. Requirements & default values
+            // 5. Requirements & default values
             if (numGroupsInput) {
                 numGroupsInput.required = true;
                 if (!numGroupsInput.value || numGroupsInput.value < 2) numGroupsInput.value = 3;
@@ -446,50 +574,71 @@
             }
 
             updateGroupStageSummary();
-        } else if (format === 'round_robin') {
-            // Round robin league mode
-            if (knockoutSubformatFields) knockoutSubformatFields.style.display = 'block';
-            if (maxPlayersContainer) maxPlayersContainer.style.display = 'none';
-            if (maxParticipantsContainer) maxParticipantsContainer.style.display = 'block';
-
-            if (groupFields) groupFields.style.display = 'block';
-            if (teamBanner) teamBanner.style.display = 'none';
-            if (teamSizeContainer) teamSizeContainer.style.display = 'none';
-            if (totalGamesTeamContainer) totalGamesTeamContainer.style.display = 'none';
-            if (summaryPill) summaryPill.style.display = 'none';
-            if (rrKnockoutContainer) rrKnockoutContainer.style.display = 'block';
-
-            if (configTitle) configTitle.innerHTML = '<span>🔄</span> Round Robin Configuration';
-            const subFormat = document.querySelector('input[name="sub_format"]:checked');
-            if (teamsPerGroupLabel) {
-                teamsPerGroupLabel.innerText = (subFormat && subFormat.value === 'doubles') ? 'Teams Per Group *' : 'Players Per Group *';
-            }
-            if (numGroupsLabel) numGroupsLabel.innerText = 'Number of Groups (Optional)';
-
-            if (numGroupsInput) numGroupsInput.required = false;
-            if (teamsPerGroupInput) {
-                teamsPerGroupInput.required = true;
-                teamsPerGroupInput.min = "3";
-            }
-
-            toggleRRKnockout();
         } else {
-            // Knockout (single elimination)
-            if (knockoutSubformatFields) knockoutSubformatFields.style.display = 'block';
-            const subFormat = document.querySelector('input[name="sub_format"]:checked');
-            if (maxPlayersContainer) {
-                maxPlayersContainer.style.display = (subFormat && subFormat.value === 'doubles') ? 'block' : 'none';
+            // Non-team event: Restore Gender & Age requirements
+            if (teamGenderNotice) teamGenderNotice.style.display = 'none';
+            if (genderAgeRow) genderAgeRow.style.display = 'grid';
+            if (genderSelect) {
+                genderSelect.required = true;
+                if (genderSelect.value === 'Open') genderSelect.value = '';
             }
-            if (maxParticipantsContainer) maxParticipantsContainer.style.display = 'block';
-            if (groupFields) groupFields.style.display = 'none';
+            if (ageSelect) {
+                ageSelect.required = true;
+                if (ageSelect.value === 'Open') ageSelect.value = '';
+            }
+            toggleAgeCategory(genderSelect, 'age_category');
+
+            // Unset group-stage-only requirements
+            if (numGroupsInput) numGroupsInput.required = false;
+            if (totalGamesInput) totalGamesInput.required = false;
+
+            if (format === 'round_robin') {
+                // Round robin league mode
+                if (knockoutSubformatFields) knockoutSubformatFields.style.display = 'block';
+                if (maxPlayersContainer) maxPlayersContainer.style.display = 'none';
+                if (maxParticipantsContainer) maxParticipantsContainer.style.display = 'block';
+
+                if (groupFields) groupFields.style.display = 'block';
+                if (teamBanner) teamBanner.style.display = 'none';
+                if (teamSizeContainer) teamSizeContainer.style.display = 'none';
+                if (totalGamesTeamContainer) totalGamesTeamContainer.style.display = 'none';
+                if (summaryPill) summaryPill.style.display = 'none';
+                if (rrKnockoutContainer) rrKnockoutContainer.style.display = 'block';
+
+                if (configTitle) configTitle.innerHTML = '<span>🔄</span> Round Robin Configuration';
+                const subFormat = document.querySelector('input[name="sub_format"]:checked');
+                if (teamsPerGroupLabel) {
+                    teamsPerGroupLabel.innerText = (subFormat && subFormat.value === 'doubles') ? 'Teams Per Group *' : 'Players Per Group *';
+                }
+                if (numGroupsLabel) numGroupsLabel.innerText = 'Number of Groups (Optional)';
+
+                if (teamsPerGroupInput) {
+                    teamsPerGroupInput.required = true;
+                    teamsPerGroupInput.min = "3";
+                }
+
+                toggleRRKnockout();
+            } else {
+                // Knockout (single elimination)
+                if (teamsPerGroupInput) teamsPerGroupInput.required = false;
+                if (qualifiersInput) qualifiersInput.required = false;
+
+                if (knockoutSubformatFields) knockoutSubformatFields.style.display = 'block';
+                const subFormat = document.querySelector('input[name="sub_format"]:checked');
+                if (maxPlayersContainer) {
+                    maxPlayersContainer.style.display = (subFormat && subFormat.value === 'doubles') ? 'block' : 'none';
+                }
+                if (maxParticipantsContainer) maxParticipantsContainer.style.display = 'block';
+                if (groupFields) groupFields.style.display = 'none';
+            }
         }
 
         toggleScoringFields();
     }
 
     function updateGroupStageSummary() {
-        const formatSelect = document.getElementById('format');
-        if (!formatSelect || formatSelect.value !== 'group_stage') return;
+        const formatInput = document.getElementById('format');
+        if (!formatInput || formatInput.value !== 'group_stage') return;
 
         const numGroups = parseInt(document.getElementById('num_groups').value) || 3;
         const teamsPerGroup = parseInt(document.getElementById('teams_per_group').value) || 4;
@@ -558,9 +707,9 @@
 
     function toggleAgeCategory(genderSelect, categoryId) {
         const categorySelect = document.getElementById(categoryId);
-        if (!categorySelect) return;
+        if (!categorySelect || !genderSelect) return;
         const categoryGroup = categorySelect.parentElement;
-        if (genderSelect.value === 'Mix') {
+        if (genderSelect.value === 'Mix' || genderSelect.value === 'Open') {
             categoryGroup.style.display = 'none';
             categorySelect.required = false;
             categorySelect.value = 'Open';
@@ -570,9 +719,14 @@
         }
     }
 
-    // Call once on load
-    toggleGroupStageFields();
-    toggleScoringFields();
-    toggleAgeCategory(document.getElementById('gender'), 'age_category');
+    // Initialize with Group Stage Preset on load
+    const initialPresetBtn = document.querySelector('[data-preset="group_stage"]');
+    if (initialPresetBtn) {
+        applyPreset('group_stage', initialPresetBtn);
+    } else {
+        toggleGroupStageFields();
+        toggleScoringFields();
+        toggleAgeCategory(document.getElementById('gender'), 'age_category');
+    }
 </script>
 {% endblock %}

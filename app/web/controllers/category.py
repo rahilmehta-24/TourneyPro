@@ -125,8 +125,8 @@ def create_category(slug):
             if sub_format == 'doubles':
                 format_type = 'doubles_round_robin'
         max_participants = request.form.get('max_participants', type=int)
-        gender = request.form.get('gender', 'Unspecified')
-        age_category = request.form.get('age_category', 'Unspecified')
+        gender = request.form.get('gender')
+        age_category = request.form.get('age_category')
 
         # Tennis settings
         scoring_format = request.form.get('scoring_format', 'games')
@@ -146,6 +146,11 @@ def create_category(slug):
         
         # Determine qualifiers for knockout stage
         if format_type == 'group_stage':
+            # Group Stage is a team event: Gender & Age Category default to Open
+            if not gender or gender in ('', 'Unspecified'):
+                gender = 'Open'
+            if not age_category or age_category in ('', 'Unspecified'):
+                age_category = 'Open'
             scoring_format = 'games'
             total_games = total_games or 7
             team_size = team_size or 5
@@ -161,6 +166,8 @@ def create_category(slug):
             num_sets = 1
             games_per_set = total_games
         elif format_type == 'round_robin':
+            gender = gender or 'Unspecified'
+            age_category = age_category or 'Unspecified'
             has_knockout = request.form.get('has_knockout_stage') == 'on'
             if has_knockout:
                 qualifiers_per_group = request.form.get('qualifiers_per_group', type=int, default=2)
@@ -169,6 +176,8 @@ def create_category(slug):
                 qualifiers_per_group = 0
                 allow_lucky_losers = False
         else:
+            gender = gender or 'Unspecified'
+            age_category = age_category or 'Unspecified'
             qualifiers_per_group = None
             allow_lucky_losers = False
 
