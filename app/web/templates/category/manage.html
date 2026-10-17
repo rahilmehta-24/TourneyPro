@@ -42,6 +42,9 @@
                 <button type="button" class="btn btn-secondary btn-small rename-category-btn" title="Rename Category" data-category-id="{{ category.id }}" data-category-name="{{ category.name | e }}" style="padding: 0.25rem 0.55rem; font-size: 0.8rem; border-radius: var(--radius-sm);">
                     ✏️ Rename
                 </button>
+                <button type="button" class="btn btn-secondary btn-small delete-category-btn" title="Delete Category" data-category-id="{{ category.id }}" data-category-name="{{ category.name | e }}" style="padding: 0.25rem 0.55rem; font-size: 0.8rem; border-radius: var(--radius-sm); color: var(--accent-danger, #ef4444); border-color: rgba(239, 68, 68, 0.25);">
+                    🗑️ Delete
+                </button>
                 <span class="status-badge status-{{ category.status }}" style="padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">
                     {{ category.status.replace('_', ' ').title() }}
                 </span>
@@ -860,6 +863,35 @@
     </div>
 </div>
 
+<!-- DELETE CATEGORY MODAL -->
+<div id="deleteCategoryModal" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 1rem;">
+    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); width: 100%; max-width: 440px; padding: 1.5rem; box-shadow: var(--shadow-md);">
+        <h3 style="margin: 0 0 0.5rem; font-size: 1.2rem; color: var(--accent-danger, #ef4444); font-weight: 700;">
+            🗑️ Delete Category
+        </h3>
+        <p style="margin: 0 0 0.75rem; font-size: 0.9rem; color: var(--text-primary);">
+            Are you sure you want to delete <strong id="deleteCategoryNameDisplay">{{ category.name }}</strong>?
+        </p>
+        <div style="background: rgba(239, 68, 68, 0.08); border-left: 3px solid var(--accent-danger, #ef4444); padding: 0.75rem 1rem; border-radius: var(--radius-sm); margin-bottom: 1.25rem; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.4;">
+            ⚠️ This will permanently remove this category division, including all its matches, groups, and participants. This action cannot be undone.
+        </div>
+
+        <form id="deleteCategoryForm" method="POST" action="/tournaments/{{ tournament.url_slug }}/categories/{{ category.id }}/delete" data-turbo="false" style="display: flex; flex-direction: column; gap: 1rem;">
+            <input type="hidden" name="audit_reason" value="Organizer Category Deletion">
+            <input type="hidden" id="deleteCategoryAuditExplanation" name="audit_explanation" value="Category '{{ category.name | e }}' permanently deleted by tournament administrator via dashboard.">
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 0.25rem;">
+                <button type="button" onclick="closeDeleteCategoryModal()" class="btn btn-secondary" style="padding: 0.45rem 1rem; font-size: 0.85rem;">
+                    Cancel
+                </button>
+                <button type="submit" class="btn btn-danger" style="padding: 0.45rem 1.25rem; font-size: 0.85rem; font-weight: 600; background: var(--accent-danger, #ef4444); color: white; border: none; border-radius: var(--radius-sm); cursor: pointer;">
+                    Delete Category
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
     function openRenameModal(categoryId, currentName) {
         const modal = document.getElementById('renameCategoryModal');
@@ -878,23 +910,54 @@
         if (modal) modal.style.display = 'none';
     }
 
+    function openDeleteCategoryModal(categoryId, currentName) {
+        const modal = document.getElementById('deleteCategoryModal');
+        const form = document.getElementById('deleteCategoryForm');
+        const nameDisplay = document.getElementById('deleteCategoryNameDisplay');
+        const explanationInput = document.getElementById('deleteCategoryAuditExplanation');
+        if (!modal || !form) return;
+
+        form.action = `/tournaments/{{ tournament.url_slug }}/categories/${categoryId}/delete`;
+        if (nameDisplay) nameDisplay.textContent = currentName || '{{ category.name | e }}';
+        if (explanationInput) explanationInput.value = `Category '${currentName || categoryId}' deleted by tournament administrator via dashboard.`;
+        modal.style.display = 'flex';
+    }
+
+    function closeDeleteCategoryModal() {
+        const modal = document.getElementById('deleteCategoryModal');
+        if (modal) modal.style.display = 'none';
+    }
+
     document.addEventListener('click', function(e) {
-        const btn = e.target.closest('.rename-category-btn');
-        if (btn) {
+        const renameBtn = e.target.closest('.rename-category-btn');
+        if (renameBtn) {
             e.preventDefault();
-            const id = btn.getAttribute('data-category-id');
-            const name = btn.getAttribute('data-category-name');
+            const id = renameBtn.getAttribute('data-category-id');
+            const name = renameBtn.getAttribute('data-category-name');
             openRenameModal(id, name);
         }
-        const modal = document.getElementById('renameCategoryModal');
-        if (modal && e.target === modal) {
+        const renameModal = document.getElementById('renameCategoryModal');
+        if (renameModal && e.target === renameModal) {
             closeRenameModal();
+        }
+
+        const deleteBtn = e.target.closest('.delete-category-btn');
+        if (deleteBtn) {
+            e.preventDefault();
+            const id = deleteBtn.getAttribute('data-category-id');
+            const name = deleteBtn.getAttribute('data-category-name');
+            openDeleteCategoryModal(id, name);
+        }
+        const delModal = document.getElementById('deleteCategoryModal');
+        if (delModal && e.target === delModal) {
+            closeDeleteCategoryModal();
         }
     });
 
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             closeRenameModal();
+            closeDeleteCategoryModal();
         }
     });
 

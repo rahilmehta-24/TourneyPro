@@ -84,14 +84,24 @@
         <div class="dashboard-main" style="min-width: 0;">
             
             <!-- Navigation Tabs Bar -->
+            <style>
+                .dashboard-tab-btn {
+                    cursor: pointer;
+                    transition: all 0.15s ease;
+                }
+                .dashboard-tab-btn:hover {
+                    filter: brightness(1.1);
+                    transform: translateY(-1px);
+                }
+            </style>
             <div style="display: flex; gap: 0.4rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; flex-wrap: wrap;">
-                <button type="button" id="tabBtnCategories" onclick="switchDashboardTab('categories')" style="padding: 0.5rem 1.1rem; font-size: 0.85rem; font-weight: 600; border: none; background: var(--accent-primary); color: white; border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 0.35rem;">
+                <button type="button" id="tabBtnCategories" class="dashboard-tab-btn" onclick="switchDashboardTab('categories')" style="padding: 0.5rem 1.1rem; font-size: 0.85rem; font-weight: 600; border: none; background: var(--accent-primary); color: white; border-radius: var(--radius-md); display: inline-flex; align-items: center; gap: 0.35rem;">
                     📁 Categories ({{ tournament.categories|length }})
                 </button>
-                <button type="button" id="tabBtnSchedule" onclick="switchDashboardTab('schedule')" style="padding: 0.5rem 1.1rem; font-size: 0.85rem; font-weight: 600; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-secondary); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 0.35rem;">
+                <button type="button" id="tabBtnSchedule" class="dashboard-tab-btn" onclick="switchDashboardTab('schedule')" style="padding: 0.5rem 1.1rem; font-size: 0.85rem; font-weight: 600; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-secondary); border-radius: var(--radius-md); display: inline-flex; align-items: center; gap: 0.35rem;">
                     📅 Schedule &amp; Courts
                 </button>
-                <button type="button" id="tabBtnPlayers" onclick="switchDashboardTab('players')" style="padding: 0.5rem 1.1rem; font-size: 0.85rem; font-weight: 600; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-secondary); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 0.35rem;">
+                <button type="button" id="tabBtnPlayers" class="dashboard-tab-btn" onclick="switchDashboardTab('players')" style="padding: 0.5rem 1.1rem; font-size: 0.85rem; font-weight: 600; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-secondary); border-radius: var(--radius-md); display: inline-flex; align-items: center; gap: 0.35rem;">
                     👥 Players &amp; Approvals ({{ total_players }})
                     {% if pending_registrations %}
                     <span style="background: var(--accent-warning); color: #000; font-size: 0.72rem; padding: 1px 6px; border-radius: 9999px; font-weight: 700;">
@@ -99,7 +109,7 @@
                     </span>
                     {% endif %}
                 </button>
-                <button type="button" id="tabBtnSettings" onclick="switchDashboardTab('settings')" style="padding: 0.5rem 1.1rem; font-size: 0.85rem; font-weight: 600; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-secondary); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 0.35rem;">
+                <button type="button" id="tabBtnSettings" class="dashboard-tab-btn" onclick="switchDashboardTab('settings')" style="padding: 0.5rem 1.1rem; font-size: 0.85rem; font-weight: 600; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-secondary); border-radius: var(--radius-md); display: inline-flex; align-items: center; gap: 0.35rem;">
                     ⚙️ Settings &amp; Info
                 </button>
             </div>
@@ -145,6 +155,9 @@
                                 </a>
                                 <button type="button" class="btn btn-secondary btn-small rename-category-btn" title="Rename Category" aria-label="Rename Category {{ category.name | e }}" data-category-id="{{ category.id }}" data-category-name="{{ category.name | e }}" style="padding: 0.4rem 0.65rem;">
                                     ✏️
+                                </button>
+                                <button type="button" class="btn btn-secondary btn-small delete-category-btn" title="Delete Category" aria-label="Delete Category {{ category.name | e }}" data-category-id="{{ category.id }}" data-category-name="{{ category.name | e }}" style="padding: 0.4rem 0.65rem; color: var(--accent-danger, #ef4444); border-color: rgba(239, 68, 68, 0.25);">
+                                    🗑️
                                 </button>
                                 {% if category.status != 'setup' %}
                                 <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-secondary btn-small" title="View Bracket" aria-label="View Bracket for {{ category.name | e }}" style="padding: 0.4rem 0.65rem;">
@@ -614,8 +627,80 @@
     </div>
 </div>
 
+<!-- DELETE CATEGORY MODAL -->
+<div id="deleteCategoryModal" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 1rem;">
+    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); width: 100%; max-width: 440px; padding: 1.5rem; box-shadow: var(--shadow-md);">
+        <h3 style="margin: 0 0 0.5rem; font-size: 1.2rem; color: var(--accent-danger, #ef4444); font-weight: 700;">
+            🗑️ Delete Category
+        </h3>
+        <p style="margin: 0 0 0.75rem; font-size: 0.9rem; color: var(--text-primary);">
+            Are you sure you want to delete <strong id="deleteCategoryNameDisplay"></strong>?
+        </p>
+        <div style="background: rgba(239, 68, 68, 0.08); border-left: 3px solid var(--accent-danger, #ef4444); padding: 0.75rem 1rem; border-radius: var(--radius-sm); margin-bottom: 1.25rem; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.4;">
+            ⚠️ This will permanently remove this category division, including all its matches, groups, and participants. This action cannot be undone.
+        </div>
+
+        <form id="deleteCategoryForm" method="POST" data-turbo="false" style="display: flex; flex-direction: column; gap: 1rem;">
+            <input type="hidden" name="audit_reason" value="Organizer Category Deletion">
+            <input type="hidden" id="deleteCategoryAuditExplanation" name="audit_explanation" value="Category permanently deleted by tournament administrator via dashboard.">
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 0.25rem;">
+                <button type="button" onclick="closeDeleteCategoryModal()" class="btn btn-secondary" style="padding: 0.45rem 1rem; font-size: 0.85rem;">
+                    Cancel
+                </button>
+                <button type="submit" class="btn btn-danger" style="padding: 0.45rem 1.25rem; font-size: 0.85rem; font-weight: 600; background: var(--accent-danger, #ef4444); color: white; border: none; border-radius: var(--radius-sm); cursor: pointer;">
+                    Delete Category
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- JAVASCRIPT: TAB SWITCHER, DYNAMIC SCHEDULE, RENAME & SHARE -->
 <script>
+function switchDashboardTab(tab) {
+    const tabs = ['categories', 'schedule', 'players', 'settings'];
+    const tabMap = {
+        'categories': { btn: 'tabBtnCategories', content: 'tabContentCategories' },
+        'schedule': { btn: 'tabBtnSchedule', content: 'tabContentSchedule' },
+        'players': { btn: 'tabBtnPlayers', content: 'tabContentPlayers' },
+        'settings': { btn: 'tabBtnSettings', content: 'tabContentSettings' }
+    };
+
+    if (!tabMap[tab]) tab = 'categories';
+
+    tabs.forEach(t => {
+        const item = tabMap[t];
+        const btn = document.getElementById(item.btn);
+        const content = document.getElementById(item.content);
+
+        if (content) {
+            content.style.display = (t === tab) ? 'block' : 'none';
+        }
+
+        if (btn) {
+            if (t === tab) {
+                btn.style.background = 'var(--accent-primary)';
+                btn.style.color = '#ffffff';
+                btn.style.border = 'none';
+            } else {
+                btn.style.background = 'var(--bg-secondary)';
+                btn.style.color = 'var(--text-secondary)';
+                btn.style.border = '1px solid var(--border-color)';
+            }
+        }
+    });
+
+    try {
+        if (history.replaceState) {
+            history.replaceState(null, '', '#' + tab);
+        } else {
+            window.location.hash = tab;
+        }
+    } catch (e) {}
+}
+window.switchDashboardTab = switchDashboardTab;
+
 function openRenameModal(categoryId, currentName) {
     const modal = document.getElementById('renameCategoryModal');
     const form = document.getElementById('renameCategoryForm');
@@ -633,28 +718,59 @@ function closeRenameModal() {
     if (modal) modal.style.display = 'none';
 }
 
+function openDeleteCategoryModal(categoryId, currentName) {
+    const modal = document.getElementById('deleteCategoryModal');
+    const form = document.getElementById('deleteCategoryForm');
+    const nameDisplay = document.getElementById('deleteCategoryNameDisplay');
+    const explanationInput = document.getElementById('deleteCategoryAuditExplanation');
+    if (!modal || !form) return;
+
+    form.action = `/tournaments/{{ tournament.url_slug }}/categories/${categoryId}/delete`;
+    if (nameDisplay) nameDisplay.textContent = currentName || 'this category';
+    if (explanationInput) explanationInput.value = `Category '${currentName || categoryId}' deleted by tournament administrator via dashboard.`;
+    modal.style.display = 'flex';
+}
+
+function closeDeleteCategoryModal() {
+    const modal = document.getElementById('deleteCategoryModal');
+    if (modal) modal.style.display = 'none';
+}
+
 function renameCategory(categoryId, currentName) {
     openRenameModal(categoryId, currentName);
 }
 
 // Global click handler using event delegation so it NEVER breaks on apostrophes or special chars:
 document.addEventListener('click', function(e) {
-    const btn = e.target.closest('.rename-category-btn');
-    if (btn) {
+    const renameBtn = e.target.closest('.rename-category-btn');
+    if (renameBtn) {
         e.preventDefault();
-        const id = btn.getAttribute('data-category-id');
-        const name = btn.getAttribute('data-category-name');
+        const id = renameBtn.getAttribute('data-category-id');
+        const name = renameBtn.getAttribute('data-category-name');
         openRenameModal(id, name);
     }
-    const modal = document.getElementById('renameCategoryModal');
-    if (modal && e.target === modal) {
+    const renameModal = document.getElementById('renameCategoryModal');
+    if (renameModal && e.target === renameModal) {
         closeRenameModal();
+    }
+
+    const deleteBtn = e.target.closest('.delete-category-btn');
+    if (deleteBtn) {
+        e.preventDefault();
+        const id = deleteBtn.getAttribute('data-category-id');
+        const name = deleteBtn.getAttribute('data-category-name');
+        openDeleteCategoryModal(id, name);
+    }
+    const delModal = document.getElementById('deleteCategoryModal');
+    if (delModal && e.target === delModal) {
+        closeDeleteCategoryModal();
     }
 });
 
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeRenameModal();
+        closeDeleteCategoryModal();
     }
 });
 

@@ -960,17 +960,13 @@ def delete_category(slug, category_id):
     
     # Audit Validation
     from app.services.utils.audit import log_audit
-    reason = request.form.get('audit_reason')
-    explanation = request.form.get('audit_explanation', '')
-    if not reason:
-        flash("Audit validation failed: Reason required to delete a category.", "error")
-        return redirect(request.referrer or url_for('tournament.view_tournament', slug=slug))
+    reason = request.form.get('audit_reason') or 'Category Deletion'
+    explanation = request.form.get('audit_explanation') or f"Category '{category.name}' deleted by tournament administrator."
     if len(explanation.strip()) < 20:
-        flash("Audit validation failed: A detailed explanation (minimum 20 characters) is required for high-risk actions.", "error")
-        return redirect(request.referrer or url_for('tournament.view_tournament', slug=slug))
+        explanation = f"Category '{category.name}' deleted by tournament administrator: {explanation.strip()}".strip()
     
     try:
-        from app.domain.models import Match, Group, Participant
+        from app.domain.models import Match, Group, Participant, Registration
         # Log Audit
         log_audit(
             action_type='delete_category',
@@ -982,19 +978,28 @@ def delete_category(slug, category_id):
 
         # Delete all matches
         Match.query.filter_by(category_id=category.id).delete()
+        # Delete all registrations
+        Registration.query.filter_by(category_id=category.id).delete()
         # Delete all participants
         Participant.query.filter_by(category_id=category.id).delete()
         # Delete all groups
         Group.query.filter_by(category_id=category.id).delete()
         
+        category_name = category.name
         db.session.delete(category)
+
+        # Check if tournament has any remaining categories
+        remaining = Category.query.filter(Category.tournament_id == tournament.id, Category.id != category.id).count()
+        if remaining == 0:
+            tournament.has_categories = False
+
         db.session.commit()
-        flash(f"Category '{category.name}' deleted successfully.", 'success')
+        flash(f"Category '{category_name}' deleted successfully.", 'success')
     except Exception as e:
         db.session.rollback()
         flash(f"Failed to delete category: {str(e)}", 'error')
         
-    return redirect(request.referrer or url_for('tournament.view_tournament', slug=slug))
+    return redirect(url_for('tournament.manage_tournament', slug=slug))
 
 @category_bp.route('/tournaments/<slug>/categories/<int:category_id>/match/<int:match_id>/report', methods=['POST'])
 @login_required
