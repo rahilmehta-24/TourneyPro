@@ -106,7 +106,6 @@
             </select>
         </div>
 
-        <!-- 1. KNOCKOUT & ROUND ROBIN: Match Format (Singles vs Doubles) -->
         <div id="knockout-subformat-fields" style="display: none; margin-bottom: 1.5rem;">
             <label class="form-label" style="font-size: 0.9rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 500;">Match Format *</label>
             <div style="display: flex; gap: 1.5rem; margin-top: 0.5rem;">
@@ -121,126 +120,50 @@
             </div>
         </div>
 
-        <!-- 2. GROUP STAGE SPECIFIC CONFIGURATION (Clean & Dedicated) -->
-        <div id="group-stage-team-fields" style="display: none; background: var(--bg-secondary); padding: 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 1.5rem;">
-            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
-                <span style="font-size: 1.2rem;">🎪</span>
-                <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--text-primary);">Group Stage Team Championship Settings</h3>
-            </div>
-            <div style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 1.15rem; background: rgba(59, 130, 246, 0.08); padding: 0.65rem 0.85rem; border-radius: var(--radius-sm); border-left: 3px solid var(--accent-primary);">
-                ℹ️ <strong>Format Rules:</strong> Teams compete across <strong>3 rubbers per tie</strong> (1 Singles + 2 Doubles). Every rubber follows strict <strong>Total 7 Games</strong> rules (7-0, 6-1, 5-2, 4-3). Standings are ranked by <strong>Total Points (games won across all rubbers)</strong> with Head-to-Head tiebreaking.
-            </div>
-
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
-                <div class="form-group" style="margin: 0;">
-                    <label for="num_groups" style="font-weight: 600; font-size: 0.85rem;">Number of Groups *</label>
-                    <input type="number" id="num_groups" name="num_groups" class="form-input" min="2" max="16" value="3" placeholder="e.g. 3">
-                </div>
-                <div class="form-group" style="margin: 0;">
-                    <label for="teams_per_group" style="font-weight: 600; font-size: 0.85rem;">Teams Per Group *</label>
-                    <input type="number" id="teams_per_group" name="teams_per_group" class="form-input" min="2" max="32" value="4" placeholder="e.g. 4">
-                </div>
-                <div class="form-group" style="margin: 0;">
-                    <label for="qualifiers_per_group" style="font-weight: 600; font-size: 0.85rem;">Qualifiers Per Group *</label>
-                    <input type="number" id="qualifiers_per_group" name="qualifiers_per_group" class="form-input" min="1" max="8" value="2" placeholder="e.g. 2">
-                </div>
-                <div class="form-group" style="margin: 0;">
-                    <label for="matches_per_team_pair" style="font-weight: 600; font-size: 0.85rem;">Matches Per Team Pair</label>
-                    <input type="number" id="matches_per_team_pair" name="matches_per_team_pair" class="form-input" min="1" value="1">
-                </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
-                <div class="form-group" style="margin: 0;">
-                    <label for="team_size" style="font-weight: 600; font-size: 0.85rem;">Players Per Team (Squad Size) *</label>
-                    <input type="number" id="team_size" name="team_size" class="form-input" min="3" max="20" value="5" placeholder="e.g. 5">
-                    <small style="display: block; margin-top: 0.25rem; font-size: 0.75rem; color: var(--text-muted);">Includes Captain, Vice-Captain & squad</small>
-                </div>
-                <div class="form-group" style="margin: 0;">
-                    <label for="rubbers_per_tie" style="font-weight: 600; font-size: 0.85rem;">Rubbers Per Tie *</label>
-                    <input type="number" id="rubbers_per_tie" name="rubbers_per_tie" class="form-input" min="1" max="7" value="3" readonly style="opacity: 0.85;">
-                    <small style="display: block; margin-top: 0.25rem; font-size: 0.75rem; color: var(--text-muted);">1 Singles + 2 Doubles</small>
-                </div>
-                <div class="form-group" style="margin: 0;">
-                    <label for="total_games" style="font-weight: 600; font-size: 0.85rem;">Total Games Per Rubber *</label>
-                    <input type="number" id="total_games" name="total_games" class="form-input" min="1" max="50" value="7" readonly style="opacity: 0.85;">
-                    <small style="display: block; margin-top: 0.25rem; font-size: 0.75rem; color: var(--text-muted);">7-0, 6-1, 5-2, 4-3 (tiebreak)</small>
-                </div>
-            </div>
-
-            <div class="form-group" style="margin: 0;">
-                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                    <input type="checkbox" name="allow_lucky_losers" id="allow_lucky_losers" style="width: 18px; height: 18px; accent-color: var(--primary);" checked>
-                    <span style="font-weight: 600; font-size: 0.9rem;">Enable Lucky Losers Ballot</span>
-                </label>
-                <small style="display: block; margin-left: 26px; color: var(--text-secondary);">Draws 2 third-placed group teams via ballot to form a balanced 8-team seeded knockout bracket.</small>
-            </div>
+        <div class="form-group">
+            <label for="scoring_format">Scoring Format *</label>
+            <select id="scoring_format" name="scoring_format" class="form-input" required onchange="toggleScoringFields()">
+                <option value="games">Games (Sets & Games)</option>
+                <option value="points">Points (Single Target)</option>
+            </select>
         </div>
 
-        <!-- 3. ROUND ROBIN CONFIGURATION -->
-        <div id="round-robin-fields" style="display: none; background: var(--bg-secondary); padding: 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 1.5rem;">
-            <h3 style="margin: 0 0 0.85rem; font-size: 1.05rem; font-weight: 700; color: var(--text-primary);">🔄 Round Robin Configuration</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
-                <div class="form-group" style="margin: 0;">
-                    <label for="rr_teams_per_group" id="rr_teams_label" style="font-weight: 600; font-size: 0.85rem;">Players Per Group *</label>
-                    <input type="number" id="rr_teams_per_group" name="teams_per_group" class="form-input" min="3" value="4">
-                </div>
-                <div class="form-group" style="margin: 0;">
-                    <label for="rr_matches_per_pair" style="font-weight: 600; font-size: 0.85rem;">Matches Per Pair</label>
-                    <input type="number" id="rr_matches_per_pair" name="matches_per_team_pair" class="form-input" min="1" value="1">
-                </div>
-            </div>
-            <div class="form-group" style="margin: 0;" id="rr-knockout-container">
-                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                    <input type="checkbox" name="has_knockout_stage" id="has_knockout_stage" style="width: 18px; height: 18px; accent-color: var(--primary);" onchange="toggleRRKnockout()">
-                    <span style="font-weight: 600; font-size: 0.9rem;">Include Knockout Stage</span>
-                </label>
-                <div id="rr-qualifiers-wrapper" style="display: none; margin-top: 0.75rem; margin-left: 26px;">
-                    <label for="rr_qualifiers" style="font-size: 0.85rem; font-weight: 600;">Qualifiers Per Group</label>
-                    <input type="number" id="rr_qualifiers" name="qualifiers_per_group" class="form-input" min="1" value="2" style="max-width: 150px; margin-top: 0.25rem;">
-                </div>
-            </div>
-        </div>
-
-        <!-- 4. GENERAL SCORING FORMAT (Only for Knockout & Round Robin) -->
-        <div id="general-scoring-container" style="display: block;">
+        <div id="total-games-fields" style="display: none;">
             <div class="form-group">
-                <label for="scoring_format">Scoring Format *</label>
-                <select id="scoring_format" name="scoring_format" class="form-input" onchange="toggleScoringFields()">
-                    <option value="games">Games (Sets &amp; Games)</option>
-                    <option value="points">Points (Single Target)</option>
-                </select>
-            </div>
-
-            <div id="points-to-win-fields" style="display: none;">
-                <div class="form-group">
-                    <label for="points_to_win">Points to Win (Match Setting) *</label>
-                    <input type="number" id="points_to_win" name="points_to_win" class="form-input" min="1" max="100" value="11">
-                    <small>Number of points required to win the match (e.g., first to 11)</small>
-                </div>
-            </div>
-
-            <div id="legacy-scoring-fields" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                <div class="form-group" style="margin: 0;">
-                    <label for="num_sets">Number of Sets *</label>
-                    <input type="number" id="num_sets" name="num_sets" class="form-input" min="1" max="5" value="3">
-                </div>
-                <div class="form-group" style="margin: 0;">
-                    <label for="games_per_set">Games Per Set to Win *</label>
-                    <input type="number" id="games_per_set" name="games_per_set" class="form-input" min="1" max="10" value="6">
-                </div>
+                <label for="total_games">Total Games To Play (Match Setting) *</label>
+                <input type="number" id="total_games" name="total_games" class="form-input" min="1" max="50" value="7">
+                <small>Total number of games played in each match (e.g., if 7, score can be 5-2)</small>
             </div>
         </div>
 
-        <div id="max-players-team-container" class="form-group" style="display: none; margin-top: 1rem;">
+        <div id="points-to-win-fields" style="display: none;">
+            <div class="form-group">
+                <label for="points_to_win">Points to Win (Match Setting) *</label>
+                <input type="number" id="points_to_win" name="points_to_win" class="form-input" min="1" max="100" value="11">
+                <small>Number of points required to win the match (e.g., first to 11)</small>
+            </div>
+        </div>
+
+        <div id="legacy-scoring-fields" style="display: none;">
+            <div class="form-group">
+                <label for="num_sets">Number of Sets *</label>
+                <input type="number" id="num_sets" name="num_sets" class="form-input" min="1" max="5" value="3">
+            </div>
+            <div class="form-group">
+                <label for="games_per_set">Games Per Set to Win *</label>
+                <input type="number" id="games_per_set" name="games_per_set" class="form-input" min="1" max="10" value="6">
+            </div>
+        </div>
+
+        <div class="form-group">
             <label for="max_players_per_team">Max Players Per Team</label>
             <input type="number" id="max_players_per_team" name="max_players_per_team" class="form-input" min="1"
                 placeholder="Leave empty for unlimited">
             <small>Optional - set a limit on the number of players per participant/team</small>
         </div>
 
-        <div class="form-group" style="margin-top: 1rem;">
-            <label for="max_participants">Max Participants / Teams</label>
+        <div class="form-group">
+            <label for="max_participants">Max Participants</label>
             <input type="number" id="max_participants" name="max_participants" class="form-input" min="2"
                 placeholder="Leave empty for unlimited">
         </div>
@@ -252,6 +175,52 @@
         </div>
         <div style="margin-top: 1.5rem; margin-bottom: 1.5rem; padding: 0.85rem 1.25rem; background: rgba(59, 130, 246, 0.05); border-left: 3px solid var(--accent-primary, #3b82f6); border-radius: var(--radius-sm); font-size: 0.9rem; color: var(--text-secondary);">
             📅 <strong>Tournament Scheduling:</strong> Courts, match durations, daily operating hours, and tournament dates are managed globally from the tournament dashboard.
+        </div>
+
+        <div id="group-stage-fields" style="display: none;">
+            <h3>Group Stage Configuration</h3>
+
+            <div class="form-group">
+                <label for="num_groups">Number of Groups *</label>
+                <input type="number" id="num_groups" name="num_groups" class="form-input" min="2"
+                    placeholder="e.g., 2, 4, 8">
+            </div>
+
+            <div class="form-group">
+                <label for="teams_per_group">Teams Per Group *</label>
+                <input type="number" id="teams_per_group" name="teams_per_group" class="form-input" min="2"
+                    placeholder="e.g., 4">
+            </div>
+
+            <div class="form-group">
+                <label for="matches_per_team_pair">Matches Per Team Pair</label>
+                <input type="number" id="matches_per_team_pair" name="matches_per_team_pair" class="form-input" min="1"
+                    value="1" placeholder="1">
+                <small>How many times each pair plays in group stage</small>
+            </div>
+
+            <div class="form-group">
+                <label for="qualifiers_per_group">Qualifiers Per Group *</label>
+                <input type="number" id="qualifiers_per_group" name="qualifiers_per_group" class="form-input" min="1"
+                    placeholder="e.g., 2">
+                <small>How many teams advance to knockout from each group</small>
+            </div>
+
+            <div class="form-group" style="margin-top: 1rem;">
+                <label style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" name="allow_lucky_losers" id="allow_lucky_losers" style="width: 18px; height: 18px; accent-color: var(--primary);">
+                    <span>Enable Lucky Losers</span>
+                </label>
+                <small style="display: block; margin-left: 26px;">If qualified teams < 8, fills the remaining spots with best non-qualifiers.</small>
+            </div>
+
+            <div class="form-group" style="margin-top: 1rem; display: none;" id="rr-knockout-container">
+                <label style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" name="has_knockout_stage" id="has_knockout_stage" style="width: 18px; height: 18px; accent-color: var(--primary);" onchange="toggleRRKnockout()">
+                    <span>Include Knockout Stage</span>
+                </label>
+                <small style="display: block; margin-left: 26px;">If checked, top players will advance to a knockout bracket.</small>
+            </div>
         </div>
 
         <div class="form-actions">
@@ -300,94 +269,109 @@
             if (pointsToWin) pointsToWin.value = 11;
         } else if (type === 'group_stage') {
             if (formatSelect) formatSelect.value = 'group_stage';
+            if (scoringSelect) scoringSelect.value = 'games';
+            if (totalGames) totalGames.value = 7;
             const numGroups = document.getElementById('num_groups');
             const teamsPerGroup = document.getElementById('teams_per_group');
             const qualifiers = document.getElementById('qualifiers_per_group');
-            const teamSize = document.getElementById('team_size');
-            if (numGroups) numGroups.value = 3;
-            if (teamsPerGroup) teamsPerGroup.value = 4;
-            if (qualifiers) qualifiers.value = 2;
-            if (teamSize) teamSize.value = 5;
-            if (totalGames) totalGames.value = 7;
+            if (numGroups && !numGroups.value) numGroups.value = 2;
+            if (teamsPerGroup && !teamsPerGroup.value) teamsPerGroup.value = 4;
+            if (qualifiers && !qualifiers.value) qualifiers.value = 2;
         }
 
         toggleGroupStageFields();
+        toggleScoringFields();
     }
 
     function toggleScoringFields() {
-        const format = document.getElementById('format').value;
-        if (format === 'group_stage') return; // Group Stage handles scoring separately
-
         const scoringFormat = document.getElementById('scoring_format').value;
         const legacyScoringFields = document.getElementById('legacy-scoring-fields');
         const pointsToWinFields = document.getElementById('points-to-win-fields');
+        const totalGamesFields = document.getElementById('total-games-fields');
 
         if (scoringFormat === 'points') {
             if (legacyScoringFields) legacyScoringFields.style.display = 'none';
-            if (pointsToWinFields) pointsToWinFields.style.display = 'block';
+            if (pointsToWinFields) {
+                pointsToWinFields.style.display = 'block';
+                document.getElementById('points_to_win').required = true;
+            }
+            // For now, total games is tied to 'group_stage' format, handled separately or kept here if needed.
         } else {
-            if (legacyScoringFields) legacyScoringFields.style.display = 'grid';
-            if (pointsToWinFields) pointsToWinFields.style.display = 'none';
+            if (legacyScoringFields) legacyScoringFields.style.display = 'block';
+            if (pointsToWinFields) {
+                pointsToWinFields.style.display = 'none';
+                document.getElementById('points_to_win').required = false;
+            }
         }
     }
 
     function toggleGroupStageFields() {
         const format = document.getElementById('format').value;
-        const groupStageTeamFields = document.getElementById('group-stage-team-fields');
-        const roundRobinFields = document.getElementById('round-robin-fields');
+        const groupFields = document.getElementById('group-stage-fields');
+        const totalGamesFields = document.getElementById('total-games-fields');
+        
+        // Reset global fields
+        const maxPlayersField = document.getElementById('max_players_per_team');
+        if (maxPlayersField) maxPlayersField.closest('.form-group').style.display = 'block';
+
+        const rrKnockoutContainer = document.getElementById('rr-knockout-container');
+        if (rrKnockoutContainer) rrKnockoutContainer.style.display = 'none';
+        
         const knockoutSubformatFields = document.getElementById('knockout-subformat-fields');
-        const generalScoringContainer = document.getElementById('general-scoring-container');
-        const maxPlayersTeamContainer = document.getElementById('max-players-team-container');
+        if (knockoutSubformatFields) {
+            knockoutSubformatFields.style.display = (format === 'single_elimination' || format === 'round_robin') ? 'block' : 'none';
+        }
 
         if (format === 'group_stage') {
-            // SHOW Group Stage Team Championship configuration
-            if (groupStageTeamFields) groupStageTeamFields.style.display = 'block';
-            
-            // HIDE all non-group-stage options
-            if (roundRobinFields) roundRobinFields.style.display = 'none';
-            if (knockoutSubformatFields) knockoutSubformatFields.style.display = 'none';
-            if (generalScoringContainer) generalScoringContainer.style.display = 'none';
-            if (maxPlayersTeamContainer) maxPlayersTeamContainer.style.display = 'none';
-
-            // Set required attributes
-            const numGroups = document.getElementById('num_groups');
-            const teamsPerGroup = document.getElementById('teams_per_group');
-            const qualifiers = document.getElementById('qualifiers_per_group');
-            if (numGroups) numGroups.required = true;
-            if (teamsPerGroup) teamsPerGroup.required = true;
-            if (qualifiers) qualifiers.required = true;
-
-        } else if (format === 'round_robin') {
-            // SHOW Round Robin & General Scoring
-            if (roundRobinFields) roundRobinFields.style.display = 'block';
-            if (knockoutSubformatFields) knockoutSubformatFields.style.display = 'block';
-            if (generalScoringContainer) generalScoringContainer.style.display = 'block';
-            if (groupStageTeamFields) groupStageTeamFields.style.display = 'none';
-            if (maxPlayersTeamContainer) maxPlayersTeamContainer.style.display = 'none';
-
-            const subFormat = document.querySelector('input[name="sub_format"]:checked');
-            const rrTeamsLabel = document.getElementById('rr_teams_label');
-            if (rrTeamsLabel) {
-                rrTeamsLabel.innerText = (subFormat && subFormat.value === 'doubles') ? 'Teams Per Group *' : 'Players Per Group *';
+            if (groupFields) {
+                groupFields.style.display = 'block';
+                document.querySelector('#group-stage-fields h3').innerText = 'Group Stage Configuration';
+                document.querySelector('label[for="teams_per_group"]').innerText = 'Teams Per Group *';
+                document.getElementById('max_players_per_team').closest('.form-group').style.display = 'block';
+                document.getElementById('qualifiers_per_group').closest('.form-group').style.display = 'block';
+                document.getElementById('qualifiers_per_group').required = true;
+                document.getElementById('allow_lucky_losers').closest('.form-group').style.display = 'block';
+                document.getElementById('num_groups').closest('.form-group').style.display = 'block';
+                document.getElementById('num_groups').required = true;
             }
-            toggleScoringFields();
-            toggleRRKnockout();
-
-        } else if (format === 'single_elimination') {
-            // SHOW Knockout & General Scoring
-            if (knockoutSubformatFields) knockoutSubformatFields.style.display = 'block';
-            if (generalScoringContainer) generalScoringContainer.style.display = 'block';
-            if (groupStageTeamFields) groupStageTeamFields.style.display = 'none';
-            if (roundRobinFields) roundRobinFields.style.display = 'none';
-            if (maxPlayersTeamContainer) maxPlayersTeamContainer.style.display = 'none';
-            toggleScoringFields();
-
+            if (totalGamesFields) {
+                totalGamesFields.style.display = 'block';
+                document.getElementById('total_games').required = true;
+            }
+        } else if (format === 'round_robin') {
+            if (groupFields) {
+                groupFields.style.display = 'block';
+                document.querySelector('#group-stage-fields h3').innerText = 'Round Robin Configuration';
+                const subFormat = document.querySelector('input[name="sub_format"]:checked');
+                document.querySelector('label[for="teams_per_group"]').innerText = (subFormat && subFormat.value === 'doubles') ? 'Teams Per Group *' : 'Players Per Group *';
+                
+                // Show num_groups for manual override (optional)
+                document.getElementById('num_groups').closest('.form-group').style.display = 'block';
+                document.getElementById('num_groups').required = false;
+                
+                document.getElementById('teams_per_group').required = true;
+                document.getElementById('teams_per_group').min = "3";
+                
+                // Hide max players per team
+                document.getElementById('max_players_per_team').closest('.form-group').style.display = 'none';
+                
+                if (rrKnockoutContainer) rrKnockoutContainer.style.display = 'block';
+                
+                toggleRRKnockout(); // Initial check for RR knockout
+            }
+            if (totalGamesFields) {
+                totalGamesFields.style.display = 'none';
+                document.getElementById('total_games').required = false;
+            }
+        } else if (format) {
+            if (groupFields) groupFields.style.display = 'none';
+            if (totalGamesFields) {
+                totalGamesFields.style.display = 'none';
+                document.getElementById('total_games').required = false;
+            }
         } else {
-            // Empty selection
-            if (groupStageTeamFields) groupStageTeamFields.style.display = 'none';
-            if (roundRobinFields) roundRobinFields.style.display = 'none';
-            if (knockoutSubformatFields) knockoutSubformatFields.style.display = 'none';
-            if (generalScoringContainer) generalScoringContainer.style.display = 'none';
+            if (groupFields) groupFields.style.display = 'none';
+            if (totalGamesFields) totalGamesFields.style.display = 'none';
         }
     }
 
@@ -396,22 +380,25 @@
         if (format !== 'round_robin') return;
         
         const hasKnockout = document.getElementById('has_knockout_stage').checked;
-        const rrQualifiersWrapper = document.getElementById('rr-qualifiers-wrapper');
-        const qualifiersField = document.getElementById('rr_qualifiers');
+        const qualifiersField = document.getElementById('qualifiers_per_group');
+        const luckyLosersField = document.getElementById('allow_lucky_losers');
         
-        if (rrQualifiersWrapper) {
-            rrQualifiersWrapper.style.display = hasKnockout ? 'block' : 'none';
-        }
-        if (qualifiersField) {
-            qualifiersField.required = hasKnockout;
+        if (hasKnockout) {
+            qualifiersField.closest('.form-group').style.display = 'block';
+            qualifiersField.required = true;
+            luckyLosersField.closest('.form-group').style.display = 'block';
+        } else {
+            qualifiersField.closest('.form-group').style.display = 'none';
+            qualifiersField.required = false;
+            luckyLosersField.closest('.form-group').style.display = 'none';
+            luckyLosersField.checked = false;
         }
     }
-
     function toggleAgeCategory(genderSelect, categoryId) {
         const categorySelect = document.getElementById(categoryId);
         if (!categorySelect) return;
         const categoryGroup = categorySelect.parentElement;
-        if (genderSelect && genderSelect.value === 'Mix') {
+        if (genderSelect.value === 'Mix') {
             categoryGroup.style.display = 'none';
             categorySelect.required = false;
             categorySelect.value = 'Open';
@@ -422,6 +409,7 @@
     }
 
     // Call once on load
+    toggleScoringFields();
     toggleGroupStageFields();
     toggleAgeCategory(document.getElementById('gender'), 'age_category');
 </script>
