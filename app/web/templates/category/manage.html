@@ -139,6 +139,12 @@
                 </div>
                 {% endif %}
 
+                {% if category.format == 'group_stage' %}
+                <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.85rem; background: rgba(59, 130, 246, 0.08); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid rgba(59, 130, 246, 0.2);">
+                    👥 <strong>Open Player Registration:</strong> Register as many players as you want into the tournament roster. You can draft and assign them to team squads anytime in the Draft tab.
+                </div>
+                {% endif %}
+
                 <form method="POST" style="display: flex; flex-direction: column; gap: 0.85rem;">
                     <input type="hidden" name="action" value="add_participant">
                     
@@ -403,7 +409,7 @@
 
                     <div class="form-group" style="margin: 0;">
                         <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Max Participants</label>
-                        <input type="number" name="max_participants" class="form-input" value="{{ category.max_participants or '' }}" placeholder="Unlimited" min="2" style="width: 100%;">
+                        <input type="number" name="max_participants" class="form-input" value="{% if category.format == 'group_stage' %}{% else %}{{ category.max_participants or '' }}{% endif %}" placeholder="{% if category.format == 'group_stage' %}Unlimited (Open Player Pool){% else %}Unlimited{% endif %}" min="2" style="width: 100%;">
                     </div>
 
                     <div class="form-group" style="margin: 0;">

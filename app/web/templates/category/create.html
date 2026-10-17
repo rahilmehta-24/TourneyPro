@@ -675,9 +675,9 @@
             summaryText.innerHTML = `${numGroups} Groups × ${teamsPerGroup} Teams = <strong>${totalTeams} Teams Total</strong> (${totalPlayers} players). ${advanceStr}`;
         }
 
-        // Sync hidden max_participants and max_players_per_team
+        // For group stage, player registrations are open / unlimited (not capped to team count)
         const maxParticipants = document.getElementById('max_participants');
-        if (maxParticipants) maxParticipants.value = totalTeams;
+        if (maxParticipants) maxParticipants.value = '';
 
         const maxPlayers = document.getElementById('max_players_per_team');
         if (maxPlayers) maxPlayers.value = teamSize;

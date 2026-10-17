@@ -161,8 +161,8 @@ def create_category(slug):
             matches_per_team_pair = matches_per_team_pair or 1
             qualifiers_per_group = request.form.get('qualifiers_per_group', type=int, default=2) or 2
             allow_lucky_losers = request.form.get('allow_lucky_losers') in ['on', 'true', '1'] or ('allow_lucky_losers' in request.form)
-            if not max_participants:
-                max_participants = num_groups * teams_per_group
+            # Group stage team events have an open player registration pool (unlimited players)
+            max_participants = None
             num_sets = 1
             games_per_set = total_games
         elif format_type == 'round_robin':
@@ -415,6 +415,10 @@ def manage_category(slug, category_id):
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
     check_tournament_ownership(tournament)
     category = Category.query.get_or_404(category_id)
+    if category.format == 'group_stage' and category.max_participants is not None:
+        # Clear legacy 8-team cap so registered players pool is completely open and unlimited
+        category.max_participants = None
+        db.session.commit()
     if category.format == 'group_stage':
         participants = Participant.query.filter_by(category_id=category_id).order_by(Participant.id).all()
     else:
@@ -502,8 +506,8 @@ def manage_category(slug, category_id):
                         flash(clean_n, 'error')
                         return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
 
-                # Check max participants limit against multiple additions
-                if category.max_participants and len(participants) + len(names) > category.max_participants:
+                # Check max participants limit against multiple additions (exempt for group_stage team draft pool where registrations are open and unlimited)
+                if category.format != 'group_stage' and category.max_participants and len(participants) + len(names) > category.max_participants:
                     flash(f'Cannot add participants. Maximum limit of {category.max_participants} would be exceeded.', 'error')
                     return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
 
@@ -657,7 +661,7 @@ def manage_category(slug, category_id):
                     return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
 
                 category.name = name
-                category.max_participants = max_participants
+                category.max_participants = None if category.format == 'group_stage' else max_participants
                 category.total_games = total_games
                 category.scoring_format = scoring_format
                 category.points_to_win = points_to_win
