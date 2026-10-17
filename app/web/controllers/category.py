@@ -616,10 +616,18 @@ def manage_category(slug, category_id):
                             format_type = 'doubles_round_robin'
                     num_sets = request.form.get('num_sets', type=int, default=1)
                     games_per_set = request.form.get('games_per_set', type=int, default=6)
+                    scoring_format = request.form.get('scoring_format', 'games')
+                    total_games = request.form.get('total_games', type=int)
+                    points_to_win = request.form.get('points_to_win', type=int)
 
                     category.format = format_type
                     category.num_sets = num_sets
                     category.games_per_set = games_per_set
+                    category.scoring_format = scoring_format
+                    if total_games is not None:
+                        category.total_games = total_games
+                    if points_to_win is not None:
+                        category.points_to_win = points_to_win
 
                     category.has_group_stage = (format_type in ['group_stage', 'round_robin', 'doubles_round_robin'])
                     if category.has_group_stage:

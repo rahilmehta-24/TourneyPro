@@ -266,13 +266,13 @@ function openMatchModal(matchId, currentStatus, currentScheduledTime, p1Name, p1
         }
 
         const formatSelect = document.getElementById('modalMatchFormat');
-        formatSelect.value = matchFormat || 'games';
+        formatSelect.value = matchFormat || '{{ (category.scoring_format if category else None) or "games" }}';
         const numSetsSelect = document.getElementById('modalMatchNumSets');
-        numSetsSelect.value = matchNumSets || 3;
+        numSetsSelect.value = matchNumSets || {{ (category.num_sets if category else None) or tournament.num_sets or 3 }};
         const gamesPerSetSelect = document.getElementById('modalMatchGamesPerSet');
-        gamesPerSetSelect.value = matchGamesPerSet || 6;
+        gamesPerSetSelect.value = matchGamesPerSet || {{ (category.games_per_set if category else None) or 6 }};
         const pointsToWinInput = document.getElementById('modalMatchPointsToWin');
-        pointsToWinInput.value = matchPointsToWin || 11;
+        pointsToWinInput.value = matchPointsToWin || {{ (category.points_to_win if category else None) or 11 }};
         
         toggleModalMatchFormat();
         
