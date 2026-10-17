@@ -75,6 +75,8 @@ class Category(db.Model):
     qualifiers_per_group = db.Column(db.Integer)  # How many advance to knockout
     allow_lucky_losers = db.Column(db.Boolean, default=False)
     max_players_per_team = db.Column(db.Integer)
+    team_size = db.Column(db.Integer, default=5)
+    rubbers_per_tie = db.Column(db.Integer, default=3)
     total_games = db.Column(db.Integer)
     scoring_format = db.Column(db.String(20), default='games') # 'games' or 'points'
     points_to_win = db.Column(db.Integer, default=11)
@@ -126,12 +128,21 @@ class Participant(db.Model):
     eliminated = db.Column(db.Boolean, default=False)
     final_rank = db.Column(db.Integer)  # 1=Winner, 2=Runner-up, 3-4=Semi-finalists
 
+    # Team event fields
+    is_team = db.Column(db.Boolean, default=False)
+    team_id = db.Column(db.Integer, db.ForeignKey('participants.id'), nullable=True)
+    skill_tier = db.Column(db.String(10), nullable=True)  # 'A', 'B', 'C', 'D', 'E'
+    team_role = db.Column(db.String(20), nullable=True)   # 'captain', 'vice_captain', 'member'
+
     # Group stage stats
     group_wins = db.Column(db.Integer, default=0)
     group_losses = db.Column(db.Integer, default=0)
     group_points = db.Column(db.Integer, default=0)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    team_members = db.relationship('Participant', backref=db.backref('team', remote_side=[id]), lazy=True)
 
 class Match(db.Model):
     __tablename__ = 'matches'
@@ -162,11 +173,27 @@ class Match(db.Model):
     num_sets = db.Column(db.Integer)
     games_per_set = db.Column(db.Integer)
     points_to_win = db.Column(db.Integer)
+    total_games = db.Column(db.Integer)
 
-    # Relationships for participants
+    # Multi-rubber team event tie fields
+    parent_match_id = db.Column(db.Integer, db.ForeignKey('matches.id'), nullable=True)
+    rubber_number = db.Column(db.Integer, nullable=True)      # 1 (Singles), 2 (Doubles 1), 3 (Doubles 2)
+    rubber_type = db.Column(db.String(20), nullable=True)      # 'singles', 'doubles_1', 'doubles_2'
+    lineup_p1_player_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=True)
+    lineup_p1_player2_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=True)
+    lineup_p2_player_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=True)
+    lineup_p2_player2_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=True)
+
+    # Relationships for participants and ties
     participant1 = db.relationship('Participant', foreign_keys=[participant1_id], backref='matches_as_p1')
     participant2 = db.relationship('Participant', foreign_keys=[participant2_id], backref='matches_as_p2')
     winner = db.relationship('Participant', foreign_keys=[winner_id], backref='matches_won')
+    sub_matches = db.relationship('Match', backref=db.backref('parent_tie', remote_side=[id]), lazy=True, cascade='all, delete-orphan')
+
+    lineup_p1_player = db.relationship('Player', foreign_keys=[lineup_p1_player_id], lazy=True)
+    lineup_p1_player2 = db.relationship('Player', foreign_keys=[lineup_p1_player2_id], lazy=True)
+    lineup_p2_player = db.relationship('Player', foreign_keys=[lineup_p2_player_id], lazy=True)
+    lineup_p2_player2 = db.relationship('Player', foreign_keys=[lineup_p2_player2_id], lazy=True)
 
 class TournamentSettings(db.Model):
     __tablename__ = 'tournament_settings'

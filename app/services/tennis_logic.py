@@ -148,3 +148,104 @@ def validate_and_format_score(winner_id, p1_id, p2_id, num_sets, games_per_set, 
     score2_str = ", ".join(set_results_p2)
 
     return score1_str, score2_str
+
+
+def validate_total_7_games_score(g1_val, g2_val, tb_pts_p1=None, tb_pts_p2=None, is_live_update=False):
+    """
+    Validates and formats a rubber score under the Total 7 Games format.
+    
+    Rules:
+    - In completed rubbers, total games played MUST equal 7 (g1 + g2 == 7).
+    - Valid non-tiebreak outcomes: 7-0, 6-1, 5-2 (and their reverses).
+    - If 4-3 or 3-4, a 7-point match tiebreak (from 3-3) decided the 7th game.
+      Tiebreak winner must score >= 7 points and lead by >= 2 points.
+    
+    Args:
+        g1_val: Games scored by participant 1 (int or string)
+        g2_val: Games scored by participant 2 (int or string)
+        tb_pts_p1: Tiebreak points for participant 1 (required if 4-3/3-4)
+        tb_pts_p2: Tiebreak points for participant 2 (required if 4-3/3-4)
+        is_live_update: Boolean flag allowing in-progress scores
+        
+    Returns:
+        tuple: (score1_str, score2_str, g1, g2, winner_participant_idx)
+               where winner_participant_idx is 1 (P1 won), 2 (P2 won), or None (tie in live update).
+    """
+    if g1_val is None or str(g1_val).strip() == '' or g2_val is None or str(g2_val).strip() == '':
+        if is_live_update:
+            return "", "", 0, 0, None
+        raise ValueError("Both game scores must be provided.")
+
+    try:
+        g1 = int(g1_val)
+        g2 = int(g2_val)
+    except ValueError:
+        raise ValueError("Games must be integers.")
+
+    if g1 < 0 or g2 < 0:
+        raise ValueError("Games cannot be negative.")
+
+    if is_live_update:
+        if g1 + g2 > 7:
+            raise ValueError("Total games cannot exceed 7.")
+        winner_idx = 1 if g1 > g2 else (2 if g2 > g1 else None)
+        return f"{g1}-{g2}", f"{g2}-{g1}", g1, g2, winner_idx
+
+    # Completed rubber validation
+    if g1 + g2 != 7:
+        raise ValueError(
+            f"Total games must equal 7 (current total: {g1 + g2}). "
+            "Valid final scores are 7-0, 6-1, 5-2, or 4-3."
+        )
+
+    valid_pairs = {(7, 0), (0, 7), (6, 1), (1, 6), (5, 2), (2, 5), (4, 3), (3, 4)}
+    if (g1, g2) not in valid_pairs:
+        raise ValueError(
+            f"Score {g1}-{g2} is invalid. "
+            "Valid final scores are 7-0, 6-1, 5-2, or 4-3."
+        )
+
+    winner_idx = 1 if g1 > g2 else 2
+
+    # If 4-3 or 3-4, validate tiebreak points
+    if (g1, g2) in {(4, 3), (3, 4)}:
+        if tb_pts_p1 is None or str(tb_pts_p1).strip() == '' or tb_pts_p2 is None or str(tb_pts_p2).strip() == '':
+            raise ValueError(
+                "A 4-3 score indicates a 3-3 tie decided by a tie-break. "
+                "Tie-break points for both players are required."
+            )
+        try:
+            tb1 = int(tb_pts_p1)
+            tb2 = int(tb_pts_p2)
+        except ValueError:
+            raise ValueError("Tie-break points must be integers.")
+
+        if tb1 < 0 or tb2 < 0:
+            raise ValueError("Tie-break points cannot be negative.")
+
+        tb_winner_pts = max(tb1, tb2)
+        tb_loser_pts = min(tb1, tb2)
+
+        if tb_winner_pts < 7:
+            raise ValueError(f"Tie-break winner must score at least 7 points (entered: {tb1}-{tb2}).")
+
+        if tb_winner_pts == 7:
+            if tb_loser_pts > 5:
+                raise ValueError(f"Invalid tie-break score {tb1}-{tb2}. Winner must lead by at least 2 points.")
+        else:
+            if tb_winner_pts - tb_loser_pts != 2:
+                raise ValueError(f"Invalid tie-break score {tb1}-{tb2}. Beyond 7 points, winner must lead by exactly 2.")
+
+        if winner_idx == 1 and tb1 <= tb2:
+            raise ValueError(f"Player 1 won the match (4-3), but Player 2 has higher/equal tie-break points ({tb1}-{tb2}).")
+        if winner_idx == 2 and tb2 <= tb1:
+            raise ValueError(f"Player 2 won the match (3-4), but Player 1 has higher/equal tie-break points ({tb1}-{tb2}).")
+
+        score1_str = f"{g1}-{g2}({tb2})" if winner_idx == 1 else f"{g1}-{g2}({tb1})"
+        score2_str = f"{g2}-{g1}({tb1})" if winner_idx == 2 else f"{g2}-{g1}({tb2})"
+    else:
+        score1_str = f"{g1}-{g2}"
+        score2_str = f"{g2}-{g1}"
+
+    return score1_str, score2_str, g1, g2, winner_idx
+

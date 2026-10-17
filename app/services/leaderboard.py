@@ -135,11 +135,17 @@ def calculate_combined_round_robin_standings(category_id):
 
 def recalculate_all_group_stats(category_id):
     """
-    Recalculates group_wins, group_losses, and group_points for all participants in a category
-    by tallying up all completed group_stage and round_robin matches.
-    If match scores are numeric (e.g. 11, 5), they are added to group_points.
-    Otherwise (e.g. tennis sets), winner gets 3 points.
+    Recalculates group_wins, group_losses, and group_points for all participants in a category.
+    If groups exist, delegates to GroupStageFormat.calculate_group_standings for each group.
     """
+    from app.domain.models import Group
+    groups = Group.query.filter_by(category_id=category_id).all()
+    if groups:
+        from app.services.format_engine.group_stage.logic import GroupStageFormat
+        for group in groups:
+            GroupStageFormat.calculate_group_standings(group.id)
+        return
+
     participants = Participant.query.filter_by(category_id=category_id).all()
     
     # Reset stats
@@ -186,3 +192,4 @@ def recalculate_all_group_stats(category_id):
             winner.group_points += 3
 
     db.session.commit()
+

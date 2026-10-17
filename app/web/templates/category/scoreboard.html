@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📺 Live Scoreboard - {{ category.name }} | {{ tournament.name }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-arena: #070b14;
+            --bg-card: rgba(15, 23, 42, 0.75);
+            --bg-card-hover: rgba(30, 41, 59, 0.85);
+            --border-glass: rgba(255, 255, 255, 0.08);
+            --accent-orange: #f97316;
+            --accent-cyan: #38bdf8;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-arena);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(249, 115, 22, 0.08) 0%, transparent 40%);
+            background-attachment: fixed;
+        }
+
+        /* Top Arena Bar */
+        .arena-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background: rgba(10, 15, 29, 0.9);
+            border-bottom: 1px solid var(--border-glass);
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .tournament-title {
+            font-size: 0.95rem;
+            color: var(--accent-cyan);
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .category-title {
+            font-size: 1.6rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            color: #ef4444;
+            font-size: 0.8rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            padding: 0.3rem 0.75rem;
+            border-radius: 9999px;
+            text-transform: uppercase;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ef4444;
+            animation: pulse-red 1.5s infinite;
+        }
+
+        @keyframes pulse-red {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        .arena-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .btn-ctrl {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-glass);
+            color: var(--text-main);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .btn-ctrl:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Layout Grid */
+        .scoreboard-layout {
+            display: grid;
+            grid-template-columns: 1.25fr 1fr;
+            gap: 1.75rem;
+            padding: 2rem;
+            max-width: 1750px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 1100px) {
+            .scoreboard-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Featured Tie Card */
+        .featured-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            backdrop-filter: blur(16px);
+        }
+
+        .featured-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-glass);
+            padding-bottom: 1rem;
+        }
+
+        .tie-score-banner {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 2rem;
+        }
+
+        .team-banner-name {
+            font-size: 1.8rem;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+        }
+
+        .score-pill-huge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 3rem;
+            font-weight: 800;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+            padding: 0.5rem 1.75rem;
+            border-radius: 16px;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            box-shadow: 0 0 25px rgba(56, 189, 248, 0.15);
+        }
+
+        /* Rubbers Arena Breakdown */
+        .rubber-arena-row {
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid var(--border-glass);
+            border-radius: 12px;
+            padding: 1.15rem 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.2s;
+        }
+
+        .rubber-arena-row.live-active {
+            border-color: rgba(239, 68, 68, 0.6);
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.15);
+            background: rgba(239, 68, 68, 0.03);
+        }
+
+        .rubber-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            font-size: 0.85rem;
+            color: var(--text-sub);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .rubber-teams-grid {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            gap: 1.25rem;
+        }
+
+        .rubber-player-name {
+            font-size: 1.15rem;
+            font-weight: 700;
+        }
+
+        .rubber-score-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.6rem;
+            font-weight: 800;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 0.3rem 1.2rem;
+            border-radius: 8px;
+            color: var(--accent-cyan);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            min-width: 90px;
+            text-align: center;
+        }
+
+        /* Standings Table Arena */
+        .standings-arena-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: 16px;
+            padding: 1.75rem;
+            margin-bottom: 1.75rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            backdrop-filter: blur(16px);
+        }
+
+        .group-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .arena-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .arena-table th {
+            text-align: left;
+            padding: 0.75rem 1rem;
+            font-size: 0.8rem;
+            color: var(--text-sub);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border-glass);
+        }
+
+        .arena-table td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 1.05rem;
+        }
+
+        .arena-table tr.qualified-row {
+            background: rgba(16, 185, 129, 0.04);
+        }
+
+        .rank-num {
+            font-weight: 800;
+            color: var(--text-sub);
+            width: 40px;
+        }
+
+        .q-badge {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            font-size: 0.75rem;
+            font-weight: 800;
+            padding: 2px 7px;
+            border-radius: 9999px;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            margin-left: 0.5rem;
+        }
+
+        .pts-callout {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 800;
+            font-size: 1.3rem;
+            color: var(--accent-orange);
+            text-align: center;
+        }
+
+        /* Other Ties Grid */
+        .ties-ticker-container {
+            margin-top: 2rem;
+            padding: 2rem;
+            max-width: 1750px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .ties-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.25rem;
+            margin-top: 1rem;
+        }
+
+        .mini-tie-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: 12px;
+            padding: 1.25rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mini-tie-card:hover {
+            border-color: var(--accent-cyan);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Arena Header -->
+    <header class="arena-header">
+        <div>
+            <div class="tournament-title">🏟️ {{ tournament.name }}</div>
+            <div class="category-title">
+                {{ category.name }}
+                <div class="live-badge">
+                    <span class="live-dot"></span>
+                    <span>LIVE ARENA</span>
+                </div>
+            </div>
+        </div>
+        <div class="arena-controls">
+            <span id="lastUpdated" style="font-size: 0.85rem; color: var(--text-sub); font-family: monospace;">Syncing...</span>
+            <button type="button" class="btn-ctrl" onclick="toggleFullscreen()" title="Fullscreen TV Mode">
+                ⛶ Fullscreen
+            </button>
+            <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=category.id) }}" class="btn-ctrl">
+                ← Exit Scoreboard
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Scoreboard Grid -->
+    <div class="scoreboard-layout">
+        
+        <!-- Left Column: Featured Active Tie Card -->
+        <div>
+            <div class="featured-card">
+                <div class="featured-header">
+                    <div>
+                        <span id="activeTieRound" style="color: var(--text-sub); font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">
+                            {% if active_tie %}Round {{ active_tie.round }} • Tie #{{ active_tie.match_number }}{% else %}Upcoming Tie{% endif %}
+                        </span>
+                        <h2 style="font-size: 1.4rem; font-weight: 800; margin-top: 0.25rem;" id="activeTieCourt">
+                            {% if active_tie and (active_tie.court_name or active_tie.court_number) %}
+                                🏟️ {{ active_tie.court_name or ('Court ' ~ active_tie.court_number) }}
+                            {% else %}
+                                🎾 Center Court
+                            {% endif %}
+                        </h2>
+                    </div>
+                    <div id="activeTieStatusBadge">
+                        {% if active_tie and active_tie.status == 'in_progress' %}
+                            <span class="live-badge"><span class="live-dot"></span> LIVE TIE</span>
+                        {% elif active_tie and active_tie.status == 'completed' %}
+                            <span style="background: rgba(16,185,129,0.2); color: #10b981; font-weight: 700; font-size: 0.85rem; padding: 4px 10px; border-radius: 9999px;">✓ TIE COMPLETED</span>
+                        {% else %}
+                            <span style="background: rgba(255,255,255,0.06); color: var(--text-sub); font-weight: 600; font-size: 0.85rem; padding: 4px 10px; border-radius: 9999px;">SCHEDULED</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Tie Score Banner -->
+                <div class="tie-score-banner">
+                    <div style="text-align: right;">
+                        <div class="team-banner-name" id="featuredTeam1Name">
+                            {{ active_tie.participant1.name if (active_tie and active_tie.participant1) else 'Team 1' }}
+                        </div>
+                        <span style="color: var(--text-sub); font-size: 0.9rem;">Team 1</span>
+                    </div>
+                    <div class="score-pill-huge">
+                        <span id="featuredScore1">{{ active_tie.score1 if active_tie else '0' }}</span>
+                        <span style="color: var(--text-sub); font-size: 2rem;">:</span>
+                        <span id="featuredScore2">{{ active_tie.score2 if active_tie else '0' }}</span>
+                    </div>
+                    <div style="text-align: left;">
+                        <div class="team-banner-name" id="featuredTeam2Name">
+                            {{ active_tie.participant2.name if (active_tie and active_tie.participant2) else 'Team 2' }}
+                        </div>
+                        <span style="color: var(--text-sub); font-size: 0.9rem;">Team 2</span>
+                    </div>
+                </div>
+
+                <!-- Rubbers Breakdown Container -->
+                <div style="margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.05em;">
+                    Tie Rubbers (Total 7 Games Each):
+                </div>
+
+                <div id="featuredRubbersContainer">
+                    {% if active_tie and active_tie.sub_matches %}
+                        {% for r in active_tie.sub_matches|sort(attribute='rubber_number') %}
+                        <div class="rubber-arena-row {% if r.status == 'in_progress' %}live-active{% endif %}">
+                            <div class="rubber-meta">
+                                <span>🎾 {{ r.rubber_type.replace('_', ' ').title() if r.rubber_type else ('Rubber ' ~ r.rubber_number) }}</span>
+                                <span>
+                                    {% if r.status == 'in_progress' %}
+                                        <span style="color: #ef4444; font-weight: 800;">● LIVE NOW</span>
+                                    {% elif r.status == 'completed' %}
+                                        <span style="color: #10b981;">✓ FINAL</span>
+                                    {% else %}
+                                        <span>SCHEDULED</span>
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="rubber-teams-grid">
+                                <div style="text-align: right;">
+                                    <div class="rubber-player-name">
+                                        {% if r.lineup_p1_player %}
+                                            {{ r.lineup_p1_player.name }}{% if r.lineup_p1_player2 %} / {{ r.lineup_p1_player2.name }}{% endif %}
+                                        {% else %}
+                                            <span style="color: var(--text-sub); font-style: italic;">Lineup TBD</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="rubber-score-badge">
+                                    {{ r.score1 or '-' }}
+                                </div>
+                                <div style="text-align: left;">
+                                    <div class="rubber-player-name">
+                                        {% if r.lineup_p2_player %}
+                                            {{ r.lineup_p2_player.name }}{% if r.lineup_p2_player2 %} / {{ r.lineup_p2_player2.name }}{% endif %}
+                                        {% else %}
+                                            <span style="color: var(--text-sub); font-style: italic;">Lineup TBD</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div style="text-align: center; padding: 2rem; color: var(--text-sub);">
+                            No rubbers found for this tie.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Live Standings (Group Stage / Knockout) -->
+        <div>
+            <div id="standingsContainer">
+                {% for g_data in groups_data %}
+                <div class="standings-arena-card" id="group-card-{{ g_data.group.id }}">
+                    <div class="group-header-row">
+                        <h3 style="font-size: 1.35rem; font-weight: 800; color: var(--accent-cyan);">
+                            {{ g_data.group.name }} Standings
+                        </h3>
+                        <span style="font-size: 0.85rem; color: var(--text-sub);">Top 2 Advance (Q)</span>
+                    </div>
+                    <table class="arena-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 45px;">#</th>
+                                <th>Team</th>
+                                <th style="text-align: center;">Ties</th>
+                                <th style="text-align: center;">Rubbers</th>
+                                <th style="text-align: center; color: var(--accent-orange);">Total Points</th>
+                            </tr>
+                        </thead>
+                        <tbody id="group-tbody-{{ g_data.group.id }}">
+                            {% for p in g_data.standings %}
+                            <tr class="{% if loop.index <= (category.qualifiers_per_group or 2) %}qualified-row{% endif %}">
+                                <td class="rank-num">{{ loop.index }}</td>
+                                <td>
+                                    <span style="font-weight: 700;">{{ p.name }}</span>
+                                    {% if loop.index <= (category.qualifiers_per_group or 2) %}
+                                        <span class="q-badge">Q</span>
+                                    {% endif %}
+                                </td>
+                                <td style="text-align: center; font-weight: 600;">
+                                    {{ p.group_wins }} - {{ p.group_losses }}
+                                </td>
+                                <td style="text-align: center; color: var(--text-sub);">
+                                    {{ p.rubbers_won|default(0) }} - {{ p.rubbers_lost|default(0) }}
+                                </td>
+                                <td class="pts-callout">
+                                    {{ p.group_points }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Bottom Ticker / All Ties Grid -->
+    <div class="ties-ticker-container">
+        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 1rem; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.05em;">
+            🏟️ All Ties in this Category
+        </h3>
+        <div class="ties-grid" id="allTiesGrid">
+            <!-- Populated via JS -->
+        </div>
+    </div>
+
+    <script>
+        const categoryId = {{ category.id }};
+        let activeTieId = {{ active_tie.id if active_tie else 'null' }};
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.error(`Error attempting to enable fullscreen: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        function setActiveTie(tieId) {
+            activeTieId = tieId;
+            fetchLiveScoreboard();
+        }
+
+        async function fetchLiveScoreboard() {
+            try {
+                const res = await fetch(`/api/categories/${categoryId}/live-scoreboard`);
+                if (!res.ok) return;
+                const data = await res.json();
+
+                document.getElementById('lastUpdated').innerText = 'Synced ' + new Date().toLocaleTimeString();
+
+                let allTies = [];
+                (data.groups || []).forEach(g => {
+                    if (g.ties) allTies = allTies.concat(g.ties);
+                });
+                if (data.knockout_ties) allTies = allTies.concat(data.knockout_ties);
+
+                // Update active tie
+                let active = allTies.find(t => t.id === activeTieId);
+                if (!active) {
+                    active = allTies.find(t => t.status === 'in_progress') || allTies[0];
+                    if (active) activeTieId = active.id;
+                }
+
+                if (active) {
+                    document.getElementById('featuredTeam1Name').innerText = active.team1.name;
+                    document.getElementById('featuredTeam2Name').innerText = active.team2.name;
+                    document.getElementById('featuredScore1').innerText = active.score1 || '0';
+                    document.getElementById('featuredScore2').innerText = active.score2 || '0';
+                    document.getElementById('activeTieRound').innerText = `Round ${active.round} • Tie #${active.match_number}`;
+                    document.getElementById('activeTieCourt').innerText = active.court ? `🏟️ ${active.court}` : '🎾 Center Court';
+
+                    const statusBadge = document.getElementById('activeTieStatusBadge');
+                    if (active.status === 'in_progress') {
+                        statusBadge.innerHTML = `<span class="live-badge"><span class="live-dot"></span> LIVE TIE</span>`;
+                    } else if (active.status === 'completed') {
+                        statusBadge.innerHTML = `<span style="background: rgba(16,185,129,0.2); color: #10b981; font-weight: 700; font-size: 0.85rem; padding: 4px 10px; border-radius: 9999px;">✓ TIE COMPLETED</span>`;
+                    } else {
+                        statusBadge.innerHTML = `<span style="background: rgba(255,255,255,0.06); color: var(--text-sub); font-weight: 600; font-size: 0.85rem; padding: 4px 10px; border-radius: 9999px;">SCHEDULED</span>`;
+                    }
+
+                    // Render Rubbers
+                    const rContainer = document.getElementById('featuredRubbersContainer');
+                    rContainer.innerHTML = '';
+                    (active.rubbers || []).forEach(r => {
+                        const rDiv = document.createElement('div');
+                        rDiv.className = `rubber-arena-row ${r.status === 'in_progress' ? 'live-active' : ''}`;
+                        const rType = (r.rubber_type || `rubber_${r.rubber_number}`).replace('_', ' ').toUpperCase();
+                        rDiv.innerHTML = `
+                            <div class="rubber-meta">
+                                <span>🎾 ${rType}</span>
+                                <span>
+                                    ${r.status === 'in_progress' ? '<span style="color: #ef4444; font-weight: 800;">● LIVE NOW</span>' : (r.status === 'completed' ? '<span style="color: #10b981;">✓ FINAL</span>' : '<span>SCHEDULED</span>')}
+                                </span>
+                            </div>
+                            <div class="rubber-teams-grid">
+                                <div style="text-align: right;">
+                                    <div class="rubber-player-name">${r.p1_lineup || 'TBD'}</div>
+                                </div>
+                                <div class="rubber-score-badge">${r.score1 || '-'}</div>
+                                <div style="text-align: left;">
+                                    <div class="rubber-player-name">${r.p2_lineup || 'TBD'}</div>
+                                </div>
+                            </div>
+                        `;
+                        rContainer.appendChild(rDiv);
+                    });
+                }
+
+                // Update Group Standings
+                (data.groups || []).forEach(g => {
+                    const tbody = document.getElementById(`group-tbody-${g.id}`);
+                    if (!tbody) return;
+                    tbody.innerHTML = '';
+                    (g.standings || []).forEach((p, idx) => {
+                        const tr = document.createElement('tr');
+                        if (p.is_qualified) tr.className = 'qualified-row';
+                        tr.innerHTML = `
+                            <td class="rank-num">${p.rank}</td>
+                            <td>
+                                <span style="font-weight: 700;">${p.name}</span>
+                                ${p.is_qualified ? '<span class="q-badge">Q</span>' : ''}
+                            </td>
+                            <td style="text-align: center; font-weight: 600;">${p.group_wins} - ${p.group_losses}</td>
+                            <td style="text-align: center; color: var(--text-sub);">${p.rubbers_won} - ${p.rubbers_lost}</td>
+                            <td class="pts-callout">${p.group_points}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                });
+
+                // Update Bottom All Ties Grid
+                const grid = document.getElementById('allTiesGrid');
+                grid.innerHTML = '';
+                allTies.forEach(t => {
+                    const card = document.createElement('div');
+                    card.className = 'mini-tie-card';
+                    card.onclick = () => setActiveTie(t.id);
+                    if (t.id === activeTieId) {
+                        card.style.borderColor = 'var(--accent-cyan)';
+                        card.style.background = 'rgba(56, 189, 248, 0.08)';
+                    }
+                    card.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-sub); margin-bottom: 0.5rem;">
+                            <span>R${t.round} • Tie #${t.match_number}</span>
+                            <span style="${t.status === 'in_progress' ? 'color: #ef4444; font-weight: 700;' : ''}">${t.status.toUpperCase()}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 1.05rem;">
+                            <span>${t.team1.name}</span>
+                            <span style="font-family: monospace; color: var(--accent-cyan); font-size: 1.15rem;">${t.score1 || '0'} : ${t.score2 || '0'}</span>
+                            <span>${t.team2.name}</span>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+
+            } catch (err) {
+                console.error("Live scoreboard sync error", err);
+            }
+        }
+
+        // Initial sync and poll every 4 seconds
+        fetchLiveScoreboard();
+        setInterval(fetchLiveScoreboard, 4000);
+    </script>
+</body>
+</html>

@@ -133,6 +133,9 @@
         </div>
         <div class="page-actions header-actions" {% if is_export %}style="display: none;"{% endif %}>
             <div class="action-group primary-actions">
+                <a href="{{ url_for('category.category_scoreboard', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-secondary" style="background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(30, 41, 59, 0.6)); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem;" target="_blank">
+                    📺 Live Scoreboard
+                </a>
                 {% if current_user and current_user.role in ['admin', 'superadmin'] %}
                 <a href="{{ url_for('category.manage_category', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-primary">
                     ⚙️ Manage Category
@@ -299,7 +302,7 @@
                 {% set p1_name = match.participant1.name if match.participant1 else '' %}
                 {% set p2_name = match.participant2.name if match.participant2 else '' %}
                 <div class="match-card-wrapper {% if not has_vertical %}no-vertical-connector{% endif %} {% if loop.index % 2 == 1 %}match-pair-top{% else %}match-pair-bottom{% endif %}" data-match-id="{{ match.id }}" data-round="{{ round_num }}" data-match-idx="{{ loop.index0 }}" data-p1="{{ p1_name|lower }}" data-p2="{{ p2_name|lower }}">
-                    <div class="tennis-match {% if match.status == 'completed' %}tennis-match-completed{% endif %} {% if match.participant1 and match.participant2 %}clickable-match{% endif %}" id="match-card-{{ match.id }}" data-match-id="{{ match.id }}" data-p1-id="{{ match.participant1_id or '' }}" data-p2-id="{{ match.participant2_id or '' }}" onmouseenter="highlightPlayerPath(this)" onmouseleave="clearPlayerPath(this)" {% if match.participant1 and match.participant2 %}onclick="openMatchModal({{ match.id }}, '{{ match.status }}', '{{ match.scheduled_time.strftime('%Y-%m-%dT%H:%M') if match.scheduled_time else '' }}', '{{ match.participant1.name|escape if match.participant1 else '' }}', {{ match.participant1_id or 'null' }}, '{{ match.participant2.name|escape if match.participant2 else '' }}', {{ match.participant2_id or 'null' }}, {{ 'true' if current_user and current_user.role in ['admin', 'superadmin'] else 'false' }}, '{{ match.score1 or '' }}', '{{ match.score2 or '' }}', '{{ match.scoring_format or category.scoring_format or 'games' }}', '{{ match.num_sets or category.num_sets or 3 }}', '{{ match.games_per_set or category.games_per_set or 6 }}', '{{ match.points_to_win or category.points_to_win or 11 }}', {{ match.winner_id or 'null' }}, {{ match.match_number or 'null' }})" title="Click to view details"{% endif %}>
+                    <div class="tennis-match {% if match.status == 'completed' %}tennis-match-completed{% endif %} {% if match.participant1 and match.participant2 %}clickable-match{% endif %}" id="match-card-{{ match.id }}" data-match-id="{{ match.id }}" data-p1-id="{{ match.participant1_id or '' }}" data-p2-id="{{ match.participant2_id or '' }}" onmouseenter="highlightPlayerPath(this)" onmouseleave="clearPlayerPath(this)" {% if match.sub_matches and match.sub_matches|length > 0 %}onclick="openTieModalFromCard({{ match.id }})"{% elif match.participant1 and match.participant2 %}onclick="openMatchModal({{ match.id }}, '{{ match.status }}', '{{ match.scheduled_time.strftime('%Y-%m-%dT%H:%M') if match.scheduled_time else '' }}', '{{ match.participant1.name|escape if match.participant1 else '' }}', {{ match.participant1_id or 'null' }}, '{{ match.participant2.name|escape if match.participant2 else '' }}', {{ match.participant2_id or 'null' }}, {{ 'true' if current_user and current_user.role in ['admin', 'superadmin'] else 'false' }}, '{{ match.score1 or '' }}', '{{ match.score2 or '' }}', '{{ match.scoring_format or category.scoring_format or 'games' }}', '{{ match.num_sets or category.num_sets or 3 }}', '{{ match.games_per_set or category.games_per_set or 6 }}', '{{ match.points_to_win or category.points_to_win or 11 }}', {{ match.winner_id or 'null' }}, {{ match.match_number or 'null' }})" title="Click to view details"{% endif %}>
                         <div class="tennis-match-header" style="display: flex; align-items: center; justify-content: space-between;">
                             <span>Match #{{ match.match_number }}</span>
                             <div style="display: flex; align-items: center; gap: 6px;">
@@ -582,150 +585,231 @@
         {% endif %}
     </div>
     {% endif %}
+
     {% if groups_data %}
     <!-- GROUP STAGE VIEW -->
     <div id="groups-section" class="groups-section">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h2>Group Stage</h2>
-            {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] %}
-            <div style="display: flex; gap: 8px;">
-                <button type="submit" form="group-matrix-form" class="btn btn-primary" title="Save Entries" style="padding: 0.5rem 1rem; display: flex; align-items: center; gap: 8px; border-radius: 4px;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    Save All Grid Scores
-                </button>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h2 style="margin: 0; font-size: 1.6rem; display: flex; align-items: center; gap: 0.5rem;">
+                    🏆 Group Stage Standings & Matches
+                </h2>
+                <p style="margin: 0.35rem 0 0; color: var(--text-muted); font-size: 0.9rem;">
+                    Total 7 Games Format • 1 Point Per Game Won • Top 2 Advance Directly (Q)
+                </p>
             </div>
-            {% endif %}
         </div>
-        
-        {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] %}
-        <form id="group-matrix-form" method="POST" action="{{ url_for('category.update_grid_scores', slug=tournament.url_slug, category_id=category.id) }}">
-        {% endif %}
 
         {% for group_info in groups_data %}
-        <div class="group-card">
-            <h3>{{ group_info.group.name }}</h3>
-
-            <div class="table-container" style="width: 100%; overflow-x: auto;">
-            <table class="standings-table">
-                <thead>
-                    <tr>
-                        <th>Rank</th>
-                        <th>Participant</th>
-                        <th>W</th>
-                        <th>L</th>
-                        <th>Pts</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for participant in group_info.standings %}
-                    <tr>
-                        <td>{{ loop.index }}</td>
-                        <td>
-                            {% for pl in participant | participant_players %}
-                                {% if pl.player_id %}
-                                    <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" style="color: inherit; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">{{ pl.name }}</a>
-                                {% else %}
-                                    {{ pl.name }}
-                                {% endif %}
-                                {% if not loop.last %}<span style="color: var(--text-muted); margin: 0 2px;">/</span>{% endif %}
-                            {% endfor %}
-                        </td>
-                        <td>{{ participant.group_wins }}</td>
-                        <td>{{ participant.group_losses }}</td>
-                        <td>{{ participant.group_points }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <div class="group-card" style="margin-bottom: 2.5rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="margin: 0; font-size: 1.3rem; color: #38bdf8;">{{ group_info.group.name }}</h3>
+                <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">
+                    Top {{ category.qualifiers_per_group or 2 }} Teams Advance
+                </span>
             </div>
 
-            <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Group Matrix</h4>
-            <div style="overflow-x: auto;">
-                <table class="standings-table round-robin-grid" style="text-align: center;">
+            <!-- Group Standings Table -->
+            <div class="table-container" style="width: 100%; overflow-x: auto; margin-bottom: 1.5rem;">
+                <table class="standings-table">
                     <thead>
                         <tr>
-                            <th style="text-align: center;">vs</th>
-                            {% for p in group_info.standings %}
-                            <th style="min-width: 100px; text-align: center;" title="{{ p.name }}">{{ p.name }}</th>
-                            {% endfor %}
+                            <th style="width: 50px; text-align: center;">Rank</th>
+                            <th>Team</th>
+                            <th style="text-align: center;">Ties (W - L)</th>
+                            <th style="text-align: center;">Rubbers (W - L)</th>
+                            <th style="text-align: center; color: var(--accent-primary, #f97316); font-weight: 700;">Total Points (Games Won)</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for row_p in group_info.standings %}
-                        <tr>
-                            <td style="font-weight: 600; text-align: center;">{{ row_p.name }}</td>
-                            {% for col_p in group_info.standings %}
-                            {% if row_p.id == col_p.id %}
-                                <td class="empty-cell" style="background: rgba(255,255,255,0.05); color: var(--text-muted); font-weight: bold; font-size: 1.2rem;">X</td>
-                            {% else %}
-                                {% set ns = namespace(found=false, match=none, is_p1=true) %}
-                                {% for m in group_info.matches %}
-                                    {% if m.participant1_id == row_p.id and m.participant2_id == col_p.id %}
-                                        {% set ns.found = true %}
-                                        {% set ns.match = m %}
-                                        {% set ns.is_p1 = true %}
-                                    {% elif m.participant1_id == col_p.id and m.participant2_id == row_p.id %}
-                                        {% set ns.found = true %}
-                                        {% set ns.match = m %}
-                                        {% set ns.is_p1 = false %}
+                        {% for participant in group_info.standings %}
+                        <tr {% if loop.index <= (category.qualifiers_per_group or 2) %}style="background: rgba(16, 185, 129, 0.05);"{% endif %}>
+                            <td style="text-align: center; font-weight: 700; color: {% if loop.index <= (category.qualifiers_per_group or 2) %}#10b981{% else %}var(--text-muted){% endif %};">
+                                {{ loop.index }}
+                            </td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                                    <span style="font-weight: 600; font-size: 1.02rem;">{{ participant.name }}</span>
+                                    {% if loop.index <= (category.qualifiers_per_group or 2) %}
+                                    <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4); font-size: 0.72rem; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">Q Qualified</span>
                                     {% endif %}
-                                {% endfor %}
-                                
-                                <td style="padding: 4px;">
-                                {% if ns.found %}
-                                    {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] and ns.match.id %}
-                                        <div style="display: flex; justify-content: center; align-items: center;">
-                                            <input type="number" name="match_{{ ns.match.id }}_p{% if ns.is_p1 %}1{% else %}2{% endif %}" 
-                                                   value="{{ ns.match.score1 if (ns.is_p1 and ns.match.score1 is not none) else (ns.match.score2 if not ns.is_p1 and ns.match.score2 is not none else '') }}" 
-                                                   style="width: 60px; text-align: center; padding: 4px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.3); color: white; border-radius: 4px;" min="0" placeholder="-">
-                                        </div>
-                                    {% else %}
-                                        {% if ns.match.status == 'completed' %}
-                                            {% if ns.is_p1 %}
-                                                <span style="{% if ns.match.winner_id == row_p.id %}color: var(--primary); font-weight: bold;{% endif %}">{{ ns.match.score1 | format_tennis_score | safe }}</span>
-                                            {% else %}
-                                                <span style="{% if ns.match.winner_id == row_p.id %}color: var(--primary); font-weight: bold;{% endif %}">{{ ns.match.score2 | format_tennis_score | safe }}</span>
-                                            {% endif %}
-                                        {% else %}
-                                            <span style="color: var(--text-muted); font-size: 0.85rem;">Pending</span>
-                                        {% endif %}
-                                    {% endif %}
-                                {% else %}
-                                    -
-                                {% endif %}
-                                </td>
-                            {% endif %}
-                            {% endfor %}
+                                </div>
+                            </td>
+                            <td style="text-align: center; font-weight: 500;">
+                                {{ participant.group_wins }} - {{ participant.group_losses }}
+                            </td>
+                            <td style="text-align: center; color: var(--text-secondary);">
+                                {{ participant.rubbers_won|default(0) }} - {{ participant.rubbers_lost|default(0) }}
+                            </td>
+                            <td style="text-align: center; font-weight: 800; font-size: 1.15rem; color: var(--accent-primary, #f97316);">
+                                {{ participant.group_points }}
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
+
+            <!-- Group Team Ties List -->
+            <h4 style="margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 1.05rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.5rem;">
+                📋 Group Ties & Rubbers (1 Singles + 2 Doubles)
+            </h4>
+            
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                {% for tie in group_info.matches %}
+                <div class="team-tie-card {% if tie.participant1 and tie.participant2 %}clickable-match{% endif %}" 
+                     id="match-card-{{ tie.id }}" 
+                     data-match-id="{{ tie.id }}"
+                     {% if tie.participant1 and tie.participant2 %}onclick="openTieModalFromCard({{ tie.id }})"{% endif %}
+                     style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 1rem 1.25rem; transition: transform 0.15s, border-color 0.15s; cursor: pointer;">
+                    
+                    <!-- Tie Top Meta Bar -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.4rem; font-size: 0.85rem;">
+                        <span style="font-weight: 600; color: var(--text-muted);">
+                            Round {{ tie.round }} • Tie #{{ tie.match_number }}
+                            {% if tie.court_name or tie.court_number %} | 🏟️ {{ tie.court_name or ('Court ' ~ tie.court_number) }}{% endif %}
+                            {% if tie.scheduled_time %} | 📅 {{ tie.scheduled_time.strftime('%d/%m %I:%M %p') }}{% endif %}
+                        </span>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;" onclick="event.stopPropagation();">
+                            {% if tie.status == 'completed' %}
+                                <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #10b981; font-size: 0.75rem; padding: 3px 8px; border-radius: 9999px;">✓ Complete</span>
+                            {% elif tie.status == 'in_progress' %}
+                                <span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; font-size: 0.75rem; padding: 3px 8px; border-radius: 9999px;">● Live In Progress</span>
+                            {% else %}
+                                <span class="badge" style="background: rgba(255, 255, 255, 0.08); color: var(--text-muted); font-size: 0.75rem; padding: 3px 8px; border-radius: 9999px;">Scheduled</span>
+                            {% endif %}
+
+                            {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+                            <button type="button" class="btn btn-sm btn-primary" onclick="openTieModalFromCard({{ tie.id }})" style="padding: 0.2rem 0.6rem; font-size: 0.78rem;">
+                                ⚙️ Score Tie
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Teams Header with Rubbers Score -->
+                    <div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 1rem; margin-bottom: 0.75rem;">
+                        <div style="text-align: right;">
+                            <span style="font-size: 1.15rem; font-weight: 700; {% if tie.winner_id == tie.participant1_id %}color: #10b981;{% endif %}">
+                                {{ tie.participant1.name if tie.participant1 else 'TBD' }}
+                            </span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem; background: rgba(0,0,0,0.4); padding: 0.35rem 1rem; border-radius: 9999px; border: 1px solid rgba(255,255,255,0.08);">
+                            <span style="font-size: 1.3rem; font-weight: 800; color: #38bdf8;">{{ tie.score1 or '0' }}</span>
+                            <span style="color: var(--text-muted); font-weight: bold;">:</span>
+                            <span style="font-size: 1.3rem; font-weight: 800; color: #38bdf8;">{{ tie.score2 or '0' }}</span>
+                        </div>
+                        <div style="text-align: left;">
+                            <span style="font-size: 1.15rem; font-weight: 700; {% if tie.winner_id == tie.participant2_id %}color: #10b981;{% endif %}">
+                                {{ tie.participant2.name if tie.participant2 else 'TBD' }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- 3 Rubbers Detail Breakdown -->
+                    {% if tie.sub_matches %}
+                    <div style="display: flex; flex-direction: column; gap: 0.35rem; background: rgba(0,0,0,0.25); padding: 0.6rem 0.75rem; border-radius: 6px;">
+                        {% for r in tie.sub_matches|sort(attribute='rubber_number') %}
+                        <div style="display: grid; grid-template-columns: 110px 1fr auto 1fr 85px; align-items: center; gap: 0.5rem; font-size: 0.85rem; padding: 0.3rem 0.4rem; border-radius: 4px; {% if loop.index is odd %}background: rgba(255,255,255,0.02);{% endif %}">
+                            <span style="font-weight: 600; color: #94a3b8; font-size: 0.78rem; text-transform: uppercase;">
+                                {{ r.rubber_type.replace('_', ' ').title() if r.rubber_type else ('Rubber ' ~ r.rubber_number) }}
+                            </span>
+                            <div style="text-align: right; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                {% if r.lineup_p1_player %}
+                                    <span>{{ r.lineup_p1_player.name }}</span>
+                                    {% if r.lineup_p1_player2 %} / <span>{{ r.lineup_p1_player2.name }}</span>{% endif %}
+                                {% else %}
+                                    <span style="color: var(--text-muted); font-style: italic; font-size: 0.8rem;">Lineup TBD</span>
+                                {% endif %}
+                            </div>
+                            <span style="color: var(--text-muted); font-size: 0.75rem;">vs</span>
+                            <div style="text-align: left; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                {% if r.lineup_p2_player %}
+                                    <span>{{ r.lineup_p2_player.name }}</span>
+                                    {% if r.lineup_p2_player2 %} / <span>{{ r.lineup_p2_player2.name }}</span>{% endif %}
+                                {% else %}
+                                    <span style="color: var(--text-muted); font-style: italic; font-size: 0.8rem;">Lineup TBD</span>
+                                {% endif %}
+                            </div>
+                            <div style="text-align: right;">
+                                {% if r.status == 'completed' %}
+                                    <span style="font-weight: 700; color: #38bdf8; font-family: monospace;">{{ r.score1 }}</span>
+                                {% elif r.status == 'in_progress' %}
+                                    <span style="color: #ef4444; font-weight: 600; font-family: monospace;">● {{ r.score1 or '0-0' }}</span>
+                                {% else %}
+                                    <span style="color: var(--text-muted); font-size: 0.78rem;">Pending</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
         </div>
         {% endfor %}
-        
-        {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] %}
-        <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.5rem; margin-bottom: 1rem;">
-            <button type="submit" form="group-matrix-form" class="btn btn-primary" title="Save Entries" style="padding: 0.75rem 1.5rem; display: flex; align-items: center; gap: 8px; border-radius: 4px;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                Save All Grid Scores
-            </button>
-            <button type="reset" form="group-matrix-form" class="btn" title="Undo Entries" style="padding: 0.75rem 1.5rem; display: flex; align-items: center; gap: 8px; border-radius: 4px; background: rgba(255,255,255,0.1);">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path></svg>
-                Undo Changes
-            </button>
-        </div>
-        </form>
-        {% endif %}
 
+        <!-- Lucky Losers Ballot Draw Card & Start Knockout -->
         {% set knockout_exists = matches | selectattr('match_type', 'equalto', 'knockout') | list | length > 0 %}
-        {% if category.status == 'in_progress' and not knockout_exists %}
-        {% if current_user and current_user.role in ['admin', 'superadmin'] %}
-<form method="POST"
-            action="{{ url_for('category.start_knockout_stage', slug=tournament.url_slug, category_id=category.id) }}">
-            <button type="submit" class="btn btn-primary btn-large">Start Knockout Stage</button>
-        </form>
-{% endif %}
+        {% if group_stage_completed and not knockout_exists %}
+        <div class="lucky-losers-card" style="background: linear-gradient(135deg, rgba(249, 115, 22, 0.12), rgba(16, 185, 129, 0.12)); border: 2px solid var(--accent-primary, #f97316); border-radius: var(--radius-lg); padding: 1.75rem; margin-top: 2rem; margin-bottom: 2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.25);">
+            <div style="display: flex; align-items: flex-start; gap: 1.25rem;">
+                <div style="font-size: 2.2rem; line-height: 1;">🗳️</div>
+                <div style="flex-grow: 1;">
+                    <h3 style="margin-top: 0; margin-bottom: 0.5rem; color: var(--accent-primary, #f97316); font-size: 1.4rem; font-weight: 800;">
+                        Group Stage Completed — Lucky Losers Ballot Draw
+                    </h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 1.25rem; font-size: 0.98rem; line-height: 1.6;">
+                        The top 2 teams from each of the 3 groups have directly qualified (6 teams).
+                        Conduct the physical ballot draw to pick <strong>2 Lucky Losers</strong> from the 3rd-placed group teams below to complete the 8-team seeded knockout bracket:
+                    </p>
+
+                    {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+                    <form method="POST" action="{{ url_for('category.start_knockout_stage', slug=tournament.url_slug, category_id=category.id) }}" onsubmit="return validateLuckyLosers(this)">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                            {% for p in third_placed_teams %}
+                            <label style="display: flex; align-items: center; gap: 0.85rem; background: rgba(0,0,0,0.35); padding: 1rem 1.25rem; border-radius: var(--radius-md); border: 1px solid rgba(255,255,255,0.12); cursor: pointer; transition: all 0.2s;" class="lucky-loser-label">
+                                <input type="checkbox" name="lucky_loser_ids" value="{{ p.id }}" style="width: 22px; height: 22px; accent-color: var(--accent-primary, #f97316);" onchange="updateLuckyLoserSelection(this)">
+                                <div>
+                                    <div style="font-weight: 700; font-size: 1.1rem; color: #fff;">{{ p.name }}</div>
+                                    <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">
+                                        Group 3rd • <strong style="color: var(--accent-primary, #f97316);">{{ p.group_points|default(0) }} Pts (Games Won)</strong>
+                                        <br>Ties: {{ p.group_wins|default(0) }}W - {{ p.group_losses|default(0) }}L • Rubbers: {{ p.rubbers_won|default(0) }}W
+                                    </div>
+                                </div>
+                            </label>
+                            {% endfor %}
+                        </div>
+                        
+                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                            <div id="luckyLoserCountNotice" style="font-size: 0.95rem; color: #fbbf24; font-weight: 600;">
+                                ⚠️ Please select exactly 2 Lucky Loser teams. (Selected: <span id="luckySelectedCount">0</span>/2)
+                            </div>
+                            <button type="submit" id="btnStartKnockout" class="btn btn-primary btn-large" style="padding: 0.85rem 1.85rem; font-size: 1.05rem; font-weight: 800; background: linear-gradient(135deg, #f97316, #ea580c); box-shadow: 0 4px 20px rgba(249, 115, 22, 0.45); border-radius: var(--radius-md);" disabled>
+                                ⚡ Generate Seeded 8-Team Knockout Bracket
+                            </button>
+                        </div>
+                    </form>
+                    {% else %}
+                    <div style="color: var(--text-muted); font-style: italic; background: rgba(0,0,0,0.2); padding: 0.75rem 1rem; border-radius: 6px;">
+                        ⏳ Awaiting administrator to record the ballot draw and generate the knockout bracket.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% elif category.status == 'in_progress' and not knockout_exists %}
+        <div style="margin-top: 2rem; margin-bottom: 1rem; padding: 1.25rem; background: rgba(0,0,0,0.25); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: space-between; border: 1px solid rgba(255,255,255,0.08); flex-wrap: wrap; gap: 1rem;">
+            <span style="color: var(--text-secondary); font-size: 0.95rem;">
+                ⏳ Group stage matches are currently in progress. Complete all ties to enable the Lucky Losers Ballot Draw & Knockout Bracket.
+            </span>
+            {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+            <form method="POST" action="{{ url_for('category.start_knockout_stage', slug=tournament.url_slug, category_id=category.id) }}" onsubmit="return confirm('Not all group ties are finished. Force starting knockout will seed based on current points standings. Proceed?');">
+                <button type="submit" class="btn btn-sm btn-secondary" style="font-size: 0.85rem;">Force Start Knockout</button>
+            </form>
+            {% endif %}
+        </div>
         {% endif %}
     </div>
     {% endif %}
@@ -1002,6 +1086,117 @@ async function toggleMatchStatus(matchId, checkbox) {
 
 
 
+<script>
+const categoryTiesData = {
+    {% for group_info in (groups_data or []) %}
+        {% for m in group_info.matches %}
+            "{{ m.id }}": {
+                id: {{ m.id }},
+                round: {{ m.round }},
+                match_number: {{ m.match_number }},
+                status: "{{ m.status }}",
+                court: "{{ m.court_name or (('Court ' ~ m.court_number) if m.court_number else '') }}",
+                scheduled_time: "{{ m.scheduled_time.strftime('%Y-%m-%dT%H:%M') if m.scheduled_time else '' }}",
+                team1: { id: {{ m.participant1_id or 'null' }}, name: {{ (m.participant1.name if m.participant1 else 'TBD')|tojson }} },
+                team2: { id: {{ m.participant2_id or 'null' }}, name: {{ (m.participant2.name if m.participant2 else 'TBD')|tojson }} },
+                score1: "{{ m.score1 or '0' }}",
+                score2: "{{ m.score2 or '0' }}",
+                rubbers: [
+                    {% for r in m.sub_matches|sort(attribute='rubber_number') %}
+                    {
+                        id: {{ r.id }},
+                        rubber_number: {{ r.rubber_number or loop.index }},
+                        rubber_type: "{{ r.rubber_type or '' }}",
+                        court: "{{ r.court_name or (('Court ' ~ r.court_number) if r.court_number else '') }}",
+                        status: "{{ r.status }}",
+                        score1: "{{ r.score1 or '' }}",
+                        score2: "{{ r.score2 or '' }}",
+                        lineup_p1_player_id: {{ r.lineup_p1_player_id or 'null' }},
+                        lineup_p1_player2_id: {{ r.lineup_p1_player2_id or 'null' }},
+                        lineup_p2_player_id: {{ r.lineup_p2_player_id or 'null' }},
+                        lineup_p2_player2_id: {{ r.lineup_p2_player2_id or 'null' }}
+                    }{% if not loop.last %},{% endif %}
+                    {% endfor %}
+                ]
+            }{% if not loop.last %},{% endif %}
+        {% endfor %}{% if not loop.last and group_info.matches %},{% endif %}
+    {% endfor %}
+    {% for r_num, r_matches in (rounds or {}).items() %}
+        {% for m in r_matches if m.sub_matches %}
+            , "{{ m.id }}": {
+                id: {{ m.id }},
+                round: {{ m.round }},
+                match_number: {{ m.match_number }},
+                status: "{{ m.status }}",
+                court: "{{ m.court_name or (('Court ' ~ m.court_number) if m.court_number else '') }}",
+                scheduled_time: "{{ m.scheduled_time.strftime('%Y-%m-%dT%H:%M') if m.scheduled_time else '' }}",
+                team1: { id: {{ m.participant1_id or 'null' }}, name: {{ (m.participant1.name if m.participant1 else 'TBD')|tojson }} },
+                team2: { id: {{ m.participant2_id or 'null' }}, name: {{ (m.participant2.name if m.participant2 else 'TBD')|tojson }} },
+                score1: "{{ m.score1 or '0' }}",
+                score2: "{{ m.score2 or '0' }}",
+                rubbers: [
+                    {% for r in m.sub_matches|sort(attribute='rubber_number') %}
+                    {
+                        id: {{ r.id }},
+                        rubber_number: {{ r.rubber_number or loop.index }},
+                        rubber_type: "{{ r.rubber_type or '' }}",
+                        court: "{{ r.court_name or (('Court ' ~ r.court_number) if r.court_number else '') }}",
+                        status: "{{ r.status }}",
+                        score1: "{{ r.score1 or '' }}",
+                        score2: "{{ r.score2 or '' }}",
+                        lineup_p1_player_id: {{ r.lineup_p1_player_id or 'null' }},
+                        lineup_p1_player2_id: {{ r.lineup_p1_player2_id or 'null' }},
+                        lineup_p2_player_id: {{ r.lineup_p2_player_id or 'null' }},
+                        lineup_p2_player2_id: {{ r.lineup_p2_player2_id or 'null' }}
+                    }{% if not loop.last %},{% endif %}
+                    {% endfor %}
+                ]
+            }
+        {% endfor %}
+    {% endfor %}
+};
+
+const categoryTeamsRosters = {
+    {% for p in participants if p.is_team %}
+    "{{ p.id }}": {
+        id: {{ p.id }},
+        name: {{ p.name|tojson }},
+        members: [
+            {% for m in p.team_members %}
+            {
+                id: {{ m.id }},
+                player_id: {{ m.player_id or m.id }},
+                name: {{ m.name|tojson }},
+                tier: "{{ m.skill_tier or '' }}",
+                role: "{{ m.team_role or '' }}"
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ]
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+};
+
+function updateLuckyLoserSelection(checkbox) {
+    const checked = document.querySelectorAll('input[name="lucky_loser_ids"]:checked');
+    const countEl = document.getElementById('luckySelectedCount');
+    const btn = document.getElementById('btnStartKnockout');
+    if (countEl) countEl.innerText = checked.length;
+    if (btn) btn.disabled = (checked.length !== 2);
+    if (checked.length > 2) {
+        checkbox.checked = false;
+        if (countEl) countEl.innerText = document.querySelectorAll('input[name="lucky_loser_ids"]:checked').length;
+        alert('You can only select exactly 2 Lucky Losers from the physical ballot draw.');
+    }
+}
+
+function validateLuckyLosers(form) {
+    const checked = form.querySelectorAll('input[name="lucky_loser_ids"]:checked');
+    if (checked.length !== 2) {
+        alert('Please select exactly 2 Lucky Loser teams to generate the 8-team knockout bracket.');
+        return false;
+    }
+    return true;
+}
 </script>
 
 {% include "components/match_modal.html" %}

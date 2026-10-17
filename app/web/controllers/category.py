@@ -1,10 +1,11 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from app.domain.models import db, Tournament, Category, Participant, Match, Group, Player, determine_age_category, estimate_dob_from_age
 from app.core.constants import TOURNAMENT_FORMATS
 from app.services.format_engine import get_format
 from app.web.controllers.auth import login_required, role_required, check_tournament_ownership
-from app.services.tennis_logic import validate_and_format_score
+from app.services.tennis_logic import validate_and_format_score, validate_total_7_games_score
 from datetime import datetime
+import random
 from app.services.utils.validation import (
     validate_name, validate_mobile, validate_email, validate_age
 )
@@ -52,16 +53,44 @@ def start_single_category(category, tournament):
             from app.services.format_engine.group_stage.logic import GroupStageFormat
             matches_data = GroupStageFormat.generate(category, participants_list)
             for match_data in matches_data:
+                child_rubbers = match_data.pop('child_rubbers', None)
                 match_data['match_type'] = 'round_robin'
-                match = Match(**match_data, tournament_id=tournament.id)
-                db.session.add(match)
-        else:
-            matches_data = fmt.generate(category, participants_list)
-            for match_data in matches_data:
                 if 'category_id' not in match_data:
                     match_data['category_id'] = category.id
                 match = Match(**match_data, tournament_id=tournament.id)
                 db.session.add(match)
+                db.session.flush()
+                if child_rubbers:
+                    for r_data in child_rubbers:
+                        r_data['parent_match_id'] = match.id
+                        r_data['tournament_id'] = tournament.id
+                        r_data['category_id'] = category.id
+                        r_data['group_id'] = match.group_id
+                        r_data['round'] = match.round
+                        r_data['match_type'] = 'round_robin'
+                        r_data['bracket_type'] = match.bracket_type
+                        child_match = Match(**r_data)
+                        db.session.add(child_match)
+        else:
+            matches_data = fmt.generate(category, participants_list)
+            for match_data in matches_data:
+                child_rubbers = match_data.pop('child_rubbers', None)
+                if 'category_id' not in match_data:
+                    match_data['category_id'] = category.id
+                match = Match(**match_data, tournament_id=tournament.id)
+                db.session.add(match)
+                db.session.flush()
+                if child_rubbers:
+                    for r_data in child_rubbers:
+                        r_data['parent_match_id'] = match.id
+                        r_data['tournament_id'] = tournament.id
+                        r_data['category_id'] = category.id
+                        r_data['group_id'] = match.group_id
+                        r_data['round'] = match.round
+                        r_data['match_type'] = match.match_type
+                        r_data['bracket_type'] = match.bracket_type
+                        child_match = Match(**r_data)
+                        db.session.add(child_match)
 
     category.status = 'in_progress'
     category.started_at = datetime.utcnow()
@@ -72,6 +101,7 @@ def start_single_category(category, tournament):
         auto_schedule_tournament(tournament.id)
     except Exception:
         pass
+
 
 
 @category_bp.route('/t/<slug>/categories/new', methods=['GET', 'POST'])
@@ -104,6 +134,8 @@ def create_category(slug):
         games_per_set = request.form.get('games_per_set', type=int)
         total_games = request.form.get('total_games', type=int)
         points_to_win = request.form.get('points_to_win', type=int)
+        team_size = request.form.get('team_size', type=int) or 5
+        rubbers_per_tie = request.form.get('rubbers_per_tie', type=int) or 3
 
         # Advanced settings for group stage
         has_group_stage = (format_type in ['group_stage', 'round_robin', 'doubles_round_robin'])
@@ -172,6 +204,8 @@ def create_category(slug):
             total_games=total_games,
             scoring_format=scoring_format,
             points_to_win=points_to_win,
+            team_size=team_size,
+            rubbers_per_tie=rubbers_per_tie,
             has_group_stage=has_group_stage,
             num_groups=num_groups,
             teams_per_group=teams_per_group,
@@ -212,8 +246,9 @@ def view_category(slug, category_id):
     matches = Match.query.options(
         db.joinedload(Match.participant1),
         db.joinedload(Match.participant2),
-        db.joinedload(Match.winner)
-    ).filter_by(category_id=category_id).order_by(Match.round, Match.match_number).all()
+        db.joinedload(Match.winner),
+        db.joinedload(Match.sub_matches)
+    ).filter(Match.category_id==category_id, Match.parent_match_id.is_(None)).order_by(Match.round, Match.match_number).all()
 
     # If tournament is still in setup, generate preview bracket on the fly
     if category.status == 'setup' and not matches and participants:
@@ -223,6 +258,7 @@ def view_category(slug, category_id):
                 self.bracket_type = 'winners'
                 self.round = 1
                 self.match_number = 1
+                self.sub_matches = []
                 for k, v in kwargs.items():
                     setattr(self, k, v)
                 self.status = 'pending'
@@ -270,33 +306,41 @@ def view_category(slug, category_id):
 
     # Get group stage data if applicable
     groups_data = None
+    third_placed_teams = []
+    group_stage_completed = False
+    has_knockout_started = any(m.match_type == 'knockout' for m in matches)
     if category.has_group_stage:
         from app.services.format_engine.group_stage.logic import GroupStageFormat
         groups = Group.query.filter_by(category_id=category_id).all()
         groups_data = []
+        qualifiers_per_group = category.qualifiers_per_group or 2
         for group in groups:
             standings = GroupStageFormat.calculate_group_standings(group.id)
             group_matches = Match.query.options(
                 db.joinedload(Match.participant1),
                 db.joinedload(Match.participant2),
-                db.joinedload(Match.winner)
-            ).filter(Match.group_id==group.id, Match.match_type.in_(['group_stage', 'round_robin', 'doubles_round_robin'])).all()
+                db.joinedload(Match.winner),
+                db.joinedload(Match.sub_matches)
+            ).filter(Match.group_id==group.id, Match.parent_match_id.is_(None), Match.match_type.in_(['group_stage', 'round_robin', 'doubles_round_robin'])).all()
             groups_data.append({
                 'group': group,
                 'standings': standings,
                 'matches': group_matches
             })
+            if len(standings) > qualifiers_per_group:
+                third_placed_teams.append(standings[qualifiers_per_group])
+
+        if groups_data and any(g['matches'] for g in groups_data):
+            group_stage_completed = all(
+                m.status == 'completed' for g in groups_data for m in g['matches']
+            )
 
     # Calculate final rankings if tournament is complete
     rankings = None
     if category.status == 'completed':
         fmt = get_format(category.format)
         if fmt:
-            # Rankings are stored on the Participant model (final_rank) by calculate_final_rankings
-            # We don't actually need to return them as a dict anymore since view.html can just use participants
-            # But to keep backward compatibility:
             if category.format in ['round_robin', 'doubles_round_robin']:
-                # Just get the sorted standings
                 Participant.query.filter_by(category_id=category_id).all() # Refresh
                 winners = Participant.query.filter(Participant.category_id==category_id, Participant.final_rank.isnot(None)).order_by(Participant.final_rank).all()
                 if len(winners) >= 2:
@@ -335,6 +379,9 @@ def view_category(slug, category_id):
                          losers_rounds=losers_rounds,
                          grand_finals=grand_finals,
                          groups_data=groups_data,
+                         third_placed_teams=third_placed_teams,
+                         group_stage_completed=group_stage_completed,
+                         has_knockout_started=has_knockout_started,
                          rankings=rankings,
                          formats=TOURNAMENT_FORMATS)
 
@@ -745,10 +792,23 @@ def manage_category(slug, category_id):
             flash(f'Failed to perform action: {str(e)}', 'error')
             return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
 
+    solo_players = [p for p in participants if not p.is_team]
+    teams = [p for p in participants if p.is_team]
+    
+    tiers_data = {'A': [], 'B': [], 'C': [], 'D': [], 'E': [], 'Unassigned': []}
+    for p in solo_players:
+        if p.skill_tier in tiers_data:
+            tiers_data[p.skill_tier].append(p)
+        else:
+            tiers_data['Unassigned'].append(p)
+
     return render_template('category/manage.html',
                          tournament=tournament,
                          category=category,
                          participants=participants,
+                         solo_players=solo_players,
+                         teams=teams,
+                         tiers_data=tiers_data,
                          formats=TOURNAMENT_FORMATS)
 
 @category_bp.route('/tournaments/<slug>/categories/<int:category_id>/seeding', methods=['GET', 'POST'])
@@ -797,15 +857,33 @@ def start_knockout_stage(slug, category_id):
         return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
 
     try:
-        # Generate knockout bracket from group qualifiers
-        matches_data = generate_knockout_from_groups(category)
+        from app.services.format_engine.group_stage.logic import GroupStageFormat
+        lucky_loser_ids = [int(x) for x in request.form.getlist('lucky_loser_ids') if str(x).isdigit()]
+        matches_data = GroupStageFormat.generate_knockout_from_groups(
+            category,
+            selected_lucky_loser_ids=lucky_loser_ids if lucky_loser_ids else None
+        )
 
         for match_data in matches_data:
+            child_rubbers = match_data.pop('child_rubbers', None)
+            if 'category_id' not in match_data:
+                match_data['category_id'] = category.id
             match = Match(**match_data, tournament_id=tournament.id)
             db.session.add(match)
+            db.session.flush()
+            if child_rubbers:
+                for r_data in child_rubbers:
+                    r_data['parent_match_id'] = match.id
+                    r_data['tournament_id'] = tournament.id
+                    r_data['category_id'] = category.id
+                    r_data['round'] = match.round
+                    r_data['match_type'] = match.match_type
+                    r_data['bracket_type'] = match.bracket_type
+                    child_match = Match(**r_data)
+                    db.session.add(child_match)
 
         db.session.commit()
-        flash('Knockout stage started!', 'success')
+        flash('Knockout stage started successfully with seeded 8-team draw!', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Failed to start knockout stage: {str(e)}', 'error')
@@ -969,13 +1047,26 @@ def report_category_match_result(slug, category_id, match_id):
         }
 
         # Validate and format score
-        if scoring_format == 'points' or category.format in ['round_robin', 'doubles_round_robin'] or (category.format == 'group_stage' and category.total_games):
-            if scoring_format == 'points':
-                p1_score = request.form.get('points_p1', type=int)
-                p2_score = request.form.get('points_p2', type=int)
-            else:
-                p1_score = request.form.get('set1_p1', type=int)
-                p2_score = request.form.get('set1_p2', type=int)
+        is_7_games = (match.total_games == 7 or category.total_games == 7 or match.rubber_number is not None)
+        if is_7_games:
+            g1 = request.form.get('set1_p1', type=int)
+            g2 = request.form.get('set1_p2', type=int)
+            tb1 = request.form.get('tb1_p1', '')
+            tb2 = request.form.get('tb1_p2', '')
+            if g1 is None or g2 is None:
+                if is_live_update:
+                    g1 = g1 or 0
+                    g2 = g2 or 0
+                else:
+                    raise ValueError("Scores for both players are required.")
+            score1, score2, _, _, winner_idx = validate_total_7_games_score(
+                g1, g2, tb1, tb2, is_live_update=is_live_update
+            )
+            if not is_live_update and winner_idx:
+                winner_id = match.participant1_id if winner_idx == 1 else match.participant2_id
+        elif scoring_format == 'points':
+            p1_score = request.form.get('points_p1', type=int)
+            p2_score = request.form.get('points_p2', type=int)
             
             if p1_score is None or p2_score is None:
                 if is_live_update:
@@ -1003,7 +1094,6 @@ def report_category_match_result(slug, category_id, match_id):
                 if diff < 2:
                     raise ValueError("A player must win by a difference of at least 2 points.")
                 
-                # If extending past points_to_win (e.g. 12-10 in an 11-point game), diff must be exactly 2
                 if winning_score > points_to_win and diff > 2:
                     raise ValueError(f"Invalid score. When extending past {points_to_win} points, the match ends as soon as a 2-point difference is reached.")
                 
@@ -1021,6 +1111,11 @@ def report_category_match_result(slug, category_id, match_id):
         if is_live_update:
             match.status = 'in_progress'
             db.session.commit()
+            if match.parent_match_id:
+                parent_tie = Match.query.get(match.parent_match_id)
+                if parent_tie and parent_tie.status == 'pending':
+                    parent_tie.status = 'in_progress'
+                    db.session.commit()
             flash('Live score updated successfully.', 'success')
             return redirect(url_for('category.view_category', slug=slug, category_id=category.id))
             
@@ -1029,16 +1124,34 @@ def report_category_match_result(slug, category_id, match_id):
         match.completed_at = datetime.utcnow()
         db.session.commit()
 
+        # Update parent tie if this is a child rubber
+        if match.parent_match_id:
+            parent_tie = Match.query.get(match.parent_match_id)
+            if parent_tie:
+                rubbers = Match.query.filter_by(parent_match_id=parent_tie.id).all()
+                p1_rubbers_won = sum(1 for r in rubbers if r.winner_id == parent_tie.participant1_id)
+                p2_rubbers_won = sum(1 for r in rubbers if r.winner_id == parent_tie.participant2_id)
+                parent_tie.score1 = str(p1_rubbers_won)
+                parent_tie.score2 = str(p2_rubbers_won)
+                
+                all_completed = all(r.status == 'completed' for r in rubbers)
+                if all_completed:
+                    parent_tie.status = 'completed'
+                    parent_tie.completed_at = datetime.utcnow()
+                    parent_tie.winner_id = parent_tie.participant1_id if p1_rubbers_won > p2_rubbers_won else parent_tie.participant2_id
+                    fmt = get_format(category.format)
+                    if fmt and parent_tie.match_type == 'knockout':
+                        fmt.advance_match(parent_tie, category, parent_tie.winner_id)
+                elif any(r.status in ['in_progress', 'completed'] for r in rubbers):
+                    parent_tie.status = 'in_progress'
+                db.session.commit()
+
         from app.services.leaderboard import update_live_player_stats
         update_live_player_stats(match)
 
-        # Stats will be recalculated at the end
-
         fmt = get_format(category.format)
-        if fmt:
+        if fmt and not match.parent_match_id:
             fmt.advance_match(match, category, winner_id)
-
-        # Auto-completion removed. Admin must click Finish Tournament.
 
         db.session.commit()
         
@@ -1046,7 +1159,6 @@ def report_category_match_result(slug, category_id, match_id):
         if category.format in ['group_stage', 'round_robin', 'doubles_round_robin']:
             from app.services.leaderboard import recalculate_all_group_stats
             recalculate_all_group_stats(category.id)
-        
             
         flash('Match result reported successfully!', 'success')
     except ValueError as ve:
@@ -1057,6 +1169,463 @@ def report_category_match_result(slug, category_id, match_id):
         flash(f'Failed to report match result: {str(e)}', 'error')
 
     return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
+
+
+@category_bp.route('/tournaments/<slug>/categories/<int:category_id>/grade-player', methods=['POST'])
+@login_required
+@role_required('admin', 'superadmin')
+def grade_player(slug, category_id):
+    """Admin assigns skill tier (A, B, C, D, E) to participant(s)"""
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
+    Category.query.get_or_404(category_id)
+
+    is_json = request.is_json
+    data = request.get_json(silent=True) if is_json else request.form
+
+    bulk_tiers = data.get('tiers') if isinstance(data, dict) else None
+    if bulk_tiers and isinstance(bulk_tiers, dict):
+        for p_id_str, t in bulk_tiers.items():
+            t_clean = str(t).upper().strip()
+            if t_clean in ['A', 'B', 'C', 'D', 'E']:
+                p = Participant.query.filter_by(id=int(p_id_str), category_id=category_id).first()
+                if p:
+                    p.skill_tier = t_clean
+        db.session.commit()
+        if is_json:
+            return jsonify({'success': True})
+        flash('Player tiers updated successfully.', 'success')
+        return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
+
+    participant_id = int(data.get('participant_id', 0))
+    tier = (data.get('skill_tier') or '').upper().strip()
+    if tier not in ['A', 'B', 'C', 'D', 'E']:
+        msg = f"Invalid tier '{tier}'. Must be A, B, C, D, or E."
+        if is_json:
+            return jsonify({'success': False, 'error': msg}), 400
+        flash(msg, 'error')
+        return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
+
+    p = Participant.query.filter_by(id=participant_id, category_id=category_id).first_or_404()
+    p.skill_tier = tier
+    db.session.commit()
+
+    if is_json:
+        return jsonify({'success': True, 'participant_id': p.id, 'skill_tier': p.skill_tier})
+    flash(f'Player {p.name} assigned to Tier {tier}.', 'success')
+    return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
+
+
+@category_bp.route('/tournaments/<slug>/categories/<int:category_id>/draft/setup-teams', methods=['POST'])
+@login_required
+@role_required('admin', 'superadmin')
+def draft_setup_teams(slug, category_id):
+    """
+    Sets up teams with appointed Captains (Tier A) and Vice-Captains (Tier B).
+    """
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
+    category = Category.query.get_or_404(category_id)
+
+    num_teams = request.form.get('num_teams', type=int) or 4
+    team_size = request.form.get('team_size', type=int) or category.team_size or 5
+    category.team_size = team_size
+
+    try:
+        for i in range(1, num_teams + 1):
+            t_name = request.form.get(f'team_{i}_name', f'Team {i}').strip() or f'Team {i}'
+            captain_id = request.form.get(f'team_{i}_captain_id', type=int)
+            vice_captain_id = request.form.get(f'team_{i}_vice_captain_id', type=int)
+
+            team = Participant.query.filter_by(category_id=category_id, name=t_name, is_team=True).first()
+            if not team:
+                team = Participant(
+                    category_id=category_id,
+                    name=t_name,
+                    is_team=True,
+                    gender=category.gender
+                )
+                db.session.add(team)
+                db.session.flush()
+
+            if captain_id:
+                cap = Participant.query.filter_by(id=captain_id, category_id=category_id).first()
+                if cap:
+                    cap.team_id = team.id
+                    cap.team_role = 'captain'
+
+            if vice_captain_id:
+                vc = Participant.query.filter_by(id=vice_captain_id, category_id=category_id).first()
+                if vc:
+                    vc.team_id = team.id
+                    vc.team_role = 'vice_captain'
+
+        db.session.commit()
+        flash('Teams with Captains and Vice-Captains configured successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Failed to set up teams: {str(e)}', 'error')
+
+    return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
+
+
+@category_bp.route('/tournaments/<slug>/categories/<int:category_id>/draft/assign-member', methods=['POST'])
+@login_required
+@role_required('admin', 'superadmin')
+def draft_assign_member(slug, category_id):
+    """Assigns an unassigned player to a team squad (Drag & Drop or API)"""
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
+    category = Category.query.get_or_404(category_id)
+
+    data = request.get_json(silent=True) or request.form
+    participant_id = int(data.get('participant_id', 0))
+    team_id = int(data.get('team_id', 0))
+    role = data.get('team_role', 'member')
+
+    p = Participant.query.filter_by(id=participant_id, category_id=category_id).first_or_404()
+    team = Participant.query.filter_by(id=team_id, category_id=category_id, is_team=True).first_or_404()
+
+    current_count = Participant.query.filter_by(team_id=team.id).count()
+    max_team_size = category.team_size or 5
+    if current_count >= max_team_size and p.team_id != team.id:
+        return jsonify({'success': False, 'error': f'{team.name} already has {max_team_size} players.'}), 400
+
+    p.team_id = team.id
+    p.team_role = role
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'participant_id': p.id,
+        'participant_name': p.name,
+        'team_id': team.id,
+        'team_name': team.name,
+        'team_role': p.team_role,
+        'skill_tier': p.skill_tier
+    })
+
+
+@category_bp.route('/tournaments/<slug>/categories/<int:category_id>/draft/unassign-member', methods=['POST'])
+@login_required
+@role_required('admin', 'superadmin')
+def draft_unassign_member(slug, category_id):
+    """Removes a player from team squad back to pool"""
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
+
+    data = request.get_json(silent=True) or request.form
+    participant_id = int(data.get('participant_id', 0))
+
+    p = Participant.query.filter_by(id=participant_id, category_id=category_id).first_or_404()
+    p.team_id = None
+    p.team_role = None
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'participant_id': p.id,
+        'participant_name': p.name,
+        'skill_tier': p.skill_tier
+    })
+
+
+@category_bp.route('/tournaments/<slug>/categories/<int:category_id>/draft/auto-ballot', methods=['POST'])
+@login_required
+@role_required('admin', 'superadmin')
+def draft_auto_ballot(slug, category_id):
+    """
+    Automates physical ballot draw by distributing unassigned players
+    from Tier C, Tier D, Tier E equally across teams.
+    """
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
+    category = Category.query.get_or_404(category_id)
+
+    teams = Participant.query.filter_by(category_id=category_id, is_team=True).order_by(Participant.id).all()
+    if not teams:
+        flash('Please setup teams first before running the draft ballot.', 'error')
+        return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
+
+    for tier in ['C', 'D', 'E', None]:
+        if tier:
+            pool = Participant.query.filter_by(
+                category_id=category_id, is_team=False, team_id=None, skill_tier=tier
+            ).all()
+        else:
+            pool = Participant.query.filter_by(
+                category_id=category_id, is_team=False, team_id=None
+            ).all()
+        
+        random.shuffle(pool)
+        for idx, player in enumerate(pool):
+            target_team = teams[idx % len(teams)]
+            current_count = Participant.query.filter_by(team_id=target_team.id).count()
+            if current_count < (category.team_size or 5):
+                player.team_id = target_team.id
+                player.team_role = 'member'
+
+    db.session.commit()
+    flash('Ballot draw completed! Squads have been balanced across teams.', 'success')
+    return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
+
+
+@category_bp.route('/tournaments/<slug>/categories/<int:category_id>/tie/<int:tie_id>/report', methods=['POST'])
+@login_required
+@role_required('admin', 'superadmin')
+def report_team_tie_result(slug, category_id, tie_id):
+    """Report scores and lineups for all rubbers of a team tie"""
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
+    category = Category.query.get_or_404(category_id)
+    tie = Match.query.get_or_404(tie_id)
+
+    is_json = request.is_json
+    data = request.get_json(silent=True) if is_json else request.form
+
+    action = data.get('action', 'complete')
+    is_live = (action == 'live_score')
+
+    try:
+        rubbers = Match.query.filter_by(parent_match_id=tie.id).order_by(Match.rubber_number).all()
+        if not rubbers:
+            raise ValueError("No child rubbers found for this tie.")
+
+        for r in rubbers:
+            r_num = r.rubber_number or 1
+            # Lineups
+            p1_p1 = data.get(f'rubber_{r_num}_p1_p1', type=int) if hasattr(data, 'get') else None
+            p1_p2 = data.get(f'rubber_{r_num}_p1_p2', type=int) if hasattr(data, 'get') else None
+            p2_p1 = data.get(f'rubber_{r_num}_p2_p1', type=int) if hasattr(data, 'get') else None
+            p2_p2 = data.get(f'rubber_{r_num}_p2_p2', type=int) if hasattr(data, 'get') else None
+
+            def _resolve_pid(raw_val):
+                if not raw_val:
+                    return None
+                try:
+                    val_int = int(raw_val)
+                except (ValueError, TypeError):
+                    return None
+                part = Participant.query.get(val_int)
+                if part and part.player_id:
+                    return part.player_id
+                pl = Player.query.get(val_int)
+                if pl:
+                    return pl.id
+                return None
+
+            if p1_p1:
+                r.lineup_p1_player_id = _resolve_pid(p1_p1)
+            if p1_p2:
+                r.lineup_p1_player2_id = _resolve_pid(p1_p2)
+            if p2_p1:
+                r.lineup_p2_player_id = _resolve_pid(p2_p1)
+            if p2_p2:
+                r.lineup_p2_player2_id = _resolve_pid(p2_p2)
+
+            # Scores
+            g1_val = data.get(f'rubber_{r_num}_g1')
+            g2_val = data.get(f'rubber_{r_num}_g2')
+            tb1_val = data.get(f'rubber_{r_num}_tb1', '')
+            tb2_val = data.get(f'rubber_{r_num}_tb2', '')
+
+            if g1_val is not None and str(g1_val).strip() != '' and g2_val is not None and str(g2_val).strip() != '':
+                g1 = int(g1_val)
+                g2 = int(g2_val)
+                s1_str, s2_str, _, _, winner_idx = validate_total_7_games_score(
+                    g1, g2, tb1_val, tb2_val, is_live_update=is_live
+                )
+                r.score1 = s1_str
+                r.score2 = s2_str
+                if is_live:
+                    r.status = 'in_progress'
+                else:
+                    r.status = 'completed'
+                    r.completed_at = datetime.utcnow()
+                    if winner_idx == 1:
+                        r.winner_id = tie.participant1_id
+                    elif winner_idx == 2:
+                        r.winner_id = tie.participant2_id
+
+        # Tally rubbers won
+        p1_won = sum(1 for r in rubbers if r.winner_id == tie.participant1_id)
+        p2_won = sum(1 for r in rubbers if r.winner_id == tie.participant2_id)
+        tie.score1 = str(p1_won)
+        tie.score2 = str(p2_won)
+
+        all_done = all(r.status == 'completed' for r in rubbers)
+        if all_done:
+            tie.status = 'completed'
+            tie.completed_at = datetime.utcnow()
+            tie.winner_id = tie.participant1_id if p1_won > p2_won else tie.participant2_id
+            fmt = get_format(category.format)
+            if fmt and tie.match_type == 'knockout':
+                fmt.advance_match(tie, category, tie.winner_id)
+        elif any(r.status in ['in_progress', 'completed'] for r in rubbers):
+            tie.status = 'in_progress'
+
+        db.session.commit()
+
+        if category.format in ['group_stage', 'round_robin', 'doubles_round_robin']:
+            from app.services.leaderboard import recalculate_all_group_stats
+            recalculate_all_group_stats(category.id)
+
+        if is_json:
+            return jsonify({'success': True, 'tie_id': tie.id, 'score1': tie.score1, 'score2': tie.score2})
+        flash('Team tie scores updated successfully!', 'success')
+    except ValueError as ve:
+        db.session.rollback()
+        if is_json:
+            return jsonify({'success': False, 'error': str(ve)}), 400
+        flash(f'Invalid score: {str(ve)}', 'error')
+    except Exception as e:
+        db.session.rollback()
+        if is_json:
+            return jsonify({'success': False, 'error': str(e)}), 500
+        flash(f'Error updating tie: {str(e)}', 'error')
+
+    return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
+
+
+@category_bp.route('/tournaments/<slug>/categories/<int:category_id>/scoreboard')
+def category_scoreboard(slug, category_id):
+    """Fullscreen TV / Jumbotron Arena Scoreboard"""
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    category = Category.query.get_or_404(category_id)
+
+    from app.services.format_engine.group_stage.logic import GroupStageFormat
+    groups = Group.query.filter_by(category_id=category_id).all()
+    groups_data = []
+    for g in groups:
+        standings = GroupStageFormat.calculate_group_standings(g.id)
+        ties = Match.query.options(
+            db.joinedload(Match.participant1),
+            db.joinedload(Match.participant2),
+            db.joinedload(Match.sub_matches)
+        ).filter(Match.group_id == g.id, Match.parent_match_id.is_(None)).order_by(Match.round, Match.match_number).all()
+        groups_data.append({
+            'group': g,
+            'standings': standings,
+            'ties': ties
+        })
+
+    # Knockout ties
+    knockout_ties = Match.query.options(
+        db.joinedload(Match.participant1),
+        db.joinedload(Match.participant2),
+        db.joinedload(Match.sub_matches)
+    ).filter(
+        Match.category_id == category_id,
+        Match.match_type == 'knockout',
+        Match.parent_match_id.is_(None)
+    ).order_by(Match.round, Match.match_number).all()
+
+    all_ties = [t for g in groups_data for t in g['ties']] + knockout_ties
+    active_tie = next((t for t in all_ties if t.status == 'in_progress'), None)
+    if not active_tie:
+        active_tie = next((t for t in all_ties if t.status == 'pending'), None)
+    if not active_tie and all_ties:
+        active_tie = all_ties[-1]
+
+    return render_template('category/scoreboard.html',
+                         tournament=tournament,
+                         category=category,
+                         groups_data=groups_data,
+                         knockout_ties=knockout_ties,
+                         active_tie=active_tie)
+
+
+@category_bp.route('/api/categories/<int:category_id>/live-scoreboard')
+def category_live_scoreboard_api(category_id):
+    """Live JSON endpoint for real-time scoreboard client polling"""
+    category = Category.query.get_or_404(category_id)
+
+    from app.services.format_engine.group_stage.logic import GroupStageFormat
+    groups = Group.query.filter_by(category_id=category_id).all()
+    groups_payload = []
+    qualifiers_per_group = category.qualifiers_per_group or 2
+
+    for g in groups:
+        standings = GroupStageFormat.calculate_group_standings(g.id)
+        ties = Match.query.options(
+            db.joinedload(Match.participant1),
+            db.joinedload(Match.participant2),
+            db.joinedload(Match.sub_matches)
+        ).filter(Match.group_id == g.id, Match.parent_match_id.is_(None)).order_by(Match.round, Match.match_number).all()
+
+        ties_payload = []
+        for t in ties:
+            rubbers_payload = []
+            for r in (t.sub_matches or []):
+                p1_members = []
+                if r.lineup_p1_player:
+                    p1_members.append(r.lineup_p1_player.name)
+                if r.lineup_p1_player2:
+                    p1_members.append(r.lineup_p1_player2.name)
+                p2_members = []
+                if r.lineup_p2_player:
+                    p2_members.append(r.lineup_p2_player.name)
+                if r.lineup_p2_player2:
+                    p2_members.append(r.lineup_p2_player2.name)
+
+                rubbers_payload.append({
+                    'id': r.id,
+                    'rubber_number': r.rubber_number,
+                    'rubber_type': r.rubber_type,
+                    'status': r.status,
+                    'score1': r.score1 or '-',
+                    'score2': r.score2 or '-',
+                    'winner_id': r.winner_id,
+                    'court': r.court_number or '',
+                    'p1_lineup': " / ".join(p1_members) if p1_members else (t.participant1.name if t.participant1 else 'TBD'),
+                    'p2_lineup': " / ".join(p2_members) if p2_members else (t.participant2.name if t.participant2 else 'TBD')
+                })
+
+            ties_payload.append({
+                'id': t.id,
+                'round': t.round,
+                'match_number': t.match_number,
+                'status': t.status,
+                'court': t.court_number or '',
+                'team1': {'id': t.participant1_id, 'name': t.participant1.name if t.participant1 else 'TBD'},
+                'team2': {'id': t.participant2_id, 'name': t.participant2.name if t.participant2 else 'TBD'},
+                'score1': t.score1 or '0',
+                'score2': t.score2 or '0',
+                'winner_id': t.winner_id,
+                'rubbers': rubbers_payload
+            })
+
+        standings_payload = []
+        for idx, p in enumerate(standings):
+            standings_payload.append({
+                'rank': idx + 1,
+                'id': p.id,
+                'name': p.name,
+                'group_wins': getattr(p, 'group_wins', 0),
+                'group_losses': getattr(p, 'group_losses', 0),
+                'group_points': getattr(p, 'group_points', 0),
+                'rubbers_won': getattr(p, 'rubbers_won', 0),
+                'rubbers_lost': getattr(p, 'rubbers_lost', 0),
+                'is_qualified': idx < qualifiers_per_group
+            })
+
+        groups_payload.append({
+            'id': g.id,
+            'name': g.name,
+            'standings': standings_payload,
+            'ties': ties_payload
+        })
+
+    return jsonify({
+        'category': {
+            'id': category.id,
+            'name': category.name,
+            'status': category.status,
+            'format': category.format
+        },
+        'groups': groups_payload,
+        'timestamp': datetime.utcnow().isoformat()
+    })
 
 
 @category_bp.route('/tournaments/<slug>/categories/<int:category_id>/update_grid', methods=['POST'])
