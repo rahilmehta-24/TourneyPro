@@ -75,7 +75,11 @@
                 🏅 <strong>{{ formats[category.format].name }}</strong>
             </div>
             <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 0.4rem 0.85rem; border-radius: var(--radius-md); font-size: 0.85rem; color: var(--text-secondary);">
+                {% if category.format == 'group_stage' %}
+                👥 <strong>{{ solo_players|length }}</strong> Players{% if teams %} ({{ teams|length }} Teams){% endif %}
+                {% else %}
                 👥 <strong>{{ participants|length }}</strong>{% if category.max_participants %} / {{ category.max_participants }}{% endif %} Players
+                {% endif %}
             </div>
             <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 0.4rem 0.85rem; border-radius: var(--radius-md); font-size: 0.85rem; color: var(--text-secondary);">
                 💰 <strong>{% if category.entry_fee > 0 %}₹{{ category.entry_fee }}{% else %}Free Entry{% endif %}</strong>
@@ -86,7 +90,11 @@
     <!-- Navigation Tabs: Players & Seeding VS Rules & Format -->
     <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; flex-wrap: wrap;">
         <button type="button" id="tabBtnPlayers" onclick="switchCategoryTab('players')" style="padding: 0.55rem 1.25rem; font-size: 0.9rem; font-weight: 600; border: none; background: var(--accent-primary); color: white; border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 0.4rem;">
+            {% if category.format == 'group_stage' %}
+            👥 Registered Players ({{ solo_players|length }})
+            {% else %}
             👥 Players &amp; Seeds ({{ participants|length }})
+            {% endif %}
         </button>
         <button type="button" id="tabBtnRules" onclick="switchCategoryTab('rules')" style="padding: 0.55rem 1.25rem; font-size: 0.9rem; font-weight: 600; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-secondary); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 0.4rem;">
             ⚙️ Category Rules &amp; Format
@@ -106,10 +114,18 @@
             <div class="card" style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 1.5rem; border: 1px solid var(--border-color);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
                     <h3 style="margin: 0; font-size: 1.15rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
-                        {% if category.status == 'setup' %}
-                        ➕ Register Player / Team
+                        {% if category.format == 'group_stage' %}
+                            {% if category.status == 'setup' %}
+                            ➕ Register Player
+                            {% else %}
+                            ➕ Add Late Player
+                            {% endif %}
                         {% else %}
-                        ➕ Add Late Player / Team
+                            {% if category.status == 'setup' %}
+                            ➕ Register Player / Team
+                            {% else %}
+                            ➕ Add Late Player / Team
+                            {% endif %}
                         {% endif %}
                     </h3>
                     {% if category.status != 'setup' %}
@@ -119,7 +135,7 @@
 
                 {% if category.status != 'setup' %}
                 <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.85rem; background: rgba(59, 130, 246, 0.08); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid rgba(59, 130, 246, 0.2);">
-                    💡 <strong>Late Addition:</strong> Player profile will be auto-created and enrolled into this category roster. To re-seed or regenerate bracket with this player, use "Reset Category" below.
+                    💡 <strong>Late Addition:</strong> Player profile will be auto-created and enrolled into this category roster.{% if category.format != 'group_stage' %} To re-seed or regenerate bracket with this player, use "Reset Category" below.{% else %} You can assign them to a team squad in the "Team Draft &amp; Grading" tab.{% endif %}
                 </div>
                 {% endif %}
 
@@ -130,7 +146,7 @@
                         <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">
                             {% if category.format in ['doubles_elimination', 'doubles_round_robin'] %}Player 1 Full Name *{% else %}Player Name *{% endif %}
                         </label>
-                        <input type="text" name="participant_name" class="form-input" minlength="2" maxlength="100" placeholder="e.g. John Doe" required style="width: 100%;">
+                        <input type="text" name="participant_name" class="form-input" minlength="2" maxlength="100" placeholder="e.g. John Doe (or comma-separated: Alice, Bob, Charlie)" required style="width: 100%;">
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
@@ -144,6 +160,25 @@
                         </div>
                     </div>
 
+                    {% if category.format == 'group_stage' %}
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                        <div class="form-group" style="margin: 0;">
+                            <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Email (Optional)</label>
+                            <input type="email" name="participant_email" class="form-input" placeholder="player@email.com" style="width: 100%;">
+                        </div>
+                        <div class="form-group" style="margin: 0;">
+                            <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Skill Tier (Optional)</label>
+                            <select name="skill_tier" class="form-input" style="width: 100%;">
+                                <option value="">Select Tier (Optional)...</option>
+                                <option value="A">Tier A (Captain)</option>
+                                <option value="B">Tier B (Vice-Cap)</option>
+                                <option value="C">Tier C (Intermed.)</option>
+                                <option value="D">Tier D (Club)</option>
+                                <option value="E">Tier E (Recreation)</option>
+                            </select>
+                        </div>
+                    </div>
+                    {% else %}
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                         <div class="form-group" style="margin: 0;">
                             <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Email (Optional)</label>
@@ -154,6 +189,7 @@
                             <input type="number" name="manual_seed" class="form-input" placeholder="e.g. 1" min="1" style="width: 100%;">
                         </div>
                     </div>
+                    {% endif %}
 
                     {% if category.format in ['doubles_elimination', 'doubles_round_robin'] or 'Doubles' in category.name %}
                     <div style="margin-top: 0.5rem; padding-top: 0.75rem; border-top: 1px dashed var(--border-color);">
@@ -176,18 +212,28 @@
                     {% endif %}
 
                     <button type="submit" class="btn btn-primary" style="margin-top: 0.5rem; padding: 0.65rem 1rem; font-weight: 600; width: 100%;">
-                        {% if category.status == 'setup' %}Add to Category{% else %}Add Late Player to Roster{% endif %}
+                        {% if category.format == 'group_stage' %}
+                            {% if category.status == 'setup' %}Add Player{% else %}Add Late Player to Roster{% endif %}
+                        {% else %}
+                            {% if category.status == 'setup' %}Add to Category{% else %}Add Late Player to Roster{% endif %}
+                        {% endif %}
                     </button>
                 </form>
             </div>
 
             <!-- Registered Players List -->
             <div class="card" style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 1.5rem; border: 1px solid var(--border-color);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
                     <h3 style="margin: 0; font-size: 1.15rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
-                        👥 Registered Players <span style="background: var(--bg-secondary); padding: 0.15rem 0.55rem; border-radius: 9999px; font-size: 0.8rem; color: var(--text-secondary); border: 1px solid var(--border-color);">{{ participants|length }}</span>
+                        👥 Registered Players <span style="background: var(--bg-secondary); padding: 0.15rem 0.55rem; border-radius: 9999px; font-size: 0.8rem; color: var(--text-secondary); border: 1px solid var(--border-color);">{% if category.format == 'group_stage' %}{{ solo_players|length }}{% else %}{{ participants|length }}{% endif %}</span>
                     </h3>
-                    {% if category.status == 'setup' and participants %}
+                    {% if category.format == 'group_stage' %}
+                    <div style="display: flex; gap: 0.4rem; align-items: center;">
+                        <button type="button" onclick="switchCategoryTab('draft')" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.35rem 0.75rem; border-radius: var(--radius-sm); font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem;">
+                            🎯 Team Draft &amp; Grading →
+                        </button>
+                    </div>
+                    {% elif category.status == 'setup' and participants %}
                     <form id="inlineSeedingForm" method="POST" action="{{ url_for('category.manage_seeding', slug=tournament.url_slug, category_id=category.id) }}" style="display: none;"></form>
                     <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
                         <button type="submit" form="inlineSeedingForm" class="btn btn-primary" style="font-size: 0.8rem; padding: 0.3rem 0.75rem; border-radius: var(--radius-sm); font-weight: 600;">
@@ -203,53 +249,127 @@
                     {% endif %}
                 </div>
 
-                {% if participants %}
-                <div style="overflow-x: auto;">
-                    <table class="participants-table" style="width: 100%; border-collapse: collapse;">
-                        <thead>
-                            <tr style="border-bottom: 1px solid var(--border-color); text-align: left;">
-                                <th style="padding: 0.6rem 0.75rem; color: var(--text-muted); font-weight: 600; font-size: 0.85rem; width: 75px;">Seed</th>
-                                <th style="padding: 0.6rem 0.75rem; color: var(--text-muted); font-weight: 600; font-size: 0.85rem;">Name</th>
-                                <th style="padding: 0.6rem 0.75rem; color: var(--text-muted); font-weight: 600; font-size: 0.85rem;">Email</th>
-                                {% if category.status == 'setup' %}
-                                <th style="padding: 0.6rem 0.75rem; text-align: right; color: var(--text-muted); font-weight: 600; font-size: 0.85rem; width: 70px;">Action</th>
-                                {% endif %}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for participant in participants %}
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
-                                <td style="padding: 0.65rem 0.75rem; font-weight: bold;">
+                {% if category.format == 'group_stage' %}
+                    {% if solo_players %}
+                    <div style="overflow-x: auto;">
+                        <table class="participants-table" style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--border-color); text-align: left;">
+                                    <th style="padding: 0.6rem 0.75rem; color: var(--text-muted); font-weight: 600; font-size: 0.85rem; width: 45px;">#</th>
+                                    <th style="padding: 0.6rem 0.75rem; color: var(--text-muted); font-weight: 600; font-size: 0.85rem;">Player Name</th>
+                                    <th style="padding: 0.6rem 0.75rem; color: var(--text-muted); font-weight: 600; font-size: 0.85rem;">Skill Tier</th>
+                                    <th style="padding: 0.6rem 0.75rem; color: var(--text-muted); font-weight: 600; font-size: 0.85rem;">Team Status</th>
+                                    <th style="padding: 0.6rem 0.75rem; color: var(--text-muted); font-weight: 600; font-size: 0.85rem;">Contact</th>
                                     {% if category.status == 'setup' %}
-                                    <input type="number" name="seed_{{ participant.id }}" form="inlineSeedingForm" class="form-input seed-input" value="{{ participant.manual_seed or '' }}" min="1" max="{{ participants|length }}" placeholder="-" style="width: 60px; text-align: center; padding: 0.25rem 0.35rem; font-size: 0.85rem; font-weight: 600;">
-                                    {% else %}
-                                        {% if participant.manual_seed or participant.seed %}
-                                        <span style="background: var(--bg-secondary); color: var(--accent-secondary); padding: 0.15rem 0.45rem; border-radius: var(--radius-sm); font-size: 0.8rem; border: 1px solid rgba(139, 92, 246, 0.25);">
-                                            #{{ participant.manual_seed or participant.seed }}
+                                    <th style="padding: 0.6rem 0.75rem; text-align: right; color: var(--text-muted); font-weight: 600; font-size: 0.85rem; width: 70px;">Action</th>
+                                    {% endif %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for player in solo_players %}
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                                    <td style="padding: 0.65rem 0.75rem; color: var(--text-muted); font-size: 0.85rem; font-weight: 600;">
+                                        {{ loop.index }}
+                                    </td>
+                                    <td style="padding: 0.65rem 0.75rem; font-weight: 600; color: var(--text-primary);">
+                                        {{ player.name }}
+                                    </td>
+                                    <td style="padding: 0.65rem 0.75rem;">
+                                        {% if player.skill_tier %}
+                                        <span class="tier-pill tier-pill-{{ player.skill_tier }}" style="padding: 0.18rem 0.5rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700;">
+                                            Tier {{ player.skill_tier }}{% if player.team_role %} ({{ player.team_role.title() }}){% endif %}
                                         </span>
                                         {% else %}
-                                        <span style="color: var(--text-muted);">-</span>
+                                        <span style="color: var(--text-muted); font-size: 0.8rem; font-style: italic;">Ungraded</span>
                                         {% endif %}
+                                    </td>
+                                    <td style="padding: 0.65rem 0.75rem; font-size: 0.85rem;">
+                                        {% if player.team %}
+                                        <span style="color: var(--accent-success); font-weight: 600;">
+                                            ✓ {{ player.team.name }}
+                                        </span>
+                                        {% else %}
+                                        <span style="color: var(--text-muted); font-size: 0.8rem;">Draft Pool</span>
+                                        {% endif %}
+                                    </td>
+                                    <td style="padding: 0.65rem 0.75rem; color: var(--text-secondary); font-size: 0.82rem;">
+                                        {{ player.mobile or '-' }}{% if player.email %}<div style="color: var(--text-muted); font-size: 0.75rem;">{{ player.email }}</div>{% endif %}
+                                    </td>
+                                    {% if category.status == 'setup' %}
+                                    <td style="padding: 0.65rem 0.75rem; text-align: right;">
+                                        <form method="POST" style="display: inline;" class="requires-audit" data-audit-action="Delete Participant">
+                                            <input type="hidden" name="action" value="delete_participant">
+                                            <input type="hidden" name="participant_id" value="{{ player.id }}">
+                                            <button type="submit" style="background: none; border: none; color: var(--accent-danger); cursor: pointer; font-size: 0.8rem; padding: 0; font-weight: 600;" title="Remove player">
+                                                🗑️ Remove
+                                            </button>
+                                        </form>
+                                    </td>
                                     {% endif %}
-                                </td>
-                                <td style="padding: 0.65rem 0.75rem; font-weight: 500; color: var(--text-primary);">{{ participant.name }}</td>
-                                <td style="padding: 0.65rem 0.75rem; color: var(--text-secondary); font-size: 0.85rem;">{{ participant.email or '-' }}</td>
-                                {% if category.status == 'setup' %}
-                                <td style="padding: 0.65rem 0.75rem; text-align: right;">
-                                    <form method="POST" style="display: inline;" class="requires-audit" data-audit-action="Delete Participant">
-                                        <input type="hidden" name="action" value="delete_participant">
-                                        <input type="hidden" name="participant_id" value="{{ participant.id }}">
-                                        <button type="submit" style="background: none; border: none; color: var(--accent-danger); cursor: pointer; font-size: 0.8rem; padding: 0; font-weight: 600;" title="Remove player">
-                                            🗑️ Remove
-                                        </button>
-                                    </form>
-                                </td>
-                                {% endif %}
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div style="text-align: center; padding: 2rem 1rem; color: var(--text-muted); font-size: 0.9rem;">
+                        No players registered yet. Add player names above to build your team event roster.
+                    </div>
+                    {% endif %}
+                {% else %}
+                    {% if participants %}
+                    <div style="overflow-x: auto;">
+                        <table class="participants-table" style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--border-color); text-align: left;">
+                                    <th style="padding: 0.6rem 0.75rem; color: var(--text-muted); font-weight: 600; font-size: 0.85rem; width: 75px;">Seed</th>
+                                    <th style="padding: 0.6rem 0.75rem; color: var(--text-muted); font-weight: 600; font-size: 0.85rem;">Name</th>
+                                    <th style="padding: 0.6rem 0.75rem; color: var(--text-muted); font-weight: 600; font-size: 0.85rem;">Email</th>
+                                    {% if category.status == 'setup' %}
+                                    <th style="padding: 0.6rem 0.75rem; text-align: right; color: var(--text-muted); font-weight: 600; font-size: 0.85rem; width: 70px;">Action</th>
+                                    {% endif %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for participant in participants %}
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                                    <td style="padding: 0.65rem 0.75rem; font-weight: bold;">
+                                        {% if category.status == 'setup' %}
+                                        <input type="number" name="seed_{{ participant.id }}" form="inlineSeedingForm" class="form-input seed-input" value="{{ participant.manual_seed or '' }}" min="1" max="{{ participants|length }}" placeholder="-" style="width: 60px; text-align: center; padding: 0.25rem 0.35rem; font-size: 0.85rem; font-weight: 600;">
+                                        {% else %}
+                                            {% if participant.manual_seed or participant.seed %}
+                                            <span style="background: var(--bg-secondary); color: var(--accent-secondary); padding: 0.15rem 0.45rem; border-radius: var(--radius-sm); font-size: 0.8rem; border: 1px solid rgba(139, 92, 246, 0.25);">
+                                                #{{ participant.manual_seed or participant.seed }}
+                                            </span>
+                                            {% else %}
+                                            <span style="color: var(--text-muted);">-</span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </td>
+                                    <td style="padding: 0.65rem 0.75rem; font-weight: 500; color: var(--text-primary);">{{ participant.name }}</td>
+                                    <td style="padding: 0.65rem 0.75rem; color: var(--text-secondary); font-size: 0.85rem;">{{ participant.email or '-' }}</td>
+                                    {% if category.status == 'setup' %}
+                                    <td style="padding: 0.65rem 0.75rem; text-align: right;">
+                                        <form method="POST" style="display: inline;" class="requires-audit" data-audit-action="Delete Participant">
+                                            <input type="hidden" name="action" value="delete_participant">
+                                            <input type="hidden" name="participant_id" value="{{ participant.id }}">
+                                            <button type="submit" style="background: none; border: none; color: var(--accent-danger); cursor: pointer; font-size: 0.8rem; padding: 0; font-weight: 600;" title="Remove player">
+                                                🗑️ Remove
+                                            </button>
+                                        </form>
+                                    </td>
+                                    {% endif %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div style="text-align: center; padding: 2rem 1rem; color: var(--text-muted); font-size: 0.9rem;">
+                        No participants registered yet.
+                    </div>
+                    {% endif %}
+                {% endif %}
 
                 {% if tournament.status != 'setup' and category.status == 'setup' and participants|length >= 2 %}
                 <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
@@ -259,14 +379,6 @@
                             🚀 Launch Category Bracket
                         </button>
                     </form>
-                </div>
-                {% endif %}
-
-                {% else %}
-                <div style="text-align: center; padding: 3rem 1rem; color: var(--text-muted);">
-                    <div style="font-size: 2.5rem; margin-bottom: 0.5rem; opacity: 0.5;">🎾</div>
-                    <p style="font-size: 1rem; font-weight: 600; margin-bottom: 0.25rem; color: var(--text-primary);">No players registered yet</p>
-                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0;">Add players above to prepare this category.</p>
                 </div>
                 {% endif %}
             </div>
@@ -527,7 +639,7 @@
                             <tr style="border-bottom: 1px solid var(--border-color); text-align: left; color: var(--text-muted); font-size: 0.78rem; text-transform: uppercase;">
                                 <th style="padding: 0.6rem 0.5rem; width: 36px;"><input type="checkbox" id="selectAllTierPlayers" onchange="toggleSelectAllPlayers(this.checked)"></th>
                                 <th style="padding: 0.6rem 0.5rem;">Player Name</th>
-                                <th style="padding: 0.6rem 0.5rem;">Contact / Seed</th>
+                                <th style="padding: 0.6rem 0.5rem;">Contact</th>
                                 <th style="padding: 0.6rem 0.5rem;">Current Tier</th>
                                 <th style="padding: 0.6rem 0.5rem;">Assign Tier</th>
                                 <th style="padding: 0.6rem 0.5rem;">Team Roster Status</th>
@@ -538,7 +650,7 @@
                             <tr id="tier-row-{{ p.id }}" style="border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.15s;">
                                 <td style="padding: 0.6rem 0.5rem;"><input type="checkbox" class="player-tier-cb" value="{{ p.id }}"></td>
                                 <td style="padding: 0.6rem 0.5rem; font-weight: 600; color: var(--text-primary);">{{ p.name }}</td>
-                                <td style="padding: 0.6rem 0.5rem; color: var(--text-muted); font-size: 0.8rem;">{{ p.mobile or '-' }}{% if p.manual_seed %} (Seed {{ p.manual_seed }}){% endif %}</td>
+                                <td style="padding: 0.6rem 0.5rem; color: var(--text-muted); font-size: 0.8rem;">{{ p.mobile or '-' }}{% if p.email %} <span style="font-size: 0.75rem; color: var(--text-muted);">({{ p.email }})</span>{% endif %}</td>
                                 <td style="padding: 0.6rem 0.5rem;" id="tier-badge-cell-{{ p.id }}">
                                     <span class="tier-pill tier-pill-{{ p.skill_tier or 'none' }}" style="padding: 0.2rem 0.55rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700;">
                                         Tier {{ p.skill_tier or '—' }}
@@ -567,7 +679,7 @@
                             {% else %}
                             <tr>
                                 <td colspan="6" style="padding: 2rem; text-align: center; color: var(--text-muted);">
-                                    No players registered yet. Add players in the "Players &amp; Seeds" tab first.
+                                    No players registered yet. Add players in the "Registered Players" tab first.
                                 </td>
                             </tr>
                             {% endfor %}

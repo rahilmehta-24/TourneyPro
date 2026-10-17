@@ -405,8 +405,10 @@ def manage_category(slug, category_id):
     """Manage category participants and settings"""
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
     check_tournament_ownership(tournament)
-    category = Category.query.get_or_404(category_id)
-    participants = Participant.query.filter_by(category_id=category_id).order_by(Participant.manual_seed, Participant.seed).all()
+    if category.format == 'group_stage':
+        participants = Participant.query.filter_by(category_id=category_id).order_by(Participant.id).all()
+    else:
+        participants = Participant.query.filter_by(category_id=category_id).order_by(Participant.manual_seed, Participant.seed).all()
 
     if request.method == 'POST':
         action = request.form.get('action')
@@ -417,7 +419,10 @@ def manage_category(slug, category_id):
                 participant_age_str = request.form.get('participant_age', '').strip()
                 participant_mobile = request.form.get('participant_mobile', '').strip()
                 participant_email = request.form.get('participant_email', '').strip()
-                manual_seed = request.form.get('manual_seed', type=int)
+                manual_seed = request.form.get('manual_seed', type=int) if category.format != 'group_stage' else None
+                skill_tier = request.form.get('skill_tier', '').strip() or None
+                if skill_tier not in ['A', 'B', 'C', 'D', 'E']:
+                    skill_tier = None
 
                 partner_name = request.form.get('partner_name', '').strip()
                 partner_age_str = request.form.get('partner_age', '').strip()
@@ -428,7 +433,7 @@ def manage_category(slug, category_id):
                     flash('Participant name is required.', 'error')
                     return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
 
-                if manual_seed is not None and manual_seed < 1:
+                if category.format != 'group_stage' and manual_seed is not None and manual_seed < 1:
                     flash('Seed must be a positive integer (1 or greater).', 'error')
                     return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
 
@@ -572,6 +577,12 @@ def manage_category(slug, category_id):
                     else:
                         display_name = p1_name
 
+                    team_role = None
+                    if skill_tier == 'A':
+                        team_role = 'captain'
+                    elif skill_tier == 'B':
+                        team_role = 'vice_captain'
+
                     participant = Participant(
                         tournament_id=tournament.id,
                         category_id=category.id,
@@ -584,7 +595,9 @@ def manage_category(slug, category_id):
                         dob=p1_dob,
                         partner_name=p2_name if player2_id else None,
                         partner_mobile=p2_mobile if player2_id else None,
-                        manual_seed=manual_seed if len(names) == 1 else None
+                        manual_seed=manual_seed if (len(names) == 1 and category.format != 'group_stage') else None,
+                        skill_tier=skill_tier if len(names) == 1 else None,
+                        team_role=team_role if len(names) == 1 else None
                     )
                     db.session.add(participant)
                     added_names.append(display_name)
@@ -831,6 +844,9 @@ def manage_seeding(slug, category_id):
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
     check_tournament_ownership(tournament)
     category = Category.query.get_or_404(category_id)
+    if category.format == 'group_stage':
+        flash('Individual player seeding is not required for team events.', 'info')
+        return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
     participants = Participant.query.filter_by(category_id=category_id).all()
 
     if request.method == 'POST':
