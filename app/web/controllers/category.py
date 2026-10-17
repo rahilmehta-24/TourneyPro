@@ -136,6 +136,7 @@ def create_category(slug):
         points_to_win = request.form.get('points_to_win', type=int)
         team_size = request.form.get('team_size', type=int) or 5
         rubbers_per_tie = request.form.get('rubbers_per_tie', type=int) or 3
+        max_players_per_team = request.form.get('max_players_per_team', type=int)
 
         # Advanced settings for group stage
         has_group_stage = (format_type in ['group_stage', 'round_robin', 'doubles_round_robin'])
@@ -145,8 +146,20 @@ def create_category(slug):
         
         # Determine qualifiers for knockout stage
         if format_type == 'group_stage':
-            qualifiers_per_group = request.form.get('qualifiers_per_group', type=int, default=2)
-            allow_lucky_losers = request.form.get('allow_lucky_losers') == 'on'
+            scoring_format = 'games'
+            total_games = total_games or 7
+            team_size = team_size or 5
+            max_players_per_team = max_players_per_team or team_size
+            rubbers_per_tie = rubbers_per_tie or 3
+            num_groups = num_groups or 3
+            teams_per_group = teams_per_group or 4
+            matches_per_team_pair = matches_per_team_pair or 1
+            qualifiers_per_group = request.form.get('qualifiers_per_group', type=int, default=2) or 2
+            allow_lucky_losers = request.form.get('allow_lucky_losers') in ['on', 'true', '1'] or ('allow_lucky_losers' in request.form)
+            if not max_participants:
+                max_participants = num_groups * teams_per_group
+            num_sets = 1
+            games_per_set = total_games
         elif format_type == 'round_robin':
             has_knockout = request.form.get('has_knockout_stage') == 'on'
             if has_knockout:
@@ -158,7 +171,6 @@ def create_category(slug):
         else:
             qualifiers_per_group = None
             allow_lucky_losers = False
-        max_players_per_team = request.form.get('max_players_per_team', type=int)
 
         # Scheduling fields inherited globally from tournament
         num_courts = request.form.get('num_courts', type=int) or tournament.num_courts or 1

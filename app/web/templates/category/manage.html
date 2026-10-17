@@ -326,7 +326,7 @@
                     </div>
                 </div>
 
-                <div class="form-group" style="margin: 0;">
+                <div class="form-group" id="scoring-format-container" style="margin: 0; display: {% if category.format == 'group_stage' %}none{% else %}block{% endif %};">
                     <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Scoring Format *</label>
                     <select id="scoring_format" name="scoring_format" class="form-input" required style="width: 100%;" onchange="toggleScoringFields()">
                         <option value="games" {% if category.scoring_format == 'games' %}selected{% endif %}>Games (Sets &amp; Games)</option>
@@ -1152,11 +1152,27 @@
     }
 
     function toggleScoringFields() {
+        const formatSelect = document.getElementById('format');
+        const format = formatSelect ? formatSelect.value : '';
         const scoringFormat = document.getElementById('scoring_format');
         if (!scoringFormat) return;
         const val = scoringFormat.value;
+        const scoringFormatContainer = document.getElementById('scoring-format-container');
         const legacyScoringFields = document.getElementById('legacy-scoring-fields');
         const pointsToWinFields = document.getElementById('points-to-win-fields');
+
+        if (format === 'group_stage') {
+            if (scoringFormatContainer) scoringFormatContainer.style.display = 'none';
+            if (legacyScoringFields) legacyScoringFields.style.display = 'none';
+            if (pointsToWinFields) {
+                pointsToWinFields.style.display = 'none';
+                const ptw = document.getElementById('points_to_win');
+                if (ptw) ptw.required = false;
+            }
+            return;
+        }
+
+        if (scoringFormatContainer) scoringFormatContainer.style.display = 'block';
 
         if (val === 'points') {
             if (legacyScoringFields) legacyScoringFields.style.display = 'none';
@@ -1217,6 +1233,8 @@
                 if (tg) tg.required = false;
             }
         }
+
+        toggleScoringFields();
     }
     
     document.addEventListener('DOMContentLoaded', function() {
