@@ -7,6 +7,7 @@ import os
 
 def create_app(config_class=Config):
     app = Flask(__name__, template_folder='web/templates', static_folder='web/static')
+    app.url_map.strict_slashes = False
     app.config.from_object(config_class)
 
     # Initialize extensions
@@ -99,11 +100,14 @@ def create_app(config_class=Config):
         from app.web.controllers.auth import get_current_user
         return dict(current_user=get_current_user())
 
+    from werkzeug.exceptions import HTTPException
     import traceback
     import logging
 
     @app.errorhandler(Exception)
     def handle_exception(e):
+        if isinstance(e, HTTPException):
+            return e
         db.session.rollback()
         logging.error(f"Unhandled Exception: {str(e)}")
         logging.error(traceback.format_exc())

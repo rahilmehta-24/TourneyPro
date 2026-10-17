@@ -105,7 +105,9 @@ def create_tournament():
     return render_template('tournament/create.html', academy_id=academy_id, formats=TOURNAMENT_FORMATS)
 
 @tournament_bp.route('/t/<slug>')
+@tournament_bp.route('/t/<slug>/')
 @tournament_bp.route('/tournaments/<slug>')
+@tournament_bp.route('/tournaments/<slug>/')
 def view_tournament(slug):
     """View tournament hub (brackets, schedule, organizer dashboard)"""
     tournament = Tournament.query.options(
