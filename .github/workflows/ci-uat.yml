@@ -1,12 +1,13 @@
-name: Push Code to Main
+name: CI & Quality Gate
 
 on:
   push:
     branches:
-      - main
+      - uat
   pull_request:
     branches:
       - main
+      - uat
 
 jobs:
   build-and-test:
@@ -14,10 +15,10 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Set up Python 3.12
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.12'
 
@@ -29,3 +30,7 @@ jobs:
     - name: Run Ruff Linter
       run: |
         ruff check .
+
+    - name: Run Test Suite (SQLite)
+      run: |
+        python -m unittest discover tests -v

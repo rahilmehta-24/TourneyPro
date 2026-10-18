@@ -3,7 +3,10 @@ from config import Config
 from app.domain.models import db
 from flask_compress import Compress
 from flask_jwt_extended import JWTManager
+from flask_migrate import Migrate
 import os
+
+migrate = Migrate()
 
 def create_app(config_class=Config):
     app = Flask(__name__, template_folder='web/templates', static_folder='web/static')
@@ -11,6 +14,7 @@ def create_app(config_class=Config):
 
     # Initialize extensions
     db.init_app(app)
+    migrate.init_app(app, db, render_as_batch=True)
     Compress(app)
     
     
