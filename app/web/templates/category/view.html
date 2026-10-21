@@ -210,11 +210,6 @@
         {% endif %}
         
         <div style="margin-left: auto; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-            {% if current_user and current_user.role in ['admin', 'superadmin'] and (category.format == 'group_stage' or (category.max_players_per_team and category.max_players_per_team > 1)) %}
-            <a href="{{ url_for('category.team_draft_view', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-sm" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4); font-weight: 700; border-radius: 9999px; padding: 0.35rem 0.85rem; font-size: 0.82rem;">
-                🎪 Team Draft
-            </a>
-            {% endif %}
             <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug) }}" class="btn btn-sm btn-secondary" style="font-weight: 600; border-radius: 9999px; padding: 0.35rem 0.85rem; font-size: 0.82rem;">
                 📅 Order of Play
             </a>
@@ -223,10 +218,36 @@
     {% endif %}
 
     {% if not is_export and (category.format == 'group_stage' or (category.max_players_per_team and category.max_players_per_team > 1)) %}
-    <div id="procedure-guide" style="scroll-margin-top: 80px;">
-        <!-- Step-by-Step Procedure Wizard for Team League -->
-        {% include "components/team_league_wizard.html" %}
-    </div>
+    <details id="procedure-guide" class="team-wizard-details" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); margin-bottom: 2rem; box-shadow: 0 4px 16px rgba(0,0,0,0.08); overflow: hidden; scroll-margin-top: 80px;">
+        <summary style="cursor: pointer; padding: 0.9rem 1.35rem; display: flex; justify-content: space-between; align-items: center; user-select: none; list-style: none; background: rgba(255,255,255,0.02); transition: background 0.15s ease;" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='rgba(255,255,255,0.02)'">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <span style="font-size: 1.3rem;">📋</span>
+                <div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                        <span style="font-weight: 700; font-size: 1rem; color: var(--text-primary);">
+                            Tournament Workflow &amp; Procedure Guide
+                        </span>
+                        <span style="font-size: 0.72rem; font-weight: 700; color: var(--accent-primary); background: rgba(249, 115, 22, 0.12); border: 1px solid rgba(249, 115, 22, 0.3); padding: 0.15rem 0.55rem; border-radius: 9999px;">
+                            ⚡ 6-Step Fair Play Guide
+                        </span>
+                    </div>
+                    <p style="margin: 0.15rem 0 0; font-size: 0.78rem; color: var(--text-muted);">
+                        Player registration, skill tiers, chit draw formation, group scheduling, and games scoring.
+                    </p>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">
+                <span class="procedure-toggle-label">Expand Guide</span>
+                <span class="procedure-toggle-arrow" style="font-size: 0.75rem; transition: transform 0.2s ease;">▼</span>
+            </div>
+        </summary>
+        <div style="padding: 1.25rem 1.5rem; border-top: 1px solid var(--border-color);">
+            <!-- Step-by-Step Procedure Wizard for Team League -->
+            {% with hide_wizard_header=True, hide_wizard_outer=True %}
+            {% include "components/team_league_wizard.html" %}
+            {% endwith %}
+        </div>
+    </details>
     {% endif %}
 
     {% if not is_export %}
@@ -354,6 +375,7 @@
         <div class="bracket-canvas" id="bracketCanvas">
     {% endif %}
     <div class="bracket" id="bracketMainTree">
+        <svg class="bracket-svg-connectors"></svg>
         {% set sorted_keys = rounds_dict.keys()|sort %}
         {% for round_num in sorted_keys %}
         {% set round_matches = rounds_dict[round_num] %}
@@ -384,9 +406,9 @@
                             <div style="display: flex; align-items: center; gap: 6px;">
                                 {% if match.status == 'completed' %}
                                     {% if match.court_name %}
-                                        <span class="match-status-badge badge-pending" title="{{ match.scheduled_time.strftime('%d/%m/%Y %I:%M %p') if match.scheduled_time else '' }}">🏟️ {{ match.court_name }}</span>
+                                        <span class="match-status-badge badge-pending" title="{{ match.scheduled_time|ist('%d/%m/%Y %I:%M %p IST') if match.scheduled_time else '' }}">🏟️ {{ match.court_name }}</span>
                                     {% elif match.scheduled_time %}
-                                        <span class="match-status-badge badge-pending" title="{{ match.scheduled_time.strftime('%d/%m/%Y %I:%M %p') }}">📅 {{ match.scheduled_time.strftime('%d/%m') }}</span>
+                                        <span class="match-status-badge badge-pending" title="{{ match.scheduled_time|ist('%d/%m/%Y %I:%M %p IST') }}">📅 {{ match.scheduled_time|ist('%d/%m') }}</span>
                                     {% endif %}
                                     <span class="match-status-badge badge-completed">✓ Complete</span>
                                 {% elif match.status == 'in_progress' %}
@@ -395,7 +417,7 @@
                                     {% endif %}
                                     <span class="match-status-badge badge-inprogress">● In Progress</span>
                                 {% elif match.scheduled_time %}
-                                    <span class="match-status-badge badge-pending" title="{{ match.scheduled_time.strftime('%d/%m/%Y %I:%M %p') }}">📅 {{ match.scheduled_time.strftime('%d/%m %I:%M %p') }}{% if match.court_name %} | 🏟️ {{ match.court_name }}{% endif %}</span>
+                                    <span class="match-status-badge badge-pending" title="{{ match.scheduled_time|ist('%d/%m/%Y %I:%M %p IST') }}">📅 {{ match.scheduled_time|ist('%d/%m %I:%M %p IST') }}{% if match.court_name %} | 🏟️ {{ match.court_name }}{% endif %}</span>
                                 {% else %}
                                     <span class="match-status-badge badge-pending">📅 To be played</span>
                                 {% endif %}
@@ -573,6 +595,7 @@
             <div style="margin-bottom: 2rem;">
                 <h3 style="margin-bottom: 1rem; color: #fbbf24; font-size: 1.5rem; border-left: 4px solid #fbbf24; padding-left: 10px;">👑 Grand Finals</h3>
                 <div class="bracket">
+                    <svg class="bracket-svg-connectors"></svg>
                     <div class="bracket-round" style="min-width: 360px;">
                         <div class="round-matches" style="justify-content: center; height: 100%;">
                             {% for match in grand_finals %}
@@ -583,9 +606,9 @@
                                         <div style="display: flex; align-items: center; gap: 6px;">
                                             {% if match.status == 'completed' %}
                                                 {% if match.court_name %}
-                                                    <span class="match-status-badge badge-pending" title="{{ match.scheduled_time.strftime('%d/%m/%Y %I:%M %p') if match.scheduled_time else '' }}">🏟️ {{ match.court_name }}</span>
+                                                    <span class="match-status-badge badge-pending" title="{{ match.scheduled_time|ist('%d/%m/%Y %I:%M %p IST') if match.scheduled_time else '' }}">🏟️ {{ match.court_name }}</span>
                                                 {% elif match.scheduled_time %}
-                                                    <span class="match-status-badge badge-pending" title="{{ match.scheduled_time.strftime('%d/%m/%Y %I:%M %p') }}">📅 {{ match.scheduled_time.strftime('%d/%m') }}</span>
+                                                    <span class="match-status-badge badge-pending" title="{{ match.scheduled_time|ist('%d/%m/%Y %I:%M %p IST') }}">📅 {{ match.scheduled_time|ist('%d/%m') }}</span>
                                                 {% endif %}
                                                 <span class="match-status-badge badge-completed">✓ Complete</span>
                                             {% elif match.status == 'in_progress' %}
@@ -594,7 +617,7 @@
                                                 {% endif %}
                                                 <span class="match-status-badge badge-inprogress">● In Progress</span>
                                             {% elif match.scheduled_time %}
-                                                <span class="match-status-badge badge-pending" title="{{ match.scheduled_time.strftime('%d/%m/%Y %I:%M %p') }}">📅 {{ match.scheduled_time.strftime('%d/%m %I:%M %p') }}{% if match.court_name %} | 🏟️ {{ match.court_name }}{% endif %}</span>
+                                                <span class="match-status-badge badge-pending" title="{{ match.scheduled_time|ist('%d/%m/%Y %I:%M %p IST') }}">📅 {{ match.scheduled_time|ist('%d/%m %I:%M %p IST') }}{% if match.court_name %} | 🏟️ {{ match.court_name }}{% endif %}</span>
                                             {% else %}
                                                 <span class="match-status-badge badge-pending">📅 To be played</span>
                                             {% endif %}
@@ -681,8 +704,63 @@
         <form id="group-matrix-form" method="POST" action="{{ url_for('category.update_grid_scores', slug=tournament.url_slug, category_id=category.id) }}">
         {% endif %}
 
+        {% if groups_data and groups_data|length > 1 %}
+        {% set active_group_param = request.args.get('group', 'all') %}
+        <!-- Group Tab Navigation -->
+        <div class="group-tab-navigation" style="margin: 1.25rem 0 1.5rem 0;">
+            <div class="group-tab-bar" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; padding: 0.65rem 0.85rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); box-shadow: 0 2px 8px rgba(0,0,0,0.12);">
+                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                    <span style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-right: 0.25rem;">Group:</span>
+                    <button type="button" 
+                            id="btn-group-tab-all"
+                            class="group-tab-btn {% if active_group_param == 'all' or not active_group_param %}active{% endif %}" 
+                            data-group-target="all"
+                            onclick="switchGroupView('all', this)">
+                        <span style="font-size: 0.95rem;">🌐</span>
+                        <span class="group-name-text">All Groups</span>
+                        <span class="group-tab-badge">{{ groups_data|length }} Standings</span>
+                    </button>
+                    {% for grp_tab in groups_data %}
+                    <button type="button" 
+                            id="btn-group-tab-{{ grp_tab.group.id }}"
+                            class="group-tab-btn {% if active_group_param == grp_tab.group.id|string %}active{% endif %}" 
+                            data-group-target="{{ grp_tab.group.id }}"
+                            onclick="switchGroupView('{{ grp_tab.group.id }}', this)">
+                        <span style="font-size: 0.95rem;">🎾</span>
+                        <span class="group-name-text">{{ grp_tab.group.name }}</span>
+                        <span class="group-tab-badge">
+                            {% if category.max_players_per_team and category.max_players_per_team > 1 %}
+                                {{ grp_tab.standings|length }} Teams
+                            {% elif grp_tab.standings %}
+                                {{ grp_tab.standings|length }} Players
+                            {% else %}
+                                {{ grp_tab.matches|length }} Matches
+                            {% endif %}
+                        </span>
+                    </button>
+                    {% endfor %}
+                </div>
+                <div style="font-size: 0.82rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.4rem; padding-right: 0.25rem;">
+                    <span>Viewing:</span>
+                    <strong id="activeGroupLabel" style="color: var(--primary); font-weight: 750;">
+                        {% if active_group_param != 'all' and active_group_param %}
+                            {% set current_selected_grp = (groups_data | selectattr('group.id', 'equalto', active_group_param|int) | first) %}
+                            {% if current_selected_grp %}{{ current_selected_grp.group.name }} (Standings &amp; Fixtures){% else %}All Groups (Standings){% endif %}
+                        {% else %}
+                            All Groups (Standings)
+                        {% endif %}
+                    </strong>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         {% for group_info in groups_data %}
-        <div class="group-card">
+        {% set is_selected_pane = (active_group_param == 'all' or not active_group_param or active_group_param == group_info.group.id|string) %}
+        <div class="group-card group-view-pane" 
+             id="group-pane-{{ group_info.group.id }}" 
+             data-group-id="{{ group_info.group.id }}"
+             style="{% if not is_selected_pane %}display: none;{% endif %}">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
                 <h3 style="margin: 0; font-size: 1.3rem;">{{ group_info.group.name }}</h3>
                 {% if group_info.group.start_time or group_info.group.assigned_courts %}
@@ -772,6 +850,7 @@
             </table>
             </div>
 
+            <div class="group-fixtures-container" style="{% if (active_group_param == 'all' or not active_group_param) and groups_data and groups_data|length > 1 %}display: none;{% endif %}">
             {% set ns_team = namespace(has_rubbers=false) %}
             {% for m in group_info.matches %}
                 {% if m.sub_matches and m.sub_matches|length > 0 %}
@@ -791,42 +870,65 @@
                     1 Singles &amp; 2 Doubles per tie
                 </span>
             </div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
                 {% for fixture in group_info.matches %}
-                <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem;" id="fixture-{{ fixture.id }}">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
-                        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-                            <span style="font-weight: 700; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">
-                                Tie #{{ fixture.match_number }} (Round {{ fixture.round }})
-                            </span>
-                            {% set ns_lineup = namespace(complete=true) %}
-                            {% for sub_m in fixture.sub_matches %}
-                                {% if sub_m.rubber_type == 'singles' and (not sub_m.p1_player1_id or not sub_m.p2_player1_id) %}
-                                    {% set ns_lineup.complete = false %}
-                                {% elif sub_m.rubber_type in ['doubles_1', 'doubles_2'] and (not sub_m.p1_player1_id or not sub_m.p1_player2_id or not sub_m.p2_player1_id or not sub_m.p2_player2_id) %}
-                                    {% set ns_lineup.complete = false %}
+                <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" id="fixture-{{ fixture.id }}">
+                    <!-- Tie Card Header (2 Clean, Non-Wrapping Rows) -->
+                    <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 0.85rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                        <!-- Header Row 1: Title, Round & Status Badges (Lineup & Match) -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span style="font-weight: 800; font-size: 0.82rem; color: var(--text-primary); background: rgba(255,255,255,0.06); padding: 0.2rem 0.55rem; border-radius: 6px; letter-spacing: 0.05em; text-transform: uppercase;">
+                                    Tie #{{ fixture.match_number }}
+                                </span>
+                                <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">
+                                    Round {{ fixture.round }}
+                                </span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.45rem;">
+                                {% set ns_lineup = namespace(complete=true) %}
+                                {% for sub_m in fixture.sub_matches %}
+                                    {% if sub_m.rubber_type == 'singles' and (not sub_m.p1_player1_id or not sub_m.p2_player1_id) %}
+                                        {% set ns_lineup.complete = false %}
+                                    {% elif sub_m.rubber_type in ['doubles_1', 'doubles_2'] and (not sub_m.p1_player1_id or not sub_m.p1_player2_id or not sub_m.p2_player1_id or not sub_m.p2_player2_id) %}
+                                        {% set ns_lineup.complete = false %}
+                                    {% endif %}
+                                {% endfor %}
+                                {% if ns_lineup.complete and fixture.sub_matches %}
+                                    <span style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); padding: 2px 7px; border-radius: 6px; font-size: 0.72rem; font-weight: 600; white-space: nowrap; flex-shrink: 0;">
+                                        ✅ Lineup Allotted
+                                    </span>
+                                {% else %}
+                                    <span style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); padding: 2px 7px; border-radius: 6px; font-size: 0.72rem; font-weight: 600; white-space: nowrap; flex-shrink: 0;">
+                                        ⏳ Lineup Pending
+                                    </span>
                                 {% endif %}
-                            {% endfor %}
-                            {% if ns_lineup.complete and fixture.sub_matches %}
-                                <span style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); padding: 2px 8px; border-radius: 9999px; font-size: 0.72rem; font-weight: 600;">
-                                    ✅ Lineup Allotted
+
+                                <span class="status-badge status-{{ fixture.status }}" style="font-size: 0.72rem; padding: 0.2rem 0.55rem; border-radius: 9999px; text-transform: capitalize; font-weight: 600; white-space: nowrap; flex-shrink: 0;">
+                                    {{ fixture.status.replace('_', ' ').title() }}
                                 </span>
-                            {% else %}
-                                <span style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); padding: 2px 8px; border-radius: 9999px; font-size: 0.72rem; font-weight: 600;">
-                                    ⏳ Lineup Pending
-                                </span>
-                            {% endif %}
+                            </div>
                         </div>
 
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <span class="status-badge status-{{ fixture.status }}" style="font-size: 0.75rem; padding: 0.2rem 0.55rem; border-radius: 9999px;">
-                                {{ fixture.status.replace('_', ' ').title() }}
-                            </span>
+                        <!-- Header Row 2: Schedule (Date/Time/Court) & Admin Allot Button -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; font-size: 0.75rem;">
+                            {% set tie_time = fixture.scheduled_time or (fixture.sub_matches[0].scheduled_time if fixture.sub_matches and fixture.sub_matches[0].scheduled_time else none) %}
+                            {% set tie_court = fixture.court_name or (fixture.sub_matches[0].court_name if fixture.sub_matches and fixture.sub_matches[0].court_name else none) %}
+                            {% if tie_time %}
+                                <span style="background: rgba(59, 130, 246, 0.12); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.25); padding: 3px 9px; border-radius: 6px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; flex-shrink: 0;" title="Scheduled: {{ tie_time | ist('%d %b %Y, %I:%M %p IST') }}{% if tie_court %} • 🏟️ {{ tie_court }}{% endif %}">
+                                    📅 {{ tie_time | ist('%d %b, %I:%M %p') }}{% if tie_court %} • 🏟️ {{ tie_court }}{% endif %}
+                                </span>
+                            {% else %}
+                                <span style="background: rgba(255, 255, 255, 0.05); color: var(--text-muted); border: 1px solid var(--border-color); padding: 3px 9px; border-radius: 6px; font-weight: 500; white-space: nowrap; flex-shrink: 0;">
+                                    📅 Schedule Pending
+                                </span>
+                            {% endif %}
+
                             {% if current_user and current_user.role in ['admin', 'superadmin'] and fixture.participant1 and fixture.participant2 %}
                             <button type="button" 
                                 id="btn-allot-lineup-{{ fixture.id }}"
                                 class="btn btn-secondary btn-small" 
-                                style="font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: var(--radius-sm); display: inline-flex; align-items: center; gap: 0.3rem;"
+                                style="font-size: 0.72rem; padding: 0.25rem 0.6rem; border-radius: var(--radius-sm); display: inline-flex; align-items: center; gap: 0.25rem; white-space: nowrap; flex-shrink: 0;"
                                 data-fixture-id="{{ fixture.id }}"
                                 data-t1-name="{{ fixture.participant1.name|escape }}"
                                 data-t2-name="{{ fixture.participant2.name|escape }}"
@@ -839,60 +941,123 @@
                         </div>
                     </div>
 
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: var(--radius-md);">
-                        <div style="flex: 1; text-align: left;">
-                            <div style="font-weight: 700; font-size: 1.05rem; color: {% if fixture.winner_id == fixture.participant1_id %}var(--primary){% else %}var(--text-primary){% endif %};">
-                                {% if fixture.winner_id == fixture.participant1_id %}🏆 {% endif %}{{ fixture.participant1.name if fixture.participant1 else 'TBD' }}
+                    <!-- Team Scoreboard Strip -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.9rem; background: var(--bg-tertiary); border: 1px solid var(--border-color); padding: 0.6rem 0.75rem; border-radius: var(--radius-md); min-height: 52px;">
+                        <div style="flex: 1; text-align: left; min-width: 0;">
+                            <div style="font-weight: 750; font-size: 0.98rem; display: flex; align-items: center; gap: 0.3rem; color: {% if fixture.winner_id == fixture.participant1_id %}var(--primary){% else %}var(--text-primary){% endif %}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ fixture.participant1.name if fixture.participant1 else 'TBD' }}">
+                                {% if fixture.winner_id == fixture.participant1_id %}<span style="font-size: 0.85rem; flex-shrink: 0;">🏆</span>{% endif %}
+                                <span style="overflow: hidden; text-overflow: ellipsis;">{{ fixture.participant1.name if fixture.participant1 else 'TBD' }}</span>
                             </div>
                         </div>
-                        <div style="font-size: 1.3rem; font-weight: 800; color: var(--accent-primary); padding: 0 0.75rem; white-space: nowrap;">
-                            {{ fixture.score1 or 0 }} – {{ fixture.score2 or 0 }}
+                        
+                        <div style="flex-shrink: 0; padding: 0 0.4rem; text-align: center;">
+                            <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 0.2rem 0.6rem; border-radius: 9999px; font-size: 1.15rem; font-weight: 800; color: var(--accent-primary); font-family: monospace; letter-spacing: 0.05em; white-space: nowrap;">
+                                {{ fixture.score1 or 0 }} – {{ fixture.score2 or 0 }}
+                            </div>
                         </div>
-                        <div style="flex: 1; text-align: right;">
-                            <div style="font-weight: 700; font-size: 1.05rem; color: {% if fixture.winner_id == fixture.participant2_id %}var(--primary){% else %}var(--text-primary){% endif %};">
-                                {{ fixture.participant2.name if fixture.participant2 else 'TBD' }}{% if fixture.winner_id == fixture.participant2_id %} 🏆{% endif %}
+
+                        <div style="flex: 1; text-align: right; min-width: 0;">
+                            <div style="font-weight: 750; font-size: 0.98rem; display: flex; align-items: center; justify-content: flex-end; gap: 0.3rem; color: {% if fixture.winner_id == fixture.participant2_id %}var(--primary){% else %}var(--text-primary){% endif %}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ fixture.participant2.name if fixture.participant2 else 'TBD' }}">
+                                <span style="overflow: hidden; text-overflow: ellipsis;">{{ fixture.participant2.name if fixture.participant2 else 'TBD' }}</span>
+                                {% if fixture.winner_id == fixture.participant2_id %}<span style="font-size: 0.85rem; flex-shrink: 0;">🏆</span>{% endif %}
                             </div>
                         </div>
                     </div>
 
-                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <!-- 3 Rubbers List -->
+                    <div style="display: flex; flex-direction: column; gap: 0.55rem;">
                         {% for r in fixture.sub_matches | sort(attribute='rubber_number') %}
-                        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.65rem 0.85rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
-                            <div style="display: flex; flex-direction: column; gap: 0.15rem; flex: 1;">
-                                <div style="display: flex; align-items: center; gap: 0.4rem;">
-                                    <span style="font-weight: 700; color: #f59e0b; font-size: 0.75rem; text-transform: uppercase;">
-                                        {% if r.rubber_type == 'singles' %}🎾 Singles
-                                        {% elif r.rubber_type == 'doubles_1' %}👥 Doubles 1
-                                        {% elif r.rubber_type == 'doubles_2' %}👥 Doubles 2
-                                        {% else %}Rubber {{ r.rubber_number }}
-                                        {% endif %}
-                                    </span>
+                        
+                        {% set s1 = '-' %}
+                        {% set s2 = '-' %}
+                        {% if r.score1 %}
+                            {% set clean_s = r.score1.split('(')[0].strip() %}
+                            {% if '-' in clean_s %}
+                                {% set parts = clean_s.split('-') %}
+                                {% set s1 = parts[0].strip() %}
+                                {% set s2 = parts[1].strip() %}
+                            {% elif clean_s.isdigit() %}
+                                {% set s1 = clean_s %}
+                                {% set s2 = r.score2 if r.score2 is not none else '-' %}
+                            {% else %}
+                                {% set s1 = r.score1 %}
+                                {% set s2 = r.score2 if r.score2 is not none else '-' %}
+                            {% endif %}
+                        {% endif %}
+
+                        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.65rem 0.85rem; display: flex; flex-direction: column; gap: 0.4rem;">
+                            <!-- Rubber Header Bar: Type on Left, Schedule on Right -->
+                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border-color);">
+                                <span style="font-weight: 750; color: #f59e0b; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.3rem;">
+                                    {% if r.rubber_type == 'singles' %}🎾 Singles
+                                    {% elif r.rubber_type == 'doubles_1' %}👥 Doubles 1
+                                    {% elif r.rubber_type == 'doubles_2' %}👥 Doubles 2
+                                    {% else %}Rubber {{ r.rubber_number }}
+                                    {% endif %}
+                                </span>
+                                <div style="display: inline-flex; align-items: center; gap: 0.35rem; color: var(--text-muted); font-size: 0.72rem; white-space: nowrap; flex-shrink: 0;">
+                                    {% if r.scheduled_time %}
+                                        <span style="color: #60a5fa; font-weight: 600;">🕒 {{ r.scheduled_time | ist('%I:%M %p') }}</span>
+                                    {% endif %}
                                     {% if r.court_name %}
-                                    <span style="font-size: 0.75rem; color: var(--text-muted);">• 🏟️ {{ r.court_name }}</span>
-                                    {% endif %}
-                                </div>
-                                <div style="color: var(--text-secondary); font-size: 0.82rem;">
-                                    {% if r.p1_player1 %}
-                                        <span style="font-weight: 600; color: var(--text-primary);">{{ r.p1_player1.name }}{% if r.p1_player2 %} / {{ r.p1_player2.name }}{% endif %}</span>
-                                    {% else %}
-                                        <span style="color: #f59e0b; font-style: italic; font-size: 0.78rem;">⏳ Awaiting Captain's Nomination</span>
-                                    {% endif %}
-                                    <span style="color: var(--text-muted); margin: 0 0.3rem;">vs</span>
-                                    {% if r.p2_player1 %}
-                                        <span style="font-weight: 600; color: var(--text-primary);">{{ r.p2_player1.name }}{% if r.p2_player2 %} / {{ r.p2_player2.name }}{% endif %}</span>
-                                    {% else %}
-                                        <span style="color: #f59e0b; font-style: italic; font-size: 0.78rem;">⏳ Awaiting Captain's Nomination</span>
+                                        <span>• 🏟️ {{ r.court_name }}</span>
                                     {% endif %}
                                 </div>
                             </div>
-                            <div style="display: flex; align-items: center; gap: 0.75rem;">
-                                <span style="font-weight: 700; font-size: 0.95rem; color: {% if r.status == 'completed' %}var(--text-primary){% else %}var(--text-muted){% endif %};">
-                                    {% if r.score1 %}{{ r.score1 }}{% else %}-{% endif %}
-                                </span>
+
+                            <!-- Matchup & Score Rows -->
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.65rem;">
+                                <!-- Player Rows (Team 1 top row, Team 2 bottom row) -->
+                                <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.35rem;">
+                                    <!-- Team 1 Player(s) -->
+                                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-height: 20px;">
+                                        <div style="display: flex; align-items: center; gap: 0.35rem; min-width: 0; flex: 1;" title="{% if r.p1_player1 %}{{ r.p1_player1.name }}{% if r.p1_player2 %} / {{ r.p1_player2.name }}{% endif %}{% endif %}">
+                                            {% if r.winner_id and r.participant1_id and r.winner_id == r.participant1_id %}
+                                                <span style="font-size: 0.72rem; flex-shrink: 0;">🏆</span>
+                                            {% endif %}
+                                            {% if r.p1_player1 %}
+                                                <span style="font-size: 0.82rem; font-weight: {% if r.winner_id and r.participant1_id and r.winner_id == r.participant1_id %}700{% else %}500{% endif %}; color: {% if r.winner_id and r.participant1_id and r.winner_id == r.participant1_id %}var(--text-primary){% elif r.status == 'completed' %}var(--text-secondary){% else %}var(--text-primary){% endif %}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                                    {{ r.p1_player1.name }}{% if r.p1_player2 %} <span style="color: var(--text-muted); font-weight: 400;">/</span> {{ r.p1_player2.name }}{% endif %}
+                                                </span>
+                                            {% else %}
+                                                <span style="color: #f59e0b; font-style: italic; font-size: 0.76rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">⏳ Nomination Pending</span>
+                                            {% endif %}
+                                        </div>
+                                        <span style="flex-shrink: 0; font-family: monospace; font-size: 0.85rem; font-weight: 750; min-width: 24px; text-align: center; color: {% if r.winner_id and r.participant1_id and r.winner_id == r.participant1_id %}var(--accent-success){% elif r.status == 'completed' %}var(--text-secondary){% else %}var(--text-muted){% endif %}; background: var(--bg-secondary); padding: 1px 6px; border-radius: 4px; border: 1px solid var(--border-color);">
+                                            {{ s1 }}
+                                        </span>
+                                    </div>
+
+                                    <!-- Team 2 Player(s) -->
+                                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-height: 20px;">
+                                        <div style="display: flex; align-items: center; gap: 0.35rem; min-width: 0; flex: 1;" title="{% if r.p2_player1 %}{{ r.p2_player1.name }}{% if r.p2_player2 %} / {{ r.p2_player2.name }}{% endif %}{% endif %}">
+                                            {% if r.winner_id and r.participant2_id and r.winner_id == r.participant2_id %}
+                                                <span style="font-size: 0.72rem; flex-shrink: 0;">🏆</span>
+                                            {% endif %}
+                                            {% if r.p2_player1 %}
+                                                <span style="font-size: 0.82rem; font-weight: {% if r.winner_id and r.participant2_id and r.winner_id == r.participant2_id %}700{% else %}500{% endif %}; color: {% if r.winner_id and r.participant2_id and r.winner_id == r.participant2_id %}var(--text-primary){% elif r.status == 'completed' %}var(--text-secondary){% else %}var(--text-primary){% endif %}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                                    {{ r.p2_player1.name }}{% if r.p2_player2 %} <span style="color: var(--text-muted); font-weight: 400;">/</span> {{ r.p2_player2.name }}{% endif %}
+                                                </span>
+                                            {% else %}
+                                                <span style="color: #f59e0b; font-style: italic; font-size: 0.76rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">⏳ Nomination Pending</span>
+                                            {% endif %}
+                                        </div>
+                                        <span style="flex-shrink: 0; font-family: monospace; font-size: 0.85rem; font-weight: 750; min-width: 24px; text-align: center; color: {% if r.winner_id and r.participant2_id and r.winner_id == r.participant2_id %}var(--accent-success){% elif r.status == 'completed' %}var(--text-secondary){% else %}var(--text-muted){% endif %}; background: var(--bg-secondary); padding: 1px 6px; border-radius: 4px; border: 1px solid var(--border-color);">
+                                            {{ s2 }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Action Button Column -->
                                 {% if current_user and current_user.role in ['admin', 'superadmin'] %}
-                                <button type="button" class="btn btn-secondary btn-small" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" onclick="openMatchModal({{ r.id }}, '{{ r.status }}', '{{ r.scheduled_time.strftime('%Y-%m-%dT%H:%M') if r.scheduled_time else '' }}', '{{ (r.p1_player1.name if r.p1_player1 else (fixture.participant1.name if fixture.participant1 else 'P1'))|escape }}', {{ r.participant1_id or 'null' }}, '{{ (r.p2_player1.name if r.p2_player1 else (fixture.participant2.name if fixture.participant2 else 'P2'))|escape }}', {{ r.participant2_id or 'null' }}, true, '{{ r.score1 or '' }}', '{{ r.score2 or '' }}', 'games', 1, {{ category.total_games or 7 }}, null, {{ r.winner_id or 'null' }}, {{ r.rubber_number or 'null' }})">
-                                    ✏️ Score
-                                </button>
+                                <div style="flex-shrink: 0; border-left: 1px solid var(--border-color); padding-left: 0.65rem; display: flex; align-items: center;">
+                                    <button type="button" 
+                                        class="btn btn-secondary btn-small" 
+                                        style="padding: 0.35rem 0.55rem; font-size: 0.75rem; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.25rem;" 
+                                        onclick="openMatchModal({{ r.id }}, '{{ r.status }}', '{{ r.scheduled_time.strftime('%Y-%m-%dT%H:%M') if r.scheduled_time else '' }}', '{{ (r.p1_player1.name if r.p1_player1 else (fixture.participant1.name if fixture.participant1 else 'P1'))|escape }}', {{ r.participant1_id or 'null' }}, '{{ (r.p2_player1.name if r.p2_player1 else (fixture.participant2.name if fixture.participant2 else 'P2'))|escape }}', {{ r.participant2_id or 'null' }}, true, '{{ r.score1 or '' }}', '{{ r.score2 or '' }}', 'games', 1, {{ category.total_games or 7 }}, null, {{ r.winner_id or 'null' }}, {{ r.rubber_number or 'null' }})">
+                                        ✏️ Score
+                                    </button>
+                                </div>
                                 {% endif %}
                             </div>
                         </div>
@@ -965,6 +1130,7 @@
                 </table>
             </div>
             {% endif %}
+            </div><!-- /.group-fixtures-container -->
         </div>
         {% endfor %}
         
@@ -983,13 +1149,46 @@
         {% endif %}
 
         {% set knockout_exists = matches | selectattr('match_type', 'equalto', 'knockout') | list | length > 0 %}
-        {% if category.status == 'in_progress' and not knockout_exists %}
+        {% if category.status in ['in_progress', 'setup', 'upcoming'] and not knockout_exists %}
         {% if current_user and current_user.role in ['admin', 'superadmin'] %}
-<form method="POST"
-            action="{{ url_for('category.start_knockout_stage', slug=tournament.url_slug, category_id=category.id) }}">
-            <button type="submit" class="btn btn-primary btn-large">Start Knockout Stage</button>
-        </form>
-{% endif %}
+            {% if pending_group_count and pending_group_count > 0 %}
+            <div class="group-stage-status-banner" style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: var(--radius-md); padding: 1.25rem; margin-top: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span style="font-size: 1.5rem;">⏳</span>
+                    <div>
+                        <div style="font-weight: 700; color: #f59e0b; font-size: 0.95rem;">
+                            Group Stage in Progress ({{ pending_group_count }} of {{ total_group_matches or pending_group_count }} match{% if pending_group_count != 1 %}es{% endif %} remaining)
+                        </div>
+                        <div style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                            All group stage matches must be completed before the Knockout Stage can be generated and started.
+                        </div>
+                    </div>
+                </div>
+                <button type="button" disabled class="btn btn-secondary" style="opacity: 0.6; cursor: not-allowed; font-weight: 600;" title="Complete remaining group matches first">
+                    🔒 Knockout Locked (Group Play Remaining)
+                </button>
+            </div>
+            {% else %}
+            <div class="group-stage-status-banner" style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: var(--radius-md); padding: 1.25rem; margin-top: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span style="font-size: 1.5rem;">🏆</span>
+                    <div>
+                        <div style="font-weight: 700; color: #10b981; font-size: 0.95rem;">
+                            All Group Stage Matches Completed!
+                        </div>
+                        <div style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                            Standings are finalized. Ready to generate the Knockout Stage draw from group qualifiers.
+                        </div>
+                    </div>
+                </div>
+                <form method="POST" action="{{ url_for('category.start_knockout_stage', slug=tournament.url_slug, category_id=category.id) }}" style="margin: 0;">
+                    <button type="submit" class="btn btn-primary btn-large" style="background: #10b981; border-color: #10b981; font-weight: 700; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);" onclick="return confirm('Generate Knockout Bracket and seed top group qualifiers?');">
+                        🚀 Start Knockout Stage ➔
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        {% endif %}
         {% endif %}
     </div>
     {% endif %}
@@ -1005,7 +1204,7 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 0.5rem;">
                     <div style="display: flex; align-items: center; gap: 8px;">
                         {% if match.scheduled_time %}
-                            <span class="match-status-badge badge-pending">📅 {{ match.scheduled_time.strftime('%d/%m/%Y %H:%M %p') }}{% if match.court_name %} | 🏟️ {{ match.court_name }}{% endif %}</span>
+                            <span class="match-status-badge badge-pending">📅 {{ match.scheduled_time|ist('%d/%m/%Y %I:%M %p IST') }}{% if match.court_name %} | 🏟️ {{ match.court_name }}{% endif %}</span>
                         {% endif %}
                         {% if match.status == 'completed' %}
                             <span class="match-status-badge badge-completed">✓ Complete</span>
@@ -1199,9 +1398,157 @@
         box-shadow: 0 10px 25px rgba(0,0,0,0.3);
         border-color: rgba(255,255,255,0.2);
     }
+
+    /* Group Switcher Tabs */
+    .group-tab-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.45rem 0.95rem;
+        font-size: 0.88rem;
+        font-weight: 650;
+        color: var(--text-secondary);
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        user-select: none;
+    }
+    .group-tab-btn:hover {
+        color: var(--text-primary);
+        border-color: rgba(255, 107, 0, 0.4);
+        background: var(--bg-tertiary);
+        transform: translateY(-1px);
+    }
+    .group-tab-btn.active {
+        color: #ffffff !important;
+        background: var(--primary) !important;
+        border-color: var(--primary) !important;
+        box-shadow: 0 4px 12px rgba(255, 107, 0, 0.35);
+        transform: translateY(-1px);
+    }
+    .group-tab-badge {
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 0.15rem 0.45rem;
+        border-radius: 9999px;
+        background: rgba(0, 0, 0, 0.2);
+        color: inherit;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    .group-tab-btn.active .group-tab-badge {
+        background: rgba(255, 255, 255, 0.25);
+        color: #ffffff;
+        border-color: rgba(255, 255, 255, 0.45);
+    }
+    .group-view-pane {
+        animation: groupPaneFadeIn 0.22s ease-out;
+    }
+    @keyframes groupPaneFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(3px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 </style>
 
 <script>
+// Group View Switcher for Multi-Group Categories
+function switchGroupView(groupId, btnElement, saveToStorage = true) {
+    const categoryId = '{{ category.id }}';
+    if (saveToStorage) {
+        try {
+            sessionStorage.setItem('tourneypro_active_group_' + categoryId, String(groupId));
+            const url = new URL(window.location.href);
+            if (groupId === 'all') {
+                url.searchParams.delete('group');
+            } else {
+                url.searchParams.set('group', groupId);
+            }
+            window.history.replaceState({}, '', url.toString());
+        } catch (e) {
+            console.warn('SessionStorage/URL error:', e);
+        }
+    }
+
+    // Update active tab buttons
+    document.querySelectorAll('.group-tab-btn').forEach(btn => btn.classList.remove('active'));
+    if (btnElement) {
+        btnElement.classList.add('active');
+    } else {
+        const matchingBtn = document.querySelector(`.group-tab-btn[data-group-target="${groupId}"]`);
+        if (matchingBtn) matchingBtn.classList.add('active');
+    }
+
+    const panes = document.querySelectorAll('.group-view-pane');
+    const fixturesContainers = document.querySelectorAll('.group-fixtures-container');
+
+    if (groupId === 'all') {
+        // Show all group panes (standings), hide all fixtures
+        panes.forEach(pane => {
+            pane.style.display = '';
+        });
+        fixturesContainers.forEach(fc => {
+            fc.style.display = 'none';
+        });
+    } else {
+        // Show only the selected group pane, and show its fixtures
+        panes.forEach(pane => {
+            if (pane.getAttribute('data-group-id') === String(groupId)) {
+                pane.style.display = '';
+                const fc = pane.querySelector('.group-fixtures-container');
+                if (fc) fc.style.display = '';
+            } else {
+                pane.style.display = 'none';
+            }
+        });
+    }
+
+    // Update viewing label
+    const label = document.getElementById('activeGroupLabel');
+    if (label) {
+        if (groupId === 'all') {
+            label.textContent = 'All Groups (Standings)';
+        } else {
+            const activeBtn = btnElement || document.querySelector(`.group-tab-btn[data-group-target="${groupId}"]`);
+            if (activeBtn) {
+                const nameEl = activeBtn.querySelector('.group-name-text');
+                label.textContent = (nameEl ? nameEl.textContent.trim() : ('Group ' + groupId)) + ' (Standings & Fixtures)';
+            }
+        }
+    }
+}
+
+// Function to re-apply active group view (used on initial load and by base.html auto-refresh)
+window.reapplyActiveGroupView = function() {
+    const categoryId = '{{ category.id }}';
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const groupFromUrl = urlParams.get('group');
+        const savedGroup = groupFromUrl || sessionStorage.getItem('tourneypro_active_group_' + categoryId);
+        if (savedGroup) {
+            const btn = document.querySelector(`.group-tab-btn[data-group-target="${savedGroup}"]`);
+            if (btn) {
+                switchGroupView(savedGroup, btn, false);
+            }
+        }
+    } catch (e) {
+        console.warn('reapplyActiveGroupView error:', e);
+    }
+};
+
+// Restore active group view on load
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof window.reapplyActiveGroupView === 'function') {
+        window.reapplyActiveGroupView();
+    }
+});
 
 
 function copyShareLink(url, btn) {
@@ -1650,6 +1997,7 @@ function updateBracketZoomUI() {
     if (zoomLabel) {
         zoomLabel.innerText = Math.round(bracketZoom * 100) + '%';
     }
+    setTimeout(renderBracketConnectors, 40);
 }
 
 function bracketCanvasZoom(delta) {
@@ -1681,6 +2029,170 @@ function bracketCanvasFitToScreen() {
     updateBracketZoomUI();
 }
 
+// Universal SVG Bracket Connectors (Connects across all rounds: R1 -> R2 -> R3 -> R4 -> Final, plus Double Elimination)
+function renderBracketConnectors() {
+    const brackets = document.querySelectorAll('.bracket');
+    if (!brackets.length) return;
+
+    brackets.forEach(bracket => {
+        let svg = bracket.querySelector('.bracket-svg-connectors');
+        if (!svg) {
+            svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('class', 'bracket-svg-connectors');
+            bracket.insertBefore(svg, bracket.firstChild);
+        }
+
+        while (svg.firstChild) {
+            svg.removeChild(svg.firstChild);
+        }
+
+        const bracketRect = bracket.getBoundingClientRect();
+        if (bracketRect.width === 0 || bracketRect.height === 0) return;
+
+        const zoom = (typeof bracketZoom !== 'undefined' && bracketZoom > 0) ? bracketZoom : 1.0;
+
+        // Size the SVG to cover the entire scrollable area of the bracket
+        const totalW = Math.max(bracket.scrollWidth, bracket.offsetWidth, 100);
+        const totalH = Math.max(bracket.scrollHeight, bracket.offsetHeight, 100);
+        svg.setAttribute('width', totalW);
+        svg.setAttribute('height', totalH);
+        svg.setAttribute('viewBox', `0 0 ${totalW} ${totalH}`);
+        svg.style.width = totalW + 'px';
+        svg.style.height = totalH + 'px';
+
+        const rounds = Array.from(bracket.querySelectorAll('.bracket-round')).filter(r => r.offsetParent !== null && r.style.display !== 'none');
+        if (rounds.length < 2) return;
+
+        let pathsCount = 0;
+        const scrollLeft = bracket.scrollLeft || 0;
+        const scrollTop = bracket.scrollTop || 0;
+
+        for (let rIdx = 0; rIdx < rounds.length - 1; rIdx++) {
+            const currRound = rounds[rIdx];
+            const nextRound = rounds[rIdx + 1];
+
+            const currWrappers = Array.from(currRound.querySelectorAll('.match-card-wrapper')).filter(w => w.offsetParent !== null && w.style.display !== 'none');
+            const nextWrappers = Array.from(nextRound.querySelectorAll('.match-card-wrapper')).filter(w => w.offsetParent !== null && w.style.display !== 'none');
+
+            if (!currWrappers.length || !nextWrappers.length) continue;
+
+            const isPairProgression = (currWrappers.length >= nextWrappers.length * 2);
+
+            nextWrappers.forEach((nextW, nextIdx) => {
+                const nextCard = nextW.querySelector('.tennis-match') || nextW;
+                const nextRect = nextCard.getBoundingClientRect();
+
+                const targetX = (nextRect.left - bracketRect.left + scrollLeft * zoom) / zoom;
+                const targetY = (nextRect.top + nextRect.height / 2 - bracketRect.top + scrollTop * zoom) / zoom;
+
+                const nextP1Id = nextCard.getAttribute('data-p1-id') || '';
+                const nextP2Id = nextCard.getAttribute('data-p2-id') || '';
+                const nextMatchId = nextW.getAttribute('data-match-id') || '';
+
+                if (isPairProgression) {
+                    const topW = currWrappers[nextIdx * 2];
+                    const botW = currWrappers[nextIdx * 2 + 1];
+
+                    if (topW && botW) {
+                        const topCard = topW.querySelector('.tennis-match') || topW;
+                        const botCard = botW.querySelector('.tennis-match') || botW;
+
+                        const topRect = topCard.getBoundingClientRect();
+                        const botRect = botCard.getBoundingClientRect();
+
+                        const topX = (topRect.right - bracketRect.left + scrollLeft * zoom) / zoom;
+                        const topY = (topRect.top + topRect.height / 2 - bracketRect.top + scrollTop * zoom) / zoom;
+
+                        const botX = (botRect.right - bracketRect.left + scrollLeft * zoom) / zoom;
+                        const botY = (botRect.top + botRect.height / 2 - bracketRect.top + scrollTop * zoom) / zoom;
+
+                        const maxX = Math.max(topX, botX);
+                        const midX = Math.round((maxX + targetX) / 2);
+
+                        const topP1Id = topCard.getAttribute('data-p1-id') || '';
+                        const topP2Id = topCard.getAttribute('data-p2-id') || '';
+                        const botP1Id = botCard.getAttribute('data-p1-id') || '';
+                        const botP2Id = botCard.getAttribute('data-p2-id') || '';
+
+                        // Top match branch
+                        const pTop = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        pTop.setAttribute('d', `M ${topX} ${topY} H ${midX} V ${targetY}`);
+                        pTop.setAttribute('class', 'bracket-connector-path');
+                        pTop.setAttribute('data-from-match', topW.getAttribute('data-match-id') || '');
+                        pTop.setAttribute('data-to-match', nextMatchId);
+                        pTop.setAttribute('data-player-ids', `${topP1Id},${topP2Id}`);
+                        svg.appendChild(pTop);
+
+                        // Bottom match branch
+                        const pBot = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        pBot.setAttribute('d', `M ${botX} ${botY} H ${midX} V ${targetY}`);
+                        pBot.setAttribute('class', 'bracket-connector-path');
+                        pBot.setAttribute('data-from-match', botW.getAttribute('data-match-id') || '');
+                        pBot.setAttribute('data-to-match', nextMatchId);
+                        pBot.setAttribute('data-player-ids', `${botP1Id},${botP2Id}`);
+                        svg.appendChild(pBot);
+
+                        // Trunk to target card
+                        const pTrunk = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        pTrunk.setAttribute('d', `M ${midX} ${targetY} H ${targetX}`);
+                        pTrunk.setAttribute('class', 'bracket-connector-path');
+                        pTrunk.setAttribute('data-to-match', nextMatchId);
+                        pTrunk.setAttribute('data-player-ids', `${nextP1Id},${nextP2Id}`);
+                        svg.appendChild(pTrunk);
+                        pathsCount += 3;
+                    } else if (topW || botW) {
+                        const singleW = topW || botW;
+                        const srcCard = singleW.querySelector('.tennis-match') || singleW;
+                        const srcRect = srcCard.getBoundingClientRect();
+                        const srcX = (srcRect.right - bracketRect.left + scrollLeft * zoom) / zoom;
+                        const srcY = (srcRect.top + srcRect.height / 2 - bracketRect.top + scrollTop * zoom) / zoom;
+                        const midX = Math.round((srcX + targetX) / 2);
+                        const srcP1Id = srcCard.getAttribute('data-p1-id') || '';
+                        const srcP2Id = srcCard.getAttribute('data-p2-id') || '';
+
+                        const pDirect = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        pDirect.setAttribute('d', `M ${srcX} ${srcY} H ${midX} V ${targetY} H ${targetX}`);
+                        pDirect.setAttribute('class', 'bracket-connector-path');
+                        pDirect.setAttribute('data-from-match', singleW.getAttribute('data-match-id') || '');
+                        pDirect.setAttribute('data-to-match', nextMatchId);
+                        pDirect.setAttribute('data-player-ids', `${srcP1Id},${srcP2Id}`);
+                        svg.appendChild(pDirect);
+                        pathsCount++;
+                    }
+                } else {
+                    // 1-to-1 round (e.g. Losers bracket minor round)
+                    const srcW = currWrappers[nextIdx];
+                    if (srcW) {
+                        const srcCard = srcW.querySelector('.tennis-match') || srcW;
+                        const srcRect = srcCard.getBoundingClientRect();
+
+                        const srcX = (srcRect.right - bracketRect.left + scrollLeft * zoom) / zoom;
+                        const srcY = (srcRect.top + srcRect.height / 2 - bracketRect.top + scrollTop * zoom) / zoom;
+                        const midX = Math.round((srcX + targetX) / 2);
+
+                        const srcP1Id = srcCard.getAttribute('data-p1-id') || '';
+                        const srcP2Id = srcCard.getAttribute('data-p2-id') || '';
+
+                        const pDirect = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        pDirect.setAttribute('d', `M ${srcX} ${srcY} H ${midX} V ${targetY} H ${targetX}`);
+                        pDirect.setAttribute('class', 'bracket-connector-path');
+                        pDirect.setAttribute('data-from-match', srcW.getAttribute('data-match-id') || '');
+                        pDirect.setAttribute('data-to-match', nextMatchId);
+                        pDirect.setAttribute('data-player-ids', `${srcP1Id},${srcP2Id}`);
+                        svg.appendChild(pDirect);
+                        pathsCount++;
+                    }
+                }
+            });
+        }
+
+        if (pathsCount > 0) {
+            bracket.classList.add('has-svg-connectors');
+        }
+    });
+}
+window.renderBracketConnectors = renderBracketConnectors;
+
 // Density Toggle (Standard vs Compact)
 function toggleBracketDensity(forceDensity) {
     const bracket = document.getElementById('bracketMainTree') || document.querySelector('.bracket');
@@ -1701,6 +2213,7 @@ function toggleBracketDensity(forceDensity) {
         if (densityText) densityText.innerText = 'Standard View';
         localStorage.setItem('tourneypro_bracket_density', 'compact');
     }
+    setTimeout(renderBracketConnectors, 60);
 }
 
 // Section & Quarter Filter
@@ -1722,6 +2235,7 @@ function filterBracketSection(sectionKey, btnElement) {
     if (sectionKey === 'all') {
         bracket.querySelectorAll('.match-card-wrapper').forEach(w => w.style.display = '');
         rounds.forEach(r => r.style.display = '');
+        setTimeout(renderBracketConnectors, 60);
         return;
     }
 
@@ -1738,6 +2252,7 @@ function filterBracketSection(sectionKey, btnElement) {
                 roundEl.querySelectorAll('.match-card-wrapper').forEach(w => w.style.display = '');
             }
         });
+        setTimeout(renderBracketConnectors, 60);
         return;
     }
 
@@ -1788,6 +2303,7 @@ function filterBracketSection(sectionKey, btnElement) {
             }
         });
     });
+    setTimeout(renderBracketConnectors, 60);
 }
 
 // Player Search in Bracket
@@ -1841,7 +2357,7 @@ function highlightPlayerPath(cardElement) {
     const p2Id = cardElement.getAttribute('data-p2-id');
     if (!p1Id && !p2Id) return;
 
-    const bracket = document.getElementById('bracketMainTree') || document.querySelector('.bracket');
+    const bracket = cardElement.closest('.bracket') || document.getElementById('bracketMainTree') || document.querySelector('.bracket');
     if (!bracket) return;
 
     const matches = bracket.querySelectorAll('.tennis-match');
@@ -1852,18 +2368,25 @@ function highlightPlayerPath(cardElement) {
             m.classList.add('path-highlighted');
         }
     });
+
+    bracket.querySelectorAll('.bracket-connector-path').forEach(p => {
+        const ids = (p.getAttribute('data-player-ids') || '').split(',');
+        if ((p1Id && ids.includes(p1Id)) || (p2Id && ids.includes(p2Id))) {
+            p.classList.add('path-highlighted');
+        }
+    });
 }
 
 function clearPlayerPath() {
-    const bracket = document.getElementById('bracketMainTree') || document.querySelector('.bracket');
-    if (!bracket) return;
-    bracket.querySelectorAll('.tennis-match.path-highlighted').forEach(m => m.classList.remove('path-highlighted'));
+    document.querySelectorAll('.tennis-match.path-highlighted').forEach(m => m.classList.remove('path-highlighted'));
+    document.querySelectorAll('.bracket-connector-path.path-highlighted').forEach(p => p.classList.remove('path-highlighted'));
 }
 
 // Drag-to-Pan Event Handlers
 function setupBracketPan() {
     const viewport = document.getElementById('bracketViewport');
-    if (!viewport) return;
+    if (!viewport || viewport.dataset.panSetup) return;
+    viewport.dataset.panSetup = 'true';
 
     viewport.addEventListener('mousedown', (e) => {
         // Only pan if clicking on empty canvas/background, not on interactive cards or buttons
@@ -1906,8 +2429,8 @@ function setupBracketPan() {
     }, { passive: false });
 }
 
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', () => {
+// Initialize on page load and turbo transitions
+function initBracketView() {
     setupBracketPan();
 
     // Auto-select initial density
@@ -1921,16 +2444,52 @@ document.addEventListener('DOMContentLoaded', () => {
             toggleBracketDensity(false);
         }
     }
-});
+    setTimeout(renderBracketConnectors, 60);
+    setTimeout(renderBracketConnectors, 200);
+    setTimeout(renderBracketConnectors, 600);
+}
+
+document.addEventListener('DOMContentLoaded', initBracketView);
+document.addEventListener('turbo:load', initBracketView);
+window.addEventListener('load', () => setTimeout(renderBracketConnectors, 100));
+window.addEventListener('resize', () => requestAnimationFrame(renderBracketConnectors));
+window.addEventListener('tourneypro:themechange', () => requestAnimationFrame(renderBracketConnectors));
+
+// Re-render when bracket scrolls into viewport or viewport is dragged/scrolled
+if (window.IntersectionObserver) {
+    const bracketViewObs = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                renderBracketConnectors();
+            }
+        });
+    }, { rootMargin: '300px' });
+    const vp = document.getElementById('bracketViewport');
+    if (vp) bracketViewObs.observe(vp);
+}
 
 // Category In-Page Section Navigation & Hash Routing
 function handleCategorySectionNav(sectionId, event) {
     if (event) event.preventDefault();
+    if (sectionId === 'fixtures') {
+        const activePane = document.querySelector('.group-view-pane:not([style*="display: none"])');
+        const targetFixtures = activePane ? activePane.querySelector('.group-fixtures-header') : null;
+        if (targetFixtures) {
+            history.pushState(null, null, '#' + sectionId);
+            targetFixtures.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            updateSubnavActive(sectionId);
+            return;
+        }
+    }
     const el = document.getElementById(sectionId);
     if (el) {
+        if (sectionId === 'procedure-guide' && el.tagName === 'DETAILS') {
+            el.open = true;
+        }
         history.pushState(null, null, '#' + sectionId);
         el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         updateSubnavActive(sectionId);
+        setTimeout(renderBracketConnectors, 100);
     }
 }
 
@@ -1954,6 +2513,9 @@ function processUrlHash() {
         setTimeout(() => {
             const el = document.getElementById(rawHash);
             if (el) {
+                if (rawHash === 'procedure-guide' && el.tagName === 'DETAILS') {
+                    el.open = true;
+                }
                 el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 updateSubnavActive(rawHash);
                 if (rawHash === 'fixtures') {
@@ -1975,7 +2537,18 @@ function processUrlHash() {
     }
 }
 
-window.addEventListener('DOMContentLoaded', processUrlHash);
+window.addEventListener('DOMContentLoaded', () => {
+    processUrlHash();
+    const guideEl = document.getElementById('procedure-guide');
+    if (guideEl && guideEl.tagName === 'DETAILS') {
+        guideEl.addEventListener('toggle', () => {
+            const lbl = guideEl.querySelector('.procedure-toggle-label');
+            const arr = guideEl.querySelector('.procedure-toggle-arrow');
+            if (lbl) lbl.innerText = guideEl.open ? 'Collapse Guide' : 'Expand Guide';
+            if (arr) arr.style.transform = guideEl.open ? 'rotate(180deg)' : 'rotate(0deg)';
+        });
+    }
+});
 window.addEventListener('hashchange', processUrlHash);
 </script>
 

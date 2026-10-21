@@ -136,7 +136,7 @@
                                 <div>🏅 <strong>{{ category.format.replace('_', ' ').title() }}</strong></div>
                                 <div>👥 <strong>{{ category.participants|length }}</strong> players</div>
                                 <div>💰 <strong>{% if category.entry_fee > 0 %}₹{{ category.entry_fee }}{% else %}Free{% endif %}</strong></div>
-                                <div>⏰ <strong>{{ category.start_date_time.strftime('%b %d, %H:%M') if category.start_date_time else 'Auto' }}</strong></div>
+                                <div>⏰ <strong>{{ category.start_date_time|ist('%b %d, %I:%M %p IST') if category.start_date_time else 'Auto' }}</strong></div>
                             </div>
 
                             <div style="margin-top: auto; display: flex; gap: 0.4rem; padding-top: 0.25rem;">

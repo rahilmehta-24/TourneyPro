@@ -51,6 +51,7 @@
     --border-color: rgba(255, 255, 255, 0.12);
     --border-strong: rgba(255, 255, 255, 0.22);
     --border-subtle: rgba(255, 255, 255, 0.06);
+    --bracket-line: rgba(255, 255, 255, 0.65);
 
     /* Compatibility aliases */
     --primary: var(--accent-primary);
@@ -80,6 +81,7 @@
     --border-color: rgba(0, 0, 0, 0.1);
     --border-strong: rgba(0, 0, 0, 0.22);
     --border-subtle: rgba(0, 0, 0, 0.05);
+    --bracket-line: #475569;
 
     /* Compatibility aliases */
     --primary: var(--accent-primary);
@@ -1290,6 +1292,7 @@ select option {
 
 /* ===== LAWN TENNIS SCOREBOARD & BRACKET DESIGN ===== */
 .bracket {
+    position: relative;
     display: flex;
     gap: 40px; /* Space between round columns */
     overflow-x: auto;
@@ -1297,10 +1300,61 @@ select option {
     align-items: stretch;
 }
 
+/* Dynamic SVG Connector Overlay Layer */
+.bracket-svg-connectors {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+    overflow: visible;
+}
+
+.bracket-connector-path {
+    stroke: var(--bracket-line, rgba(255, 255, 255, 0.65));
+    stroke-width: 2.5px;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+    transition: stroke 0.2s ease, stroke-width 0.2s ease, filter 0.2s ease;
+}
+
+.bracket-connector-path.path-highlighted {
+    stroke: var(--accent-primary, #f97316) !important;
+    stroke-width: 3.5px !important;
+    filter: drop-shadow(0 0 6px rgba(249, 115, 22, 0.75)) !important;
+}
+
+.bracket-canvas .bracket {
+    overflow: visible;
+    width: max-content;
+}
+
+/* Completely disable legacy CSS pseudo-element connectors - dynamic SVG connectors handle all bracket rounds */
+.match-card-wrapper::before,
+.match-card-wrapper::after,
+.bracket-round .match-card-wrapper::before,
+.bracket-round .match-card-wrapper::after,
+.bracket-round .tennis-match::before,
+.bracket-round .tennis-match::after,
+.bracket-round:not(:first-child) .match-card-wrapper::before,
+.bracket-round:not(:first-child) .tennis-match::before,
+.bracket.has-svg-connectors .match-card-wrapper::before,
+.bracket.has-svg-connectors .match-card-wrapper::after,
+.bracket.has-svg-connectors .tennis-match::before {
+    display: none !important;
+    content: none !important;
+}
+
 .bracket-round {
     display: flex;
     flex-direction: column;
     min-width: 360px;
+    position: relative;
+    z-index: 2;
 }
 
 .round-matches {
@@ -1317,69 +1371,7 @@ select option {
     align-items: center;
     justify-content: center;
     flex: 1;
-}
-
-/* Horizontal connector line on the right of the match */
-.match-card-wrapper::after {
-    content: "";
-    position: absolute;
-    right: -20px;
-    top: 50%;
-    width: 20px;
-    height: 2px;
-    background: rgba(255, 255, 255, 0.15);
-    z-index: 1;
-}
-
-/* Hide right horizontal connector in the last round */
-.bracket-round:last-child .match-card-wrapper::after {
-    display: none;
-}
-
-/* Horizontal connector line on the left of the match (incoming) */
-.bracket-round:not(:first-child) .tennis-match::before {
-    content: "";
-    position: absolute;
-    left: -20px;
-    top: 50%;
-    width: 20px;
-    height: 2px;
-    background: rgba(255, 255, 255, 0.15);
-    z-index: 1;
-}
-
-/* Vertical connector line on the right of the column to connect the pair */
-.match-card-wrapper::before {
-    content: "";
-    position: absolute;
-    right: -20px;
-    width: 2px;
-    background: rgba(255, 255, 255, 0.15);
-    z-index: 1;
-}
-
-/* Hide vertical connector in the last round */
-.bracket-round:last-child .match-card-wrapper::before {
-    display: none;
-}
-
-/* Hide vertical connector when not needed (e.g. 1-to-1 rounds in losers bracket) */
-.match-card-wrapper.no-vertical-connector::before {
-    display: none;
-}
-
-/* Odd matches: vertical connector goes down to meet the midpoint */
-.match-card-wrapper.match-pair-top::before,
-.match-card-wrapper:nth-child(odd)::before {
-    top: 50%;
-    bottom: 0;
-}
-
-/* Even matches: vertical connector goes up to meet the midpoint */
-.match-card-wrapper.match-pair-bottom::before,
-.match-card-wrapper:nth-child(even)::before {
-    top: 0;
-    bottom: 50%;
+    z-index: 2;
 }
 
 /* Tennis Scoreboard Card */
@@ -1626,19 +1618,7 @@ select option {
     padding: 10px 0;
 }
 
-.bracket.bracket-compact .match-card-wrapper::after {
-    right: -18px;
-    width: 18px;
-}
 
-.bracket.bracket-compact .bracket-round:not(:first-child) .tennis-match::before {
-    left: -18px;
-    width: 18px;
-}
-
-.bracket.bracket-compact .match-card-wrapper::before {
-    right: -18px;
-}
 
 .bracket.bracket-compact .tennis-match {
     width: 246px;
@@ -2532,8 +2512,10 @@ body.pdf-export-mode .tennis-set-box {
 
 body.pdf-export-mode .match-card-wrapper::after,
 body.pdf-export-mode .match-card-wrapper::before,
-body.pdf-export-mode .tennis-match::before {
-    background: #666 !important;
+body.pdf-export-mode .bracket-round .tennis-match::before,
+body.pdf-export-mode .bracket-round:not(:first-child) .tennis-match::before {
+    display: none !important;
+    content: none !important;
 }
 
 body.pdf-export-mode .podium-card {
@@ -2551,14 +2533,6 @@ body.pdf-export-mode .page-title,
 body.pdf-export-mode h2,
 body.pdf-export-mode h3 {
     color: #000000 !important;
-}
-
-/* Ensure bracket connector pseudo-elements print clearly */
-body.pdf-export-mode .match-card-wrapper::after, 
-body.pdf-export-mode .match-card-wrapper::before, 
-body.pdf-export-mode .bracket-round:not(:first-child) .tennis-match::before {
-    background: #333 !important;
-    z-index: 10 !important;
 }
 
 @media print {
@@ -2946,8 +2920,7 @@ select.form-input:user-invalid {
     border-color: rgba(16, 185, 129, 0.5) !important;
 }
 
-/* Content visibility for offscreen bracket rounds and dense data */
-.bracket-round:not(:first-child),
+/* Content visibility for dense data */
 .group-standings-section {
     content-visibility: auto;
     contain-intrinsic-size: 0 450px;

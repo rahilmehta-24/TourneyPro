@@ -23,15 +23,39 @@ def dashboard():
     if current_user.role == 'superadmin':
         all_players = Player.query.filter(Player.registration_no.isnot(None), Player.registration_no != '').order_by(Player.name).all()
     
-    from app.domain.models import Participant, Match
+    from app.domain.models import Participant, Match, TeamMember
     from datetime import datetime
     
     dashboard_data = []
     for p in players:
-        participants = Participant.query.filter(
+        # 1. Direct registrations (individual events or captain participant record)
+        direct_participants = Participant.query.filter(
             db.or_(Participant.player_id == p.id, Participant.player2_id == p.id)
         ).all()
-        participant_ids = [part.id for part in participants]
+
+        # 2. Squad team memberships (Team League events: Vice-Captains, Tiers B-E, squad members)
+        team_memberships = TeamMember.query.filter_by(player_id=p.id).all()
+        team_participant_ids = [tm.team_id for tm in team_memberships if tm.team_id]
+        team_participants = Participant.query.filter(Participant.id.in_(team_participant_ids)).all() if team_participant_ids else []
+
+        # Unified participants list
+        participant_map = {part.id: part for part in (direct_participants + team_participants)}
+        participant_ids = list(participant_map.keys())
+
+        # Compile assigned teams for squad visibility
+        assigned_teams = []
+        for tm in team_memberships:
+            team = tm.team
+            if team:
+                assigned_teams.append({
+                    'team': team,
+                    'tournament': team.tournament,
+                    'category': team.category,
+                    'group': team.group,
+                    'tier': tm.tier,
+                    'role': 'Captain' if team.player_id == p.id else (f"Tier {tm.tier}" if tm.tier else "Player"),
+                    'teammates': team.team_members
+                })
         
         matches = []
         if participant_ids:
@@ -55,6 +79,7 @@ def dashboard():
             'upcoming_matches': upcoming_matches,
             'match_history': match_history,
             'participant_ids': participant_ids,
+            'assigned_teams': assigned_teams,
             'stats': {
                 'matches_played': len(match_history),
                 'wins': wins,

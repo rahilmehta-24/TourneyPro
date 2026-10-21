@@ -173,8 +173,74 @@
             <input type="number" id="entry_fee" name="entry_fee" class="form-input" min="0" step="0.01" value="0.0">
             <small>Set to 0 for a free category.</small>
         </div>
-        <div style="margin-top: 1.5rem; margin-bottom: 1.5rem; padding: 0.85rem 1.25rem; background: rgba(59, 130, 246, 0.05); border-left: 3px solid var(--accent-primary, #3b82f6); border-radius: var(--radius-sm); font-size: 0.9rem; color: var(--text-secondary);">
-            📅 <strong>Tournament Scheduling:</strong> Courts, match durations, daily operating hours, and tournament dates are managed globally from the tournament dashboard.
+        <!-- CATEGORY DATES & OPERATING HOURS (Item 5) -->
+        <div style="margin-top: 1.5rem; margin-bottom: 1.5rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                <label style="display: block; font-size: 1rem; font-weight: 700; color: var(--text-primary); margin: 0;">
+                    📅 Category Dates &amp; Daily Operating Hours *
+                </label>
+                <span style="font-size: 0.78rem; color: var(--text-muted); background: var(--bg-card); padding: 0.2rem 0.5rem; border-radius: 9999px; border: 1px solid var(--border-color);">
+                    Required for Order of Play
+                </span>
+            </div>
+            <p style="margin: 0 0 1rem; color: var(--text-secondary); font-size: 0.83rem; line-height: 1.4;">
+                Specify the start and end dates for this category, along with the start and end times for all dates it spans.
+            </p>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                <div>
+                    <label for="category_start_date" style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.3rem;">
+                        Category Start Date *
+                    </label>
+                    <input type="date" id="category_start_date" name="start_date" class="form-input" required
+                           value="{{ tournament.start_date.strftime('%Y-%m-%d') if tournament.start_date else '' }}"
+                           min="{{ tournament.start_date.strftime('%Y-%m-%d') if tournament.start_date else '' }}"
+                           onchange="onCategoryDateChange()">
+                </div>
+
+                <div>
+                    <label for="category_end_date" style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.3rem;">
+                        Category End Date *
+                    </label>
+                    <input type="date" id="category_end_date" name="end_date" class="form-input" required
+                           value="{{ tournament.end_date.strftime('%Y-%m-%d') if tournament.end_date else (tournament.start_date.strftime('%Y-%m-%d') if tournament.start_date else '') }}"
+                           min="{{ tournament.start_date.strftime('%Y-%m-%d') if tournament.start_date else '' }}"
+                           onchange="onCategoryDateChange()">
+                </div>
+
+                <div>
+                    <label for="category_start_time" style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.3rem;">
+                        Default Daily Start Time *
+                    </label>
+                    <input type="time" id="category_start_time" name="start_time" class="form-input" required
+                           value="{{ tournament.court_operating_start or '09:00' }}"
+                           onchange="applyDefaultTimesToAllDates()">
+                </div>
+
+                <div>
+                    <label for="category_end_time" style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.3rem;">
+                        Default Daily End Time *
+                    </label>
+                    <input type="time" id="category_end_time" name="end_time" class="form-input" required
+                           value="{{ tournament.court_operating_end or '19:00' }}"
+                           onchange="applyDefaultTimesToAllDates()">
+                </div>
+            </div>
+
+            <!-- Dynamic Table of Spanned Dates -->
+            <div id="spannedDatesContainer" style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; flex-wrap: wrap; gap: 0.5rem;">
+                    <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary);">
+                        ⏰ Daily Match Windows Across Spanned Dates
+                    </span>
+                    <button type="button" class="btn btn-secondary btn-small" onclick="applyDefaultTimesToAllDates()" style="font-size: 0.75rem; padding: 0.2rem 0.55rem;">
+                        ⚡ Apply Defaults to All Days
+                    </button>
+                </div>
+                <div id="spannedDatesList" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <!-- Injected by JavaScript -->
+                </div>
+            </div>
         </div>
 
         <div id="group-stage-fields" style="display: none;">
@@ -466,9 +532,85 @@
         }
     }
 
+    // Dynamic Spanned Dates Breakdown (Item 5)
+    function onCategoryDateChange() {
+        const sInput = document.getElementById('category_start_date');
+        const eInput = document.getElementById('category_end_date');
+        if (!sInput || !eInput) return;
+        
+        if (sInput.value && (!eInput.value || eInput.value < sInput.value)) {
+            eInput.value = sInput.value;
+        }
+        eInput.min = sInput.value;
+        renderCategoryDatesBreakdown();
+    }
+
+    function renderCategoryDatesBreakdown() {
+        const sInput = document.getElementById('category_start_date');
+        const eInput = document.getElementById('category_end_date');
+        const list = document.getElementById('spannedDatesList');
+        const defaultStart = document.getElementById('category_start_time')?.value || '09:00';
+        const defaultEnd = document.getElementById('category_end_time')?.value || '19:00';
+        if (!sInput || !eInput || !list) return;
+
+        if (!sInput.value) {
+            list.innerHTML = '<p style="color: var(--text-muted); font-size: 0.8rem; margin: 0;">Please select category start and end dates.</p>';
+            return;
+        }
+
+        const startDate = new Date(sInput.value + 'T00:00:00');
+        const endDate = new Date((eInput.value || sInput.value) + 'T00:00:00');
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return;
+
+        let html = '';
+        let dayCount = 1;
+        const cur = new Date(startDate);
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        while (cur <= endDate) {
+            const y = cur.getFullYear();
+            const m = String(cur.getMonth() + 1).padStart(2, '0');
+            const d = String(cur.getDate()).padStart(2, '0');
+            const dateStr = `${y}-${m}-${d}`;
+            const dayLabel = `${dayNames[cur.getDay()]}, ${d} ${monthNames[cur.getMonth()]} ${y}`;
+
+            html += `
+            <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-card); padding: 0.55rem 0.85rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); flex-wrap: wrap; gap: 0.5rem;">
+                <div style="font-weight: 600; font-size: 0.85rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.4rem; min-width: 190px;">
+                    <span style="color: var(--accent-primary); font-size: 0.8rem; font-weight: 700;">Day ${dayCount}:</span>
+                    <span>${dayLabel}</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 0.35rem;">
+                        <label style="font-size: 0.78rem; color: var(--text-muted);">Start:</label>
+                        <input type="time" name="daily_start_${dateStr}" class="form-input daily-start-time" value="${defaultStart}" style="padding: 0.25rem 0.5rem; font-size: 0.82rem; width: 110px;">
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.35rem;">
+                        <label style="font-size: 0.78rem; color: var(--text-muted);">End:</label>
+                        <input type="time" name="daily_end_${dateStr}" class="form-input daily-end-time" value="${defaultEnd}" style="padding: 0.25rem 0.5rem; font-size: 0.82rem; width: 110px;">
+                    </div>
+                </div>
+            </div>`;
+
+            cur.setDate(cur.getDate() + 1);
+            dayCount++;
+        }
+
+        list.innerHTML = html;
+    }
+
+    function applyDefaultTimesToAllDates() {
+        const defaultStart = document.getElementById('category_start_time')?.value || '09:00';
+        const defaultEnd = document.getElementById('category_end_time')?.value || '19:00';
+        document.querySelectorAll('.daily-start-time').forEach(el => el.value = defaultStart);
+        document.querySelectorAll('.daily-end-time').forEach(el => el.value = defaultEnd);
+    }
+
     // Call once on load
     toggleScoringFields();
     toggleGroupStageFields();
     toggleAgeCategory(document.getElementById('gender'), 'age_category');
+    onCategoryDateChange();
 </script>
 {% endblock %}

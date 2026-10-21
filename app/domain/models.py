@@ -80,6 +80,11 @@ class Category(db.Model):
     points_to_win = db.Column(db.Integer, default=11)
 
     # Court scheduling fields
+    start_date = db.Column(db.Date)                                    # Category start date
+    end_date = db.Column(db.Date)                                      # Category end date
+    start_time = db.Column(db.String(5), default='09:00')              # Default daily start HH:MM
+    end_time = db.Column(db.String(5), default='19:00')                # Default daily end HH:MM
+    daily_schedule = db.Column(db.Text)                                # JSON mapping date -> {"start": "HH:MM", "end": "HH:MM"}
     num_courts = db.Column(db.Integer, default=1)
     court_names = db.Column(db.Text)  # JSON or comma-separated list of court names e.g. 'Court 1, Court 2'
     start_date_time = db.Column(db.DateTime)
@@ -166,7 +171,7 @@ class Match(db.Model):
     points_to_win = db.Column(db.Integer)
 
     # Rubber & sub-match hierarchy
-    parent_match_id = db.Column(db.Integer, db.ForeignKey('matches.id'), nullable=True)
+    parent_match_id = db.Column(db.Integer, db.ForeignKey('matches.id', ondelete='CASCADE'), nullable=True)
     rubber_type = db.Column(db.String(20), nullable=True)  # 'singles', 'doubles_1', 'doubles_2'
     rubber_number = db.Column(db.Integer, nullable=True)   # 1, 2, 3
 
@@ -182,7 +187,7 @@ class Match(db.Model):
     winner = db.relationship('Participant', foreign_keys=[winner_id], backref='matches_won')
 
     # Sub-matches relationship and player rubber relationships
-    sub_matches = db.relationship('Match', backref=db.backref('parent_fixture', remote_side=[id]), cascade='all, delete-orphan')
+    sub_matches = db.relationship('Match', backref=db.backref('parent_fixture', remote_side=[id]), cascade='all, delete-orphan', passive_deletes=True)
     p1_player1 = db.relationship('Player', foreign_keys=[p1_player1_id])
     p1_player2 = db.relationship('Player', foreign_keys=[p1_player2_id])
     p2_player1 = db.relationship('Player', foreign_keys=[p2_player1_id])
@@ -390,6 +395,9 @@ class AuditLog(db.Model):
 
 class Registration(db.Model):
     __tablename__ = 'registrations'
+    __table_args__ = (
+        db.UniqueConstraint('tournament_id', 'category_id', 'player_id', name='uq_tournament_category_player'),
+    )
 
     id = db.Column(db.Integer, primary_key=True)
     tournament_id = db.Column(db.Integer, db.ForeignKey('tournaments.id'), nullable=False)

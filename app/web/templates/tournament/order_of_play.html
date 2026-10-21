@@ -56,13 +56,19 @@
     flex-wrap: wrap;
     gap: 1.25rem;
   }
-  .oop-filter-group {
+  .oop-unified-filter-bar {
     display: flex;
+    align-items: center;
     gap: 0.75rem;
     flex-wrap: wrap;
-    align-items: center;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   }
-  .oop-filter-group .form-input {
+  .oop-unified-filter-bar .form-input {
     height: 38px !important;
     padding: 0.4rem 0.85rem !important;
     font-size: 0.85rem !important;
@@ -755,21 +761,10 @@
       font-size: 0.825rem !important;
     }
 
-    /* Filter Bar Responsive Stack */
-    .oop-filter-group {
-      flex-direction: column !important;
-      align-items: stretch !important;
-      width: 100% !important;
-      gap: 0.65rem !important;
-    }
-    .oop-filter-group > * {
-      width: 100% !important;
-    }
-    .oop-filter-group input,
-    .oop-filter-group select,
-    .oop-filter-group form {
-      width: 100% !important;
-      min-width: 0 !important;
+    /* Unified Filter Bar Responsive */
+    .oop-unified-filter-bar {
+      gap: 0.6rem !important;
+      padding: 0.75rem !important;
     }
 
     /* Dispatch Toolbar Responsive Stack */
@@ -813,8 +808,8 @@
     </div>
   </div>
 
-  <!-- Header & Filters -->
-  <div class="oop-header-block">
+  <!-- Header Block -->
+  <div class="oop-header-block" style="margin-bottom: 1.25rem;">
     <div class="oop-header-content">
       <div>
         <div style="display: flex; align-items: center; gap: 0.75rem;">
@@ -829,38 +824,6 @@
           <strong>{{ total_matches_scheduled }}</strong> match{{ 'es' if total_matches_scheduled != 1 else '' }} scheduled
           {% endif %}
         </p>
-      </div>
-
-      <!-- Filters & Search -->
-      <div class="oop-filter-group">
-        <!-- Player Finder Search -->
-        <div style="position: relative; flex: 1;">
-          <input type="text" id="playerScheduleSearch" placeholder="🔍 Search player schedule..." class="form-input" style="min-width: 200px;" oninput="applyScheduleFilters()">
-        </div>
-
-        <!-- Category Filter -->
-        <select id="categoryScheduleFilter" class="form-input" style="min-width: 150px;" onchange="applyScheduleFilters()">
-          <option value="">All Categories</option>
-          {% for cat in tournament.categories %}
-          <option value="{{ cat.name|lower }}">{{ cat.name }}</option>
-          {% endfor %}
-        </select>
-
-        <!-- Court Filter -->
-        <form method="GET" style="display: flex; align-items: center; margin: 0;">
-          {% if active_date %}
-          <input type="hidden" name="date" value="{{ active_date.strftime('%Y-%m-%d') }}">
-          {% endif %}
-          {% if session_filter and session_filter != 'all' %}
-          <input type="hidden" name="session" value="{{ session_filter }}">
-          {% endif %}
-          <select name="court" class="form-input" style="min-width: 140px;" onchange="this.form.submit()">
-            <option value="">All Courts</option>
-            {% for c in all_courts %}
-            <option value="{{ c }}" {% if selected_court == c %}selected{% endif %}>{{ c }}</option>
-            {% endfor %}
-          </select>
-        </form>
       </div>
     </div>
   </div>
@@ -884,6 +847,47 @@
     {% endfor %}
   </div>
   {% endif %}
+
+  <!-- UNIFIED HORIZONTAL FILTER TOOLBAR -->
+  <div class="oop-unified-filter-bar">
+    <!-- Player Finder Search -->
+    <div style="flex: 2 1 220px; position: relative;">
+      <input type="text" id="playerScheduleSearch" placeholder="🔍 Search player schedule..." class="form-input" style="width: 100%;" oninput="applyScheduleFilters()">
+    </div>
+
+    <!-- Category Filter -->
+    <div style="flex: 1 1 160px;">
+      <select id="categoryScheduleFilter" class="form-input" style="width: 100%;" onchange="applyScheduleFilters()">
+        <option value="">All Categories</option>
+        {% for cat in tournament.categories %}
+        <option value="{{ cat.name|lower }}">{{ cat.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Court Filter -->
+    <div style="flex: 1 1 150px;">
+      <form method="GET" style="display: flex; align-items: center; margin: 0; width: 100%;">
+        {% if active_date %}
+        <input type="hidden" name="date" value="{{ active_date.strftime('%Y-%m-%d') }}">
+        {% endif %}
+        {% if session_filter and session_filter != 'all' %}
+        <input type="hidden" name="session" value="{{ session_filter }}">
+        {% endif %}
+        <select name="court" class="form-input" style="width: 100%;" onchange="this.form.submit()">
+          <option value="">All Courts</option>
+          {% for c in all_courts %}
+          <option value="{{ c }}" {% if selected_court == c %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </form>
+    </div>
+
+    <!-- Quick Reset (if filtered) -->
+    <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('playerScheduleSearch').value=''; document.getElementById('categoryScheduleFilter').value=''; applyScheduleFilters();" style="height: 38px; padding: 0 0.85rem; font-size: 0.82rem; white-space: nowrap;" title="Clear Search Filters">
+      🔄 Clear
+    </button>
+  </div>
 
   <!-- SESSION SELECTOR BAR (Day Session vs Evening Session) -->
   <div class="oop-session-bar">
@@ -1069,9 +1073,12 @@
   <td style="text-align: center;">
     {% if item.status == 'completed' %}
       <span class="oop-status-badge completed">✓ Completed</span>
-      {% if item.match.score1 %}
-      <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-top: 5px; letter-spacing: 0.3px;">
-        {{ item.match.score1 }}
+      {% set score_display = item.match | display_match_score %}
+      {% if score_display %}
+      <div style="margin-top: 5px;">
+        <span class="oop-score-badge" style="display: inline-block; padding: 2px 10px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.18); border-radius: var(--radius-sm); font-weight: 800; font-size: 0.95rem; color: var(--text-primary); letter-spacing: 0.5px;">
+          {{ score_display | safe }}
+        </span>
       </div>
       {% endif %}
       {% if current_user and current_user.role in ['admin', 'superadmin'] and item.category_id %}
@@ -1233,8 +1240,11 @@
       <div>
         {% if item.status == 'completed' %}
           <span class="oop-status-badge completed">✓ Completed</span>
-          {% if item.match.score1 %}
-          <span style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-left: 0.5rem;">{{ item.match.score1 }}</span>
+          {% set score_display = item.match | display_match_score %}
+          {% if score_display %}
+          <span class="oop-score-badge" style="display: inline-block; padding: 2px 8px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.18); border-radius: var(--radius-sm); font-weight: 800; font-size: 0.95rem; color: var(--text-primary); margin-left: 0.5rem; letter-spacing: 0.5px;">
+            {{ score_display | safe }}
+          </span>
           {% endif %}
         {% elif item.status == 'in_progress' %}
           <span class="oop-status-badge in-progress">🔴 IN PROGRESS</span>
@@ -1474,7 +1484,14 @@
             <td style="text-align: center;"><span class="vs-badge">vs</span></td>
             <td>{{ item.p2 }}</td>
             <td class="status-{{ item.status }}">
-              {% if item.status == 'completed' %}✓ Done
+              {% if item.status == 'completed' %}
+                {% set score_display = item.match | display_match_score %}
+                <strong>✓ Done</strong>
+                {% if score_display %}
+                <div style="font-size: 10px; font-weight: bold; margin-top: 2px; color: #111;">
+                  {{ score_display | safe }}
+                </div>
+                {% endif %}
               {% elif item.status == 'in_progress' %}● Live
               {% else %}Pending{% endif %}
             </td>
@@ -1513,7 +1530,14 @@
             <td style="text-align: center;"><span class="vs-badge">vs</span></td>
             <td>{{ item.p2 }}</td>
             <td class="status-{{ item.status }}">
-              {% if item.status == 'completed' %}✓ Done
+              {% if item.status == 'completed' %}
+                {% set score_display = item.match | display_match_score %}
+                <strong>✓ Done</strong>
+                {% if score_display %}
+                <div style="font-size: 10px; font-weight: bold; margin-top: 2px; color: #111;">
+                  {{ score_display | safe }}
+                </div>
+                {% endif %}
               {% elif item.status == 'in_progress' %}● Live
               {% else %}Pending{% endif %}
             </td>

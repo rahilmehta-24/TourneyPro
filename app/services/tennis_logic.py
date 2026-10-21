@@ -150,40 +150,57 @@ def validate_and_format_score(winner_id, p1_id, p2_id, num_sets, games_per_set, 
     return score1_str, score2_str
 
 
-def validate_team_rubber_score(p1_games, p2_games, p1_tb_pts=None, p2_tb_pts=None, total_games=7, is_live_update=False):
+def award_walkover_or_retirement_rubber(p1_games=0, p2_games=0, retiring_player=1, total_games=7):
     """
-    Validate a single rubber score within a group stage team tie based on dynamic total_games T.
-
-    Scoring rules:
-    - Total Games Target T (default 7):
-      The match is played for a total of T games.
-      In a completed match, the addition of both players' games MUST equal T (e.g. g1 + g2 == 7).
-      Examples of valid completed scores when T=7:
-        - 7-0 or 0-7 (sum = 7)
-        - 6-1 or 1-6 (sum = 7)
-        - 5-2 or 2-5 (sum = 7)
-        - 4-3 or 3-4 (sum = 7). If a player took the majority of games (e.g. 4 games won), no tiebreak is required!
-          If the match reached 3-3, a 7-point tiebreak may be entered to decide the final game (producing 4-3 with tiebreak score).
-    - 7-point Tiebreak at (T-1)//2 all (3-3 for T=7):
-      When the score reaches 3-3 (sum = 6 games played), a 7-point tiebreak is played to decide the final (7th) game.
-      The winner of the tiebreak is awarded the 7th game, making the final score 4-3 (or 3-4).
-      If the user inputs 3-3 with tiebreak points, the tiebreak winner automatically receives the final game.
-    - Live updates:
-      Scores cannot exceed T (g1 + g2 <= T). Partial scores (e.g. 2-1 or 3-3 in progress) are allowed.
-
-    Args:
-        p1_games: Games won by player/pair 1 (int or str)
-        p2_games: Games won by player/pair 2 (int or str)
-        p1_tb_pts: Tiebreak points won by player/pair 1 (optional)
-        p2_tb_pts: Tiebreak points won by player/pair 2 (optional)
-        total_games: Configured total games per rubber T (default 7)
-        is_live_update: Bypass completion checks if match is live/in-progress
+    Award remaining games to complete the T-game rubber (e.g. 7 games) to the opposition.
+    Per tournament organizer rule:
+    - If Player 1 retires at 2-3, remaining games (7 - 5 = 2) are awarded to Player 2 -> 2-5.
+    - If Player 2 retires at 3-2, remaining games (7 - 5 = 2) are awarded to Player 1 -> 5-2.
+    - If walkover before match starts (0-0): retiring player gets 0, opponent gets 7 -> 7-0 (or 0-7).
 
     Returns:
         tuple: (score1_str, score2_str, winner_indicator)
-               winner_indicator is 1 if p1 won, 2 if p2 won, or None if live/undecided.
     """
     T = int(total_games or 7)
+    try:
+        g1 = int(p1_games or 0)
+        g2 = int(p2_games or 0)
+    except (TypeError, ValueError):
+        g1, g2 = 0, 0
+
+    if g1 < 0: g1 = 0
+    if g2 < 0: g2 = 0
+
+    played = g1 + g2
+    remaining = max(0, T - played)
+
+    if retiring_player == 1:
+        # Opponent (Player 2) gets all remaining games
+        g2 += remaining
+        winner_indicator = 2
+    else:
+        # Opponent (Player 1) gets all remaining games
+        g1 += remaining
+        winner_indicator = 1
+
+    score1_str = f"{g1}-{g2}"
+    score2_str = f"{g2}-{g1}"
+    return score1_str, score2_str, winner_indicator
+
+
+def validate_team_rubber_score(p1_games, p2_games, p1_tb_pts=None, p2_tb_pts=None, total_games=7, is_live_update=False, is_walkover=False, is_retired=False, retiring_player=None):
+    """
+    Validates and formats scores for individual team rubbers under the configured total-games rule.
+    Per tournament organizer rules:
+    - Total Games Target (T): default 7 games per rubber.
+    - In a completed match, the sum of games MUST equal T (g1 + g2 == T).
+    - If a walkover or retirement occurs, the opposition is awarded all remaining games to reach T.
+    """
+    T = int(total_games or 7)
+    if is_walkover or is_retired:
+        r_player = int(retiring_player or 2)
+        return award_walkover_or_retirement_rubber(p1_games, p2_games, retiring_player=r_player, total_games=T)
+
     if T % 2 == 0 or T < 1:
         raise ValueError(f"Total games target must be a positive odd integer (e.g. 5, 7, 9). Received {T}.")
 

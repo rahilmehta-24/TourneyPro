@@ -248,6 +248,51 @@
                         </div>
                     </div>
 
+                    <!-- Assigned Squads (Team League) -->
+                    {% if data.assigned_teams %}
+                    <div style="margin-bottom: 2rem;">
+                        <h4 style="margin-top: 0; margin-bottom: 1rem; color: var(--text-primary); border-bottom: 2px solid #f59e0b; padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span>🛡️</span> My Assigned Teams & Squads
+                        </h4>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+                            {% for item in data.assigned_teams %}
+                            <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+                                    <div>
+                                        <h3 style="margin: 0; font-size: 1.2rem; color: var(--text-primary);">{{ item.team.name }}</h3>
+                                        <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 2px;">
+                                            {{ item.tournament.name if item.tournament else '' }} &bull; {{ item.category.name if item.category else '' }}
+                                        </div>
+                                    </div>
+                                    <span style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700;">
+                                        {{ item.role }}
+                                    </span>
+                                </div>
+                                {% if item.group %}
+                                <div style="display: inline-block; font-size: 0.8rem; background: rgba(37, 99, 235, 0.15); color: #60a5fa; padding: 0.2rem 0.5rem; border-radius: 4px; margin-bottom: 0.75rem;">
+                                    📊 Assigned to {{ item.group.name }}
+                                </div>
+                                {% endif %}
+                                <div style="font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.4rem;">Squad Teammates:</div>
+                                <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+                                    {% for member in item.teammates %}
+                                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 0.3rem 0.5rem; border-radius: 4px; font-size: 0.82rem;">
+                                        <span {% if member.player_id == data.player.id %}style="font-weight: 700; color: var(--accent-primary);"{% endif %}>
+                                            {{ member.player.name if member.player else 'Player' }}
+                                            {% if member.player_id == data.player.id %} (You){% endif %}
+                                        </span>
+                                        <span style="font-size: 0.72rem; color: var(--text-muted); background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 3px;">
+                                            Tier {{ member.tier or 'Member' }}
+                                        </span>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
                     <!-- Matches Container -->
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
                         <!-- Upcoming Matches -->
@@ -269,7 +314,7 @@
                                             <span style="{% if match.participant2_id in data.participant_ids %}color: var(--accent-primary);{% endif %}">{{ match.participant2.name if match.participant2 else 'TBD' }}</span>
                                         </div>
                                         <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-top: 0.5rem;">
-                                            <span style="background: rgba(255,255,255,0.1); padding: 0.2rem 0.5rem; border-radius: 4px;">📅 {{ match.scheduled_time.strftime('%b %d, %H:%M') if match.scheduled_time else 'TBD' }}</span>
+                                            <span style="background: rgba(255,255,255,0.1); padding: 0.2rem 0.5rem; border-radius: 4px;">📅 {{ match.scheduled_time|ist('%b %d, %I:%M %p IST') if match.scheduled_time else 'TBD' }}</span>
                                             <span style="background: rgba(255,255,255,0.1); padding: 0.2rem 0.5rem; border-radius: 4px;">🏟️ {{ match.court_name or 'TBD' }}</span>
                                         </div>
                                     </div>
@@ -291,7 +336,7 @@
                                     <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
                                         <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted);">
                                             <span>{{ match.tournament.name if match.tournament else 'Tournament' }}</span>
-                                            <span>{{ match.completed_at.strftime('%b %d, %Y') if match.completed_at else (match.scheduled_time.strftime('%b %d, %Y') if match.scheduled_time else '') }}</span>
+                                            <span>{{ match.completed_at|ist('%b %d, %Y') if match.completed_at else (match.scheduled_time|ist('%b %d, %Y') if match.scheduled_time else '') }}</span>
                                         </div>
                                         <div style="display: flex; justify-content: space-between; align-items: center; font-weight: bold;">
                                             <span style="{% if match.winner_id == match.participant1_id %}color: var(--accent-success);{% elif match.participant1_id in data.participant_ids %}color: var(--error);{% endif %}">

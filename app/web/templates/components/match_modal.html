@@ -138,9 +138,39 @@
                     </div>
 
                     <!-- Games Sum Helper / Total Games Rule indicator -->
-                    <div id="gamesSumHelper" style="margin-top: 0.75rem; text-align: center; font-size: 0.82rem; color: var(--text-secondary);">
-                        Total games played: <span id="gamesSumDisplay" style="font-weight: 700; color: var(--primary);">0</span> / <span id="gamesTargetDisplay" style="font-weight: 700;">7</span>
-                        <div id="gamesSumStatus" style="margin-top: 0.25rem; font-size: 0.78rem; color: var(--text-muted);">Sum of both players' games must equal <span class="gamesTargetSpan">7</span> to complete match.</div>
+                    <div id="gamesSumHelper" style="margin-top: 0.85rem; text-align: center; font-size: 0.82rem; color: var(--text-secondary);">
+                        <div style="margin-bottom: 0.4rem;">
+                            Total games played: <span id="gamesSumDisplay" style="font-weight: 800; color: #f97316;">0</span> / <span id="gamesTargetDisplay" style="font-weight: 700;">7</span>
+                        </div>
+                        <div id="gamesSumStatus" style="margin-top: 0.35rem; font-size: 0.8rem;">
+                            <span style="display:inline-block; padding: 3px 10px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 9999px; color: var(--text-muted); font-weight: 600;">
+                                Sum of both players' games must equal <span class="gamesTargetSpan">7</span> to complete match.
+                            </span>
+                        </div>
+                        <div id="teamLeagueProgressNote" style="margin-top: 0.4rem; font-size: 0.75rem; color: #94a3b8; font-style: italic;">
+                            🎾 First team across all 3 rubbers to reach 11 total games wins the tie.
+                        </div>
+
+                        <!-- Walkover / Retirement Assistant -->
+                        <div style="margin-top: 0.65rem;">
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="toggleWalkoverPanel()" style="font-size: 0.75rem; padding: 0.25rem 0.65rem; border-radius: 9999px; border: 1px dashed rgba(255,255,255,0.25);">
+                                🏳️ Walkover / Retired?
+                            </button>
+                        </div>
+                        <div id="walkoverPanel" style="display: none; margin-top: 0.65rem; background: rgba(255,255,255,0.03); border: 1px dashed rgba(255,255,255,0.2); border-radius: var(--radius-sm); padding: 0.65rem; text-align: center;">
+                            <div style="font-size: 0.74rem; color: #cbd5e1; margin-bottom: 0.4rem;">
+                                Remaining games to reach 7 are awarded to opponent:
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+                                <button type="button" class="btn btn-sm" onclick="applyWalkover(1)" style="font-size: 0.74rem; padding: 0.25rem 0.65rem; background: rgba(239, 68, 68, 0.18); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 9999px;">
+                                    🏳️ <span id="walkoverP1Name">P1</span> Retired
+                                </button>
+                                <button type="button" class="btn btn-sm" onclick="applyWalkover(2)" style="font-size: 0.74rem; padding: 0.25rem 0.65rem; background: rgba(239, 68, 68, 0.18); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 9999px;">
+                                    🏳️ <span id="walkoverP2Name">P2</span> Retired
+                                </button>
+                            </div>
+                        </div>
+
                         <div id="optionalTbToggle" style="display: none; margin-top: 0.5rem;">
                             <a href="javascript:void(0)" onclick="toggleOptionalTiebreak()" style="font-size: 0.78rem; color: #ffb74d; text-decoration: underline; cursor: pointer;">
                                 + Match was tied 3–3? Add tiebreak score
@@ -267,11 +297,11 @@ function onGamesInputChange() {
         if (sumDisplay) sumDisplay.innerText = sum;
 
         if (sum === T) {
-            if (sumStatus) sumStatus.innerHTML = `<span style="color: #34d399; font-weight: 600;">✅ Valid completed total (${sum}/${T} games)</span>`;
+            if (sumStatus) sumStatus.innerHTML = `<span style="display:inline-block; padding: 4px 12px; background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.45); border-radius: 9999px; color: #34d399; font-weight: 700; font-size: 0.85rem;">✅ Valid 7-Game Total (${sum}/${T} games)</span>`;
         } else if (sum < T) {
-            if (sumStatus) sumStatus.innerHTML = `<span style="color: #fbbf24;">In-progress (${sum}/${T} games played)</span>`;
+            if (sumStatus) sumStatus.innerHTML = `<span style="display:inline-block; padding: 4px 12px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 9999px; color: #fbbf24; font-weight: 600; font-size: 0.85rem;">⏳ In-progress (${sum}/${T} games played)</span>`;
         } else {
-            if (sumStatus) sumStatus.innerHTML = `<span style="color: #f87171; font-weight: 600;">⚠️ Exceeds total games target (${sum}/${T})</span>`;
+            if (sumStatus) sumStatus.innerHTML = `<span style="display:inline-block; padding: 4px 12px; background: rgba(239, 68, 68, 0.18); border: 1px solid rgba(239, 68, 68, 0.45); border-radius: 9999px; color: #f87171; font-weight: 700; font-size: 0.85rem;">⚠️ Exceeds total games target (${sum}/${T})</span>`;
         }
 
         // Auto-select winner based on higher games count
@@ -339,6 +369,45 @@ function toggleOptionalTiebreak() {
         }, 50);
     }
     if (optToggle) optToggle.style.display = 'none';
+}
+
+function toggleWalkoverPanel() {
+    const p = document.getElementById('walkoverPanel');
+    if (p) p.style.display = (p.style.display === 'none' || !p.style.display) ? 'block' : 'none';
+}
+
+function applyWalkover(retiredPlayer) {
+    const g1 = document.getElementById('set1_p1');
+    const g2 = document.getElementById('set1_p2');
+    const T = getMatchTotalGames();
+    let v1 = parseInt(g1?.value, 10);
+    let v2 = parseInt(g2?.value, 10);
+    if (isNaN(v1)) v1 = 0;
+    if (isNaN(v2)) v2 = 0;
+
+    if (retiredPlayer === 1) {
+        // P1 retired/walkover: remaining games to reach T awarded to P2
+        const remaining = Math.max(0, T - (v1 + v2));
+        if (g1) g1.value = v1;
+        if (g2) g2.value = v2 + remaining;
+        const w1 = document.getElementById('winner1');
+        const w2 = document.getElementById('winner2');
+        if (w1) w1.checked = false;
+        if (w2) w2.checked = true;
+    } else {
+        // P2 retired/walkover: remaining games to reach T awarded to P1
+        const remaining = Math.max(0, T - (v1 + v2));
+        if (g1) g1.value = v1 + remaining;
+        if (g2) g2.value = v2;
+        const w1 = document.getElementById('winner1');
+        const w2 = document.getElementById('winner2');
+        if (w1) w1.checked = true;
+        if (w2) w2.checked = false;
+    }
+    highlightWinnerCards();
+    onGamesInputChange();
+    const panel = document.getElementById('walkoverPanel');
+    if (panel) panel.style.display = 'none';
 }
 
 function onTbInputChange() {
@@ -485,6 +554,13 @@ function openMatchModal(matchId, currentStatus, currentScheduledTime, p1Name, p1
         const p2Pts = document.getElementById('p2PointsHeader');
         if (p1Pts) p1Pts.innerText = p1Name || 'P1';
         if (p2Pts) p2Pts.innerText = p2Name || 'P2';
+
+        const wP1 = document.getElementById('walkoverP1Name');
+        const wP2 = document.getElementById('walkoverP2Name');
+        if (wP1) wP1.innerText = p1Name || 'P1';
+        if (wP2) wP2.innerText = p2Name || 'P2';
+        const walkoverPanel = document.getElementById('walkoverPanel');
+        if (walkoverPanel) walkoverPanel.style.display = 'none';
         
         if (winnerId && winnerId == p1Id) document.getElementById('winner1').checked = true;
         else if (winnerId && winnerId == p2Id) document.getElementById('winner2').checked = true;

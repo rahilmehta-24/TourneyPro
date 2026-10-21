@@ -25,6 +25,8 @@ def report_match(match_id):
         return jsonify({"success": False, "message": "Unauthorized"}), 403
 
     match = Match.query.get_or_404(match_id)
+    if user.role != 'superadmin' and match.tournament.user_id != user.id:
+        return jsonify({"success": False, "message": "Forbidden: You do not own this tournament"}), 403
     data = request.get_json()
 
     # Determine action type (pending, live_score, complete_match)

@@ -145,10 +145,58 @@ def create_category(slug):
             allow_lucky_losers = False
         max_players_per_team = request.form.get('max_players_per_team', type=int)
 
-        # Scheduling fields inherited globally from tournament
+        # Scheduling fields inherited globally from tournament or overridden by category
+        import json
+        from datetime import datetime, date, time, timedelta
+
+        start_date_str = request.form.get('start_date')
+        end_date_str = request.form.get('end_date')
+        start_date = None
+        end_date = None
+        if start_date_str:
+            try:
+                start_date = datetime.strptime(start_date_str.strip(), '%Y-%m-%d').date()
+            except ValueError:
+                pass
+        if not start_date and tournament.start_date:
+            start_date = tournament.start_date
+
+        if end_date_str:
+            try:
+                end_date = datetime.strptime(end_date_str.strip(), '%Y-%m-%d').date()
+            except ValueError:
+                pass
+        if not end_date:
+            end_date = tournament.end_date or start_date
+
+        if start_date and end_date and end_date < start_date:
+            end_date = start_date
+
+        start_time = request.form.get('start_time', '09:00').strip() or '09:00'
+        end_time = request.form.get('end_time', '19:00').strip() or '19:00'
+
+        # Multi-day operating hours for each spanned date
+        daily_dict = {}
+        if start_date and end_date:
+            cur = start_date
+            while cur <= end_date:
+                d_str = cur.strftime('%Y-%m-%d')
+                d_start = request.form.get(f'daily_start_{d_str}') or start_time
+                d_end = request.form.get(f'daily_end_{d_str}') or end_time
+                daily_dict[d_str] = {"start": d_start.strip(), "end": d_end.strip()}
+                cur += timedelta(days=1)
+        daily_schedule = json.dumps(daily_dict) if daily_dict else None
+
+        start_date_time = None
+        if start_date:
+            try:
+                st_parts = [int(p) for p in start_time.split(':')]
+                start_date_time = datetime.combine(start_date, time(st_parts[0], st_parts[1]))
+            except Exception:
+                start_date_time = datetime.combine(start_date, time(9, 0))
+
         num_courts = request.form.get('num_courts', type=int) or tournament.num_courts or 1
         court_names = request.form.get('court_names') or tournament.court_names or ''
-        start_date_time = None
         avg_match_duration = request.form.get('avg_match_duration', type=int) or tournament.avg_match_duration or 60
         preferred_start_day = request.form.get('preferred_start_day', type=int, default=1)
         pin_finals_to_last_day = request.form.get('pin_finals_to_last_day') == 'on'
@@ -196,6 +244,11 @@ def create_category(slug):
             qualifiers_per_group=qualifiers_per_group,
             allow_lucky_losers=allow_lucky_losers,
             max_players_per_team=max_players_per_team,
+            start_date=start_date,
+            end_date=end_date,
+            start_time=start_time,
+            end_time=end_time,
+            daily_schedule=daily_schedule,
             num_courts=num_courts,
             court_names=court_names,
             start_date_time=start_date_time,
@@ -369,6 +422,11 @@ def view_category(slug, category_id):
                     for pl in all_players
                 ]
 
+    # Count pending and total group stage / round robin matches
+    group_matches_list = [m for m in matches if getattr(m, 'match_type', None) in ('group_stage', 'round_robin') and getattr(m, 'parent_match_id', None) is None]
+    total_group_matches = len(group_matches_list)
+    pending_group_count = sum(1 for m in group_matches_list if getattr(m, 'status', None) != 'completed')
+
     return render_template('category/view.html',
                          is_export=is_export,
                          winners=winners,
@@ -384,6 +442,8 @@ def view_category(slug, category_id):
                          groups_data=groups_data,
                          rankings=rankings,
                          team_rosters_map=team_rosters_map,
+                         total_group_matches=total_group_matches,
+                         pending_group_count=pending_group_count,
                          formats=TOURNAMENT_FORMATS)
 
 @category_bp.route('/t/<slug>/categories/<int:category_id>/manage', methods=['GET', 'POST'])
@@ -629,6 +689,49 @@ def manage_category(slug, category_id):
                 category.points_to_win = points_to_win
                 category.max_players_per_team = max_players_per_team
                 category.entry_fee = request.form.get('entry_fee', type=float, default=0.0)
+
+                # Date and daily operating times for Category
+                if 'start_date' in request.form:
+                    s_str = request.form.get('start_date', '').strip()
+                    if s_str:
+                        try:
+                            category.start_date = datetime.strptime(s_str, '%Y-%m-%d').date()
+                        except ValueError:
+                            pass
+                if 'end_date' in request.form:
+                    e_str = request.form.get('end_date', '').strip()
+                    if e_str:
+                        try:
+                            category.end_date = datetime.strptime(e_str, '%Y-%m-%d').date()
+                        except ValueError:
+                            pass
+                if category.start_date and category.end_date and category.end_date < category.start_date:
+                    category.end_date = category.start_date
+
+                if 'start_time' in request.form:
+                    category.start_time = request.form.get('start_time', '09:00').strip() or '09:00'
+                if 'end_time' in request.form:
+                    category.end_time = request.form.get('end_time', '19:00').strip() or '19:00'
+
+                if category.start_date and category.end_date:
+                    import json
+                    from datetime import timedelta
+                    daily_dict = {}
+                    cur = category.start_date
+                    while cur <= category.end_date:
+                        d_str = cur.strftime('%Y-%m-%d')
+                        d_start = request.form.get(f'daily_start_{d_str}') or category.start_time or '09:00'
+                        d_end = request.form.get(f'daily_end_{d_str}') or category.end_time or '19:00'
+                        daily_dict[d_str] = {"start": d_start.strip(), "end": d_end.strip()}
+                        cur += timedelta(days=1)
+                    category.daily_schedule = json.dumps(daily_dict)
+
+                if category.start_date:
+                    try:
+                        st_parts = [int(p) for p in (category.start_time or '09:00').split(':')]
+                        category.start_date_time = datetime.combine(category.start_date, time(st_parts[0], st_parts[1]))
+                    except Exception:
+                        pass
                 
                 # Scheduling fields (inherited globally from tournament if not specified)
                 if request.form.get('num_courts'):
@@ -738,7 +841,9 @@ def manage_category(slug, category_id):
                         explanation=explanation
                     )
                     
-                    # Delete matches
+                    # Delete child rubbers first to satisfy foreign key integrity
+                    Match.query.filter_by(category_id=category_id).filter(Match.parent_match_id.isnot(None)).delete()
+                    # Delete parent matches
                     Match.query.filter_by(category_id=category_id).delete()
 
                     # Delete groups
@@ -836,6 +941,26 @@ def start_knockout_stage(slug, category_id):
         flash('This category does not have a group stage.', 'error')
         return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
 
+    # Guard 1: Prevent duplicate knockout bracket generation
+    existing_knockout = Match.query.filter_by(
+        category_id=category_id,
+        match_type='knockout'
+    ).first()
+    if existing_knockout:
+        flash('Knockout stage bracket has already been generated for this category.', 'warning')
+        return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
+
+    # Guard 2: Verify all group matches are completed before starting knockout
+    pending_group = Match.query.filter(
+        Match.category_id == category_id,
+        Match.match_type.in_(['group_stage', 'round_robin']),
+        Match.parent_match_id.is_(None),
+        Match.status != 'completed'
+    ).count()
+    if pending_group > 0 and not request.form.get('force_start'):
+        flash(f'Cannot start knockout stage: {pending_group} group stage match(es) are still pending or in progress.', 'error')
+        return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
+
     try:
         # Generate knockout bracket from group qualifiers
         from app.services.format_engine.group_stage.logic import GroupStageFormat
@@ -853,8 +978,21 @@ def start_knockout_stage(slug, category_id):
                     s_match = Match(**s_data, tournament_id=tournament.id)
                     db.session.add(s_match)
 
+        db.session.flush()
+
+        # Propagate child rubbers for any Round 1 matches with byes in team events
+        if category.max_players_per_team and category.max_players_per_team > 1:
+            bye_matches = Match.query.filter_by(
+                category_id=category.id,
+                match_type='knockout',
+                parent_match_id=None,
+                status='completed'
+            ).all()
+            for b_match in bye_matches:
+                GroupStageFormat._propagate_knockout_team_rubbers(b_match, category)
+
         db.session.commit()
-        flash('Knockout stage started!', 'success')
+        flash('Knockout stage started successfully!', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Failed to start knockout stage: {str(e)}', 'error')
@@ -945,24 +1083,27 @@ def report_category_match_result(slug, category_id, match_id):
         winner_id = request.form.get('winner_id', type=int) if not is_live_update else None
         
         # Audit Validation if match was already completed
-        if match.status == 'completed':
-            from app.services.utils.audit import log_audit
-            reason = request.form.get('audit_reason') or "Score Entry Mistake"
-            explanation = request.form.get('audit_explanation', '')
-            if not explanation or len(explanation.strip()) < 20:
-                explanation = "Score modification submitted by tournament administrator."
-                
-            p1_label = match.participant1.name if match.participant1 else (match.p1_player1.name if getattr(match, 'p1_player1', None) else 'TBD')
-            p2_label = match.participant2.name if match.participant2 else (match.p2_player1.name if getattr(match, 'p2_player1', None) else 'TBD')
-            match_num = match.match_number or match.rubber_number or match.id
+        is_score_correction = (match.status == 'completed')
+        old_state = None
+        audit_reason = None
+        audit_explanation = None
 
-            log_audit(
-                action_type='modify_match',
-                target_id=match.id,
-                target_name=f"Match {match_num} ({p1_label} vs {p2_label})",
-                reason=reason,
-                explanation=explanation
-            )
+        if is_score_correction:
+            audit_reason = request.form.get('audit_reason', '').strip()
+            audit_explanation = request.form.get('audit_explanation', '').strip()
+            if not audit_reason:
+                flash("Audit validation failed: Reason is mandatory when modifying or correcting a completed match score.", "error")
+                return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
+            if len(audit_explanation) < 10:
+                flash("Audit validation failed: An explanation (minimum 10 characters) is required when correcting a completed match score.", "error")
+                return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
+
+            old_state = {
+                'score1': match.score1,
+                'score2': match.score2,
+                'winner_id': match.winner_id,
+                'status': match.status
+            }
         else:
             # Check Day-to-Day and Bracket progression
             from app.services.utils.scheduler import check_match_progression_allowed
@@ -1125,8 +1266,27 @@ def report_category_match_result(slug, category_id, match_id):
         if category.format in ['group_stage', 'round_robin', 'doubles_round_robin']:
             from app.services.leaderboard import recalculate_all_group_stats
             recalculate_all_group_stats(category.id)
-        
-            
+
+        if is_score_correction:
+            from app.services.utils.audit import log_audit
+            p1_label = match.participant1.name if match.participant1 else (match.p1_player1.name if getattr(match, 'p1_player1', None) else 'TBD')
+            p2_label = match.participant2.name if match.participant2 else (match.p2_player1.name if getattr(match, 'p2_player1', None) else 'TBD')
+            match_num = match.match_number or match.rubber_number or match.id
+            new_state = {
+                'score1': match.score1,
+                'score2': match.score2,
+                'winner_id': match.winner_id,
+                'status': match.status
+            }
+            log_audit(
+                action_type='modify_match_score',
+                target_id=match.id,
+                target_name=f"Match #{match_num} ({p1_label} vs {p2_label})",
+                reason=audit_reason,
+                explanation=audit_explanation,
+                details={'previous': old_state, 'new': new_state}
+            )
+
         flash('Match result reported successfully!', 'success')
     except ValueError as ve:
         db.session.rollback()
@@ -1150,6 +1310,7 @@ def allot_fixture_lineup(slug, category_id, fixture_id):
     - Rubber 3: Doubles 2 (Team 1 Pair vs Team 2 Pair)
     """
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
     category = Category.query.get_or_404(category_id)
     fixture = Match.query.get_or_404(fixture_id)
 

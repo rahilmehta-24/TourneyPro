@@ -412,24 +412,24 @@ class GroupStageFormat(TournamentFormat):
         db.session.commit()
 
         def compare_teams(a, b):
-            # 1. Primary: Most wins
+            # 1. Primary: Most fixture matches won
             if a.group_wins != b.group_wins:
                 return 1 if a.group_wins > b.group_wins else -1
 
-            # 2. Head-to-Head between a and b
+            # 2. Total Games Won across all group matches (Organizer Directive)
+            if a.group_points != b.group_points:
+                return 1 if a.group_points > b.group_points else -1
+
+            # 3. Head-to-Head between a and b (decides rank if total games won are equal)
             h2h = getattr(a, '_h2h', {}).get(b.id)
             if h2h is not None and h2h != 0:
                 return h2h
 
-            # 3. Games Differential
+            # 4. Games Differential (Games Won - Games Conceded)
             a_diff = a.group_points - getattr(a, '_games_conceded', 0)
             b_diff = b.group_points - getattr(b, '_games_conceded', 0)
             if a_diff != b_diff:
                 return 1 if a_diff > b_diff else -1
-
-            # 4. Total Games Won (Max score)
-            if a.group_points != b.group_points:
-                return 1 if a.group_points > b.group_points else -1
 
             # 5. Fewest losses
             if a.group_losses != b.group_losses:

@@ -428,17 +428,27 @@ class TeamLeagueTestCase(unittest.TestCase):
         db.session.add_all([m1, m2, m3])
         db.session.commit()
 
-        # Now test case where Team A and Team B both have 1 win and tied in a 2-team tie
-        # Let's adjust m3 so Team A beats Team Gamma 11-10 instead:
-        # Then Team A has 2 wins, Team B has 1 win -> Team A ranks #1.
-        # But if Team A and Team B both have 1 win, Team A won head-to-head over Team B!
         standings = GroupStageFormat.calculate_group_standings(group.id)
         self.assertEqual(len(standings), 3)
 
-        # Test direct head-to-head between tied teams:
-        # In a 2-team tie between A and B, A won m1, so A must rank higher than B
-        h2h_winner_a = (standings[0].id == team_a.id and standings[1].id == team_b.id) or standings[0].group_wins > standings[1].group_wins
-        self.assertTrue(h2h_winner_a)
+        # Per organizer directive:
+        # 1. Total games won decides rank in 3-way circular ties:
+        # Beta has 9 + 14 = 23 games won -> Rank 1
+        # Alpha has 11 + 8 = 19 games won -> Rank 2
+        # Gamma has 4 + 11 = 15 games won -> Rank 3
+        self.assertEqual(standings[0].id, team_b.id)
+        self.assertEqual(standings[1].id, team_a.id)
+        self.assertEqual(standings[2].id, team_c.id)
+
+        # 2. When total games won are identical, H2H decides rank:
+        m2.score1 = '10' # Beta gets 10 (total 19)
+        m2.score2 = '8'  # Gamma gets 8 (total 19)
+        # Now Alpha has 11 + 8 = 19 games, Beta has 9 + 10 = 19 games.
+        # Since Alpha beat Beta in m1, Alpha ranks above Beta:
+        db.session.commit()
+        standings_tied = GroupStageFormat.calculate_group_standings(group.id)
+        self.assertEqual(standings_tied[0].id, team_a.id)
+        self.assertEqual(standings_tied[1].id, team_b.id)
 
     # =========================================================================
     # 6. UNIFIED KNOCKOUT SEEDING & BRACKET LINE PLACEMENT
@@ -1043,6 +1053,100 @@ class TeamLeagueTestCase(unittest.TestCase):
             self.assertEqual(r.score1, "4-3")
             self.assertEqual(r.status, "completed")
             self.assertEqual(r.winner_id, t1.id)
+
+    def test_15_walkover_and_retirement_remainder_scoring(self):
+        """Test organizer rule: mid-match retirement awards all remaining games (up to 7) to opposition"""
+        from app.services.tennis_logic import award_walkover_or_retirement_rubber, validate_team_rubber_score
+
+        # Case 1: Pre-match walkover (0-0), Player 1 retired/absent -> Opponent (P2) gets 7-0
+        s1, s2, w = award_walkover_or_retirement_rubber(p1_games=0, p2_games=0, retiring_player=1, total_games=7)
+        self.assertEqual(s1, "0-7")
+        self.assertEqual(s2, "7-0")
+        self.assertEqual(w, 2)
+
+        # Case 2: Mid-match retirement at 3-2, Player 2 retired -> Opponent (P1) gets remaining 2 games -> 5-2
+        s1, s2, w = award_walkover_or_retirement_rubber(p1_games=3, p2_games=2, retiring_player=2, total_games=7)
+        self.assertEqual(s1, "5-2")
+        self.assertEqual(s2, "2-5")
+        self.assertEqual(w, 1)
+
+        # Case 3: Mid-match retirement via validate_team_rubber_score
+        s1, s2, w = validate_team_rubber_score(p1_games=1, p2_games=3, is_retired=True, retiring_player=1, total_games=7)
+        self.assertEqual(s1, "1-6")
+        self.assertEqual(s2, "6-1")
+        self.assertEqual(w, 2)
+
+    def test_16_knockout_guard_against_pending_group_matches(self):
+        """Test that start-knockout blocks bracket generation if group fixtures are still incomplete"""
+        category = Category(
+            tournament_id=self.tournament_id,
+            name='Guard Cat',
+            format='group_stage',
+            max_players_per_team=5,
+            num_groups=1,
+            total_games=7,
+            has_group_stage=True,
+            status='in_progress'
+        )
+        db.session.add(category)
+        db.session.flush()
+
+        group = Group(category_id=category.id, name='Group 1')
+        db.session.add(group)
+        db.session.flush()
+
+        # Incomplete group fixture
+        m = Match(
+            tournament_id=self.tournament_id,
+            category_id=category.id,
+            group_id=group.id,
+            round=1,
+            match_number=1,
+            status='pending',
+            match_type='group_stage'
+        )
+        db.session.add(m)
+        db.session.commit()
+
+        client = self.app.test_client()
+        with client.session_transaction() as sess:
+            sess['user_id'] = self.user_id
+            sess['role'] = 'admin'
+
+        res = client.post(
+            f'/tournaments/{self.slug}/categories/{category.id}/start-knockout',
+            follow_redirects=True
+        )
+        # Should reject because 1 match is pending
+        self.assertIn(b"Cannot start knockout stage", res.data)
+        self.assertIn(b"pending or in progress", res.data)
+
+    def test_18_order_of_play_displays_full_scoreline_for_completed_team_and_rubber_matches(self):
+        """Verify that completed matches in Order of Play show the complete scoreline (e.g. 17 – 4) instead of only score1 (17)."""
+        with self.app.app_context():
+            # Test template filter directly
+            from app import create_app
+            filter_fn = self.app.jinja_env.filters['display_match_score']
+
+            # Case A: Team Tie numeric totals
+            team_match = Match(score1='17', score2='4', status='completed')
+            self.assertEqual(filter_fn(team_match), "17 \u2013 4")
+
+            # Case B: Team Tie where team 2 has 0
+            zero_match = Match(score1='17', score2='0', status='completed')
+            self.assertEqual(filter_fn(zero_match), "17 \u2013 0")
+
+            # Case C: Child Rubber with hyphen
+            rubber_match = Match(score1='6-1', score2='1-6', status='completed')
+            self.assertEqual(filter_fn(rubber_match), "6-1")
+
+            # Case D: Standard match with tiebreak
+            tb_match = Match(score1='7-6(4), 6-3', score2='6-7(4), 3-6', status='completed')
+            self.assertEqual(filter_fn(tb_match), "7-6<sup>4</sup>, 6-3")
+
+            # Case E: Dict format
+            dict_match = {'score1': '8', 'score2': '13'}
+            self.assertEqual(filter_fn(dict_match), "8 \u2013 13")
 
 
 if __name__ == '__main__':

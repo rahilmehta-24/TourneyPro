@@ -459,6 +459,15 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
         else:
             target_days = tournament_days
 
+        # Restrict target_days to category's start_date and end_date if defined
+        if cat and cat.start_date:
+            cat_end = cat.end_date or cat.start_date
+            cat_days = [d for d in target_days if cat.start_date <= d <= cat_end]
+            if cat_days:
+                target_days = cat_days
+            elif cat.start_date in tournament_days:
+                target_days = [cat.start_date]
+
         # Determine earliest possible start from category settings or previous round
         earliest_time = datetime.min
         if cat and cat.start_date_time:
@@ -494,6 +503,28 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
 
             current_day_start = daily_schedules[current_day]["start"]
             current_day_end = daily_schedules[current_day]["end"]
+
+            # If category has its own daily schedule or start/end time, respect it
+            if cat and cat.daily_schedule:
+                try:
+                    import json
+                    cat_sched = json.loads(cat.daily_schedule)
+                    d_key = current_day.strftime('%Y-%m-%d')
+                    if d_key in cat_sched:
+                        cs_start = parse_time_str(cat_sched[d_key].get('start'), default=None)
+                        cs_end = parse_time_str(cat_sched[d_key].get('end'), default=None)
+                        if cs_start: current_day_start = max(current_day_start, cs_start)
+                        if cs_end: current_day_end = min(current_day_end, cs_end)
+                except Exception:
+                    pass
+            elif cat and (cat.start_time or cat.end_time):
+                if cat.start_time:
+                    cs_start = parse_time_str(cat.start_time, default=None)
+                    if cs_start: current_day_start = max(current_day_start, cs_start)
+                if cat.end_time:
+                    cs_end = parse_time_str(cat.end_time, default=None)
+                    if cs_end: current_day_end = min(current_day_end, cs_end)
+
             day_end_dt = datetime.combine(current_day, current_day_end)
 
             # Find court with earliest available slot (prioritizing group's assigned courts)
