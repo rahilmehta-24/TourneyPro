@@ -1125,7 +1125,6 @@ class TeamLeagueTestCase(unittest.TestCase):
         """Verify that completed matches in Order of Play show the complete scoreline (e.g. 17 – 4) instead of only score1 (17)."""
         with self.app.app_context():
             # Test template filter directly
-            from app import create_app
             filter_fn = self.app.jinja_env.filters['display_match_score']
 
             # Case A: Team Tie numeric totals

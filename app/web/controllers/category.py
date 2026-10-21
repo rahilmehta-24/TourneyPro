@@ -147,7 +147,7 @@ def create_category(slug):
 
         # Scheduling fields inherited globally from tournament or overridden by category
         import json
-        from datetime import datetime, date, time, timedelta
+        from datetime import datetime, time, timedelta
 
         start_date_str = request.form.get('start_date')
         end_date_str = request.form.get('end_date')

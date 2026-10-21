@@ -513,17 +513,21 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
                     if d_key in cat_sched:
                         cs_start = parse_time_str(cat_sched[d_key].get('start'), default=None)
                         cs_end = parse_time_str(cat_sched[d_key].get('end'), default=None)
-                        if cs_start: current_day_start = max(current_day_start, cs_start)
-                        if cs_end: current_day_end = min(current_day_end, cs_end)
+                        if cs_start:
+                            current_day_start = max(current_day_start, cs_start)
+                        if cs_end:
+                            current_day_end = min(current_day_end, cs_end)
                 except Exception:
                     pass
             elif cat and (cat.start_time or cat.end_time):
                 if cat.start_time:
                     cs_start = parse_time_str(cat.start_time, default=None)
-                    if cs_start: current_day_start = max(current_day_start, cs_start)
+                    if cs_start:
+                        current_day_start = max(current_day_start, cs_start)
                 if cat.end_time:
                     cs_end = parse_time_str(cat.end_time, default=None)
-                    if cs_end: current_day_end = min(current_day_end, cs_end)
+                    if cs_end:
+                        current_day_end = min(current_day_end, cs_end)
 
             day_end_dt = datetime.combine(current_day, current_day_end)
 

@@ -168,8 +168,10 @@ def award_walkover_or_retirement_rubber(p1_games=0, p2_games=0, retiring_player=
     except (TypeError, ValueError):
         g1, g2 = 0, 0
 
-    if g1 < 0: g1 = 0
-    if g2 < 0: g2 = 0
+    if g1 < 0:
+        g1 = 0
+    if g2 < 0:
+        g2 = 0
 
     played = g1 + g2
     remaining = max(0, T - played)
