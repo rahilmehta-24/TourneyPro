@@ -148,3 +148,222 @@ def validate_and_format_score(winner_id, p1_id, p2_id, num_sets, games_per_set, 
     score2_str = ", ".join(set_results_p2)
 
     return score1_str, score2_str
+
+
+def validate_team_rubber_score(p1_games, p2_games, p1_tb_pts=None, p2_tb_pts=None, total_games=7, is_live_update=False):
+    """
+    Validate a single rubber score within a group stage team tie based on dynamic total_games T.
+
+    Scoring rules:
+    - Total Games Target T (default 7):
+      The match is played for a total of T games.
+      In a completed match, the addition of both players' games MUST equal T (e.g. g1 + g2 == 7).
+      Examples of valid completed scores when T=7:
+        - 7-0 or 0-7 (sum = 7)
+        - 6-1 or 1-6 (sum = 7)
+        - 5-2 or 2-5 (sum = 7)
+        - 4-3 or 3-4 (sum = 7). If a player took the majority of games (e.g. 4 games won), no tiebreak is required!
+          If the match reached 3-3, a 7-point tiebreak may be entered to decide the final game (producing 4-3 with tiebreak score).
+    - 7-point Tiebreak at (T-1)//2 all (3-3 for T=7):
+      When the score reaches 3-3 (sum = 6 games played), a 7-point tiebreak is played to decide the final (7th) game.
+      The winner of the tiebreak is awarded the 7th game, making the final score 4-3 (or 3-4).
+      If the user inputs 3-3 with tiebreak points, the tiebreak winner automatically receives the final game.
+    - Live updates:
+      Scores cannot exceed T (g1 + g2 <= T). Partial scores (e.g. 2-1 or 3-3 in progress) are allowed.
+
+    Args:
+        p1_games: Games won by player/pair 1 (int or str)
+        p2_games: Games won by player/pair 2 (int or str)
+        p1_tb_pts: Tiebreak points won by player/pair 1 (optional)
+        p2_tb_pts: Tiebreak points won by player/pair 2 (optional)
+        total_games: Configured total games per rubber T (default 7)
+        is_live_update: Bypass completion checks if match is live/in-progress
+
+    Returns:
+        tuple: (score1_str, score2_str, winner_indicator)
+               winner_indicator is 1 if p1 won, 2 if p2 won, or None if live/undecided.
+    """
+    T = int(total_games or 7)
+    if T % 2 == 0 or T < 1:
+        raise ValueError(f"Total games target must be a positive odd integer (e.g. 5, 7, 9). Received {T}.")
+
+    tb_trigger = (T - 1) // 2       # e.g. 3 for T=7
+    tb_winner_games = (T + 1) // 2  # e.g. 4 for T=7
+
+    try:
+        g1 = int(p1_games)
+        g2 = int(p2_games)
+    except (TypeError, ValueError):
+        raise ValueError("Rubber game scores must be valid integers.")
+
+    if g1 < 0 or g2 < 0:
+        raise ValueError("Games cannot be negative.")
+
+    # Parse tiebreak points if provided
+    is_tb_provided = False
+    tb_pts_p1 = None
+    tb_pts_p2 = None
+
+    if p1_tb_pts not in (None, '') and p2_tb_pts not in (None, ''):
+        is_tb_provided = True
+        try:
+            tb_pts_p1 = int(p1_tb_pts)
+            tb_pts_p2 = int(p2_tb_pts)
+        except ValueError:
+            raise ValueError("Tiebreak points must be valid integers.")
+        if tb_pts_p1 < 0 or tb_pts_p2 < 0:
+            raise ValueError("Tiebreak points cannot be negative.")
+        if tb_pts_p1 == tb_pts_p2:
+            raise ValueError("Tiebreak cannot end in a draw. A player must win by at least 2 points.")
+
+    # Handle case where user entered 3-3 with tiebreak points to decide the final 7th game:
+    if g1 == tb_trigger and g2 == tb_trigger and is_tb_provided:
+        tbw = max(tb_pts_p1, tb_pts_p2)
+        tbl = min(tb_pts_p1, tb_pts_p2)
+        tb_target = 7
+        if tbw == tb_target:
+            if tbl > tb_target - 2:
+                raise ValueError(f"Invalid tiebreak score {tb_pts_p1}-{tb_pts_p2}. Winner must lead by at least 2 points.")
+        elif tbw > tb_target:
+            if tbl != tbw - 2:
+                raise ValueError(f"Invalid tiebreak score {tb_pts_p1}-{tb_pts_p2}. Must lead by exactly 2 points when extending past {tb_target}.")
+        else:
+            raise ValueError(f"Tiebreak winner must reach at least {tb_target} points.")
+
+        # Tiebreak winner is awarded the final game to make sum = T (4-3 or 3-4)
+        if tb_pts_p1 > tb_pts_p2:
+            g1 = tb_winner_games
+            g2 = tb_trigger
+        else:
+            g1 = tb_trigger
+            g2 = tb_winner_games
+
+    # Validation rules
+    if not is_live_update:
+        # Sum of games MUST equal total_games T
+        if g1 + g2 != T:
+            if g1 == tb_trigger and g2 == tb_trigger and not is_tb_provided:
+                raise ValueError(f"Score reached {tb_trigger}–{tb_trigger}. A 7-point tiebreak must be played to decide the final game ({tb_winner_games}–{tb_trigger}). Please enter the tiebreak points.")
+            raise ValueError(f"Total games must sum to {T}. For example: 6–1, 5–2, 7–0, or 4–3. You entered {g1} and {g2} (sum: {g1 + g2}).")
+
+        # When score is 4-3 or 3-4 and tiebreak points WERE provided, validate them:
+        if is_tb_provided and ((g1 == tb_winner_games and g2 == tb_trigger) or (g2 == tb_winner_games and g1 == tb_trigger)):
+            tbw = max(tb_pts_p1, tb_pts_p2)
+            tbl = min(tb_pts_p1, tb_pts_p2)
+
+            if (g1 > g2 and tb_pts_p1 <= tb_pts_p2) or (g2 > g1 and tb_pts_p2 <= tb_pts_p1):
+                raise ValueError("The rubber winner must match the tiebreak winner.")
+
+            tb_target = 7
+            if tbw == tb_target:
+                if tbl > tb_target - 2:
+                    raise ValueError(f"Invalid tiebreak score {tb_pts_p1}-{tb_pts_p2}. Winner must lead by at least 2 points.")
+            elif tbw > tb_target:
+                if tbl != tbw - 2:
+                    raise ValueError(f"Invalid tiebreak score {tb_pts_p1}-{tb_pts_p2}. Must lead by exactly 2 points when extending past {tb_target}.")
+            else:
+                raise ValueError(f"Tiebreak winner must reach at least {tb_target} points.")
+    else:
+        # In-progress matches cannot exceed total_games
+        if g1 + g2 > T:
+            raise ValueError(f"Total games in progress cannot exceed {T}. You entered {g1} and {g2} (sum: {g1 + g2}).")
+
+    winner_indicator = None
+    if g1 + g2 == T or not is_live_update:
+        if g1 > g2:
+            winner_indicator = 1
+        elif g2 > g1:
+            winner_indicator = 2
+    elif is_live_update and (g1 > g2 or g2 > g1):
+        winner_indicator = 1 if g1 > g2 else 2
+
+    if is_tb_provided and ((g1 == tb_winner_games and g2 == tb_trigger) or (g2 == tb_winner_games and g1 == tb_trigger)):
+        tb_loser = tb_pts_p2 if g1 > g2 else tb_pts_p1
+        score1_str = f"{g1}-{g2}({tb_loser})"
+        score2_str = f"{g2}-{g1}({tb_loser})"
+    else:
+        score1_str = f"{g1}-{g2}"
+        score2_str = f"{g2}-{g1}"
+
+    return score1_str, score2_str, winner_indicator
+
+
+def calculate_team_fixture_status(rubbers, total_games=7):
+    """
+    Calculate the overall outcome of a 3-rubber team fixture.
+
+    Args:
+        rubbers: List of Match objects or dicts representing the rubbers
+        total_games: T (default 7)
+
+    Returns:
+        dict: {
+            'g1': total_games_team1,
+            'g2': total_games_team2,
+            'rubbers_won_p1': int,
+            'rubbers_won_p2': int,
+            'target_games_to_win': int,
+            'is_decided': bool,
+            'winner_indicator': 1, 2, or None,
+            'summary_score1': str,
+            'summary_score2': str
+        }
+    """
+    T = int(total_games or 7)
+    target_to_win = ((3 * T) // 2) + 1  # e.g., 11 for T=7 (21 total games)
+
+    g1_total = 0
+    g2_total = 0
+    rubbers_won_p1 = 0
+    rubbers_won_p2 = 0
+    completed_rubbers = 0
+
+    for r in rubbers:
+        score1 = getattr(r, 'score1', None) if not isinstance(r, dict) else r.get('score1')
+        score2 = getattr(r, 'score2', None) if not isinstance(r, dict) else r.get('score2')
+        status = getattr(r, 'status', None) if not isinstance(r, dict) else r.get('status')
+        winner_id = getattr(r, 'winner_id', None) if not isinstance(r, dict) else r.get('winner_id')
+        p1_id = getattr(r, 'participant1_id', None) if not isinstance(r, dict) else r.get('participant1_id')
+
+        if score1:
+            try:
+                main_part = score1.split('(')[0].strip()
+                if '-' in main_part:
+                    s1, s2 = main_part.split('-')
+                    g1_total += int(s1)
+                    g2_total += int(s2)
+                elif score1.isdigit():
+                    g1_total += int(score1)
+                    if score2 and score2.isdigit():
+                        g2_total += int(score2)
+            except (ValueError, TypeError):
+                pass
+
+        if status == 'completed':
+            completed_rubbers += 1
+            if winner_id and p1_id:
+                if winner_id == p1_id:
+                    rubbers_won_p1 += 1
+                else:
+                    rubbers_won_p2 += 1
+
+    is_decided = (g1_total >= target_to_win or g2_total >= target_to_win or completed_rubbers >= 3)
+    winner_ind = None
+    if g1_total >= target_to_win or (completed_rubbers >= 3 and g1_total > g2_total):
+        winner_ind = 1
+    elif g2_total >= target_to_win or (completed_rubbers >= 3 and g2_total > g1_total):
+        winner_ind = 2
+
+    return {
+        'g1': g1_total,
+        'g2': g2_total,
+        'rubbers_won_p1': rubbers_won_p1,
+        'rubbers_won_p2': rubbers_won_p2,
+        'completed_rubbers': completed_rubbers,
+        'target_games_to_win': target_to_win,
+        'is_decided': is_decided,
+        'winner_indicator': winner_ind,
+        'summary_score1': str(g1_total),
+        'summary_score2': str(g2_total)
+    }
+

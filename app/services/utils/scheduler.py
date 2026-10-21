@@ -382,10 +382,10 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
     player_rest_buffer = timedelta(minutes=tournament.min_rest_minutes if tournament.min_rest_minutes is not None else 0)
     max_daily_matches = tournament.max_matches_per_player_day  # Can be None (no limit) or integer
 
-    # 3. Gather all pending/in-progress matches across all categories
+    # 3. Gather all pending/in-progress matches across all categories (only top-level matches)
     all_matches = (
         Match.query.filter_by(tournament_id=tournament_id)
-        .filter(Match.status != "completed")
+        .filter(Match.status != "completed", Match.parent_match_id.is_(None))
         .all()
     )
     if not all_matches:
@@ -412,7 +412,10 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
         # Match type priority (group stage before knockout)
         type_priority = 0 if m.match_type in ('group_stage', 'round_robin') else 1
 
-        return (target_day_idx, target_session_idx, pref_day, type_priority, m.round, is_doubles, m.match_number)
+        # Interleave groups across available courts: sort by round first, then group
+        group_priority = m.group_id or 0
+
+        return (target_day_idx, target_session_idx, pref_day, type_priority, m.round, group_priority, is_doubles, m.match_number)
 
     sorted_matches = sorted(all_matches, key=match_priority_key)
 
@@ -465,6 +468,14 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
             same_day_round_rest = max(player_rest_buffer, timedelta(minutes=45))
             earliest_time = max(earliest_time, prev_round_end + same_day_round_rest)
 
+        # Respect Group Session Start Timing (e.g. Group A @ 09:00 AM, Group B @ 11:30 AM)
+        grp = Group.query.get(match.group_id) if match.group_id else None
+        if grp and grp.start_time:
+            grp_time = parse_time_str(grp.start_time, default=None)
+            if grp_time and target_days:
+                grp_start_dt = datetime.combine(target_days[0], grp_time)
+                earliest_time = max(earliest_time, grp_start_dt)
+
         # Session targeting (Day Session vs Evening Session)
         target_session = get_target_session(match.round, max_round, len(tournament_days))
         evening_start_time = parse_time_str(getattr(tournament, 'evening_session_start', '16:00'), default=time(16, 0))
@@ -485,8 +496,12 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
             current_day_end = daily_schedules[current_day]["end"]
             day_end_dt = datetime.combine(current_day, current_day_end)
 
-            # Find court with earliest available slot
-            sorted_courts = sorted(courts, key=lambda c: court_next_available[current_day][c])
+            # Find court with earliest available slot (prioritizing group's assigned courts)
+            if grp and grp.assigned_courts:
+                assigned_c_set = set(c.strip() for c in grp.assigned_courts.split(',') if c.strip())
+                sorted_courts = sorted(courts, key=lambda c: (0 if c in assigned_c_set else 1, court_next_available[current_day][c]))
+            else:
+                sorted_courts = sorted(courts, key=lambda c: court_next_available[current_day][c])
 
             # 1. If round targets evening session, attempt scheduling in the evening session first
             evening_start_dt = datetime.combine(current_day, evening_start_time)
@@ -592,10 +607,23 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
             match.scheduled_date = fallback_day
             match.scheduled_end_time = f_end
             match.court_name = best_court
-            match.is_not_before = True
-            
             court_next_available[fallback_day][best_court] = f_end + court_buffer
             scheduled_count += 1
+
+        # Synchronize child rubbers with parent fixture
+        if match.sub_matches:
+            grp = Group.query.get(match.group_id) if match.group_id else None
+            assigned_c_list = [c.strip() for c in (grp.assigned_courts or '').split(',') if c.strip()] if grp else []
+            sub_courts = assigned_c_list if len(assigned_c_list) >= len(match.sub_matches) else courts
+            for idx, r in enumerate(match.sub_matches):
+                r.scheduled_time = match.scheduled_time
+                r.scheduled_date = match.scheduled_date
+                r.scheduled_end_time = match.scheduled_end_time
+                r.is_not_before = match.is_not_before
+                if sub_courts:
+                    r.court_name = sub_courts[idx % len(sub_courts)]
+                else:
+                    r.court_name = match.court_name
 
     db.session.commit()
     return {
@@ -744,11 +772,13 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
         dates_with_matches = sorted(list(match_dates))
         active_date = dates_with_matches[0] if dates_with_matches else unique_dates[0]
 
-    # Filter matches by active date
+    # In the Order of Play, display top-level matches / parent fixtures (e.g. Group A: Team 1 vs Team 2),
+    # rather than individual child rubbers, cleanly showing which group and which teams face each other.
+    filtered_all = [m for m in all_matches if m.parent_match_id is None]
     if active_date:
-        matches = [m for m in all_matches if m.scheduled_time.date() == active_date]
+        matches = [m for m in filtered_all if m.scheduled_time and m.scheduled_time.date() == active_date]
     else:
-        matches = all_matches
+        matches = filtered_all
 
     # Progression & Provisional Check:
     # A day is provisional if ANY matches scheduled on an earlier calendar day are incomplete.
@@ -780,11 +810,20 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
         elif b_type == 'third_place':
             return "3rd Place"
 
-        if m.match_type == 'group_stage':
+        if getattr(m, 'rubber_type', None):
+            rubber_lbl = "Singles" if m.rubber_type == 'singles' else ("Doubles 1" if m.rubber_type == 'doubles_1' else "Doubles 2")
             if m.group_id:
                 grp = Group.query.get(m.group_id)
                 if grp:
-                    return grp.name
+                    return f"{grp.name} ({rubber_lbl})"
+            return f"Rubber ({rubber_lbl})"
+
+        if m.group_id:
+            grp = Group.query.get(m.group_id)
+            if grp:
+                return grp.name
+
+        if m.match_type == 'group_stage':
             return f"Group Stage (R{m.round})"
         elif m.match_type == 'round_robin':
             return f"Round {m.round}"
@@ -820,8 +859,27 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
         p1_player_id = match.participant1.player_id if match.participant1 else None
         p2_player_id = match.participant2.player_id if match.participant2 else None
 
-        p1_players = extract_participant_players(match.participant1)
-        p2_players = extract_participant_players(match.participant2)
+        is_team = bool(
+            (match.sub_matches and len(match.sub_matches) > 0)
+            or (cat and cat.format == 'group_stage')
+            or (match.participant1 and getattr(match.participant1, 'participant_type', None) == 'team')
+            or (match.participant1 and hasattr(match.participant1, 'team_members') and match.participant1.team_members)
+        )
+
+        if is_team:
+            p1_players = [{"name": p1, "player_id": None, "is_team": True}]
+            p2_players = [{"name": p2, "player_id": None, "is_team": True}]
+        else:
+            p1_players = extract_participant_players(match.participant1)
+            p2_players = extract_participant_players(match.participant2)
+
+        if getattr(match, 'rubber_type', None):
+            p1_assigned = [p for p in [match.p1_player1, match.p1_player2] if p]
+            p2_assigned = [p for p in [match.p2_player1, match.p2_player2] if p]
+            if p1_assigned:
+                p1_players = [{"id": p.id, "name": p.name} for p in p1_assigned]
+            if p2_assigned:
+                p2_players = [{"id": p.id, "name": p.name} for p in p2_assigned]
 
         time_str = match.scheduled_time.strftime("%H:%M") if match.scheduled_time else "TBD"
         is_nb = getattr(match, 'is_not_before', False)
@@ -853,9 +911,13 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
             "p2_players": p2_players,
             "round": match.round,
             "round_name": get_match_round_name(match),
+            "group_name": (Group.query.get(match.group_id).name if match.group_id else None),
             "match_number": match.match_number,
             "status": match.status,
             "court": court,
+            "is_team": is_team,
+            "has_rubbers": bool(match.sub_matches),
+            "sub_matches_count": len(match.sub_matches) if match.sub_matches else 0,
         })
 
     # Naturally sort courts (Court 1, Court 2, ...) and wrap in CourtSchedule
@@ -865,22 +927,27 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
         eve_m = [m for m in c_matches if m.get("session") == "evening"]
         sorted_order[court] = CourtSchedule(c_matches, day_m, eve_m)
 
-    # Build days metadata list for UI tabs
+    # Build days metadata list for UI tabs: count displayed fixtures and child rubbers
     days_meta = []
-    matches_per_date: dict[date, int] = {}
+    fixtures_per_date: dict[date, int] = {}
+    rubbers_per_date: dict[date, int] = {}
     day_matches_per_date: dict[date, int] = {}
     eve_matches_per_date: dict[date, int] = {}
-    for m in all_matches:
+
+    for m in filtered_all:
         if m.scheduled_time:
             d = m.scheduled_time.date()
-            matches_per_date[d] = matches_per_date.get(d, 0) + 1
+            fixtures_per_date[d] = fixtures_per_date.get(d, 0) + 1
+            sub_count = len(m.sub_matches) if m.sub_matches else 0
+            rubbers_per_date[d] = rubbers_per_date.get(d, 0) + sub_count
             if m.scheduled_time.time() < evening_cutoff:
                 day_matches_per_date[d] = day_matches_per_date.get(d, 0) + 1
             else:
                 eve_matches_per_date[d] = eve_matches_per_date.get(d, 0) + 1
 
     for idx, d in enumerate(unique_dates):
-        count = matches_per_date.get(d, 0)
+        count = fixtures_per_date.get(d, 0)
+        rub_count = rubbers_per_date.get(d, 0)
         day_cnt = day_matches_per_date.get(d, 0)
         eve_cnt = eve_matches_per_date.get(d, 0)
         label = f"Day {idx + 1} ({d.strftime('%d %b')})"
@@ -893,6 +960,7 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
             "date_str": d.strftime("%Y-%m-%d"),
             "label": label,
             "match_count": count,
+            "rubbers_count": rub_count,
             "day_session_count": day_cnt,
             "evening_session_count": eve_cnt,
             "is_active": (d == active_date),
@@ -913,6 +981,8 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
     total_day_session = sum(1 for m in active_day_matches if m.scheduled_time and m.scheduled_time.time() < evening_cutoff)
     total_evening_session = sum(1 for m in active_day_matches if m.scheduled_time and m.scheduled_time.time() >= evening_cutoff)
 
+    total_rubbers = sum(len(m.sub_matches) for m in filtered_all if m.sub_matches)
+
     return {
         "courts": sorted_order,
         "tournament": tournament,
@@ -924,7 +994,8 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
         "day_session_count": total_day_session,
         "evening_session_count": total_evening_session,
         "days_meta": days_meta,
-        "total_matches_scheduled": len(all_matches),
+        "total_matches_scheduled": len(filtered_all),
+        "total_rubbers_scheduled": total_rubbers,
         "is_provisional": is_provisional,
         "earlier_pending_count": earlier_pending_count,
         "current_day_number": current_day_number,

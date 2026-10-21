@@ -59,6 +59,39 @@
             gap: 0.8rem;
         }
         
+        .category-subnav-bar {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+            align-items: center;
+            background: var(--bg-card);
+            padding: 0.6rem 0.85rem;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            position: sticky;
+            top: 12px;
+            z-index: 90;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+        }
+        .subnav-pill {
+            border-radius: 9999px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            padding: 0.35rem 0.85rem;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+        .fixtures-active-glow {
+            animation: fixtureGlowPulse 2s ease-in-out;
+        }
+        @keyframes fixtureGlowPulse {
+            0% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
+            30% { box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.4); }
+            100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
+        }
+        
         @media (max-width: 768px) {
             .modern-header {
                 flex-direction: column;
@@ -134,6 +167,11 @@
         <div class="page-actions header-actions" {% if is_export %}style="display: none;"{% endif %}>
             <div class="action-group primary-actions">
                 {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+                {% if category.format == 'group_stage' or (category.max_players_per_team and category.max_players_per_team > 1) %}
+                <a href="{{ url_for('category.team_draft_view', slug=tournament.url_slug, category_id=category.id) }}" class="btn" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4); font-weight: 700;">
+                    🎪 Team Draft Board
+                </a>
+                {% endif %}
                 <a href="{{ url_for('category.manage_category', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-primary">
                     ⚙️ Manage Category
                 </a>
@@ -153,6 +191,43 @@
             {% endif %}
         </div>
     </div>
+
+    <!-- In-Page Section Subnav -->
+    {% if not is_export %}
+    <div class="category-subnav-bar">
+        <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-right: 0.25rem;">Jump to:</span>
+        {% if category.format == 'group_stage' or (category.max_players_per_team and category.max_players_per_team > 1) %}
+        <a href="#procedure-guide" class="btn btn-sm btn-secondary subnav-pill" onclick="handleCategorySectionNav('procedure-guide', event)">📋 Procedure Guide</a>
+        {% endif %}
+        {% if groups_data %}
+        <a href="#standings" class="btn btn-sm btn-secondary subnav-pill" onclick="handleCategorySectionNav('standings', event)">📊 Standings</a>
+        <a href="#fixtures" class="btn btn-sm btn-primary subnav-pill" onclick="handleCategorySectionNav('fixtures', event)">🎾 Fixtures &amp; Lineups</a>
+        {% else %}
+        <a href="#fixtures" class="btn btn-sm btn-primary subnav-pill" onclick="handleCategorySectionNav('fixtures', event)">🎾 Fixtures</a>
+        {% endif %}
+        {% if rounds and (rounds|length > 0) %}
+        <a href="#bracket" class="btn btn-sm btn-secondary subnav-pill" onclick="handleCategorySectionNav('bracket', event)">🏆 Knockout Bracket</a>
+        {% endif %}
+        
+        <div style="margin-left: auto; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            {% if current_user and current_user.role in ['admin', 'superadmin'] and (category.format == 'group_stage' or (category.max_players_per_team and category.max_players_per_team > 1)) %}
+            <a href="{{ url_for('category.team_draft_view', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-sm" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4); font-weight: 700; border-radius: 9999px; padding: 0.35rem 0.85rem; font-size: 0.82rem;">
+                🎪 Team Draft
+            </a>
+            {% endif %}
+            <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug) }}" class="btn btn-sm btn-secondary" style="font-weight: 600; border-radius: 9999px; padding: 0.35rem 0.85rem; font-size: 0.82rem;">
+                📅 Order of Play
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if not is_export and (category.format == 'group_stage' or (category.max_players_per_team and category.max_players_per_team > 1)) %}
+    <div id="procedure-guide" style="scroll-margin-top: 80px;">
+        <!-- Step-by-Step Procedure Wizard for Team League -->
+        {% include "components/team_league_wizard.html" %}
+    </div>
+    {% endif %}
 
     {% if not is_export %}
     <!-- 🟢 Live Score Indicator -->
@@ -271,6 +346,10 @@
             </button>
         {% endfor %}
     </div>
+    <div id="bracket" style="scroll-margin-top: 80px;"></div>
+    {% if not groups_data %}
+    <div id="fixtures" style="scroll-margin-top: 80px;"></div>
+    {% endif %}
     <div class="bracket-viewport" id="bracketViewport">
         <div class="bracket-canvas" id="bracketCanvas">
     {% endif %}
@@ -585,6 +664,7 @@
     {% if groups_data %}
     <!-- GROUP STAGE VIEW -->
     <div id="groups-section" class="groups-section">
+        <div id="standings" style="scroll-margin-top: 80px;"></div>
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <h2>Group Stage</h2>
             {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] %}
@@ -603,23 +683,75 @@
 
         {% for group_info in groups_data %}
         <div class="group-card">
-            <h3>{{ group_info.group.name }}</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
+                <h3 style="margin: 0; font-size: 1.3rem;">{{ group_info.group.name }}</h3>
+                {% if group_info.group.start_time or group_info.group.assigned_courts %}
+                <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.85rem; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.25); color: #60a5fa; padding: 0.35rem 0.85rem; border-radius: 9999px; font-weight: 600;">
+                    {% if group_info.group.start_time %}
+                    <span>⏰ Session Starts: {{ group_info.group.start_time }}</span>
+                    {% endif %}
+                    {% if group_info.group.assigned_courts %}
+                    <span>🏟️ {{ group_info.group.assigned_courts }}</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
 
             <div class="table-container" style="width: 100%; overflow-x: auto;">
             <table class="standings-table">
                 <thead>
                     <tr>
                         <th>Rank</th>
+                        {% if category.max_players_per_team and category.max_players_per_team > 1 %}
+                        <th>Team</th>
+                        <th>Roster</th>
+                        <th>W</th>
+                        <th>L</th>
+                        <th>Games Won (Pts)</th>
+                        <th>Conceded</th>
+                        <th>Diff</th>
+                        {% else %}
                         <th>Participant</th>
                         <th>W</th>
                         <th>L</th>
                         <th>Pts</th>
+                        {% endif %}
                     </tr>
                 </thead>
                 <tbody>
                     {% for participant in group_info.standings %}
                     <tr>
                         <td>{{ loop.index }}</td>
+                        {% if category.max_players_per_team and category.max_players_per_team > 1 %}
+                        <td style="font-weight: 700; color: var(--text-primary);">
+                            🛡️ {{ participant.name }}
+                        </td>
+                        <td style="font-size: 0.82rem;">
+                            {% set members = participant.team_members | sort(attribute='roster_order') %}
+                            {% if members %}
+                                <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center;">
+                                    {% for m in members %}
+                                        <span style="background: rgba(255,255,255,0.06); padding: 0.15rem 0.45rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.08);">
+                                            {% if m.role == 'captain' %}👑 <strong>{{ m.player.name }}</strong> (C)
+                                            {% elif m.role == 'vice_captain' %}🛡️ {{ m.player.name }} (VC)
+                                            {% else %}{{ m.player.name }}
+                                            {% endif %}
+                                        </span>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <span style="color: var(--text-muted);">-</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ participant.group_wins }}</td>
+                        <td>{{ participant.group_losses }}</td>
+                        <td><strong>{{ participant.group_points }}</strong></td>
+                        <td>{{ participant._games_conceded or 0 }}</td>
+                        <td style="font-weight: 600; color: {% if (participant.group_points - (participant._games_conceded or 0)) > 0 %}#10b981{% elif (participant.group_points - (participant._games_conceded or 0)) < 0 %}#ef4444{% else %}var(--text-muted){% endif %};">
+                            {% set diff = participant.group_points - (participant._games_conceded or 0) %}
+                            {% if diff > 0 %}+{{ diff }}{% else %}{{ diff }}{% endif %}
+                        </td>
+                        {% else %}
                         <td>
                             {% for pl in participant | participant_players %}
                                 {% if pl.player_id %}
@@ -633,12 +765,143 @@
                         <td>{{ participant.group_wins }}</td>
                         <td>{{ participant.group_losses }}</td>
                         <td>{{ participant.group_points }}</td>
+                        {% endif %}
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
             </div>
 
+            {% set ns_team = namespace(has_rubbers=false) %}
+            {% for m in group_info.matches %}
+                {% if m.sub_matches and m.sub_matches|length > 0 %}
+                    {% set ns_team.has_rubbers = true %}
+                {% endif %}
+            {% endfor %}
+
+            {% if ns_team.has_rubbers %}
+            {% if loop.first %}
+            <div id="fixtures" style="scroll-margin-top: 80px;"></div>
+            {% endif %}
+            <div class="group-fixtures-header" style="margin-top: 1.5rem; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+                <h4 style="margin: 0; font-size: 1.15rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+                    <span>🎾 {{ group_info.group.name }} Team Fixtures &amp; 3 Rubbers</span>
+                </h4>
+                <span style="font-size: 0.8rem; color: var(--text-muted); background: var(--bg-card); padding: 0.25rem 0.65rem; border-radius: 9999px; border: 1px solid var(--border-color);">
+                    1 Singles &amp; 2 Doubles per tie
+                </span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                {% for fixture in group_info.matches %}
+                <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem;" id="fixture-{{ fixture.id }}">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                            <span style="font-weight: 700; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">
+                                Tie #{{ fixture.match_number }} (Round {{ fixture.round }})
+                            </span>
+                            {% set ns_lineup = namespace(complete=true) %}
+                            {% for sub_m in fixture.sub_matches %}
+                                {% if sub_m.rubber_type == 'singles' and (not sub_m.p1_player1_id or not sub_m.p2_player1_id) %}
+                                    {% set ns_lineup.complete = false %}
+                                {% elif sub_m.rubber_type in ['doubles_1', 'doubles_2'] and (not sub_m.p1_player1_id or not sub_m.p1_player2_id or not sub_m.p2_player1_id or not sub_m.p2_player2_id) %}
+                                    {% set ns_lineup.complete = false %}
+                                {% endif %}
+                            {% endfor %}
+                            {% if ns_lineup.complete and fixture.sub_matches %}
+                                <span style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); padding: 2px 8px; border-radius: 9999px; font-size: 0.72rem; font-weight: 600;">
+                                    ✅ Lineup Allotted
+                                </span>
+                            {% else %}
+                                <span style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); padding: 2px 8px; border-radius: 9999px; font-size: 0.72rem; font-weight: 600;">
+                                    ⏳ Lineup Pending
+                                </span>
+                            {% endif %}
+                        </div>
+
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span class="status-badge status-{{ fixture.status }}" style="font-size: 0.75rem; padding: 0.2rem 0.55rem; border-radius: 9999px;">
+                                {{ fixture.status.replace('_', ' ').title() }}
+                            </span>
+                            {% if current_user and current_user.role in ['admin', 'superadmin'] and fixture.participant1 and fixture.participant2 %}
+                            <button type="button" 
+                                id="btn-allot-lineup-{{ fixture.id }}"
+                                class="btn btn-secondary btn-small" 
+                                style="font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: var(--radius-sm); display: inline-flex; align-items: center; gap: 0.3rem;"
+                                data-fixture-id="{{ fixture.id }}"
+                                data-t1-name="{{ fixture.participant1.name|escape }}"
+                                data-t2-name="{{ fixture.participant2.name|escape }}"
+                                data-t1-id="{{ fixture.participant1_id }}"
+                                data-t2-id="{{ fixture.participant2_id }}"
+                                onclick="event.stopPropagation(); openLineupModal({{ fixture.id }}, '{{ fixture.participant1.name|escape }}', '{{ fixture.participant2.name|escape }}', {{ fixture.participant1_id }}, {{ fixture.participant2_id }})">
+                                📋 Allot Lineup
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: var(--radius-md);">
+                        <div style="flex: 1; text-align: left;">
+                            <div style="font-weight: 700; font-size: 1.05rem; color: {% if fixture.winner_id == fixture.participant1_id %}var(--primary){% else %}var(--text-primary){% endif %};">
+                                {% if fixture.winner_id == fixture.participant1_id %}🏆 {% endif %}{{ fixture.participant1.name if fixture.participant1 else 'TBD' }}
+                            </div>
+                        </div>
+                        <div style="font-size: 1.3rem; font-weight: 800; color: var(--accent-primary); padding: 0 0.75rem; white-space: nowrap;">
+                            {{ fixture.score1 or 0 }} – {{ fixture.score2 or 0 }}
+                        </div>
+                        <div style="flex: 1; text-align: right;">
+                            <div style="font-weight: 700; font-size: 1.05rem; color: {% if fixture.winner_id == fixture.participant2_id %}var(--primary){% else %}var(--text-primary){% endif %};">
+                                {{ fixture.participant2.name if fixture.participant2 else 'TBD' }}{% if fixture.winner_id == fixture.participant2_id %} 🏆{% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        {% for r in fixture.sub_matches | sort(attribute='rubber_number') %}
+                        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.65rem 0.85rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+                            <div style="display: flex; flex-direction: column; gap: 0.15rem; flex: 1;">
+                                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                                    <span style="font-weight: 700; color: #f59e0b; font-size: 0.75rem; text-transform: uppercase;">
+                                        {% if r.rubber_type == 'singles' %}🎾 Singles
+                                        {% elif r.rubber_type == 'doubles_1' %}👥 Doubles 1
+                                        {% elif r.rubber_type == 'doubles_2' %}👥 Doubles 2
+                                        {% else %}Rubber {{ r.rubber_number }}
+                                        {% endif %}
+                                    </span>
+                                    {% if r.court_name %}
+                                    <span style="font-size: 0.75rem; color: var(--text-muted);">• 🏟️ {{ r.court_name }}</span>
+                                    {% endif %}
+                                </div>
+                                <div style="color: var(--text-secondary); font-size: 0.82rem;">
+                                    {% if r.p1_player1 %}
+                                        <span style="font-weight: 600; color: var(--text-primary);">{{ r.p1_player1.name }}{% if r.p1_player2 %} / {{ r.p1_player2.name }}{% endif %}</span>
+                                    {% else %}
+                                        <span style="color: #f59e0b; font-style: italic; font-size: 0.78rem;">⏳ Awaiting Captain's Nomination</span>
+                                    {% endif %}
+                                    <span style="color: var(--text-muted); margin: 0 0.3rem;">vs</span>
+                                    {% if r.p2_player1 %}
+                                        <span style="font-weight: 600; color: var(--text-primary);">{{ r.p2_player1.name }}{% if r.p2_player2 %} / {{ r.p2_player2.name }}{% endif %}</span>
+                                    {% else %}
+                                        <span style="color: #f59e0b; font-style: italic; font-size: 0.78rem;">⏳ Awaiting Captain's Nomination</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <span style="font-weight: 700; font-size: 0.95rem; color: {% if r.status == 'completed' %}var(--text-primary){% else %}var(--text-muted){% endif %};">
+                                    {% if r.score1 %}{{ r.score1 }}{% else %}-{% endif %}
+                                </span>
+                                {% if current_user and current_user.role in ['admin', 'superadmin'] %}
+                                <button type="button" class="btn btn-secondary btn-small" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" onclick="openMatchModal({{ r.id }}, '{{ r.status }}', '{{ r.scheduled_time.strftime('%Y-%m-%dT%H:%M') if r.scheduled_time else '' }}', '{{ (r.p1_player1.name if r.p1_player1 else (fixture.participant1.name if fixture.participant1 else 'P1'))|escape }}', {{ r.participant1_id or 'null' }}, '{{ (r.p2_player1.name if r.p2_player1 else (fixture.participant2.name if fixture.participant2 else 'P2'))|escape }}', {{ r.participant2_id or 'null' }}, true, '{{ r.score1 or '' }}', '{{ r.score2 or '' }}', 'games', 1, {{ category.total_games or 7 }}, null, {{ r.winner_id or 'null' }}, {{ r.rubber_number or 'null' }})">
+                                    ✏️ Score
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
             <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Group Matrix</h4>
             <div style="overflow-x: auto;">
                 <table class="standings-table round-robin-grid" style="text-align: center;">
@@ -701,6 +964,7 @@
                     </tbody>
                 </table>
             </div>
+            {% endif %}
         </div>
         {% endfor %}
         
@@ -733,6 +997,7 @@
     
     {% if not groups_data and category.format in ['round_robin', 'doubles_round_robin'] %}
     <div id="groups-section" class="groups-section">
+        <div id="fixtures" style="scroll-margin-top: 80px;"></div>
         <h2>Round Robin Matches</h2>
         <div class="matches-list">
             {% for match in rr_matches %}
@@ -1005,6 +1270,339 @@ async function toggleMatchStatus(matchId, checkbox) {
 </script>
 
 {% include "components/match_modal.html" %}
+
+<!-- CAPTAINS' MATCH LINEUP NOMINATION MODAL -->
+<div id="captainsLineupModal" class="glass-modal-overlay modal" style="display: none; position: fixed; z-index: 9999; inset: 0; width: 100%; height: 100%; overflow-y: auto; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(6px); align-items: center; justify-content: center; padding: 1.5rem 1rem;">
+    <div class="glass-modal" style="background: var(--bg-card); padding: 1.75rem; border: 1px solid var(--border-color); border-radius: var(--radius-lg); width: 95%; max-width: 780px; box-shadow: var(--shadow-xl); position: relative; max-height: 90vh; overflow-y: auto; margin: auto;">
+        <!-- Header -->
+        <div class="glass-modal-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding: 0 0 0.75rem 0; background: transparent;">
+            <div>
+                <h3 style="margin: 0; font-size: 1.25rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 0.45rem;">
+                    📋 Allot Captains' Match Lineup
+                </h3>
+                <p id="lineupModalSubtitle" style="margin: 0.25rem 0 0; color: var(--text-secondary); font-size: 0.85rem;">
+                    Pre-match player allotment decided beforehand by team captains.
+                </p>
+            </div>
+            <button type="button" class="glass-modal-close" onclick="closeLineupModal()" aria-label="Close" style="background: none; border: none; font-size: 1.6rem; color: var(--text-muted); cursor: pointer; line-height: 1; padding: 0 0.25rem;">&times;</button>
+        </div>
+
+        <!-- Fair Play Notice -->
+        <div style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: var(--radius-md); padding: 0.75rem 1rem; margin-bottom: 1.25rem; font-size: 0.82rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.6rem;">
+            <span style="font-size: 1.3rem;">⚖️</span>
+            <div>
+                <strong style="color: var(--accent-primary);">Fair Play Safeguard:</strong>
+                Captains decide player nominations beforehand for 1 Singles and 2 Doubles. The organizer allots the matches based on captains' submitted slips to ensure fairness without rigging.
+            </div>
+        </div>
+
+        <div id="lineupWarningBox" style="display: none; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: var(--radius-md); padding: 0.65rem 0.95rem; margin-bottom: 1rem; font-size: 0.8rem; color: #fbbf24;">
+            <!-- Injected via JS when duplicate players detected -->
+        </div>
+
+        <form id="lineupForm" method="POST" action="">
+            <!-- Rubbers Container -->
+            <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem;">
+                
+                <!-- Rubber 1: Singles -->
+                <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.4rem;">
+                        <span style="font-weight: 700; color: #f59e0b; font-size: 0.85rem; text-transform: uppercase; display: flex; align-items: center; gap: 0.35rem;">
+                            🎾 Rubber 1: Singles
+                        </span>
+                        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">1 Player vs 1 Player</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;">
+                        <div>
+                            <label class="form-label" id="lbl_r1_p1" style="font-size: 0.78rem; font-weight: 600; margin-bottom: 0.3rem; display: block; color: var(--text-primary);">Team 1 Player</label>
+                            <select name="r1_p1_player1" id="select_r1_p1" class="form-input" style="width: 100%; padding: 0.45rem; font-size: 0.82rem;" onchange="validateLineupDuplicates()">
+                                <option value="">-- Select Player --</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label" id="lbl_r1_p2" style="font-size: 0.78rem; font-weight: 600; margin-bottom: 0.3rem; display: block; color: var(--text-primary);">Team 2 Player</label>
+                            <select name="r1_p2_player1" id="select_r1_p2" class="form-input" style="width: 100%; padding: 0.45rem; font-size: 0.82rem;" onchange="validateLineupDuplicates()">
+                                <option value="">-- Select Player --</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rubber 2: Doubles 1 -->
+                <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.4rem;">
+                        <span style="font-weight: 700; color: #3b82f6; font-size: 0.85rem; text-transform: uppercase; display: flex; align-items: center; gap: 0.35rem;">
+                            👥 Rubber 2: Doubles 1
+                        </span>
+                        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">2 Players vs 2 Players</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;">
+                        <div>
+                            <label class="form-label" id="lbl_r2_p1" style="font-size: 0.78rem; font-weight: 600; margin-bottom: 0.3rem; display: block; color: var(--text-primary);">Team 1 Pair</label>
+                            <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                                <select name="r2_p1_player1" id="select_r2_p1_1" class="form-input" style="width: 100%; padding: 0.45rem; font-size: 0.82rem;" onchange="validateLineupDuplicates()">
+                                    <option value="">-- Player 1 --</option>
+                                </select>
+                                <select name="r2_p1_player2" id="select_r2_p1_2" class="form-input" style="width: 100%; padding: 0.45rem; font-size: 0.82rem;" onchange="validateLineupDuplicates()">
+                                    <option value="">-- Player 2 --</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label" id="lbl_r2_p2" style="font-size: 0.78rem; font-weight: 600; margin-bottom: 0.3rem; display: block; color: var(--text-primary);">Team 2 Pair</label>
+                            <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                                <select name="r2_p2_player1" id="select_r2_p2_1" class="form-input" style="width: 100%; padding: 0.45rem; font-size: 0.82rem;" onchange="validateLineupDuplicates()">
+                                    <option value="">-- Player 1 --</option>
+                                </select>
+                                <select name="r2_p2_player2" id="select_r2_p2_2" class="form-input" style="width: 100%; padding: 0.45rem; font-size: 0.82rem;" onchange="validateLineupDuplicates()">
+                                    <option value="">-- Player 2 --</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rubber 3: Doubles 2 -->
+                <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.4rem;">
+                        <span style="font-weight: 700; color: #10b981; font-size: 0.85rem; text-transform: uppercase; display: flex; align-items: center; gap: 0.35rem;">
+                            👥 Rubber 3: Doubles 2
+                        </span>
+                        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">2 Players vs 2 Players</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;">
+                        <div>
+                            <label class="form-label" id="lbl_r3_p1" style="font-size: 0.78rem; font-weight: 600; margin-bottom: 0.3rem; display: block; color: var(--text-primary);">Team 1 Pair</label>
+                            <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                                <select name="r3_p1_player1" id="select_r3_p1_1" class="form-input" style="width: 100%; padding: 0.45rem; font-size: 0.82rem;" onchange="validateLineupDuplicates()">
+                                    <option value="">-- Player 1 --</option>
+                                </select>
+                                <select name="r3_p1_player2" id="select_r3_p1_2" class="form-input" style="width: 100%; padding: 0.45rem; font-size: 0.82rem;" onchange="validateLineupDuplicates()">
+                                    <option value="">-- Player 2 --</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label" id="lbl_r3_p2" style="font-size: 0.78rem; font-weight: 600; margin-bottom: 0.3rem; display: block; color: var(--text-primary);">Team 2 Pair</label>
+                            <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                                <select name="r3_p2_player1" id="select_r3_p2_1" class="form-input" style="width: 100%; padding: 0.45rem; font-size: 0.82rem;" onchange="validateLineupDuplicates()">
+                                    <option value="">-- Player 1 --</option>
+                                </select>
+                                <select name="r3_p2_player2" id="select_r3_p2_2" class="form-input" style="width: 100%; padding: 0.45rem; font-size: 0.82rem;" onchange="validateLineupDuplicates()">
+                                    <option value="">-- Player 2 --</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Footer Actions -->
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                <button type="button" onclick="closeLineupModal()" class="glass-btn-secondary">
+                    Cancel
+                </button>
+                <button type="submit" class="glass-btn-primary" style="font-weight: 600; padding: 0.6rem 1.4rem;">
+                    💾 Save Official Lineup (Allot Matches)
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// JSON lookups for team rosters and existing rubber assignments
+const teamRostersLookup = {{ (team_rosters_map|tojson) if team_rosters_map else '{}' }};
+const fixtureRubbersLookup = {
+{% if groups_data %}
+    {% for grp in groups_data %}
+        {% for fixture in grp.matches %}
+            {{ fixture.id }}: [
+                {% for r in fixture.sub_matches | sort(attribute='rubber_number') %}
+                {
+                    id: {{ r.id }},
+                    type: '{{ r.rubber_type }}',
+                    number: {{ r.rubber_number or loop.index }},
+                    p1_1: {{ r.p1_player1_id or 'null' }},
+                    p1_2: {{ r.p1_player2_id or 'null' }},
+                    p2_1: {{ r.p2_player1_id or 'null' }},
+                    p2_2: {{ r.p2_player2_id or 'null' }}
+                },
+                {% endfor %}
+            ],
+        {% endfor %}
+    {% endfor %}
+{% endif %}
+};
+
+function formatRoleLabel(role) {
+    if (!role) return '';
+    if (role === 'captain') return 'Captain';
+    if (role === 'vice_captain') return 'Vice Captain';
+    return role.charAt(0).toUpperCase() + role.slice(1);
+}
+
+function populateSelectWithOptions(selectElem, players, selectedId) {
+    if (!selectElem) return;
+    const defaultText = selectElem.options.length > 0 ? selectElem.options[0].text : '-- Select Player --';
+    selectElem.innerHTML = `<option value="">${defaultText}</option>`;
+    if (!players || players.length === 0) return;
+
+    players.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        const roleStr = formatRoleLabel(p.role);
+        const tierStr = p.tier ? ` (Tier ${p.tier})` : '';
+        opt.textContent = `${p.name} - ${roleStr}${tierStr}`;
+        if (selectedId && Number(p.id) === Number(selectedId)) {
+            opt.selected = true;
+        }
+        selectElem.appendChild(opt);
+    });
+}
+
+function openLineupModal(fixtureId, t1Name, t2Name, t1Id, t2Id) {
+    // Support being called directly from button element: openLineupModal(this)
+    if (fixtureId && typeof fixtureId === 'object' && fixtureId.dataset) {
+        const btn = fixtureId;
+        fixtureId = btn.dataset.fixtureId;
+        t1Name = btn.dataset.t1Name;
+        t2Name = btn.dataset.t2Name;
+        t1Id = btn.dataset.t1Id;
+        t2Id = btn.dataset.t2Id;
+    }
+
+    const modal = document.getElementById('captainsLineupModal');
+    if (!modal) {
+        console.error('captainsLineupModal element not found');
+        return;
+    }
+
+    // Immediately make modal visible and active
+    modal.style.display = 'flex';
+    modal.classList.add('active');
+
+    try {
+        // Set subtitle
+        const sub = document.getElementById('lineupModalSubtitle');
+        if (sub) {
+            sub.innerHTML = `<strong>${t1Name || 'Team 1'}</strong> vs <strong>${t2Name || 'Team 2'}</strong> &bull; Pre-match player allotment decided by team captains.`;
+        }
+
+        // Set labels
+        const l_r1_1 = document.getElementById('lbl_r1_p1');
+        const l_r1_2 = document.getElementById('lbl_r1_p2');
+        const l_r2_1 = document.getElementById('lbl_r2_p1');
+        const l_r2_2 = document.getElementById('lbl_r2_p2');
+        const l_r3_1 = document.getElementById('lbl_r3_p1');
+        const l_r3_2 = document.getElementById('lbl_r3_p2');
+
+        if (l_r1_1) l_r1_1.textContent = `${t1Name || 'Team 1'} (Singles)`;
+        if (l_r1_2) l_r1_2.textContent = `${t2Name || 'Team 2'} (Singles)`;
+        if (l_r2_1) l_r2_1.textContent = `${t1Name || 'Team 1'} (Doubles 1 Pair)`;
+        if (l_r2_2) l_r2_2.textContent = `${t2Name || 'Team 2'} (Doubles 1 Pair)`;
+        if (l_r3_1) l_r3_1.textContent = `${t1Name || 'Team 1'} (Doubles 2 Pair)`;
+        if (l_r3_2) l_r3_2.textContent = `${t2Name || 'Team 2'} (Doubles 2 Pair)`;
+
+        const t1Players = (typeof teamRostersLookup !== 'undefined' && teamRostersLookup[t1Id]) ? teamRostersLookup[t1Id] : [];
+        const t2Players = (typeof teamRostersLookup !== 'undefined' && teamRostersLookup[t2Id]) ? teamRostersLookup[t2Id] : [];
+
+        // Find existing rubber assignments
+        const rubbers = (typeof fixtureRubbersLookup !== 'undefined' && fixtureRubbersLookup[fixtureId]) ? fixtureRubbersLookup[fixtureId] : [];
+        const r1 = rubbers.find(r => r.type === 'singles' || r.number === 1) || {};
+        const r2 = rubbers.find(r => r.type === 'doubles_1' || r.number === 2) || {};
+        const r3 = rubbers.find(r => r.type === 'doubles_2' || r.number === 3) || {};
+
+        // Populate selects
+        populateSelectWithOptions(document.getElementById('select_r1_p1'), t1Players, r1.p1_1);
+        populateSelectWithOptions(document.getElementById('select_r1_p2'), t2Players, r1.p2_1);
+
+        populateSelectWithOptions(document.getElementById('select_r2_p1_1'), t1Players, r2.p1_1);
+        populateSelectWithOptions(document.getElementById('select_r2_p1_2'), t1Players, r2.p1_2);
+        populateSelectWithOptions(document.getElementById('select_r2_p2_1'), t2Players, r2.p2_1);
+        populateSelectWithOptions(document.getElementById('select_r2_p2_2'), t2Players, r2.p2_2);
+
+        populateSelectWithOptions(document.getElementById('select_r3_p1_1'), t1Players, r3.p1_1);
+        populateSelectWithOptions(document.getElementById('select_r3_p1_2'), t1Players, r3.p1_2);
+        populateSelectWithOptions(document.getElementById('select_r3_p2_1'), t2Players, r3.p2_1);
+        populateSelectWithOptions(document.getElementById('select_r3_p2_2'), t2Players, r3.p2_2);
+
+        // Set form action
+        const form = document.getElementById('lineupForm');
+        if (form) {
+            form.action = `/tournaments/{{ tournament.url_slug }}/categories/{{ category.id }}/fixtures/${fixtureId}/lineup`;
+        }
+
+        validateLineupDuplicates();
+    } catch (err) {
+        console.error('Error populating lineup modal:', err);
+    }
+}
+
+function closeLineupModal() {
+    const modal = document.getElementById('captainsLineupModal');
+    if (modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+    }
+}
+
+// Make functions globally accessible
+window.openLineupModal = openLineupModal;
+window.closeLineupModal = closeLineupModal;
+
+function validateLineupDuplicates() {
+    const warnBox = document.getElementById('lineupWarningBox');
+    if (!warnBox) return;
+
+    // Check team 1 selections
+    const t1_picks = [
+        document.getElementById('select_r1_p1')?.value,
+        document.getElementById('select_r2_p1_1')?.value,
+        document.getElementById('select_r2_p1_2')?.value,
+        document.getElementById('select_r3_p1_1')?.value,
+        document.getElementById('select_r3_p1_2')?.value
+    ].filter(Boolean);
+
+    // Check team 2 selections
+    const t2_picks = [
+        document.getElementById('select_r1_p2')?.value,
+        document.getElementById('select_r2_p2_1')?.value,
+        document.getElementById('select_r2_p2_2')?.value,
+        document.getElementById('select_r3_p2_1')?.value,
+        document.getElementById('select_r3_p2_2')?.value
+    ].filter(Boolean);
+
+    const hasT1Dup = new Set(t1_picks).size !== t1_picks.length;
+    const hasT2Dup = new Set(t2_picks).size !== t2_picks.length;
+
+    if (hasT1Dup || hasT2Dup) {
+        warnBox.style.display = 'block';
+        warnBox.innerHTML = `⚠️ <strong>Notice:</strong> One or more players appear in multiple rubbers. To uphold fair play, verify captain nomination slips before confirming.`;
+    } else {
+        warnBox.style.display = 'none';
+    }
+}
+
+// Close on background click
+window.addEventListener('click', function(event) {
+    const modal = document.getElementById('captainsLineupModal');
+    if (event.target === modal) {
+        closeLineupModal();
+    }
+});
+
+// Close on Escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape' || event.key === 'Esc') {
+        const modal = document.getElementById('captainsLineupModal');
+        if (modal && (modal.classList.contains('active') || modal.style.display === 'flex' || modal.style.display === 'block')) {
+            closeLineupModal();
+        }
+    }
+});
+</script>
 
 <script>
 // Target Match auto-scroll and highlight when arriving with ?match_id=...
@@ -1324,6 +1922,61 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+
+// Category In-Page Section Navigation & Hash Routing
+function handleCategorySectionNav(sectionId, event) {
+    if (event) event.preventDefault();
+    const el = document.getElementById(sectionId);
+    if (el) {
+        history.pushState(null, null, '#' + sectionId);
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        updateSubnavActive(sectionId);
+    }
+}
+
+function updateSubnavActive(activeId) {
+    document.querySelectorAll('.subnav-pill').forEach(btn => {
+        if (btn.getAttribute('href') === '#' + activeId) {
+            btn.classList.remove('btn-secondary');
+            btn.classList.add('btn-primary');
+        } else {
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-secondary');
+        }
+    });
+}
+
+function processUrlHash() {
+    const rawHash = (window.location.hash || '').replace('#', '');
+    if (!rawHash) return;
+    
+    if (rawHash === 'fixtures' || rawHash === 'standings' || rawHash === 'procedure-guide' || rawHash === 'bracket') {
+        setTimeout(() => {
+            const el = document.getElementById(rawHash);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                updateSubnavActive(rawHash);
+                if (rawHash === 'fixtures') {
+                    const fixtureHeader = el.nextElementSibling || el;
+                    fixtureHeader.classList.add('fixtures-active-glow');
+                    setTimeout(() => fixtureHeader.classList.remove('fixtures-active-glow'), 2000);
+                }
+            }
+        }, 120);
+    } else if (rawHash.startsWith('fixture-')) {
+        setTimeout(() => {
+            const el = document.getElementById(rawHash);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.style.boxShadow = '0 0 0 3px var(--accent-primary)';
+                setTimeout(() => el.style.boxShadow = '', 2500);
+            }
+        }, 120);
+    }
+}
+
+window.addEventListener('DOMContentLoaded', processUrlHash);
+window.addEventListener('hashchange', processUrlHash);
 </script>
 
 {% endblock %}

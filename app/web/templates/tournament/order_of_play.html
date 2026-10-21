@@ -822,7 +822,12 @@
           <span class="live-indicator-badge" title="Schedule auto-refreshes"><span class="live-indicator-dot"></span> Live</span>
         </div>
         <p class="subtitle" style="margin: 0.35rem 0 0; color: var(--text-secondary);">
-          {{ tournament.name }} &bull; {{ total_matches_scheduled }} match{{ 'es' if total_matches_scheduled != 1 else '' }} scheduled
+          {{ tournament.name }} &bull;
+          {% if total_rubbers_scheduled and total_rubbers_scheduled > 0 %}
+          <strong>{{ total_matches_scheduled }}</strong> team tie{{ 's' if total_matches_scheduled != 1 else '' }} ({{ total_rubbers_scheduled }} rubbers: Singles &amp; Doubles) scheduled
+          {% else %}
+          <strong>{{ total_matches_scheduled }}</strong> match{{ 'es' if total_matches_scheduled != 1 else '' }} scheduled
+          {% endif %}
         </p>
       </div>
 
@@ -871,7 +876,9 @@
       <span style="font-size: 0.72rem; padding: 1px 6px; border-radius: 9999px; background: rgba(234, 179, 8, 0.25); color: #fde047; font-weight: 700; margin-left: 2px;" title="Schedule is provisional awaiting earlier day results">⏳ Provisional</span>
       {% endif %}
       {% if dm.match_count is defined %}
-      <span style="font-size: 0.78rem; padding: 2px 7px; border-radius: 9999px; background: rgba(255, 255, 255, 0.12); margin-left: 4px; font-weight: 700;">{{ dm.match_count }}</span>
+      <span style="font-size: 0.78rem; padding: 2px 7px; border-radius: 9999px; background: rgba(255, 255, 255, 0.12); margin-left: 4px; font-weight: 700;">
+        {{ dm.match_count }} {% if dm.rubbers_count and dm.rubbers_count > 0 %}<span style="opacity: 0.8; font-size: 0.7rem;">({{ dm.rubbers_count }} rubbers)</span>{% endif %}
+      </span>
       {% endif %}
     </a>
     {% endfor %}
@@ -990,7 +997,12 @@
   <td>
     <div class="oop-matchup-container">
       <div class="oop-team-group">
-        {% if item.p1_players %}
+        {% if item.is_team %}
+          <span class="oop-player-chip static" style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);">
+            <span class="oop-chip-icon">🛡️</span>
+            <span>{{ item.p1 }}</span>
+          </span>
+        {% elif item.p1_players %}
           {% for pl in item.p1_players %}
             {% if pl.player_id %}
             <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-chip" title="View {{ pl.name }} profile">
@@ -1016,7 +1028,12 @@
       <span class="oop-vs-pill">vs</span>
 
       <div class="oop-team-group">
-        {% if item.p2_players %}
+        {% if item.is_team %}
+          <span class="oop-player-chip static" style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);">
+            <span class="oop-chip-icon">🛡️</span>
+            <span>{{ item.p2 }}</span>
+          </span>
+        {% elif item.p2_players %}
           {% for pl in item.p2_players %}
             {% if pl.player_id %}
             <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-chip" title="View {{ pl.name }} profile">
@@ -1039,7 +1056,7 @@
         {% endif %}
       </div>
     </div>
-    {% if item.category_id %}
+    {% if not item.is_team and item.category_id %}
     <div style="margin-top: 0.45rem;">
       <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=item.category_id, match_id=item.match.id) }}" class="oop-bracket-link" title="Jump to this match on the category bracket">
         🎯 View in Bracket ↗
@@ -1137,11 +1154,16 @@
     </div>
   </div>
 
-  <!-- Card Matchup: Players -->
+  <!-- Card Matchup: Players / Teams -->
   <div class="oop-card-matchup">
     <div class="oop-card-player" style="gap: 0.4rem; align-items: center;">
       <div class="oop-team-group" style="width: 100%;">
-        {% if item.p1_players %}
+        {% if item.is_team %}
+          <span class="oop-player-chip static" style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);">
+            <span class="oop-chip-icon">🛡️</span>
+            <span>{{ item.p1 }}</span>
+          </span>
+        {% elif item.p1_players %}
           {% for pl in item.p1_players %}
             {% if pl.player_id %}
             <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-chip" title="View {{ pl.name }} profile">
@@ -1167,7 +1189,12 @@
     <div class="oop-card-vs">vs</div>
     <div class="oop-card-player" style="gap: 0.4rem; align-items: center;">
       <div class="oop-team-group" style="width: 100%;">
-        {% if item.p2_players %}
+        {% if item.is_team %}
+          <span class="oop-player-chip static" style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);">
+            <span class="oop-chip-icon">🛡️</span>
+            <span>{{ item.p2 }}</span>
+          </span>
+        {% elif item.p2_players %}
           {% for pl in item.p2_players %}
             {% if pl.player_id %}
             <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-chip" title="View {{ pl.name }} profile">
@@ -1191,7 +1218,7 @@
       </div>
     </div>
 
-    {% if item.category_id %}
+    {% if not item.is_team and item.category_id %}
     <div style="margin-top: 0.4rem;">
       <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=item.category_id, match_id=item.match.id) }}" class="oop-bracket-link">
         🎯 View in Bracket ↗
@@ -1332,8 +1359,8 @@
             <tr>
               <th style="width: 145px;">Time & Session</th>
               <th style="width: 140px;">Category</th>
-              <th style="width: 120px;">Round</th>
-              <th style="min-width: 260px;">Match</th>
+              <th style="width: 125px;">Group / Round</th>
+              <th style="min-width: 260px;">Matchup (Teams)</th>
               <th style="min-width: 210px; text-align: center;">Status & Live Controls</th>
               {% if current_user and current_user.role in ['admin', 'superadmin'] %}
               <th style="width: 125px; text-align: right;">Dispatch</th>
@@ -1384,8 +1411,8 @@
             <tr>
               <th style="width: 145px;">Time & Session</th>
               <th style="width: 140px;">Category</th>
-              <th style="width: 120px;">Round</th>
-              <th style="min-width: 260px;">Match</th>
+              <th style="width: 125px;">Group / Round</th>
+              <th style="min-width: 260px;">Matchup (Teams)</th>
               <th style="min-width: 210px; text-align: center;">Status & Live Controls</th>
               {% if current_user and current_user.role in ['admin', 'superadmin'] %}
               <th style="width: 125px; text-align: right;">Dispatch</th>

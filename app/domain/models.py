@@ -98,6 +98,8 @@ class Group(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=False)
     name = db.Column(db.String(50), nullable=False)  # "Group A", "Group B", etc.
+    start_time = db.Column(db.String(10), nullable=True)  # e.g. "09:00", "11:30"
+    assigned_courts = db.Column(db.String(100), nullable=True)  # e.g. "Court 1, Court 2, Court 3"
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships
@@ -163,10 +165,28 @@ class Match(db.Model):
     games_per_set = db.Column(db.Integer)
     points_to_win = db.Column(db.Integer)
 
+    # Rubber & sub-match hierarchy
+    parent_match_id = db.Column(db.Integer, db.ForeignKey('matches.id'), nullable=True)
+    rubber_type = db.Column(db.String(20), nullable=True)  # 'singles', 'doubles_1', 'doubles_2'
+    rubber_number = db.Column(db.Integer, nullable=True)   # 1, 2, 3
+
+    # Specific player assignments for the rubber
+    p1_player1_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=True)
+    p1_player2_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=True)
+    p2_player1_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=True)
+    p2_player2_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=True)
+
     # Relationships for participants
     participant1 = db.relationship('Participant', foreign_keys=[participant1_id], backref='matches_as_p1')
     participant2 = db.relationship('Participant', foreign_keys=[participant2_id], backref='matches_as_p2')
     winner = db.relationship('Participant', foreign_keys=[winner_id], backref='matches_won')
+
+    # Sub-matches relationship and player rubber relationships
+    sub_matches = db.relationship('Match', backref=db.backref('parent_fixture', remote_side=[id]), cascade='all, delete-orphan')
+    p1_player1 = db.relationship('Player', foreign_keys=[p1_player1_id])
+    p1_player2 = db.relationship('Player', foreign_keys=[p1_player2_id])
+    p2_player1 = db.relationship('Player', foreign_keys=[p2_player1_id])
+    p2_player2 = db.relationship('Player', foreign_keys=[p2_player2_id])
 
 class TournamentSettings(db.Model):
     __tablename__ = 'tournament_settings'
@@ -324,6 +344,34 @@ class PlayerTournamentRecord(db.Model):
     points_earned = db.Column(db.Float, default=0.0)
     is_manual = db.Column(db.Boolean, default=False)
     date_recorded = db.Column(db.DateTime, default=datetime.utcnow)
+
+class PlayerCategoryTier(db.Model):
+    __tablename__ = 'player_category_tiers'
+
+    id = db.Column(db.Integer, primary_key=True)
+    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=False)
+    player_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=False)
+    tier = db.Column(db.String(10), nullable=False)  # 'A', 'B', 'C', 'D', 'E'
+    role = db.Column(db.String(20), default='player')  # 'captain', 'vice_captain', 'player'
+    is_drafted = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    player = db.relationship('Player', backref=db.backref('category_tiers', cascade='all, delete-orphan'))
+    category = db.relationship('Category', backref=db.backref('player_tiers', cascade='all, delete-orphan'))
+
+class TeamMember(db.Model):
+    __tablename__ = 'team_members'
+
+    id = db.Column(db.Integer, primary_key=True)
+    participant_id = db.Column(db.Integer, db.ForeignKey('participants.id'), nullable=False)
+    player_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=False)
+    role = db.Column(db.String(20), default='member')  # 'captain', 'vice_captain', 'member'
+    tier = db.Column(db.String(10))                    # 'A', 'B', 'C', 'D', 'E'
+    roster_order = db.Column(db.Integer, default=1)   # 1 to 5
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    participant = db.relationship('Participant', backref=db.backref('team_members', cascade='all, delete-orphan'))
+    player = db.relationship('Player', backref=db.backref('team_memberships', cascade='all, delete-orphan'))
 
 class AuditLog(db.Model):
     __tablename__ = 'audit_logs'

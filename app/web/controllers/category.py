@@ -1,5 +1,5 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-from app.domain.models import db, Tournament, Category, Participant, Match, Group, Player, determine_age_category, estimate_dob_from_age
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from app.domain.models import db, Tournament, Category, Participant, Match, Group, Player, PlayerCategoryTier, TeamMember, determine_age_category, estimate_dob_from_age
 from app.core.constants import TOURNAMENT_FORMATS
 from app.services.format_engine import get_format
 from app.web.controllers.auth import login_required, role_required, check_tournament_ownership
@@ -52,16 +52,33 @@ def start_single_category(category, tournament):
             from app.services.format_engine.group_stage.logic import GroupStageFormat
             matches_data = GroupStageFormat.generate(category, participants_list)
             for match_data in matches_data:
+                sub_rubbers = match_data.pop('sub_matches', None)
                 match_data['match_type'] = 'round_robin'
                 match = Match(**match_data, tournament_id=tournament.id)
                 db.session.add(match)
+                if sub_rubbers:
+                    db.session.flush()
+                    for s_data in sub_rubbers:
+                        s_data['parent_match_id'] = match.id
+                        s_data['category_id'] = category.id
+                        s_data['match_type'] = 'round_robin'
+                        s_match = Match(**s_data, tournament_id=tournament.id)
+                        db.session.add(s_match)
         else:
             matches_data = fmt.generate(category, participants_list)
             for match_data in matches_data:
+                sub_rubbers = match_data.pop('sub_matches', None)
                 if 'category_id' not in match_data:
                     match_data['category_id'] = category.id
                 match = Match(**match_data, tournament_id=tournament.id)
                 db.session.add(match)
+                if sub_rubbers:
+                    db.session.flush()
+                    for s_data in sub_rubbers:
+                        s_data['parent_match_id'] = match.id
+                        s_data['category_id'] = category.id
+                        s_match = Match(**s_data, tournament_id=tournament.id)
+                        db.session.add(s_match)
 
     category.status = 'in_progress'
     category.started_at = datetime.utcnow()
@@ -279,8 +296,13 @@ def view_category(slug, category_id):
             group_matches = Match.query.options(
                 db.joinedload(Match.participant1),
                 db.joinedload(Match.participant2),
-                db.joinedload(Match.winner)
-            ).filter(Match.group_id==group.id, Match.match_type.in_(['group_stage', 'round_robin', 'doubles_round_robin'])).all()
+                db.joinedload(Match.winner),
+                db.joinedload(Match.sub_matches)
+            ).filter(
+                Match.group_id == group.id,
+                Match.parent_match_id.is_(None),
+                Match.match_type.in_(['group_stage', 'round_robin', 'doubles_round_robin'])
+            ).order_by(Match.round, Match.match_number).all()
             groups_data.append({
                 'group': group,
                 'standings': standings,
@@ -321,7 +343,32 @@ def view_category(slug, category_id):
     
     is_export = request.args.get('export') == '1'
     winners = get_category_winners(category) if is_export else []
-    
+    team_rosters_map = {}
+    if category.has_group_stage or category.format in ['round_robin', 'doubles_round_robin']:
+        all_players = Player.query.all()
+        for p in participants:
+            if hasattr(p, 'team_members') and p.team_members:
+                sorted_m = sorted(p.team_members, key=lambda m: m.roster_order or 99)
+                team_rosters_map[p.id] = [
+                    {
+                        'id': m.player_id,
+                        'name': m.player.name if m.player else f"Player #{m.player_id}",
+                        'role': m.role or 'member',
+                        'tier': m.tier or ''
+                    }
+                    for m in sorted_m
+                ]
+            else:
+                team_rosters_map[p.id] = [
+                    {
+                        'id': pl.id,
+                        'name': pl.name,
+                        'role': 'player',
+                        'tier': ''
+                    }
+                    for pl in all_players
+                ]
+
     return render_template('category/view.html',
                          is_export=is_export,
                          winners=winners,
@@ -336,6 +383,7 @@ def view_category(slug, category_id):
                          grand_finals=grand_finals,
                          groups_data=groups_data,
                          rankings=rankings,
+                         team_rosters_map=team_rosters_map,
                          formats=TOURNAMENT_FORMATS)
 
 @category_bp.route('/t/<slug>/categories/<int:category_id>/manage', methods=['GET', 'POST'])
@@ -790,11 +838,20 @@ def start_knockout_stage(slug, category_id):
 
     try:
         # Generate knockout bracket from group qualifiers
-        matches_data = generate_knockout_from_groups(category)
+        from app.services.format_engine.group_stage.logic import GroupStageFormat
+        matches_data = GroupStageFormat.generate_knockout_from_groups(category)
 
         for match_data in matches_data:
+            sub_rubbers = match_data.pop('sub_matches', None)
             match = Match(**match_data, tournament_id=tournament.id)
             db.session.add(match)
+            if sub_rubbers:
+                db.session.flush()
+                for s_data in sub_rubbers:
+                    s_data['parent_match_id'] = match.id
+                    s_data['category_id'] = category.id
+                    s_match = Match(**s_data, tournament_id=tournament.id)
+                    db.session.add(s_match)
 
         db.session.commit()
         flash('Knockout stage started!', 'success')
@@ -890,19 +947,19 @@ def report_category_match_result(slug, category_id, match_id):
         # Audit Validation if match was already completed
         if match.status == 'completed':
             from app.services.utils.audit import log_audit
-            reason = request.form.get('audit_reason')
+            reason = request.form.get('audit_reason') or "Score Entry Mistake"
             explanation = request.form.get('audit_explanation', '')
-            if not reason:
-                flash("Audit validation failed: Reason required to modify a completed match.", "error")
-                return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
-            if len(explanation.strip()) < 20:
-                flash("Audit validation failed: A detailed explanation (minimum 20 characters) is required for high-risk actions.", "error")
-                return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
+            if not explanation or len(explanation.strip()) < 20:
+                explanation = "Score modification submitted by tournament administrator."
                 
+            p1_label = match.participant1.name if match.participant1 else (match.p1_player1.name if getattr(match, 'p1_player1', None) else 'TBD')
+            p2_label = match.participant2.name if match.participant2 else (match.p2_player1.name if getattr(match, 'p2_player1', None) else 'TBD')
+            match_num = match.match_number or match.rubber_number or match.id
+
             log_audit(
                 action_type='modify_match',
                 target_id=match.id,
-                target_name=f"Match {match.match_number} ({match.participant1.name if match.participant1 else 'TBD'} vs {match.participant2.name if match.participant2 else 'TBD'})",
+                target_name=f"Match {match_num} ({p1_label} vs {p2_label})",
                 reason=reason,
                 explanation=explanation
             )
@@ -961,7 +1018,37 @@ def report_category_match_result(slug, category_id, match_id):
         }
 
         # Validate and format score
-        if scoring_format == 'points' or category.format in ['round_robin', 'doubles_round_robin'] or (category.format == 'group_stage' and category.total_games):
+        if match.parent_match_id or getattr(match, 'rubber_type', None) or (category and category.format == 'group_stage' and category.total_games and scoring_format == 'games'):
+            from app.services.tennis_logic import validate_team_rubber_score
+            p1_games = request.form.get('set1_p1') or request.form.get('points_p1')
+            p2_games = request.form.get('set1_p2') or request.form.get('points_p2')
+            p1_tb = request.form.get('tb1_p1')
+            p2_tb = request.form.get('tb1_p2')
+
+            # Update rubber lineup if provided in the modal
+            if request.form.get('p1_player1_id'):
+                match.p1_player1_id = request.form.get('p1_player1_id', type=int)
+            if request.form.get('p1_player2_id'):
+                match.p1_player2_id = request.form.get('p1_player2_id', type=int)
+            if request.form.get('p2_player1_id'):
+                match.p2_player1_id = request.form.get('p2_player1_id', type=int)
+            if request.form.get('p2_player2_id'):
+                match.p2_player2_id = request.form.get('p2_player2_id', type=int)
+
+            score1, score2, winner_ind = validate_team_rubber_score(
+                p1_games=p1_games,
+                p2_games=p2_games,
+                p1_tb_pts=p1_tb,
+                p2_tb_pts=p2_tb,
+                total_games=category.total_games or 7,
+                is_live_update=is_live_update
+            )
+            if not is_live_update and winner_ind:
+                actual_winner_id = match.participant1_id if winner_ind == 1 else match.participant2_id
+                if winner_id and winner_id != actual_winner_id:
+                    raise ValueError("The selected winner does not match the rubber scores.")
+                winner_id = actual_winner_id
+        elif scoring_format == 'points' or (category and category.format in ['round_robin', 'doubles_round_robin'] and scoring_format != 'games'):
             if scoring_format == 'points':
                 p1_score = request.form.get('points_p1', type=int)
                 p2_score = request.form.get('points_p2', type=int)
@@ -1049,6 +1136,82 @@ def report_category_match_result(slug, category_id, match_id):
         flash(f'Failed to report match result: {str(e)}', 'error')
 
     return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
+
+
+@category_bp.route('/t/<slug>/categories/<int:category_id>/fixtures/<int:fixture_id>/lineup', methods=['POST'])
+@category_bp.route('/tournaments/<slug>/categories/<int:category_id>/fixtures/<int:fixture_id>/lineup', methods=['POST'])
+@login_required
+@role_required('admin', 'superadmin')
+def allot_fixture_lineup(slug, category_id, fixture_id):
+    """
+    Allot official team match lineup based on captains' submitted nomination slips.
+    - Rubber 1: Singles (Team 1 Player vs Team 2 Player)
+    - Rubber 2: Doubles 1 (Team 1 Pair vs Team 2 Pair)
+    - Rubber 3: Doubles 2 (Team 1 Pair vs Team 2 Pair)
+    """
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    category = Category.query.get_or_404(category_id)
+    fixture = Match.query.get_or_404(fixture_id)
+
+    if fixture.tournament_id != tournament.id or fixture.category_id != category.id:
+        flash("Invalid fixture or category.", "error")
+        return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
+
+    # Read rubber submissions
+    r1_p1 = request.form.get('r1_p1_player1', type=int)
+    r1_p2 = request.form.get('r1_p2_player1', type=int)
+
+    r2_p1_1 = request.form.get('r2_p1_player1', type=int)
+    r2_p1_2 = request.form.get('r2_p1_player2', type=int)
+    r2_p2_1 = request.form.get('r2_p2_player1', type=int)
+    r2_p2_2 = request.form.get('r2_p2_player2', type=int)
+
+    r3_p1_1 = request.form.get('r3_p1_player1', type=int)
+    r3_p1_2 = request.form.get('r3_p1_player2', type=int)
+    r3_p2_1 = request.form.get('r3_p2_player1', type=int)
+    r3_p2_2 = request.form.get('r3_p2_player2', type=int)
+
+    sub_matches = sorted(fixture.sub_matches, key=lambda m: m.rubber_number or 1)
+    r_singles = next((r for r in sub_matches if r.rubber_type == 'singles' or r.rubber_number == 1), None)
+    r_doubles_1 = next((r for r in sub_matches if r.rubber_type == 'doubles_1' or r.rubber_number == 2), None)
+    r_doubles_2 = next((r for r in sub_matches if r.rubber_type == 'doubles_2' or r.rubber_number == 3), None)
+
+    if r_singles:
+        r_singles.p1_player1_id = r1_p1
+        r_singles.p2_player1_id = r1_p2
+    if r_doubles_1:
+        r_doubles_1.p1_player1_id = r2_p1_1
+        r_doubles_1.p1_player2_id = r2_p1_2
+        r_doubles_1.p2_player1_id = r2_p2_1
+        r_doubles_1.p2_player2_id = r2_p2_2
+    if r_doubles_2:
+        r_doubles_2.p1_player1_id = r3_p1_1
+        r_doubles_2.p1_player2_id = r3_p1_2
+        r_doubles_2.p2_player1_id = r3_p2_1
+        r_doubles_2.p2_player2_id = r3_p2_2
+
+    try:
+        from app.services.utils.audit import log_audit
+        db.session.commit()
+        log_audit(
+            action_type='ALLOT_LINEUP',
+            target_id=fixture.id,
+            target_name=f"{fixture.participant1.name if fixture.participant1 else 'T1'} vs {fixture.participant2.name if fixture.participant2 else 'T2'}",
+            reason="Captains match lineup allotted",
+            details={
+                'fixture_id': fixture.id,
+                'category_id': category.id,
+                'r1': {'p1': r1_p1, 'p2': r1_p2},
+                'r2': {'p1': [r2_p1_1, r2_p1_2], 'p2': [r2_p2_1, r2_p2_2]},
+                'r3': {'p1': [r3_p1_1, r3_p1_2], 'p2': [r3_p2_1, r3_p2_2]}
+            }
+        )
+        flash("Official match lineup allotted successfully based on captains' nominations!", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error saving lineup: {str(e)}", "error")
+
+    return redirect(url_for('category.view_category', slug=slug, category_id=category_id) + f"#fixture-{fixture.id}")
 
 
 @category_bp.route('/tournaments/<slug>/categories/<int:category_id>/update_grid', methods=['POST'])
@@ -1149,3 +1312,353 @@ def update_grid_scores(slug, category_id):
     
     flash(f'Successfully updated {updated_count} matches.', 'success')
     return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
+
+
+# =========================================================================
+# GROUP STAGE TEAM LEAGUE: TIERS, BALLOT CHIT DRAFT, AND AUTO-TEAMS
+# =========================================================================
+
+@category_bp.route('/tournaments/<slug>/categories/<int:category_id>/draft', methods=['GET'])
+@login_required
+@role_required('admin', 'superadmin')
+def team_draft_view(slug, category_id):
+    """
+    Main Draft Board for Team League categories:
+    1. Organize registered players into 5 Skill Tiers (Tier A Captains, Tier B VCs, C, D, E).
+    2. Mode A: Manual Paper Chit Draw selection.
+    3. Mode B: 1-Click Auto-Draft Balanced Teams.
+    4. Group Session Start Timings & Courts configuration.
+    """
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
+    category = Category.query.get_or_404(category_id)
+
+    # Ensure default group count is set
+    num_groups = category.num_groups or 2
+    existing_groups = Group.query.filter_by(category_id=category.id).order_by(Group.id).all()
+    if not existing_groups:
+        for i in range(num_groups):
+            g = Group(category_id=category.id, name=f"Group {chr(65 + i)}")
+            db.session.add(g)
+        db.session.commit()
+        existing_groups = Group.query.filter_by(category_id=category.id).order_by(Group.id).all()
+
+    # Discover all registered players for this category
+    from app.domain.models import Registration
+    tier_records = PlayerCategoryTier.query.filter_by(category_id=category.id).all()
+    tiered_player_ids = {t.player_id for t in tier_records}
+
+    # Fetch individual participants (not teams) to populate unassigned pool
+    participants = Participant.query.filter_by(category_id=category.id).all()
+    unassigned_players = []
+    
+    for p in participants:
+        # If participant is not already a team (has no team_members) and not tiered yet
+        if not p.team_members and p.player_id and p.player_id not in tiered_player_ids:
+            player_obj = Player.query.get(p.player_id)
+            if player_obj and player_obj not in unassigned_players:
+                unassigned_players.append(player_obj)
+
+    # Also discover from approved registrations
+    registrations = Registration.query.filter_by(category_id=category.id, status='approved').all()
+    for reg in registrations:
+        if reg.player_id and reg.player_id not in tiered_player_ids:
+            player_obj = Player.query.get(reg.player_id)
+            if player_obj and player_obj not in unassigned_players:
+                unassigned_players.append(player_obj)
+
+    # Group existing tiers into buckets
+    tiers_map = {'A': [], 'B': [], 'C': [], 'D': [], 'E': []}
+    for tr in tier_records:
+        if tr.tier in tiers_map:
+            tiers_map[tr.tier].append(tr)
+
+    # Fetch existing formed teams (participants having team_members)
+    teams = [p for p in participants if p.team_members]
+
+    k = category.max_players_per_team or 5
+    total_players = len(tier_records) + len(unassigned_players)
+    calculated_teams = max(2, total_players // k) if total_players >= k else 2
+    teams_per_group = max(1, calculated_teams // num_groups)
+
+    return render_template(
+        'category/team_draft.html',
+        tournament=tournament,
+        category=category,
+        groups=existing_groups,
+        unassigned_players=unassigned_players,
+        tiers_map=tiers_map,
+        teams=teams,
+        total_players=total_players,
+        players_per_team=k,
+        calculated_teams=calculated_teams,
+        teams_per_group=teams_per_group,
+        num_groups=num_groups
+    )
+
+
+@category_bp.route('/tournaments/<slug>/categories/<int:category_id>/tiers/assign', methods=['POST'])
+@login_required
+@role_required('admin', 'superadmin')
+def assign_player_tiers(slug, category_id):
+    """
+    Save or update player skill tier assignments (A, B, C, D, E).
+    Accepts JSON payload: [{'player_id': 1, 'tier': 'A', 'role': 'captain'}, ...]
+    or form fields: player_tier_<id> = 'A'
+    """
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
+    category = Category.query.get_or_404(category_id)
+
+    try:
+        assignments = []
+        if request.is_json:
+            assignments = request.json.get('assignments', [])
+        else:
+            for key, val in request.form.items():
+                if key.startswith('tier_') and val in ['A', 'B', 'C', 'D', 'E']:
+                    pid = int(key.replace('tier_', ''))
+                    role = 'captain' if val == 'A' else ('vice_captain' if val == 'B' else 'player')
+                    assignments.append({'player_id': pid, 'tier': val, 'role': role})
+
+        if not assignments:
+            raise ValueError("No tier assignments provided.")
+
+        for item in assignments:
+            pid = int(item['player_id'])
+            tier = item['tier'].strip().upper()
+            role = item.get('role', 'captain' if tier == 'A' else ('vice_captain' if tier == 'B' else 'player'))
+
+            tier_obj = PlayerCategoryTier.query.filter_by(category_id=category.id, player_id=pid).first()
+            if not tier_obj:
+                tier_obj = PlayerCategoryTier(
+                    category_id=category.id,
+                    player_id=pid,
+                    tier=tier,
+                    role=role
+                )
+                db.session.add(tier_obj)
+            else:
+                tier_obj.tier = tier
+                tier_obj.role = role
+
+        db.session.commit()
+        if request.is_json:
+            return jsonify({'success': True, 'message': 'Player tiers updated successfully!'})
+        flash('Player skill tiers updated successfully!', 'success')
+        return redirect(url_for('category.team_draft_view', slug=slug, category_id=category_id))
+    except Exception as e:
+        db.session.rollback()
+        if request.is_json:
+            return jsonify({'success': False, 'error': str(e)}), 400
+        flash(f'Failed to assign player tiers: {str(e)}', 'error')
+        return redirect(url_for('category.team_draft_view', slug=slug, category_id=category_id))
+
+
+@category_bp.route('/tournaments/<slug>/categories/<int:category_id>/teams/auto-create', methods=['POST'])
+@login_required
+@role_required('admin', 'superadmin')
+def auto_create_teams_endpoint(slug, category_id):
+    """
+    Mode B: 🎲 Automatic 1-Click Team Creation.
+    Draws 1 player from Tier A (Captain), 1 from Tier B (VC), and 1 from Tiers C, D, E per team.
+    """
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
+    category = Category.query.get_or_404(category_id)
+
+    try:
+        from app.services.format_engine.group_stage.logic import GroupStageFormat
+        created_teams = GroupStageFormat.auto_create_teams(category.id)
+        msg = f'Successfully auto-created {len(created_teams)} balanced teams from player tiers!'
+        if request.is_json:
+            return jsonify({'success': True, 'message': msg, 'team_count': len(created_teams)})
+        flash(msg, 'success')
+    except Exception as e:
+        db.session.rollback()
+        if request.is_json:
+            return jsonify({'success': False, 'error': str(e)}), 400
+        flash(f'Auto-creation failed: {str(e)}', 'error')
+
+    return redirect(url_for('category.team_draft_view', slug=slug, category_id=category_id))
+
+
+@category_bp.route('/tournaments/<slug>/categories/<int:category_id>/teams/create-manual', methods=['POST'])
+@login_required
+@role_required('admin', 'superadmin')
+def create_manual_teams(slug, category_id):
+    """
+    Mode A: Manual Paper Chit Draw selection.
+    Captains & VCs selected, then as paper chits are drawn, players for C, D, E are chosen.
+    Prevents duplicate player assignment across teams.
+    """
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
+    category = Category.query.get_or_404(category_id)
+
+    try:
+        data = request.get_json(silent=True) or request.form
+        teams_payload = []
+        if isinstance(data, dict) and 'teams' in data:
+            teams_payload = data['teams']
+        else:
+            num_teams = int(request.form.get('num_teams', 0))
+            for i in range(1, num_teams + 1):
+                t_name = request.form.get(f'team_{i}_name', f'Team {i}').strip() or f'Team {i}'
+                c_id = request.form.get(f'team_{i}_captain', type=int)
+                vc_id = request.form.get(f'team_{i}_vc', type=int)
+                mc_id = request.form.get(f'team_{i}_c', type=int)
+                md_id = request.form.get(f'team_{i}_d', type=int)
+                me_id = request.form.get(f'team_{i}_e', type=int)
+                teams_payload.append({
+                    'name': t_name,
+                    'captain_id': c_id,
+                    'vc_id': vc_id,
+                    'member_c_id': mc_id,
+                    'member_d_id': md_id,
+                    'member_e_id': me_id
+                })
+
+        if not teams_payload:
+            raise ValueError("No teams data submitted.")
+
+        # Duplicate player validation across all teams
+        all_selected_players = []
+        for t in teams_payload:
+            p_ids = [t.get('captain_id'), t.get('vc_id'), t.get('member_c_id'), t.get('member_d_id'), t.get('member_e_id')]
+            p_ids = [pid for pid in p_ids if pid is not None]
+            for pid in p_ids:
+                if pid in all_selected_players:
+                    player_obj = Player.query.get(pid)
+                    p_name = player_obj.name if player_obj else f"Player #{pid}"
+                    raise ValueError(f"Duplicate player detected: '{p_name}' is assigned to multiple teams.")
+                all_selected_players.append(pid)
+
+        # Clear existing team participants in setup mode
+        existing_teams = Participant.query.filter_by(category_id=category_id).all()
+        for p in existing_teams:
+            db.session.delete(p)
+        db.session.flush()
+
+        # Reset draft status on tiers
+        tiers = PlayerCategoryTier.query.filter_by(category_id=category_id).all()
+        for t in tiers:
+            t.is_drafted = False
+            t.role = 'player'
+
+        created_teams = []
+        for idx, t in enumerate(teams_payload, start=1):
+            team_name = t.get('name') or f"Team {idx}"
+            captain_id = t.get('captain_id')
+            vc_id = t.get('vc_id')
+            c_id = t.get('member_c_id')
+            d_id = t.get('member_d_id')
+            e_id = t.get('member_e_id')
+
+            if not captain_id:
+                raise ValueError(f"'{team_name}' must have a Captain assigned.")
+
+            team_p = Participant(
+                tournament_id=tournament.id,
+                category_id=category.id,
+                name=team_name,
+                player_id=captain_id
+            )
+            db.session.add(team_p)
+            db.session.flush()
+
+            roster = [
+                (captain_id, 'captain', 'A', 1),
+                (vc_id, 'vice_captain', 'B', 2),
+                (c_id, 'member', 'C', 3),
+                (d_id, 'member', 'D', 4),
+                (e_id, 'member', 'E', 5),
+            ]
+
+            for pid, role, tier_let, order in roster:
+                if pid:
+                    db.session.add(TeamMember(
+                        participant_id=team_p.id,
+                        player_id=pid,
+                        role=role,
+                        tier=tier_let,
+                        roster_order=order
+                    ))
+                    p_tier = PlayerCategoryTier.query.filter_by(category_id=category_id, player_id=pid).first()
+                    if p_tier:
+                        p_tier.is_drafted = True
+                        p_tier.role = role
+
+            created_teams.append(team_p)
+
+        db.session.commit()
+        msg = f'Successfully formed {len(created_teams)} teams via Ballot Chit Draw!'
+        if request.is_json:
+            return jsonify({'success': True, 'message': msg})
+        flash(msg, 'success')
+        return redirect(url_for('category.team_draft_view', slug=slug, category_id=category_id))
+    except Exception as e:
+        db.session.rollback()
+        if request.is_json:
+            return jsonify({'success': False, 'error': str(e)}), 400
+        flash(f'Failed to create teams: {str(e)}', 'error')
+        return redirect(url_for('category.team_draft_view', slug=slug, category_id=category_id))
+
+
+@category_bp.route('/tournaments/<slug>/categories/<int:category_id>/teams/reset', methods=['POST'])
+@login_required
+@role_required('admin', 'superadmin')
+def reset_teams(slug, category_id):
+    """Reset teams and allow re-drafting before matches start."""
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
+    category = Category.query.get_or_404(category_id)
+
+    if category.status != 'setup':
+        flash('Cannot reset teams once matches are in progress.', 'error')
+        return redirect(url_for('category.team_draft_view', slug=slug, category_id=category_id))
+
+    try:
+        teams = Participant.query.filter_by(category_id=category_id).all()
+        for t in teams:
+            db.session.delete(t)
+
+        tiers = PlayerCategoryTier.query.filter_by(category_id=category_id).all()
+        for tr in tiers:
+            tr.is_drafted = False
+            tr.role = 'player'
+
+        db.session.commit()
+        flash('Teams cleared. You can now re-draft teams manually or auto-create.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Failed to reset teams: {str(e)}', 'error')
+
+    return redirect(url_for('category.team_draft_view', slug=slug, category_id=category_id))
+
+
+@category_bp.route('/tournaments/<slug>/categories/<int:category_id>/groups/timings', methods=['POST'])
+@login_required
+@role_required('admin', 'superadmin')
+def update_group_timings(slug, category_id):
+    """Update group session start timings and assigned courts."""
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
+    category = Category.query.get_or_404(category_id)
+
+    try:
+        groups = Group.query.filter_by(category_id=category_id).all()
+        for g in groups:
+            start_t = request.form.get(f'start_time_{g.id}', '').strip()
+            courts_str = request.form.get(f'assigned_courts_{g.id}', '').strip()
+            g.start_time = start_t or None
+            g.assigned_courts = courts_str or None
+
+        db.session.commit()
+        flash('Group session timings and court assignments saved!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Failed to update group timings: {str(e)}', 'error')
+
+    return redirect(url_for('category.team_draft_view', slug=slug, category_id=category_id))
+

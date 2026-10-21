@@ -2151,9 +2151,9 @@ select option {
 }
 
 .glass-modal {
-    background: rgba(25, 25, 30, 0.95);
-    border: 1px solid var(--border-strong);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    background: rgba(25, 25, 30, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75);
     border-radius: var(--radius-lg);
     padding: 0;
     width: 95%;
@@ -2164,7 +2164,11 @@ select option {
     overflow: hidden;
     transform: translateY(20px);
     transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    color: var(--text-primary);
+    --text-primary: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
+    --border-color: rgba(255, 255, 255, 0.12);
+    color: #f8fafc;
 }
 
 .glass-modal-overlay.active .glass-modal {
@@ -2177,7 +2181,7 @@ select option {
     align-items: center;
     padding: 1.15rem 1.5rem;
     border-bottom: 1px solid var(--border-color);
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(255, 255, 255, 0.04);
     flex-shrink: 0;
 }
 
@@ -2185,13 +2189,13 @@ select option {
     margin: 0;
     font-size: 1.25rem;
     font-weight: 700;
-    color: var(--text-primary);
+    color: #f8fafc;
 }
 
 .glass-modal-close {
     background: transparent;
     border: none;
-    color: var(--text-muted);
+    color: #94a3b8;
     font-size: 1.75rem;
     line-height: 1;
     cursor: pointer;
@@ -2205,7 +2209,7 @@ select option {
 
 .glass-modal-close:hover,
 .glass-modal-close:focus-visible {
-    color: var(--text-primary);
+    color: #ffffff;
     background: rgba(255, 255, 255, 0.1);
     outline: none;
 }
@@ -2216,6 +2220,7 @@ select option {
     max-height: calc(88vh - 130px);
     -webkit-overflow-scrolling: touch;
     flex: 1;
+    color: #f8fafc;
 }
 
 .glass-modal-form-group {
@@ -2225,28 +2230,35 @@ select option {
 .glass-modal-form-group label {
     display: block;
     margin-bottom: var(--spacing-xs);
-    color: var(--text-muted);
+    color: #cbd5e1;
     font-size: 0.85rem;
     font-weight: 600;
 }
 
 .glass-modal select,
-.glass-modal input[type="datetime-local"] {
+.glass-modal input[type="datetime-local"],
+.glass-modal .form-input {
     width: 100%;
     padding: var(--spacing-sm) var(--spacing-md);
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-strong);
-    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff;
     border-radius: var(--radius-sm);
     font-family: inherit;
     font-size: 0.95rem;
 }
 
+.glass-modal select option {
+    background: #1e1e24;
+    color: #ffffff;
+}
+
 .glass-modal select:focus,
-.glass-modal input[type="datetime-local"]:focus {
+.glass-modal input[type="datetime-local"]:focus,
+.glass-modal .form-input:focus {
     outline: none;
     border-color: var(--accent-primary);
-    box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.25);
+    box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.35);
 }
 
 .glass-modal-footer {

@@ -1,0 +1,155 @@
+<!-- Step-by-Step Procedure Wizard: Player Registration till Team Formations & Match Play -->
+<div class="team-wizard-container" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 16px rgba(0,0,0,0.15);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <span style="font-size: 1.5rem;">📋</span>
+            <div>
+                <h4 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text-primary); letter-spacing: 0.02em;">
+                    Team League Workflow: Step-by-Step Procedure
+                </h4>
+                <p style="margin: 0.2rem 0 0; font-size: 0.8rem; color: var(--text-muted);">
+                    Follow this sequential procedure from player registration to team formation and fair match play.
+                </p>
+            </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 0.78rem; font-weight: 700; color: var(--accent-primary); background: rgba(249, 115, 22, 0.12); border: 1px solid rgba(249, 115, 22, 0.3); padding: 0.25rem 0.65rem; border-radius: 9999px;">
+                ⚡ 6-Step Fair Play Procedure
+            </span>
+        </div>
+    </div>
+
+    <!-- Stepper Steps Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; position: relative;">
+        
+        <!-- STEP 1: PLAYER REGISTRATION -->
+        <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #3b82f6; letter-spacing: 0.05em;">Step 1</span>
+                    <span style="font-size: 0.75rem; background: rgba(59, 130, 246, 0.15); color: #60a5fa; padding: 2px 7px; border-radius: 9999px; font-weight: 600;">Players</span>
+                </div>
+                <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.35rem;">
+                    👥 Player Registration
+                </div>
+                <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0 0 0.75rem; line-height: 1.4;">
+                    Register or import participants into the category pool.
+                </p>
+            </div>
+            <div>
+                <div style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem;">
+                    Pool: <strong style="color: var(--text-primary);">{{ total_players or (participants|length) or 0 }} players</strong>
+                </div>
+                <a href="{{ url_for('category.manage_category', slug=tournament.url_slug, category_id=category.id) }}#participants" class="btn btn-secondary btn-small" style="width: 100%; text-align: center; font-size: 0.78rem; padding: 0.35rem;">
+                    + Register Players
+                </a>
+            </div>
+        </div>
+
+        <!-- STEP 2: ASSIGN SKILL TIERS -->
+        <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #8b5cf6; letter-spacing: 0.05em;">Step 2</span>
+                    <span style="font-size: 0.75rem; background: rgba(139, 92, 246, 0.15); color: #a78bfa; padding: 2px 7px; border-radius: 9999px; font-weight: 600;">Tiers & Roles</span>
+                </div>
+                <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.35rem;">
+                    🎯 Tiers & Captains
+                </div>
+                <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0 0 0.75rem; line-height: 1.4;">
+                    Assign players into 5 tiers: Captains (Tier A), VCs (Tier B), Members (C, D, E).
+                </p>
+            </div>
+            <div>
+                <a href="{{ url_for('category.team_draft_view', slug=tournament.url_slug, category_id=category.id) }}#stageTiers" class="btn btn-secondary btn-small" style="width: 100%; text-align: center; font-size: 0.78rem; padding: 0.35rem;">
+                    🎯 Assign Tiers
+                </a>
+            </div>
+        </div>
+
+        <!-- STEP 3: TEAM FORMATION -->
+        <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #f59e0b; letter-spacing: 0.05em;">Step 3</span>
+                    <span style="font-size: 0.75rem; background: rgba(245, 158, 11, 0.15); color: #fbbf24; padding: 2px 7px; border-radius: 9999px; font-weight: 600;">Formation</span>
+                </div>
+                <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.35rem;">
+                    🎲 Team Formation
+                </div>
+                <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0 0 0.75rem; line-height: 1.4;">
+                    Form balanced squads via Manual Chit Draw or 1-Click Auto Draft.
+                </p>
+            </div>
+            <div>
+                <a href="{{ url_for('category.team_draft_view', slug=tournament.url_slug, category_id=category.id) }}#stageTeams" class="btn btn-secondary btn-small" style="width: 100%; text-align: center; font-size: 0.78rem; padding: 0.35rem;">
+                    🎲 Form Teams (Chits)
+                </a>
+            </div>
+        </div>
+
+        <!-- STEP 4: GROUP ALLOCATION & FIXTURES -->
+        <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #10b981; letter-spacing: 0.05em;">Step 4</span>
+                    <span style="font-size: 0.75rem; background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 2px 7px; border-radius: 9999px; font-weight: 600;">Groups & Times</span>
+                </div>
+                <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.35rem;">
+                    🗓️ Groups & Fixtures
+                </div>
+                <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0 0 0.75rem; line-height: 1.4;">
+                    Set group courts & start times, then generate fair round-robin ties.
+                </p>
+            </div>
+            <div>
+                <a href="{{ url_for('category.team_draft_view', slug=tournament.url_slug, category_id=category.id) }}#stageTimings" class="btn btn-secondary btn-small" style="width: 100%; text-align: center; font-size: 0.78rem; padding: 0.35rem;">
+                    ⚙️ Set Group Times
+                </a>
+            </div>
+        </div>
+
+        <!-- STEP 5: CAPTAINS' LINEUP ALLOTMENT -->
+        <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #ec4899; letter-spacing: 0.05em;">Step 5</span>
+                    <span style="font-size: 0.75rem; background: rgba(236, 72, 153, 0.15); color: #f472b6; padding: 2px 7px; border-radius: 9999px; font-weight: 600;">Slips Draw</span>
+                </div>
+                <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.35rem;">
+                    📋 Captains' Lineup Draw
+                </div>
+                <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0 0 0.75rem; line-height: 1.4;">
+                    Captains submit slips for 1 Singles & 2 Doubles. Admin selects allotment.
+                </p>
+            </div>
+            <div>
+                <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=category.id) }}#fixtures" class="btn btn-secondary btn-small" style="width: 100%; text-align: center; font-size: 0.78rem; padding: 0.35rem;" onclick="if(window.location.pathname.endsWith('/categories/{{ category.id }}')) { event.preventDefault(); if (typeof handleCategorySectionNav === 'function') { handleCategorySectionNav('fixtures'); } else { document.getElementById('fixtures')?.scrollIntoView({behavior: 'smooth'}); } }">
+                    📋 Allot Slips
+                </a>
+            </div>
+        </div>
+
+        <!-- STEP 6: MATCH PLAY & GAMES SCORING -->
+        <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #f97316; letter-spacing: 0.05em;">Step 6</span>
+                    <span style="font-size: 0.75rem; background: rgba(249, 115, 22, 0.15); color: #fb923c; padding: 2px 7px; border-radius: 9999px; font-weight: 600;">Play & Score</span>
+                </div>
+                <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.35rem;">
+                    🎾 Games Scoring
+                </div>
+                <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0 0 0.75rem; line-height: 1.4;">
+                    Play according to Order of Play. Report scores by games won.
+                </p>
+            </div>
+            <div>
+                <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug) }}" class="btn btn-primary btn-small" style="width: 100%; text-align: center; font-size: 0.78rem; padding: 0.35rem;">
+                    📅 Order of Play
+                </a>
+            </div>
+        </div>
+
+    </div>
+</div>

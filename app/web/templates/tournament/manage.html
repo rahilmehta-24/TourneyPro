@@ -187,10 +187,17 @@
                         <input type="hidden" name="action" value="update_schedule_settings">
 
                         <!-- Dates & Operating Hours Grid -->
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 0.85rem; margin-bottom: 1.25rem;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.85rem; margin-bottom: 1.25rem;">
                             <div>
                                 <label class="form-label" style="font-size: 0.82rem; font-weight: 600; margin-bottom: 0.25rem; display: block;">Tournament Start Date</label>
                                 <input type="date" id="tournStartDate" name="start_date" class="form-input" value="{{ tournament.start_date.strftime('%Y-%m-%d') if tournament.start_date else '' }}" style="width: 100%; padding: 0.45rem;">
+                            </div>
+                            <div>
+                                <label class="form-label" style="font-size: 0.82rem; font-weight: 600; margin-bottom: 0.25rem; display: block;">Duration of Tournament</label>
+                                <div style="display: flex; gap: 0.35rem; align-items: center;">
+                                    <input type="number" id="tournDurationDays" name="duration_days" min="1" max="30" class="form-input" style="width: 80px; padding: 0.45rem; text-align: center; font-weight: 700;">
+                                    <span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">Day(s)</span>
+                                </div>
                             </div>
                             <div>
                                 <label class="form-label" style="font-size: 0.82rem; font-weight: 600; margin-bottom: 0.25rem; display: block;">Tournament End Date</label>
@@ -675,6 +682,7 @@ function copyShareLink(url, btn) {
     function initDynamicDailySchedule() {
         const startInput = document.getElementById('tournStartDate');
         const endInput = document.getElementById('tournEndDate');
+        const durationInput = document.getElementById('tournDurationDays');
         const defaultStartInput = document.getElementById('defaultStartTime');
         const defaultEndInput = document.getElementById('defaultEndTime');
         const container = document.getElementById('dailyScheduleList');
@@ -697,10 +705,8 @@ function copyShareLink(url, btn) {
             return `${days[dateObj.getDay()]}, ${dateObj.getDate()} ${months[dateObj.getMonth()]}`;
         }
 
-        function renderDays() {
+        function renderDays(origin) {
             const startVal = startInput.value;
-            const endVal = endInput.value || startVal;
-
             if (!startVal) {
                 container.innerHTML = '';
                 container.style.display = 'none';
@@ -709,11 +715,23 @@ function copyShareLink(url, btn) {
             }
 
             const startDate = new Date(startVal + 'T00:00:00');
-            let endDate = new Date(endVal + 'T00:00:00');
+            let endDate = endInput.value ? new Date(endInput.value + 'T00:00:00') : new Date(startDate);
 
-            if (endDate < startDate) {
+            if (origin === 'duration' && durationInput) {
+                const dur = parseInt(durationInput.value) || 1;
                 endDate = new Date(startDate);
-                endInput.value = startVal;
+                endDate.setDate(endDate.getDate() + (dur - 1));
+                const yyyy = endDate.getFullYear();
+                const mm = String(endDate.getMonth() + 1).padStart(2, '0');
+                const dd = String(endDate.getDate()).padStart(2, '0');
+                endInput.value = `${yyyy}-${mm}-${dd}`;
+            } else if (durationInput) {
+                if (endDate < startDate) {
+                    endDate = new Date(startDate);
+                    endInput.value = startVal;
+                }
+                const diffDays = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                durationInput.value = Math.max(1, diffDays);
             }
 
             container.innerHTML = '';
@@ -800,10 +818,14 @@ function copyShareLink(url, btn) {
         container.addEventListener('change', syncToJson);
         container.addEventListener('input', syncToJson);
 
-        startInput.addEventListener('change', renderDays);
-        startInput.addEventListener('input', renderDays);
-        endInput.addEventListener('change', renderDays);
-        endInput.addEventListener('input', renderDays);
+        startInput.addEventListener('change', () => renderDays('date'));
+        startInput.addEventListener('input', () => renderDays('date'));
+        endInput.addEventListener('change', () => renderDays('date'));
+        endInput.addEventListener('input', () => renderDays('date'));
+        if (durationInput) {
+            durationInput.addEventListener('input', () => renderDays('duration'));
+            durationInput.addEventListener('change', () => renderDays('duration'));
+        }
 
         if (defaultStartInput) {
             defaultStartInput.addEventListener('change', function() {
