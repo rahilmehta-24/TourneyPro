@@ -381,14 +381,51 @@ class GroupStageFormat(TournamentFormat):
         ).all()
 
         for match in matches:
-            if match.status == 'completed' and match.winner_id:
+            winner_id = match.winner_id
+            if not winner_id and match.score1 is not None and match.score2 is not None:
+                try:
+                    s1 = int(match.score1)
+                    s2 = int(match.score2)
+                    if s1 > s2:
+                        winner_id = match.participant1_id
+                    elif s2 > s1:
+                        winner_id = match.participant2_id
+                except (ValueError, TypeError):
+                    pass
+
+            # Also check sub_matches (rubbers) if match.score1 is not populated
+            if not winner_id and match.sub_matches:
+                p1_total = 0
+                p2_total = 0
+                all_have_scores = True
+                for sm in match.sub_matches:
+                    if sm.score1 is not None and sm.score2 is not None:
+                        try:
+                            # Parse single game score e.g. "6" or format like "6-1"
+                            p1_games = int(str(sm.score1).split('-')[0]) if sm.score1 else 0
+                            p2_games = int(str(sm.score2).split('-')[0]) if sm.score2 else 0
+                            p1_total += p1_games
+                            p2_total += p2_games
+                        except (ValueError, TypeError):
+                            all_have_scores = False
+                    else:
+                        all_have_scores = False
+                if all_have_scores and (p1_total > 0 or p2_total > 0):
+                    match.score1 = str(p1_total)
+                    match.score2 = str(p2_total)
+                    if p1_total > p2_total:
+                        winner_id = match.participant1_id
+                    elif p2_total > p1_total:
+                        winner_id = match.participant2_id
+
+            if (match.status == 'completed' or (match.score1 is not None and match.score2 is not None)) and winner_id:
                 p1 = participant_map.get(match.participant1_id)
                 p2 = participant_map.get(match.participant2_id)
                 if not p1 or not p2:
                     continue
 
-                winner = p1 if match.winner_id == p1.id else p2
-                loser = p2 if match.winner_id == p1.id else p1
+                winner = p1 if winner_id == p1.id else p2
+                loser = p2 if winner_id == p1.id else p1
 
                 winner.group_wins += 1
                 loser.group_losses += 1
@@ -562,6 +599,8 @@ class GroupStageFormat(TournamentFormat):
             db.session.delete(p)
         db.session.flush()
 
+        cat_groups = Group.query.filter_by(category_id=category_id).order_by(Group.id).all()
+
         created_teams = []
         for i in range(num_teams):
             captain_tier = tier_map['A'][i]
@@ -571,11 +610,13 @@ class GroupStageFormat(TournamentFormat):
             e_tier = tier_map['E'][i] if len(tier_map['E']) > i else None
 
             team_name = f"Team {i + 1}"
+            grp_id = cat_groups[i % len(cat_groups)].id if cat_groups else None
             team_p = Participant(
                 tournament_id=category.tournament_id,
                 category_id=category.id,
                 name=team_name,
-                player_id=captain_tier.player_id
+                player_id=captain_tier.player_id,
+                group_id=grp_id
             )
             db.session.add(team_p)
             db.session.flush()
