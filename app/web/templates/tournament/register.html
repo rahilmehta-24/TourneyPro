@@ -45,7 +45,7 @@
             {% if tournament.registration_closes_at %}
             <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 0.5rem 0.85rem; border-radius: var(--radius-md); font-size: 0.82rem; color: var(--text-secondary); text-align: right;">
                 <span style="color: var(--text-muted); display: block; font-size: 0.75rem;">Deadline</span>
-                ⏰ <strong>{{ tournament.registration_closes_at.strftime('%b %d, %Y') }}</strong> at {{ tournament.registration_closes_at.strftime('%I:%M %p') }}
+                ⏰ <strong>{{ tournament.registration_closes_at|ist('%b %d, %Y') }}</strong> at {{ tournament.registration_closes_at|ist('%I:%M %p IST') }}
             </div>
             {% endif %}
         </div>

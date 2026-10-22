@@ -1,4 +1,62 @@
 <!-- Shared Match Management & Score Reporting Modal Component -->
+<style>
+#matchManagementModal .glass-modal {
+    background: #18181b !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    color: #f8fafc !important;
+}
+#matchManagementModal .glass-modal-header h3 {
+    color: #ffffff !important;
+}
+#matchManagementModal .glass-modal-form-group label,
+#matchManagementModal .form-label,
+#matchManagementModal span,
+#matchManagementModal div {
+    color: #f8fafc;
+}
+#matchManagementModal .glass-modal-close {
+    color: #94a3b8 !important;
+}
+#matchManagementModal .glass-modal-close:hover {
+    color: #ffffff !important;
+}
+#matchManagementModal .form-input,
+#matchManagementModal input[type="number"],
+#matchManagementModal select,
+#matchManagementModal input[type="datetime-local"] {
+    background: #27272a !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+}
+#matchManagementModal #set1_p1,
+#matchManagementModal #set1_p2 {
+    color: #f97316 !important;
+    font-size: 1.8rem !important;
+    background: #202024 !important;
+}
+#matchManagementModal #tb1_p1,
+#matchManagementModal #tb1_p2 {
+    color: #ffb74d !important;
+    background: #202024 !important;
+    border-color: #ffb74d !important;
+}
+#matchManagementModal .winner-option {
+    background: #27272a !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: #f8fafc !important;
+}
+#matchManagementModal .winner-option span {
+    color: #f8fafc !important;
+}
+#matchManagementModal .winner-option:hover {
+    border-color: #f97316 !important;
+    background: #323238 !important;
+}
+#matchManagementModal .winner-option input[type="radio"]:checked + span {
+    color: #fb923c !important;
+    font-weight: 700 !important;
+}
+</style>
 <div id="matchManagementModal" class="glass-modal-overlay" onclick="if(event.target === this) closeMatchModal()" role="dialog" aria-modal="true" aria-labelledby="modalMatchHeading">
     <div class="glass-modal">
         <div class="glass-modal-header">
@@ -26,96 +84,157 @@
             </div>
             
             <form id="reportForm" style="display: none; margin-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1.5rem;">
-                <div class="glass-modal-form-group" style="margin-bottom: 1.5rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: var(--radius-md);">
-                    <label style="font-weight: 600; margin-bottom: 0.5rem; display: block; color: var(--text-primary);">Match Scoring Override (Optional)</label>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <!-- Format selector (hidden when using standard games) -->
+                <div id="modalScoringFormatOverride" class="glass-modal-form-group" style="display: none; margin-bottom: 1.25rem; background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: var(--radius-md);">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                         <div>
-                            <label class="form-label" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem; display: block;">Scoring Format</label>
-                            <select id="modalMatchFormat" name="scoring_format" class="form-input" style="width: 100%;" onchange="toggleModalMatchFormat()">
-                                <option value="games">Games (Sets & Games)</option>
-                                <option value="points">Points (Single Target)</option>
+                            <label class="form-label" style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.2rem; display: block;">Format</label>
+                            <select id="modalMatchFormat" name="scoring_format" class="form-input" style="width: 100%; font-size: 0.85rem;" onchange="toggleModalMatchFormat()">
+                                <option value="games" selected>Games</option>
+                                <option value="points">Points</option>
                             </select>
                         </div>
                         <div id="modalPointsFields" style="display: none;">
-                            <label class="form-label" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem; display: block;">Points to Win</label>
-                            <input type="number" id="modalMatchPointsToWin" name="points_to_win" min="1" max="100" class="form-input" style="width: 100%;">
+                            <label class="form-label" style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.2rem; display: block;">Points to Win</label>
+                            <input type="number" id="modalMatchPointsToWin" name="points_to_win" min="1" max="100" class="form-input" style="width: 100%; font-size: 0.85rem;">
                         </div>
-                        <div id="modalGamesFields" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; grid-column: span 2;">
-                            <div>
-                                <label class="form-label" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem; display: block;">Num Sets</label>
-                                <input type="number" id="modalMatchNumSets" name="num_sets" min="1" max="5" class="form-input" style="width: 100%;" onchange="updateVisibleSets(this.value)">
+                        <input type="hidden" id="modalMatchNumSets" name="num_sets" value="1">
+                        <input type="hidden" id="modalMatchGamesPerSet" name="games_per_set" value="{{ category.total_games or 7 if category else 7 }}">
+                    </div>
+                </div>
+
+                <!-- Winner Selection -->
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label class="form-label" style="display: block; margin-bottom: 0.75rem; font-weight: 700; font-size: 1.05rem; color: #f8fafc;">
+                        🏆 Select Winner (If Completed)
+                    </label>
+                    <div class="winner-options" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                        <label class="winner-option" id="winner1Card" style="display: flex; align-items: center; padding: 0.75rem 1rem; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.15); border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s ease;">
+                            <input type="radio" name="winner_id" id="winner1" value="" style="margin-right: 0.65rem; width: 18px; height: 18px;" onchange="highlightWinnerCards()">
+                            <span id="winner1Label" style="font-size: 0.95rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #ffffff;">Participant 1</span>
+                        </label>
+                        <label class="winner-option" id="winner2Card" style="display: flex; align-items: center; padding: 0.75rem 1rem; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.15); border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s ease;">
+                            <input type="radio" name="winner_id" id="winner2" value="" style="margin-right: 0.65rem; width: 18px; height: 18px;" onchange="highlightWinnerCards()">
+                            <span id="winner2Label" style="font-size: 0.95rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #ffffff;">Participant 2</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- DIRECT GAMES SCORE (Clean, Single Games Input) -->
+                <div id="modalGamesScoreDirect" style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.15); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1rem;">
+                    <label style="font-weight: 700; font-size: 1rem; margin-bottom: 0.85rem; display: block; color: #f8fafc; text-align: center;">
+                        🎾 Games Won
+                    </label>
+                    <div style="display: flex; gap: 1.5rem; align-items: center; justify-content: center;">
+                        <div style="text-align: center; flex: 1; max-width: 130px;">
+                            <span id="p1GamesHeader" style="display: block; margin-bottom: 0.4rem; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">P1</span>
+                            <input type="number" name="set1_p1" id="set1_p1" min="0" max="25" class="form-input" style="width: 100%; text-align: center; font-size: 1.6rem; font-weight: 800; padding: 0.5rem; color: #f97316; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2);" placeholder="0" oninput="onGamesInputChange()">
+                        </div>
+                        <div style="font-size: 1.6rem; font-weight: 800; color: #94a3b8; padding-top: 1.2rem;">&ndash;</div>
+                        <div style="text-align: center; flex: 1; max-width: 130px;">
+                            <span id="p2GamesHeader" style="display: block; margin-bottom: 0.4rem; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">P2</span>
+                            <input type="number" name="set1_p2" id="set1_p2" min="0" max="25" class="form-input" style="width: 100%; text-align: center; font-size: 1.6rem; font-weight: 800; padding: 0.5rem; color: #f97316; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2);" placeholder="0" oninput="onGamesInputChange()">
+                        </div>
+                    </div>
+
+                    <!-- Games Sum Helper / Total Games Rule indicator -->
+                    <div id="gamesSumHelper" style="margin-top: 0.85rem; text-align: center; font-size: 0.82rem; color: var(--text-secondary);">
+                        <div style="margin-bottom: 0.4rem;">
+                            Total games played: <span id="gamesSumDisplay" style="font-weight: 800; color: #f97316;">0</span> / <span id="gamesTargetDisplay" style="font-weight: 700;">7</span>
+                        </div>
+                        <div id="gamesSumStatus" style="margin-top: 0.35rem; font-size: 0.8rem;">
+                            <span style="display:inline-block; padding: 3px 10px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 9999px; color: var(--text-muted); font-weight: 600;">
+                                Sum of both players' games must equal <span class="gamesTargetSpan">7</span> to complete match.
+                            </span>
+                        </div>
+                        <div id="teamLeagueProgressNote" style="margin-top: 0.4rem; font-size: 0.75rem; color: #94a3b8; font-style: italic;">
+                            🎾 First team across all 3 rubbers to reach 11 total games wins the tie.
+                        </div>
+
+                        <!-- Walkover / Retirement Assistant -->
+                        <div style="margin-top: 0.65rem;">
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="toggleWalkoverPanel()" style="font-size: 0.75rem; padding: 0.25rem 0.65rem; border-radius: 9999px; border: 1px dashed rgba(255,255,255,0.25);">
+                                🏳️ Walkover / Retired?
+                            </button>
+                        </div>
+                        <div id="walkoverPanel" style="display: none; margin-top: 0.65rem; background: rgba(255,255,255,0.03); border: 1px dashed rgba(255,255,255,0.2); border-radius: var(--radius-sm); padding: 0.65rem; text-align: center;">
+                            <div style="font-size: 0.74rem; color: #cbd5e1; margin-bottom: 0.4rem;">
+                                Remaining games to reach 7 are awarded to opponent:
                             </div>
-                            <div>
-                                <label class="form-label" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem; display: block;">Games Per Set</label>
-                                <input type="number" id="modalMatchGamesPerSet" name="games_per_set" min="1" max="10" class="form-input" style="width: 100%;">
+                            <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+                                <button type="button" class="btn btn-sm" onclick="applyWalkover(1)" style="font-size: 0.74rem; padding: 0.25rem 0.65rem; background: rgba(239, 68, 68, 0.18); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 9999px;">
+                                    🏳️ <span id="walkoverP1Name">P1</span> Retired
+                                </button>
+                                <button type="button" class="btn btn-sm" onclick="applyWalkover(2)" style="font-size: 0.74rem; padding: 0.25rem 0.65rem; background: rgba(239, 68, 68, 0.18); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 9999px;">
+                                    🏳️ <span id="walkoverP2Name">P2</span> Retired
+                                </button>
                             </div>
+                        </div>
+
+                        <div id="optionalTbToggle" style="display: none; margin-top: 0.5rem;">
+                            <a href="javascript:void(0)" onclick="toggleOptionalTiebreak()" style="font-size: 0.78rem; color: #ffb74d; text-decoration: underline; cursor: pointer;">
+                                + Match was tied 3–3? Add tiebreak score
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Deciding Tiebreak Points row (if tiebreak occurs) -->
+                    <div id="tbRow1" style="display: none; margin-top: 1rem; border-top: 1px dashed rgba(255,255,255,0.15); padding-top: 0.85rem; text-align: center;">
+                        <div id="tbHelperBadge" style="display: inline-block; background: rgba(255, 183, 77, 0.15); border: 1px solid rgba(255, 183, 77, 0.4); color: #ffb74d; padding: 0.35rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.8rem; margin-bottom: 0.6rem; font-weight: 600;">
+                            ⚡ Tiebreak at 3–3: 7-point tiebreak decides final game (winner gets 4–3)
+                        </div>
+                        <div style="display: block; font-size: 0.8rem; color: #ffb74d; font-weight: 600; margin-bottom: 0.4rem;">
+                            Tiebreak Points:
+                        </div>
+                        <div style="display: inline-flex; gap: 0.75rem; align-items: center;">
+                            <input type="number" name="tb1_p1" id="tb1_p1" min="0" class="form-input" style="width: 75px; text-align: center; border-color: #ffb74d; font-weight: 700; font-size: 1.1rem;" placeholder="TB P1" oninput="onTbInputChange()">
+                            <span style="color: #ffb74d; font-weight: 700; font-size: 1.2rem;">:</span>
+                            <input type="number" name="tb1_p2" id="tb1_p2" min="0" class="form-input" style="width: 75px; text-align: center; border-color: #ffb74d; font-weight: 700; font-size: 1.1rem;" placeholder="TB P2" oninput="onTbInputChange()">
+                        </div>
+                        <div id="tbWinnerNote" style="margin-top: 0.45rem; font-size: 0.8rem; color: #a5b4fc; font-weight: 600; display: none;"></div>
+                    </div>
+                </div>
+
+                <!-- Points Score (for points-based matches) -->
+                <div id="modalPointsScore" style="display: none; margin-top: 1rem; background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem;">
+                    <label class="form-label" style="font-weight: 700; font-size: 1rem; margin-bottom: 0.75rem; display: block; text-align: center;">Points Score</label>
+                    <div style="display: flex; gap: 1rem; align-items: center; justify-content: center;">
+                        <div style="text-align: center; flex: 1; max-width: 130px;">
+                            <span id="p1PointsHeader" style="display: block; margin-bottom: 0.4rem; font-weight: 500;">P1</span>
+                            <input type="number" id="points_p1" name="points_p1" min="0" max="200" class="form-input" style="width: 100%; text-align: center; font-size: 1.4rem; font-weight: 800; padding: 0.5rem;" placeholder="0">
+                        </div>
+                        <span style="font-weight: bold; font-size: 1.4rem;">-</span>
+                        <div style="text-align: center; flex: 1; max-width: 130px;">
+                            <span id="p2PointsHeader" style="display: block; margin-bottom: 0.4rem; font-weight: 500;">P2</span>
+                            <input type="number" id="points_p2" name="points_p2" min="0" max="200" class="form-input" style="width: 100%; text-align: center; font-size: 1.4rem; font-weight: 800; padding: 0.5rem;" placeholder="0">
                         </div>
                     </div>
                 </div>
 
-                <div class="form-group" style="margin-bottom: 1.5rem;">
-                    <label class="form-label" style="display: block; margin-bottom: 1rem; font-weight: 600; font-size: 1.1rem;">Select Winner (If Completed)</label>
-                    <div class="winner-options" style="display: flex; flex-direction: column; gap: 1rem;">
-                        <label class="winner-option" style="display: flex; align-items: center; padding: 1rem; background: rgba(0,0,0,0.3); border-radius: var(--radius-md); cursor: pointer;">
-                            <input type="radio" name="winner_id" id="winner1" value="" style="margin-right: 1rem; width: 20px; height: 20px;">
-                            <span id="winner1Label" style="font-size: 1.1rem; font-weight: 500;">Participant 1</span>
-                        </label>
-                        <label class="winner-option" style="display: flex; align-items: center; padding: 1rem; background: rgba(0,0,0,0.3); border-radius: var(--radius-md); cursor: pointer;">
-                            <input type="radio" name="winner_id" id="winner2" value="" style="margin-right: 1rem; width: 20px; height: 20px;">
-                            <span id="winner2Label" style="font-size: 1.1rem; font-weight: 500;">Participant 2</span>
-                        </label>
+                <!-- Audit Section (Displayed when modifying an already completed match) -->
+                <div id="matchAuditSection" style="display: none; margin-top: 1.25rem; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: var(--radius-md); padding: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; color: #f87171; font-weight: 700; font-size: 0.95rem;">
+                        ⚠️ Modifying Completed Match Result
+                    </div>
+                    <p style="font-size: 0.8rem; color: #cbd5e1; margin-bottom: 0.75rem; line-height: 1.4;">
+                        This match was previously marked completed. An audit reason and detailed explanation are logged to maintain tournament integrity.
+                    </p>
+                    <div style="margin-bottom: 0.75rem;">
+                        <label for="matchAuditReason" style="display: block; font-size: 0.82rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.3rem;">Reason for Modification:</label>
+                        <select id="matchAuditReason" name="audit_reason" class="form-input" style="width: 100%; font-size: 0.85rem; background: #27272a; color: #ffffff;">
+                            <option value="Score Entry Mistake" selected>Score Entry Mistake</option>
+                            <option value="Match Result Correction">Match Result Correction</option>
+                            <option value="Tiebreak Score Correction">Tiebreak Score Correction</option>
+                            <option value="Administrative Decision">Administrative Decision</option>
+                            <option value="Player Disqualification">Player Disqualification</option>
+                            <option value="Other (Mandatory Explanation)">Other (Mandatory Explanation)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="matchAuditExplanation" style="display: block; font-size: 0.82rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.3rem;">Detailed Explanation (minimum 20 characters):</label>
+                        <textarea id="matchAuditExplanation" name="audit_explanation" class="form-input" style="width: 100%; min-height: 55px; font-size: 0.85rem; background: #27272a; color: #ffffff;" placeholder="e.g. Correcting score entry error for tiebreak..."></textarea>
                     </div>
                 </div>
-                
-                <label id="modalSetsLabel" class="form-label" style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; display: block;">Set Scores</label>
-                
-                <div id="modalPointsScore" style="display: none; margin-top: 1rem;">
-                    <label class="form-label" style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; display: block;">Points Score</label>
-                    <div style="display: flex; gap: 1rem; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: var(--radius-md);">
-                        <div style="text-align: center;">
-                            <span id="p1PointsHeader" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">P1</span>
-                            <input type="number" id="points_p1" name="points_p1" min="0" max="200" class="form-input" style="width: 80px; text-align: center; font-size: 1.2rem; padding: 0.5rem;">
-                        </div>
-                        <span style="font-weight: bold; font-size: 1.2rem;">-</span>
-                        <div style="text-align: center;">
-                            <span id="p2PointsHeader" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">P2</span>
-                            <input type="number" id="points_p2" name="points_p2" min="0" max="200" class="form-input" style="width: 80px; text-align: center; font-size: 1.2rem; padding: 0.5rem;">
-                        </div>
-                    </div>
-                </div>
-                
-                <table id="modalSetsTable" style="width: 100%; border-collapse: collapse; margin-top: 0.5rem;">
-                    <thead>
-                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
-                            <th style="padding: 0.5rem; text-align: left; color: var(--text-secondary);">Set</th>
-                            <th id="p1SetHeader" style="padding: 0.5rem; text-align: center; color: var(--text-secondary);">Player 1</th>
-                            <th id="p2SetHeader" style="padding: 0.5rem; text-align: center; color: var(--text-secondary);">Player 2</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% set default_games_per_set = category.games_per_set if category else (tournament.games_per_set or 6) %}
-                        {% for s in range(1, 6) %}
-                        <tr id="setRow{{ s }}" style="border-bottom: 1px solid rgba(255,255,255,0.02);">
-                            <td style="padding: 0.75rem 0.5rem; font-weight: bold; color: var(--text-secondary);">Set {{ s }}</td>
-                            <td style="padding: 0.75rem 0.5rem; text-align: center;">
-                                <input type="number" name="set{{ s }}_p1" id="set{{ s }}_p1" min="0" class="form-input" style="width: 60px; text-align:center; padding: 4px;" oninput="checkTiebreak({{ s }}, {{ default_games_per_set }})">
-                            </td>
-                            <td style="padding: 0.75rem 0.5rem; text-align: center;">
-                                <input type="number" name="set{{ s }}_p2" id="set{{ s }}_p2" min="0" class="form-input" style="width: 60px; text-align:center; padding: 4px;" oninput="checkTiebreak({{ s }}, {{ default_games_per_set }})">
-                            </td>
-                        </tr>
-                        <tr id="tbRow{{ s }}" style="display: none; background: rgba(255,165,0,0.1);">
-                            <td style="padding: 0.5rem; color: #ffb74d; font-size: 0.85rem; text-align: right;">Tiebreak Pts:</td>
-                            <td style="padding: 0.5rem; text-align: center;">
-                                <input type="number" name="tb{{ s }}_p1" id="tb{{ s }}_p1" min="0" class="form-input" style="width: 60px; text-align:center; padding: 4px; border-color: #ffb74d;">
-                            </td>
-                            <td style="padding: 0.5rem; text-align: center;">
-                                <input type="number" name="tb{{ s }}_p2" id="tb{{ s }}_p2" min="0" class="form-input" style="width: 60px; text-align:center; padding: 4px; border-color: #ffb74d;">
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
             </form>
         </div>
         
@@ -132,31 +251,218 @@
 let currentManageMatchId = null;
 let currentManageMatchIsAdmin = false;
 
+function getMatchTotalGames() {
+    const el = document.getElementById('modalMatchGamesPerSet');
+    const val = el ? parseInt(el.value, 10) : 7;
+    return (!isNaN(val) && val > 0) ? val : 7;
+}
+
 function toggleModalMatchFormat() {
     const format = document.getElementById('modalMatchFormat').value;
     if (format === 'points') {
         document.getElementById('modalPointsFields').style.display = 'block';
-        document.getElementById('modalGamesFields').style.display = 'none';
-        document.getElementById('modalSetsTable').style.display = 'none';
-        document.getElementById('modalSetsLabel').style.display = 'none';
+        document.getElementById('modalGamesScoreDirect').style.display = 'none';
         document.getElementById('modalPointsScore').style.display = 'block';
     } else {
         document.getElementById('modalPointsFields').style.display = 'none';
-        document.getElementById('modalGamesFields').style.display = 'grid';
-        document.getElementById('modalSetsTable').style.display = 'table';
-        document.getElementById('modalSetsLabel').style.display = 'block';
+        document.getElementById('modalGamesScoreDirect').style.display = 'block';
         document.getElementById('modalPointsScore').style.display = 'none';
-        updateVisibleSets(document.getElementById('modalMatchNumSets').value || {{ (category.num_sets if category else None) or tournament.num_sets or 3 }});
     }
 }
 
-function updateVisibleSets(numSets) {
-    if (!numSets) numSets = {{ (category.num_sets if category else None) or tournament.num_sets or 3 }};
-    for (let s = 1; s <= 5; s++) {
-        const row = document.getElementById('setRow' + s);
-        if (row) {
-            row.style.display = (s <= numSets) ? 'table-row' : 'none';
+function onGamesInputChange() {
+    const g1 = document.getElementById('set1_p1');
+    const g2 = document.getElementById('set1_p2');
+    const tbRow = document.getElementById('tbRow1');
+    const sumDisplay = document.getElementById('gamesSumDisplay');
+    const sumStatus = document.getElementById('gamesSumStatus');
+    const tbBadge = document.getElementById('tbHelperBadge');
+    if (!g1 || !g2) return;
+
+    const v1 = parseInt(g1.value, 10);
+    const v2 = parseInt(g2.value, 10);
+    const T = getMatchTotalGames();
+    const tbTrigger = Math.floor((T - 1) / 2);      // e.g. 3 for T=7
+    const tbWinnerGames = Math.floor((T + 1) / 2); // e.g. 4 for T=7
+
+    document.querySelectorAll('.gamesTargetSpan').forEach(el => el.innerText = T);
+    const targetDisp = document.getElementById('gamesTargetDisplay');
+    if (targetDisp) targetDisp.innerText = T;
+
+    const hasV1 = !isNaN(v1);
+    const hasV2 = !isNaN(v2);
+
+    if (hasV1 && hasV2) {
+        const sum = v1 + v2;
+        if (sumDisplay) sumDisplay.innerText = sum;
+
+        if (sum === T) {
+            if (sumStatus) sumStatus.innerHTML = `<span style="display:inline-block; padding: 4px 12px; background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.45); border-radius: 9999px; color: #34d399; font-weight: 700; font-size: 0.85rem;">✅ Valid 7-Game Total (${sum}/${T} games)</span>`;
+        } else if (sum < T) {
+            if (sumStatus) sumStatus.innerHTML = `<span style="display:inline-block; padding: 4px 12px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 9999px; color: #fbbf24; font-weight: 600; font-size: 0.85rem;">⏳ In-progress (${sum}/${T} games played)</span>`;
+        } else {
+            if (sumStatus) sumStatus.innerHTML = `<span style="display:inline-block; padding: 4px 12px; background: rgba(239, 68, 68, 0.18); border: 1px solid rgba(239, 68, 68, 0.45); border-radius: 9999px; color: #f87171; font-weight: 700; font-size: 0.85rem;">⚠️ Exceeds total games target (${sum}/${T})</span>`;
         }
+
+        // Auto-select winner based on higher games count
+        if (v1 > v2) {
+            document.getElementById('winner1').checked = true;
+            document.getElementById('winner2').checked = false;
+        } else if (v2 > v1) {
+            document.getElementById('winner1').checked = false;
+            document.getElementById('winner2').checked = true;
+        }
+        highlightWinnerCards();
+
+        // Check if tiebreak points row is needed:
+        // Case A: score reached tbTrigger all (e.g. 3-3) -> Deciding tiebreak required to determine final game
+        // Case B: score is 4-3 / 3-4 -> Player took majority of games without tiebreak, or optionally with tiebreak
+        const optToggle = document.getElementById('optionalTbToggle');
+        if (tbRow) {
+            const tb1 = document.getElementById('tb1_p1');
+            const tb2 = document.getElementById('tb1_p2');
+            const hasTbVal = (tb1 && tb1.value !== '') || (tb2 && tb2.value !== '');
+
+            if (v1 === tbTrigger && v2 === tbTrigger) {
+                tbRow.style.display = 'block';
+                if (optToggle) optToggle.style.display = 'none';
+                if (tbBadge) tbBadge.innerText = `⚡ Score reached ${tbTrigger}–${tbTrigger}: 7-point tiebreak decides final game (winner gets ${tbWinnerGames}–${tbTrigger})`;
+                onTbInputChange();
+                setTimeout(() => {
+                    tbRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 50);
+            } else if (((v1 === tbWinnerGames && v2 === tbTrigger) || (v1 === tbTrigger && v2 === tbWinnerGames)) && hasTbVal) {
+                tbRow.style.display = 'block';
+                if (optToggle) optToggle.style.display = 'none';
+                if (tbBadge) tbBadge.innerText = `⚡ Tiebreak recorded for ${v1}–${v2}`;
+                onTbInputChange();
+            } else if ((v1 === tbWinnerGames && v2 === tbTrigger) || (v1 === tbTrigger && v2 === tbWinnerGames)) {
+                // 4-3 / 3-4 without tiebreak: player took majority of games, tiebreak not required
+                tbRow.style.display = 'none';
+                if (optToggle) optToggle.style.display = 'block';
+                const note = document.getElementById('tbWinnerNote');
+                if (note) note.style.display = 'none';
+            } else {
+                tbRow.style.display = 'none';
+                if (optToggle) optToggle.style.display = 'none';
+                const note = document.getElementById('tbWinnerNote');
+                if (note) note.style.display = 'none';
+            }
+        }
+    } else {
+        const optToggle = document.getElementById('optionalTbToggle');
+        if (sumDisplay) sumDisplay.innerText = hasV1 ? v1 : (hasV2 ? v2 : 0);
+        if (tbRow) tbRow.style.display = 'none';
+        if (optToggle) optToggle.style.display = 'none';
+    }
+}
+
+function toggleOptionalTiebreak() {
+    const tbRow = document.getElementById('tbRow1');
+    const optToggle = document.getElementById('optionalTbToggle');
+    const tbBadge = document.getElementById('tbHelperBadge');
+    if (tbRow) {
+        tbRow.style.display = 'block';
+        if (tbBadge) tbBadge.innerText = `⚡ Decided by 7-point tiebreak at 3–3`;
+        setTimeout(() => {
+            tbRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 50);
+    }
+    if (optToggle) optToggle.style.display = 'none';
+}
+
+function toggleWalkoverPanel() {
+    const p = document.getElementById('walkoverPanel');
+    if (p) p.style.display = (p.style.display === 'none' || !p.style.display) ? 'block' : 'none';
+}
+
+function applyWalkover(retiredPlayer) {
+    const g1 = document.getElementById('set1_p1');
+    const g2 = document.getElementById('set1_p2');
+    const T = getMatchTotalGames();
+    let v1 = parseInt(g1?.value, 10);
+    let v2 = parseInt(g2?.value, 10);
+    if (isNaN(v1)) v1 = 0;
+    if (isNaN(v2)) v2 = 0;
+
+    if (retiredPlayer === 1) {
+        // P1 retired/walkover: remaining games to reach T awarded to P2
+        const remaining = Math.max(0, T - (v1 + v2));
+        if (g1) g1.value = v1;
+        if (g2) g2.value = v2 + remaining;
+        const w1 = document.getElementById('winner1');
+        const w2 = document.getElementById('winner2');
+        if (w1) w1.checked = false;
+        if (w2) w2.checked = true;
+    } else {
+        // P2 retired/walkover: remaining games to reach T awarded to P1
+        const remaining = Math.max(0, T - (v1 + v2));
+        if (g1) g1.value = v1 + remaining;
+        if (g2) g2.value = v2;
+        const w1 = document.getElementById('winner1');
+        const w2 = document.getElementById('winner2');
+        if (w1) w1.checked = true;
+        if (w2) w2.checked = false;
+    }
+    highlightWinnerCards();
+    onGamesInputChange();
+    const panel = document.getElementById('walkoverPanel');
+    if (panel) panel.style.display = 'none';
+}
+
+function onTbInputChange() {
+    const tb1 = document.getElementById('tb1_p1');
+    const tb2 = document.getElementById('tb1_p2');
+    const note = document.getElementById('tbWinnerNote');
+    if (!tb1 || !tb2) return;
+
+    const t1 = parseInt(tb1.value, 10);
+    const t2 = parseInt(tb2.value, 10);
+
+    const p1Label = document.getElementById('winner1Label')?.innerText || 'Participant 1';
+    const p2Label = document.getElementById('winner2Label')?.innerText || 'Participant 2';
+
+    if (!isNaN(t1) && !isNaN(t2)) {
+        if (t1 > t2) {
+            document.getElementById('winner1').checked = true;
+            document.getElementById('winner2').checked = false;
+            highlightWinnerCards();
+            if (note) {
+                note.style.display = 'block';
+                note.innerText = `🏆 ${p1Label} leads tiebreak (${t1}-${t2}) and will receive the deciding game.`;
+            }
+        } else if (t2 > t1) {
+            document.getElementById('winner1').checked = false;
+            document.getElementById('winner2').checked = true;
+            highlightWinnerCards();
+            if (note) {
+                note.style.display = 'block';
+                note.innerText = `🏆 ${p2Label} leads tiebreak (${t1}-${t2}) and will receive the deciding game.`;
+            }
+        } else {
+            if (note) {
+                note.style.display = 'block';
+                note.innerText = `Tiebreak tied ${t1}–${t2}. Winner must lead by at least 2 points.`;
+            }
+        }
+    } else {
+        if (note) note.style.display = 'none';
+    }
+}
+
+function highlightWinnerCards() {
+    const w1 = document.getElementById('winner1');
+    const w2 = document.getElementById('winner2');
+    const c1 = document.getElementById('winner1Card');
+    const c2 = document.getElementById('winner2Card');
+
+    if (c1) {
+        c1.style.borderColor = (w1 && w1.checked) ? 'var(--primary)' : 'var(--border-color)';
+        c1.style.background = (w1 && w1.checked) ? 'rgba(99, 102, 241, 0.2)' : 'rgba(0,0,0,0.25)';
+    }
+    if (c2) {
+        c2.style.borderColor = (w2 && w2.checked) ? 'var(--primary)' : 'var(--border-color)';
+        c2.style.background = (w2 && w2.checked) ? 'rgba(99, 102, 241, 0.2)' : 'rgba(0,0,0,0.25)';
     }
 }
 
@@ -181,21 +487,6 @@ async function saveDateTimeOnly() {
     } catch(err) {
         console.error(err);
         alert('Network error saving schedule');
-    }
-}
-
-function checkTiebreak(setNum, targetGames) {
-    const p1Input = document.getElementById('set' + setNum + '_p1');
-    const p2Input = document.getElementById('set' + setNum + '_p2');
-    const tbRow = document.getElementById('tbRow' + setNum);
-    if (!p1Input || !p2Input || !tbRow) return;
-    const v1 = parseInt(p1Input.value, 10);
-    const v2 = parseInt(p2Input.value, 10);
-    const limit = targetGames || 6;
-    if (v1 === limit && v2 === limit) {
-        tbRow.style.display = 'table-row';
-    } else {
-        tbRow.style.display = 'none';
     }
 }
 
@@ -253,10 +544,23 @@ function openMatchModal(matchId, currentStatus, currentScheduledTime, p1Name, p1
         document.getElementById('winner2').value = p2Id || '';
         document.getElementById('winner1Label').innerText = p1Name || 'Participant 1';
         document.getElementById('winner2Label').innerText = p2Name || 'Participant 2';
-        document.getElementById('p1SetHeader').innerText = p1Name || 'P1';
-        document.getElementById('p2SetHeader').innerText = p2Name || 'P2';
-        document.getElementById('p1PointsHeader').innerText = p1Name || 'P1';
-        document.getElementById('p2PointsHeader').innerText = p2Name || 'P2';
+        
+        const g1Header = document.getElementById('p1GamesHeader');
+        const g2Header = document.getElementById('p2GamesHeader');
+        if (g1Header) g1Header.innerText = p1Name || 'P1';
+        if (g2Header) g2Header.innerText = p2Name || 'P2';
+
+        const p1Pts = document.getElementById('p1PointsHeader');
+        const p2Pts = document.getElementById('p2PointsHeader');
+        if (p1Pts) p1Pts.innerText = p1Name || 'P1';
+        if (p2Pts) p2Pts.innerText = p2Name || 'P2';
+
+        const wP1 = document.getElementById('walkoverP1Name');
+        const wP2 = document.getElementById('walkoverP2Name');
+        if (wP1) wP1.innerText = p1Name || 'P1';
+        if (wP2) wP2.innerText = p2Name || 'P2';
+        const walkoverPanel = document.getElementById('walkoverPanel');
+        if (walkoverPanel) walkoverPanel.style.display = 'none';
         
         if (winnerId && winnerId == p1Id) document.getElementById('winner1').checked = true;
         else if (winnerId && winnerId == p2Id) document.getElementById('winner2').checked = true;
@@ -264,44 +568,98 @@ function openMatchModal(matchId, currentStatus, currentScheduledTime, p1Name, p1
             document.getElementById('winner1').checked = false;
             document.getElementById('winner2').checked = false;
         }
+        highlightWinnerCards();
 
         const formatSelect = document.getElementById('modalMatchFormat');
         formatSelect.value = matchFormat || 'games';
-        const numSetsSelect = document.getElementById('modalMatchNumSets');
-        numSetsSelect.value = matchNumSets || 3;
-        const gamesPerSetSelect = document.getElementById('modalMatchGamesPerSet');
-        gamesPerSetSelect.value = matchGamesPerSet || 6;
         const pointsToWinInput = document.getElementById('modalMatchPointsToWin');
-        pointsToWinInput.value = matchPointsToWin || 11;
+        if (pointsToWinInput) pointsToWinInput.value = matchPointsToWin || 11;
+        
+        const gamesPerSetInput = document.getElementById('modalMatchGamesPerSet');
+        if (gamesPerSetInput && matchGamesPerSet) {
+            gamesPerSetInput.value = matchGamesPerSet;
+        }
         
         toggleModalMatchFormat();
         
+        // Reset inputs
+        const g1Input = document.getElementById('set1_p1');
+        const g2Input = document.getElementById('set1_p2');
+        const tb1Input = document.getElementById('tb1_p1');
+        const tb2Input = document.getElementById('tb1_p2');
+        if (g1Input) g1Input.value = '';
+        if (g2Input) g2Input.value = '';
+        if (tb1Input) tb1Input.value = '';
+        if (tb2Input) tb2Input.value = '';
+
         // Populate existing scores if present
         if (score1 && score1 !== 'N/A') {
             if (formatSelect.value === 'points') {
                 document.getElementById('points_p1').value = score1 || '';
                 document.getElementById('points_p2').value = score2 || '';
             } else {
-                const s1Parts = String(score1).split(', ');
-                s1Parts.forEach((st, idx) => {
-                    const sNum = idx + 1;
-                    if (sNum <= 5 && st.includes('-')) {
-                        const games = st.split('-');
-                        const g1 = games[0].split('(')[0];
-                        const g2 = games[1].split('(')[0];
-                        const s1Input = document.getElementById('set' + sNum + '_p1');
-                        const s2Input = document.getElementById('set' + sNum + '_p2');
-                        if (s1Input) s1Input.value = g1;
-                        if (s2Input) s2Input.value = g2;
-                        if (games[0].includes('(') || games[1].includes('(')) {
-                            const tbRow = document.getElementById('tbRow' + sNum);
-                            if (tbRow) tbRow.style.display = 'table-row';
+                const sStr = String(score1);
+                if (sStr.includes('-')) {
+                    const parts = sStr.split('-');
+                    const p1G = parts[0].split('(')[0].trim();
+                    const p2G = parts[1].split('(')[0].trim();
+                    if (g1Input) g1Input.value = p1G;
+                    if (g2Input) g2Input.value = p2G;
+                    if (sStr.includes('(')) {
+                        const tbMatch = sStr.match(/\((.*?)\)/);
+                        if (tbMatch && tb1Input && tb2Input) {
+                            const tbContent = tbMatch[1].trim();
+                            if (tbContent.includes('-')) {
+                                const tbPts = tbContent.split('-');
+                                tb1Input.value = tbPts[0] || '';
+                                tb2Input.value = tbPts[1] || '';
+                            } else {
+                                // Single number = loser tiebreak points (e.g. 4-3(4))
+                                const loserPts = parseInt(tbContent, 10);
+                                const winnerPts = Math.max(7, loserPts + 2);
+                                if (parseInt(p1G, 10) > parseInt(p2G, 10)) {
+                                    tb1Input.value = winnerPts;
+                                    tb2Input.value = loserPts;
+                                } else {
+                                    tb1Input.value = loserPts;
+                                    tb2Input.value = winnerPts;
+                                }
+                            }
+                            document.getElementById('tbRow1').style.display = 'block';
                         }
                     }
-                });
+                } else if (!isNaN(parseInt(score1, 10))) {
+                    if (g1Input) g1Input.value = score1;
+                    if (g2Input) g2Input.value = score2 || '';
+                }
             }
         }
         
+        // Trigger update to sum display and helper badges
+        onGamesInputChange();
+        
+        // Configure audit section if match was already completed
+        const auditSection = document.getElementById('matchAuditSection');
+        const auditReason = document.getElementById('matchAuditReason');
+        const auditExp = document.getElementById('matchAuditExplanation');
+        if (currentStatus === 'completed') {
+            if (auditSection) auditSection.style.display = 'block';
+            if (auditReason) {
+                auditReason.disabled = false;
+                if (!auditReason.value) auditReason.value = 'Score Entry Mistake';
+            }
+            if (auditExp) {
+                auditExp.disabled = false;
+                if (!auditExp.value || auditExp.value.trim().length < 20) {
+                    auditExp.value = 'Score correction submitted by tournament administrator.';
+                }
+            }
+        } else {
+            if (auditSection) auditSection.style.display = 'none';
+            if (auditReason) auditReason.disabled = true;
+            if (auditExp) auditExp.disabled = true;
+        }
+
         handleStatusChange(currentStatus || 'pending');
         
         if (!isAdmin) {
@@ -374,9 +732,128 @@ async function saveMatchAction(actionType) {
             alert('Network error updating status');
         }
     } else {
+        const formatSelect = document.getElementById('modalMatchFormat');
+        const isGamesFormat = !formatSelect || formatSelect.value === 'games';
+
+        if (actionType === 'complete_match' && isGamesFormat) {
+            const g1 = document.getElementById('set1_p1');
+            const g2 = document.getElementById('set1_p2');
+            const tb1 = document.getElementById('tb1_p1');
+            const tb2 = document.getElementById('tb1_p2');
+            
+            const v1 = parseInt(g1?.value, 10);
+            const v2 = parseInt(g2?.value, 10);
+            const T = getMatchTotalGames();
+            const tbTrigger = Math.floor((T - 1) / 2);      // e.g. 3 for T=7
+            const tbWinnerGames = Math.floor((T + 1) / 2); // e.g. 4 for T=7
+
+            if (isNaN(v1) || isNaN(v2)) {
+                alert("Please enter the games won for both participants.");
+                return;
+            }
+
+            // Case A: Entered at 3-3 (tbTrigger all)
+            if (v1 === tbTrigger && v2 === tbTrigger) {
+                const t1 = parseInt(tb1?.value, 10);
+                const t2 = parseInt(tb2?.value, 10);
+                if (isNaN(t1) || isNaN(t2)) {
+                    alert(`The score reached ${tbTrigger}–${tbTrigger}. A 7-point tiebreak must be played to decide the 7th game. Please enter both tiebreak scores.`);
+                    tb1?.focus();
+                    return;
+                }
+                const tbw = Math.max(t1, t2);
+                const tbl = Math.min(t1, t2);
+                if (tbw < 7 || (tbw === 7 && tbl > 5) || (tbw > 7 && tbl !== tbw - 2)) {
+                    alert(`Tiebreak score ${t1}–${t2} is invalid. Winner must reach at least 7 points and win by at least 2 points.`);
+                    return;
+                }
+                // Auto-award 7th game to tiebreak winner so final score is 4-3 or 3-4 (sum = T)
+                if (t1 > t2) {
+                    g1.value = tbWinnerGames;
+                    g2.value = tbTrigger;
+                    document.getElementById('winner1').checked = true;
+                    document.getElementById('winner2').checked = false;
+                } else {
+                    g1.value = tbTrigger;
+                    g2.value = tbWinnerGames;
+                    document.getElementById('winner1').checked = false;
+                    document.getElementById('winner2').checked = true;
+                }
+            } else if ((v1 === tbWinnerGames && v2 === tbTrigger) || (v1 === tbTrigger && v2 === tbWinnerGames)) {
+                // Case B: Entered as 4-3 or 3-4 directly. Tiebreak is NOT required if majority of games was won.
+                const t1 = parseInt(tb1?.value, 10);
+                const t2 = parseInt(tb2?.value, 10);
+                const hasTb = !isNaN(t1) && !isNaN(t2);
+                if (hasTb) {
+                    const tbw = Math.max(t1, t2);
+                    const tbl = Math.min(t1, t2);
+                    if (tbw < 7 || (tbw === 7 && tbl > 5) || (tbw > 7 && tbl !== tbw - 2)) {
+                        alert(`Tiebreak score ${t1}–${t2} is invalid. Winner must reach at least 7 points and win by at least 2 points.`);
+                        return;
+                    }
+                    if ((v1 > v2 && t1 <= t2) || (v2 > v1 && t2 <= t1)) {
+                        alert("The rubber winner must match the tiebreak winner.");
+                        return;
+                    }
+                }
+            }
+
+            // Enforce total games summation rule (addition of both players' games must equal T)
+            const finalV1 = parseInt(g1.value, 10);
+            const finalV2 = parseInt(g2.value, 10);
+            if (finalV1 + finalV2 !== T) {
+                alert(`Total games must add up to ${T} (e.g. 6–1, 5–2, 7–0, or 4–3 with tiebreak). Current sum is ${finalV1 + finalV2}.`);
+                return;
+            }
+
+            // Ensure winner radio is checked matching final games
+            if (finalV1 > finalV2) {
+                document.getElementById('winner1').checked = true;
+                document.getElementById('winner2').checked = false;
+            } else if (finalV2 > finalV1) {
+                document.getElementById('winner1').checked = false;
+                document.getElementById('winner2').checked = true;
+            }
+            highlightWinnerCards();
+        } else if (actionType === 'live_score' && isGamesFormat) {
+            const g1 = document.getElementById('set1_p1');
+            const g2 = document.getElementById('set1_p2');
+            const v1 = parseInt(g1?.value, 10) || 0;
+            const v2 = parseInt(g2?.value, 10) || 0;
+            const T = getMatchTotalGames();
+            if (v1 + v2 > T) {
+                alert(`Total games in progress cannot exceed ${T}. Current total: ${v1 + v2}.`);
+                return;
+            }
+        }
+
         if (actionType === 'complete_match' && !validateWinnerSelected()) {
             return;
         }
+
+        // Validate audit fields if match was already completed
+        const isAlreadyCompleted = (document.getElementById('modalMatchId').dataset.originalStatus === 'completed');
+        if (isAlreadyCompleted) {
+            const auditReason = document.getElementById('matchAuditReason');
+            const auditExp = document.getElementById('matchAuditExplanation');
+            if (auditReason) auditReason.disabled = false;
+            if (auditExp) auditExp.disabled = false;
+            
+            const rVal = auditReason ? auditReason.value.trim() : '';
+            const eVal = auditExp ? auditExp.value.trim() : '';
+            
+            if (!rVal) {
+                alert("Please select a reason to modify this completed match.");
+                if (auditReason) auditReason.focus();
+                return;
+            }
+            if (eVal.length < 20) {
+                alert("Please provide an explanation (minimum 20 characters) to modify this completed match.");
+                if (auditExp) auditExp.focus();
+                return;
+            }
+        }
+
         const form = document.getElementById('reportForm');
         const existingAction = form.querySelector('input[name="action"]');
         if (existingAction) existingAction.remove();

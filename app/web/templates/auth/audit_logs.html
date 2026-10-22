@@ -35,7 +35,7 @@
                         {% for log in pagination.items %}
                             <tr style="border-bottom: 1px solid var(--border-color);">
                                 <td style="padding: 1rem; color: var(--text-muted); font-size: 0.9rem; white-space: nowrap;">
-                                    {{ log.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                    {{ log.created_at|ist('%d %b %Y, %I:%M %p IST') }}
                                 </td>
                                 <td style="padding: 1rem;">
                                     <strong>{{ log.user.username }}</strong>

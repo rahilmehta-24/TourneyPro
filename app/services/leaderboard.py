@@ -151,6 +151,7 @@ def recalculate_all_group_stats(category_id):
     matches = Match.query.filter(
         Match.category_id == category_id,
         Match.match_type.in_(['group_stage', 'round_robin']),
+        Match.parent_match_id.is_(None),
         Match.status == 'completed'
     ).all()
     
