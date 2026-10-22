@@ -1695,6 +1695,9 @@ def create_manual_teams(slug, category_id):
                     raise ValueError(f"Duplicate player detected: '{p_name}' is assigned to multiple teams.")
                 all_selected_players.append(pid)
 
+        if category.status != 'setup':
+            raise ValueError("Cannot modify teams once matches are in progress.")
+
         # Clear existing team participants in setup mode
         existing_teams = Participant.query.filter_by(category_id=category_id).all()
         for p in existing_teams:
@@ -1706,6 +1709,8 @@ def create_manual_teams(slug, category_id):
         for t in tiers:
             t.is_drafted = False
             t.role = 'player'
+
+        cat_groups = Group.query.filter_by(category_id=category_id).order_by(Group.id).all()
 
         created_teams = []
         for idx, t in enumerate(teams_payload, start=1):
@@ -1719,11 +1724,14 @@ def create_manual_teams(slug, category_id):
             if not captain_id:
                 raise ValueError(f"'{team_name}' must have a Captain assigned.")
 
+            grp_id = cat_groups[(idx - 1) % len(cat_groups)].id if cat_groups else None
+
             team_p = Participant(
                 tournament_id=tournament.id,
                 category_id=category.id,
                 name=team_name,
-                player_id=captain_id
+                player_id=captain_id,
+                group_id=grp_id
             )
             db.session.add(team_p)
             db.session.flush()

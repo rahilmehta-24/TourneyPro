@@ -690,7 +690,7 @@
         <div id="standings" style="scroll-margin-top: 80px;"></div>
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <h2>Group Stage</h2>
-            {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] %}
+            {% if not (category.max_players_per_team and category.max_players_per_team > 1) and current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] %}
             <div style="display: flex; gap: 8px;">
                 <button type="submit" form="group-matrix-form" class="btn btn-primary" title="Save Entries" style="padding: 0.5rem 1rem; display: flex; align-items: center; gap: 8px; border-radius: 4px;">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -700,7 +700,7 @@
             {% endif %}
         </div>
         
-        {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] %}
+        {% if not (category.max_players_per_team and category.max_players_per_team > 1) and current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] %}
         <form id="group-matrix-form" method="POST" action="{{ url_for('category.update_grid_scores', slug=tournament.url_slug, category_id=category.id) }}">
         {% endif %}
 
@@ -718,7 +718,7 @@
                             onclick="switchGroupView('all', this)">
                         <span style="font-size: 0.95rem;">🌐</span>
                         <span class="group-name-text">All Groups</span>
-                        <span class="group-tab-badge">{{ groups_data|length }} Standings</span>
+                        <span class="group-tab-badge">{{ groups_data|length }} Leaderboards</span>
                     </button>
                     {% for grp_tab in groups_data %}
                     <button type="button" 
@@ -745,9 +745,9 @@
                     <strong id="activeGroupLabel" style="color: var(--primary); font-weight: 750;">
                         {% if active_group_param != 'all' and active_group_param %}
                             {% set current_selected_grp = (groups_data | selectattr('group.id', 'equalto', active_group_param|int) | first) %}
-                            {% if current_selected_grp %}{{ current_selected_grp.group.name }} (Standings &amp; Fixtures){% else %}All Groups (Standings){% endif %}
+                            {% if current_selected_grp %}{{ current_selected_grp.group.name }} (Fixtures &amp; Lineups){% else %}All Groups (Leaderboards){% endif %}
                         {% else %}
-                            All Groups (Standings)
+                            All Groups (Leaderboards)
                         {% endif %}
                     </strong>
                 </div>
@@ -775,7 +775,7 @@
                 {% endif %}
             </div>
 
-            <div class="table-container" style="width: 100%; overflow-x: auto;">
+            <div class="table-container group-standings-container" style="width: 100%; overflow-x: auto; {% if active_group_param != 'all' and active_group_param and groups_data|length > 1 %}display: none;{% endif %}">
             <table class="standings-table">
                 <thead>
                     <tr>
@@ -797,6 +797,7 @@
                     </tr>
                 </thead>
                 <tbody>
+                    {% if group_info.standings %}
                     {% for participant in group_info.standings %}
                     <tr>
                         <td>{{ loop.index }}</td>
@@ -846,6 +847,13 @@
                         {% endif %}
                     </tr>
                     {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="{% if category.max_players_per_team and category.max_players_per_team > 1 %}8{% else %}4{% endif %}" style="text-align: center; color: var(--text-muted); padding: 1.5rem 0.5rem; font-size: 0.9rem;">
+                            No teams assigned to this group yet.
+                        </td>
+                    </tr>
+                    {% endif %}
                 </tbody>
             </table>
             </div>
@@ -1134,7 +1142,7 @@
         </div>
         {% endfor %}
         
-        {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] %}
+        {% if not (category.max_players_per_team and category.max_players_per_team > 1) and current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] %}
         <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.5rem; margin-bottom: 1rem;">
             <button type="submit" form="group-matrix-form" class="btn btn-primary" title="Save Entries" style="padding: 0.75rem 1.5rem; display: flex; align-items: center; gap: 8px; border-radius: 4px;">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -1487,21 +1495,23 @@ function switchGroupView(groupId, btnElement, saveToStorage = true) {
     }
 
     const panes = document.querySelectorAll('.group-view-pane');
-    const fixturesContainers = document.querySelectorAll('.group-fixtures-container');
 
     if (groupId === 'all') {
-        // Show all group panes (standings), hide all fixtures
+        // Show all group panes with their standings tables (leaderboards), hide all fixtures
         panes.forEach(pane => {
             pane.style.display = '';
-        });
-        fixturesContainers.forEach(fc => {
-            fc.style.display = 'none';
+            const sc = pane.querySelector('.group-standings-container');
+            if (sc) sc.style.display = '';
+            const fc = pane.querySelector('.group-fixtures-container');
+            if (fc) fc.style.display = 'none';
         });
     } else {
-        // Show only the selected group pane, and show its fixtures
+        // Show only the selected group pane, show its fixtures, hide its standings table
         panes.forEach(pane => {
             if (pane.getAttribute('data-group-id') === String(groupId)) {
                 pane.style.display = '';
+                const sc = pane.querySelector('.group-standings-container');
+                if (sc) sc.style.display = 'none';
                 const fc = pane.querySelector('.group-fixtures-container');
                 if (fc) fc.style.display = '';
             } else {
@@ -1514,12 +1524,12 @@ function switchGroupView(groupId, btnElement, saveToStorage = true) {
     const label = document.getElementById('activeGroupLabel');
     if (label) {
         if (groupId === 'all') {
-            label.textContent = 'All Groups (Standings)';
+            label.textContent = 'All Groups (Leaderboards)';
         } else {
             const activeBtn = btnElement || document.querySelector(`.group-tab-btn[data-group-target="${groupId}"]`);
             if (activeBtn) {
                 const nameEl = activeBtn.querySelector('.group-name-text');
-                label.textContent = (nameEl ? nameEl.textContent.trim() : ('Group ' + groupId)) + ' (Standings & Fixtures)';
+                label.textContent = (nameEl ? nameEl.textContent.trim() : ('Group ' + groupId)) + ' (Fixtures & Lineups)';
             }
         }
     }
@@ -2468,10 +2478,17 @@ if (window.IntersectionObserver) {
     if (vp) bracketViewObs.observe(vp);
 }
 
-// Category In-Page Section Navigation & Hash Routing
 function handleCategorySectionNav(sectionId, event) {
     if (event) event.preventDefault();
     if (sectionId === 'fixtures') {
+        const allTabBtn = document.getElementById('btn-group-tab-all');
+        if (allTabBtn && allTabBtn.classList.contains('active')) {
+            const firstGroupBtn = document.querySelector('.group-tab-btn:not(#btn-group-tab-all)');
+            if (firstGroupBtn) {
+                const targetGid = firstGroupBtn.getAttribute('data-group-target');
+                switchGroupView(targetGid, firstGroupBtn);
+            }
+        }
         const activePane = document.querySelector('.group-view-pane:not([style*="display: none"])');
         const targetFixtures = activePane ? activePane.querySelector('.group-fixtures-header') : null;
         if (targetFixtures) {
@@ -2479,6 +2496,11 @@ function handleCategorySectionNav(sectionId, event) {
             targetFixtures.scrollIntoView({ behavior: 'smooth', block: 'start' });
             updateSubnavActive(sectionId);
             return;
+        }
+    } else if (sectionId === 'standings') {
+        const allTabBtn = document.getElementById('btn-group-tab-all');
+        if (allTabBtn && !allTabBtn.classList.contains('active')) {
+            switchGroupView('all', allTabBtn);
         }
     }
     const el = document.getElementById(sectionId);
