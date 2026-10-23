@@ -76,7 +76,102 @@
             </div>
         </div>
 
+        <!-- TOURNAMENT DURATION & OPERATING TIMINGS -->
+        <div class="form-section">
+            <h2 class="form-section-title">📅 Tournament Duration &amp; Daily Operating Timings</h2>
+            <p style="color: var(--text-secondary); font-size: 0.875rem; margin-top: -0.5rem; margin-bottom: 1.25rem;">
+                Specify what is the duration of the tournament along with the daily start and cutoff timings for each day. This ensures the <strong>Order of Play</strong> automatically arranges fixtures without congestion, court clashes, or scheduling chaos.
+            </p>
 
+            <!-- Duration & Calendar Dates Container -->
+            <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.25rem;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="start_date" class="form-label" style="font-weight: 700;">Tournament Start Date *</label>
+                        <input type="date" id="start_date" name="start_date" class="form-input" required>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="duration_days" class="form-label" style="font-weight: 700;">Duration of Tournament *</label>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <input type="number" id="duration_days" name="duration_days" class="form-input" min="1" max="30" value="2" required style="max-width: 105px; font-weight: 700; text-align: center;">
+                            <span style="font-size: 0.875rem; font-weight: 600; color: var(--text-secondary);">Day(s)</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="end_date" class="form-label" style="font-weight: 700;">Tournament End Date *</label>
+                        <input type="date" id="end_date" name="end_date" class="form-input" required>
+                    </div>
+                </div>
+
+                <!-- Quick Duration Presets -->
+                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.85rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.06);">
+                    <span style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted);">Quick Duration:</span>
+                    <button type="button" class="btn btn-secondary duration-pill" data-days="1" style="padding: 0.2rem 0.65rem; font-size: 0.78rem; border-radius: 9999px;">1 Day</button>
+                    <button type="button" class="btn btn-secondary duration-pill active" data-days="2" style="padding: 0.2rem 0.65rem; font-size: 0.78rem; border-radius: 9999px;">2 Days</button>
+                    <button type="button" class="btn btn-secondary duration-pill" data-days="3" style="padding: 0.2rem 0.65rem; font-size: 0.78rem; border-radius: 9999px;">3 Days</button>
+                    <button type="button" class="btn btn-secondary duration-pill" data-days="4" style="padding: 0.2rem 0.65rem; font-size: 0.78rem; border-radius: 9999px;">4 Days</button>
+                    <button type="button" class="btn btn-secondary duration-pill" data-days="5" style="padding: 0.2rem 0.65rem; font-size: 0.78rem; border-radius: 9999px;">5 Days</button>
+                    <button type="button" class="btn btn-secondary duration-pill" data-days="7" style="padding: 0.2rem 0.65rem; font-size: 0.78rem; border-radius: 9999px;">7 Days</button>
+                </div>
+
+                <!-- Active Duration Summary -->
+                <div id="durationSummaryBadge" style="background: rgba(249, 115, 22, 0.12); border: 1px solid rgba(249, 115, 22, 0.3); border-radius: var(--radius-sm); padding: 0.55rem 0.85rem; display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-primary);">
+                    <span style="font-size: 1.1rem;">🗓️</span>
+                    <span id="durationSummaryText"><strong>2 Days Duration:</strong> Loading dates...</span>
+                </div>
+            </div>
+
+            <!-- Default Operating Hours & Court Logistics -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+                <div class="form-group">
+                    <label for="court_operating_start" class="form-label">Default Daily Start Time</label>
+                    <input type="time" id="court_operating_start" name="court_operating_start" class="form-input" value="09:00">
+                </div>
+
+                <div class="form-group">
+                    <label for="court_operating_end" class="form-label">Default Daily Cutoff Time</label>
+                    <input type="time" id="court_operating_end" name="court_operating_end" class="form-input" value="19:00">
+                </div>
+
+                <div class="form-group">
+                    <label for="num_courts" class="form-label">Total Courts Available</label>
+                    <input type="number" id="num_courts" name="num_courts" class="form-input" min="1" max="50" value="2">
+                </div>
+                <div class="form-group">
+                    <label for="court_names" class="form-label">Court Names (Optional)</label>
+                    <input type="text" id="court_names" name="court_names" class="form-input" placeholder="e.g. Court 1, Court 2, Centre Court">
+                </div>
+            </div>
+
+            <!-- Dynamic Timings For Each Day (Prevent Order of Play Chaos) -->
+            <div id="dynamicDailyScheduleBox" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; margin-top: 0.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 0.65rem;">
+                    <div>
+                        <h4 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 0.35rem;">
+                            ⏰ Operating Timings for Each Day (Order of Play Schedule Protection)
+                        </h4>
+                        <p style="margin: 0.2rem 0 0; font-size: 0.8rem; color: var(--text-secondary);">
+                            Set exact start and cutoff times for each day of the duration so Order of Play schedules matches cleanly without chaos.
+                        </p>
+                    </div>
+                    <button type="button" class="btn btn-secondary" id="applyDefaultsBtn" style="font-size: 0.78rem; padding: 0.3rem 0.75rem; border-radius: var(--radius-sm);">
+                        🔄 Apply Default Timings to All Days
+                    </button>
+                </div>
+
+                <div id="dailyScheduleList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(235px, 1fr)); gap: 0.75rem;">
+                    <!-- Dynamically populated by JS for each day of duration -->
+                </div>
+
+                <div id="dailyScheduleEmptyPrompt" style="display: none; color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 1.25rem 0;">
+                    📅 Select Start Date and Duration above to view each tournament day's timings.
+                </div>
+
+                <input type="hidden" name="daily_operating_hours" id="dailyOperatingHoursJson">
+            </div>
+        </div>
 
         <div class="form-actions">
             <a href="{{ url_for('main.index') }}" class="btn btn-secondary">Cancel</a>
@@ -87,4 +182,222 @@
         </div>
     </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const startInput = document.getElementById('start_date');
+    const endInput = document.getElementById('end_date');
+    const durationInput = document.getElementById('duration_days');
+    const defaultStartInput = document.getElementById('court_operating_start');
+    const defaultEndInput = document.getElementById('court_operating_end');
+    const container = document.getElementById('dailyScheduleList');
+    const emptyPrompt = document.getElementById('dailyScheduleEmptyPrompt');
+    const jsonInput = document.getElementById('dailyOperatingHoursJson');
+    const resetBtn = document.getElementById('applyDefaultsBtn');
+    const durationPills = document.querySelectorAll('.duration-pill');
+    const summaryText = document.getElementById('durationSummaryText');
+
+    // Default start date to today if empty, duration = 2 days
+    if (!startInput.value) {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        startInput.value = `${yyyy}-${mm}-${dd}`;
+
+        const dur = parseInt(durationInput.value) || 2;
+        const endDateObj = new Date(today);
+        endDateObj.setDate(endDateObj.getDate() + (dur - 1));
+        const endY = endDateObj.getFullYear();
+        const endM = String(endDateObj.getMonth() + 1).padStart(2, '0');
+        const endD = String(endDateObj.getDate()).padStart(2, '0');
+        endInput.value = `${endY}-${endM}-${endD}`;
+    }
+
+    function formatDisplayDate(dateObj) {
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return `${days[dateObj.getDay()]}, ${dateObj.getDate()} ${months[dateObj.getMonth()]}`;
+    }
+
+    function updatePills(dur) {
+        durationPills.forEach(pill => {
+            if (parseInt(pill.getAttribute('data-days')) === dur) {
+                pill.classList.add('active');
+                pill.style.background = 'var(--accent-primary)';
+                pill.style.color = '#fff';
+            } else {
+                pill.classList.remove('active');
+                pill.style.background = '';
+                pill.style.color = '';
+            }
+        });
+    }
+
+    let dailyCustomMap = {};
+
+    function updateJsonField() {
+        const out = {};
+        container.querySelectorAll('[data-date-key]').forEach(card => {
+            const dateKey = card.getAttribute('data-date-key');
+            const sInput = card.querySelector(`input[name="daily_start_${dateKey}"]`);
+            const eInput = card.querySelector(`input[name="daily_end_${dateKey}"]`);
+            if (sInput && eInput) {
+                out[dateKey] = {
+                    start: sInput.value || defaultStartInput.value || '09:00',
+                    end: eInput.value || defaultEndInput.value || '19:00'
+                };
+                dailyCustomMap[dateKey] = out[dateKey];
+            }
+        });
+        if (jsonInput) {
+            jsonInput.value = JSON.stringify(out);
+        }
+    }
+
+    function renderDays() {
+        const startVal = startInput.value;
+        if (!startVal) {
+            container.innerHTML = '';
+            container.style.display = 'none';
+            if (emptyPrompt) emptyPrompt.style.display = 'block';
+            return;
+        }
+
+        const startDate = new Date(startVal + 'T00:00:00');
+        let dur = parseInt(durationInput.value) || 1;
+        if (dur < 1) dur = 1;
+        durationInput.value = dur;
+
+        const endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + (dur - 1));
+
+        const yyyy = endDate.getFullYear();
+        const mm = String(endDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(endDate.getDate()).padStart(2, '0');
+        endInput.value = `${yyyy}-${mm}-${dd}`;
+
+        updatePills(dur);
+
+        // Update summary text
+        if (summaryText) {
+            const startStr = formatDisplayDate(startDate);
+            const endStr = formatDisplayDate(endDate);
+            summaryText.innerHTML = `<strong>${dur} Day${dur > 1 ? 's' : ''} Duration:</strong> ${startStr} &ndash; ${endStr}`;
+        }
+
+        container.innerHTML = '';
+        container.style.display = 'grid';
+        if (emptyPrompt) emptyPrompt.style.display = 'none';
+
+        const defaultStart = defaultStartInput ? defaultStartInput.value || '09:00' : '09:00';
+        const defaultEnd = defaultEndInput ? defaultEndInput.value || '19:00' : '19:00';
+
+        const curr = new Date(startDate);
+        for (let dayIndex = 1; dayIndex <= dur; dayIndex++) {
+            const cY = curr.getFullYear();
+            const cM = String(curr.getMonth() + 1).padStart(2, '0');
+            const cD = String(curr.getDate()).padStart(2, '0');
+            const dateKey = `${cY}-${cM}-${cD}`;
+            const dateDisplay = formatDisplayDate(curr);
+
+            let sVal = defaultStart;
+            let eVal = defaultEnd;
+            if (dailyCustomMap[dateKey]) {
+                sVal = dailyCustomMap[dateKey].start || defaultStart;
+                eVal = dailyCustomMap[dateKey].end || defaultEnd;
+            }
+
+            const card = document.createElement('div');
+            card.setAttribute('data-date-key', dateKey);
+            card.style.cssText = 'background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.75rem 0.85rem; box-shadow: var(--shadow-sm);';
+            card.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.35rem;">
+                    <span style="font-weight: 700; font-size: 0.85rem; color: var(--accent-primary);">Day ${dayIndex}</span>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">${dateDisplay}</span>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                    <div>
+                        <label style="font-size: 0.72rem; color: var(--text-secondary); display: block; margin-bottom: 0.2rem; font-weight: 600;">Start Time</label>
+                        <input type="time" name="daily_start_${dateKey}" class="form-input" value="${sVal}" style="padding: 0.35rem 0.45rem; font-size: 0.8rem; width: 100%;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.72rem; color: var(--text-secondary); display: block; margin-bottom: 0.2rem; font-weight: 600;">Cutoff Time</label>
+                        <input type="time" name="daily_end_${dateKey}" class="form-input" value="${eVal}" style="padding: 0.35rem 0.45rem; font-size: 0.8rem; width: 100%;">
+                    </div>
+                </div>
+            `;
+
+            card.querySelectorAll('input[type="time"]').forEach(input => {
+                input.addEventListener('change', updateJsonField);
+            });
+
+            container.appendChild(card);
+            curr.setDate(curr.getDate() + 1);
+        }
+
+        updateJsonField();
+    }
+
+    startInput.addEventListener('change', renderDays);
+
+    durationInput.addEventListener('input', function() {
+        let dur = parseInt(this.value) || 1;
+        if (dur < 1) dur = 1;
+        this.value = dur;
+        renderDays();
+    });
+
+    endInput.addEventListener('change', function() {
+        if (!startInput.value || !this.value) return;
+        const s = new Date(startInput.value + 'T00:00:00');
+        const e = new Date(this.value + 'T00:00:00');
+        if (e < s) {
+            this.value = startInput.value;
+            durationInput.value = 1;
+        } else {
+            const diffDays = Math.round((e - s) / (1000 * 60 * 60 * 24)) + 1;
+            durationInput.value = diffDays;
+        }
+        renderDays();
+    });
+
+    durationPills.forEach(pill => {
+        pill.addEventListener('click', function() {
+            const days = parseInt(this.getAttribute('data-days'));
+            durationInput.value = days;
+            renderDays();
+        });
+    });
+
+    if (resetBtn) {
+        resetBtn.addEventListener('click', function() {
+            const defS = defaultStartInput ? defaultStartInput.value || '09:00' : '09:00';
+            const defE = defaultEndInput ? defaultEndInput.value || '19:00' : '19:00';
+            dailyCustomMap = {};
+            container.querySelectorAll('[data-date-key]').forEach(card => {
+                const dateKey = card.getAttribute('data-date-key');
+                const sInput = card.querySelector(`input[name="daily_start_${dateKey}"]`);
+                const eInput = card.querySelector(`input[name="daily_end_${dateKey}"]`);
+                if (sInput) sInput.value = defS;
+                if (eInput) eInput.value = defE;
+            });
+            updateJsonField();
+        });
+    }
+
+    if (defaultStartInput) {
+        defaultStartInput.addEventListener('change', function() {
+            if (Object.keys(dailyCustomMap).length === 0) renderDays();
+        });
+    }
+    if (defaultEndInput) {
+        defaultEndInput.addEventListener('change', function() {
+            if (Object.keys(dailyCustomMap).length === 0) renderDays();
+        });
+    }
+
+    renderDays();
+});
+</script>
 {% endblock %}

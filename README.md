@@ -31,7 +31,6 @@ A robust, production-ready Flask-based web application (and upcoming mobile appl
 ## Tech Stack
 
 - **Backend**: Python 3, Flask, SQLAlchemy ORM, psycopg2
-- **Mobile App**: React Native (Expo)
 - **Frontend (Web)**: HTML5, CSS3, Vanilla JS (No heavyweight frontend frameworks)
 - **Styling (Web)**: Custom CSS with CSS Variables, Dark Mode, and modern UI paradigms (Glassmorphism, Gradients, Shadows).
 
@@ -44,9 +43,10 @@ TourneyPro/
 │   ├── domain/          # Core models (SQLAlchemy) and schemas
 │   ├── services/        # Business logic (brackets, leaderboards, tennis logic)
 │   ├── web/             # Flask Controllers (Blueprints), HTML Templates, Static files
-│   ├── api/             # JSON REST API endpoints (v1) for the mobile app
+│   ├── api/             # JSON REST API endpoints (v1)
 │   └── __init__.py      # App factory and initialization
-├── mobile-app/          # React Native (Expo) frontend mobile application codebase
+├── migrations/          # Database migration scripts (Flask-Migrate / Alembic)
+├── tests/               # Automated unit and integration test suite
 ├── config.py            # Environment Configuration
 ├── run.py               # WSGI Entry point
 ├── RULEBOOK.md          # Comprehensive manual and rules engine
@@ -80,13 +80,6 @@ TourneyPro/
    python run.py
    ```
    Open your browser and navigate to `http://127.0.0.1:5000`
-
-6. **Run the Mobile Application**
-   ```bash
-   cd mobile-app
-   npm install
-   npx expo start
-   ```
 
 ## Documentation
 Please refer to the [RULEBOOK.md](RULEBOOK.md) file included in the root directory for an exhaustive breakdown of the mathematical algorithms, bracket lifecycle behaviors, scoring logic, and mobile-app integration workflows.

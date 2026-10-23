@@ -83,17 +83,28 @@
         </div>
     </div>
 
+    {% if category.format == 'group_stage' or (category.max_players_per_team and category.max_players_per_team > 1) %}
+    <!-- Step-by-Step Procedure Wizard for Team League -->
+    {% include "components/team_league_wizard.html" %}
+    {% endif %}
+
     <!-- Navigation Tabs: Players & Seeding VS Rules & Format -->
-    <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+    <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; flex-wrap: wrap;">
         <button type="button" id="tabBtnPlayers" onclick="switchCategoryTab('players')" style="padding: 0.55rem 1.25rem; font-size: 0.9rem; font-weight: 600; border: none; background: var(--accent-primary); color: white; border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 0.4rem;">
             👥 Players &amp; Seeds ({{ participants|length }})
         </button>
         <button type="button" id="tabBtnRules" onclick="switchCategoryTab('rules')" style="padding: 0.55rem 1.25rem; font-size: 0.9rem; font-weight: 600; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-secondary); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 0.4rem;">
             ⚙️ Category Rules &amp; Format
         </button>
+        {% if category.format == 'group_stage' or (category.max_players_per_team and category.max_players_per_team > 1) %}
+        <a href="{{ url_for('category.team_draft_view', slug=tournament.url_slug, category_id=category.id) }}" style="padding: 0.55rem 1.25rem; font-size: 0.9rem; font-weight: 700; border: 1px solid rgba(245, 158, 11, 0.5); background: rgba(245, 158, 11, 0.15); color: #f59e0b; border-radius: var(--radius-md); text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; transition: all 0.15s;">
+            🎪 Team Draft &amp; Tiers Board
+        </a>
+        {% endif %}
     </div>
 
     <!-- TAB 1: PLAYERS & SEEDING -->
+    <div id="participants" style="scroll-margin-top: 80px;"></div>
     <div id="tabContentPlayers">
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.5rem; align-items: start;">
             
@@ -321,7 +332,7 @@
                     </div>
                 </div>
 
-                <div class="form-group" style="margin: 0;">
+                <div class="form-group" id="scoring-format-container" style="margin: 0; display: {% if category.format == 'group_stage' %}none{% else %}block{% endif %};">
                     <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Scoring Format *</label>
                     <select id="scoring_format" name="scoring_format" class="form-input" required style="width: 100%;" onchange="toggleScoringFields()">
                         <option value="games" {% if category.scoring_format == 'games' %}selected{% endif %}>Games (Sets &amp; Games)</option>
@@ -331,12 +342,13 @@
 
                 <div id="total-games-fields" style="display: {% if category.format == 'group_stage' %}block{% else %}none{% endif %};">
                     <div class="form-group" style="margin: 0;">
-                        <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Total Games To Play *</label>
-                        <input type="number" id="total_games" name="total_games" class="form-input" min="1" max="50" value="{{ category.total_games or 7 }}" style="width: 100%;">
+                        <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Total Games Per Rubber (T) *</label>
+                        <input type="number" id="total_games" name="total_games" class="form-input" min="3" max="21" step="2" value="{{ category.total_games or 7 }}" style="width: 100%;">
+                        <small style="display: block; margin-top: 0.25rem; color: var(--text-muted); font-size: 0.78rem;">Total games per rubber (Default: 7). Tiebreak at 3–3, rubber decided at 4–3. Team tie clinched by first to 11 of 21 games.</small>
                     </div>
                 </div>
 
-                <div id="points-to-win-fields" style="display: {% if category.format == 'round_robin' %}block{% else %}none{% endif %};">
+                <div id="points-to-win-fields" style="display: {% if category.format == 'round_robin' and category.scoring_format == 'points' %}block{% else %}none{% endif %};">
                     <div class="form-group" style="margin: 0;">
                         <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Points to Win *</label>
                         <input type="number" id="points_to_win" name="points_to_win" class="form-input" min="1" max="100" value="{{ category.points_to_win or 11 }}" style="width: 100%;">
@@ -344,7 +356,7 @@
                     </div>
                 </div>
 
-                <div id="legacy-scoring-fields" style="display: {% if category.format != 'group_stage' %}grid{% else %}none{% endif %}; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div id="legacy-scoring-fields" style="display: {% if category.format != 'group_stage' and category.scoring_format != 'points' %}grid{% else %}none{% endif %}; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <div class="form-group" style="margin: 0;">
                         <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Number of Sets</label>
                         <input type="number" name="num_sets" class="form-input" min="1" max="5" value="{{ category.num_sets or 3 }}" style="width: 100%;">
@@ -357,16 +369,17 @@
 
                 <div class="form-group" style="margin: 0;">
                     <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Max Players Per Team</label>
-                    <input type="number" id="max_players_per_team" name="max_players_per_team" class="form-input" min="1" value="{{ category.max_players_per_team or '' }}" placeholder="Unlimited" style="width: 100%;">
+                    <input type="number" id="max_players_per_team" name="max_players_per_team" class="form-input" min="1" value="{{ category.max_players_per_team or 5 }}" placeholder="5 for Team League" style="width: 100%;">
                 </div>
 
                 <div id="group-stage-fields" style="display: {% if category.format in ['group_stage', 'round_robin', 'doubles_round_robin'] %}flex{% else %}none{% endif %}; flex-direction: column; gap: 0.85rem; background: var(--bg-secondary); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                         <div class="form-group" style="margin: 0;">
                             <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Number of Groups *</label>
-                            <input type="number" id="num_groups" name="num_groups" class="form-input" min="2" value="{{ category.num_groups or '' }}" placeholder="e.g. 2, 4" style="width: 100%;">
+                            <input type="number" id="num_groups" name="num_groups" class="form-input" min="2" value="{{ category.num_groups or 2 }}" placeholder="e.g. 2, 4" style="width: 100%;">
+                            <small style="display: block; margin-top: 0.25rem; color: var(--text-muted); font-size: 0.78rem;">Default: 2 Groups. Teams per group are calculated dynamically (N ÷ G).</small>
                         </div>
-                        <div class="form-group" style="margin: 0;">
+                        <div class="form-group" id="manage-teams-per-group-container" style="margin: 0; display: {% if category.format == 'group_stage' %}none{% else %}block{% endif %};">
                             <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Teams Per Group *</label>
                             <input type="number" id="teams_per_group" name="teams_per_group" class="form-input" min="2" value="{{ category.teams_per_group or '' }}" placeholder="e.g. 4" style="width: 100%;">
                         </div>
@@ -389,6 +402,58 @@
                     </div>
                 </div>
                 {% endif %}
+
+                <!-- Category Dates & Daily Operating Hours (Item 5) -->
+                <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                        <span style="font-size: 0.9rem; font-weight: 700; color: var(--text-primary);">
+                            📅 Category Dates &amp; Daily Operating Hours
+                        </span>
+                        <span style="font-size: 0.75rem; color: var(--text-muted); background: var(--bg-card); padding: 0.15rem 0.5rem; border-radius: 9999px;">
+                            Order of Play Scheduling
+                        </span>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem;">
+                        <div>
+                            <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.25rem;">Start Date</label>
+                            <input type="date" id="manage_cat_start_date" name="start_date" class="form-input"
+                                   value="{{ category.start_date.strftime('%Y-%m-%d') if category.start_date else (tournament.start_date.strftime('%Y-%m-%d') if tournament.start_date else '') }}"
+                                   onchange="onManageCatDateChange()" style="width: 100%;">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.25rem;">End Date</label>
+                            <input type="date" id="manage_cat_end_date" name="end_date" class="form-input"
+                                   value="{{ category.end_date.strftime('%Y-%m-%d') if category.end_date else (tournament.end_date.strftime('%Y-%m-%d') if tournament.end_date else (tournament.start_date.strftime('%Y-%m-%d') if tournament.start_date else '')) }}"
+                                   onchange="onManageCatDateChange()" style="width: 100%;">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.25rem;">Daily Start Time</label>
+                            <input type="time" id="manage_cat_start_time" name="start_time" class="form-input"
+                                   value="{{ category.start_time or tournament.court_operating_start or '09:00' }}"
+                                   onchange="applyManageCatDefaultTimes()" style="width: 100%;">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.25rem;">Daily End Time</label>
+                            <input type="time" id="manage_cat_end_time" name="end_time" class="form-input"
+                                   value="{{ category.end_time or tournament.court_operating_end or '19:00' }}"
+                                   onchange="applyManageCatDefaultTimes()" style="width: 100%;">
+                        </div>
+                    </div>
+
+                    <!-- Spanned Dates Breakdown -->
+                    <div id="manageSpannedDatesContainer" style="border-top: 1px solid var(--border-color); padding-top: 0.65rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.4rem;">
+                            <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">Daily Operating Times per Date:</span>
+                            <button type="button" class="btn btn-secondary btn-small" onclick="applyManageCatDefaultTimes()" style="font-size: 0.72rem; padding: 0.15rem 0.5rem;">
+                                ⚡ Sync Defaults to All Days
+                            </button>
+                        </div>
+                        <div id="manageSpannedDatesList" style="display: flex; flex-direction: column; gap: 0.4rem;">
+                            <!-- Injected by JavaScript -->
+                        </div>
+                    </div>
+                </div>
 
                 <button type="submit" class="btn btn-primary" style="margin-top: 0.75rem; padding: 0.75rem; font-weight: 600; width: 100%;">
                     💾 Save Category Settings
@@ -530,11 +595,23 @@
     }
 
     function toggleScoringFields() {
+        const formatSelect = document.getElementById('format');
+        const format = formatSelect ? formatSelect.value : '{{ category.format }}';
         const scoringFormat = document.getElementById('scoring_format');
-        if (!scoringFormat) return;
-        const val = scoringFormat.value;
         const legacyScoringFields = document.getElementById('legacy-scoring-fields');
         const pointsToWinFields = document.getElementById('points-to-win-fields');
+        const totalGamesFields = document.getElementById('total-games-fields');
+
+        // When format is group_stage, sets/games_per_set are NOT used!
+        if (format === 'group_stage') {
+            if (legacyScoringFields) legacyScoringFields.style.display = 'none';
+            if (pointsToWinFields) pointsToWinFields.style.display = 'none';
+            if (totalGamesFields) totalGamesFields.style.display = 'block';
+            return;
+        }
+
+        if (!scoringFormat) return;
+        const val = scoringFormat.value;
 
         if (val === 'points') {
             if (legacyScoringFields) legacyScoringFields.style.display = 'none';
@@ -555,10 +632,12 @@
 
     function toggleGroupStageFields() {
         const formatSelect = document.getElementById('format');
-        if (!formatSelect) return;
-        const format = formatSelect.value;
+        const format = formatSelect ? formatSelect.value : '{{ category.format }}';
         const groupFields = document.getElementById('group-stage-fields');
         const totalGamesFields = document.getElementById('total-games-fields');
+        const legacyScoringFields = document.getElementById('legacy-scoring-fields');
+        const scoringFormatContainer = document.getElementById('scoring-format-container');
+        const teamsPerGroupContainer = document.getElementById('manage-teams-per-group-container');
         const knockoutSubformatFields = document.getElementById('knockout-subformat-fields');
         
         if (knockoutSubformatFields) {
@@ -566,6 +645,9 @@
         }
 
         if (format === 'group_stage') {
+            if (scoringFormatContainer) scoringFormatContainer.style.display = 'none';
+            if (legacyScoringFields) legacyScoringFields.style.display = 'none';
+            if (teamsPerGroupContainer) teamsPerGroupContainer.style.display = 'none';
             if (groupFields) {
                 groupFields.style.display = 'flex';
                 const numGroups = document.getElementById('num_groups');
@@ -577,6 +659,8 @@
                 if (tg) tg.required = true;
             }
         } else if (format === 'round_robin') {
+            if (scoringFormatContainer) scoringFormatContainer.style.display = 'block';
+            if (teamsPerGroupContainer) teamsPerGroupContainer.style.display = 'block';
             if (groupFields) {
                 groupFields.style.display = 'flex';
                 const numGroups = document.getElementById('num_groups');
@@ -587,23 +671,128 @@
                 const tg = document.getElementById('total_games');
                 if (tg) tg.required = false;
             }
+            toggleScoringFields();
         } else {
+            if (scoringFormatContainer) scoringFormatContainer.style.display = 'block';
             if (groupFields) groupFields.style.display = 'none';
             if (totalGamesFields) {
                 totalGamesFields.style.display = 'none';
                 const tg = document.getElementById('total_games');
                 if (tg) tg.required = false;
             }
+            toggleScoringFields();
         }
     }
     
+    function syncManageTabFromHash() {
+        const hash = (window.location.hash || '').toLowerCase();
+        if (hash === '#participants' || hash === '#players') {
+            switchCategoryTab('players');
+            document.getElementById('participants')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else if (hash === '#rules') {
+            switchCategoryTab('rules');
+            document.getElementById('tabContentRules')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    // Category Dates & Spanned Times Management (Item 5)
+    const existingCatDailySchedule = {{ category.daily_schedule | tojson if category.daily_schedule else '{}' }};
+
+    function onManageCatDateChange() {
+        const sInput = document.getElementById('manage_cat_start_date');
+        const eInput = document.getElementById('manage_cat_end_date');
+        if (!sInput || !eInput) return;
+        if (sInput.value && (!eInput.value || eInput.value < sInput.value)) {
+            eInput.value = sInput.value;
+        }
+        eInput.min = sInput.value;
+        renderManageCatDatesBreakdown();
+    }
+
+    function renderManageCatDatesBreakdown() {
+        const sInput = document.getElementById('manage_cat_start_date');
+        const eInput = document.getElementById('manage_cat_end_date');
+        const list = document.getElementById('manageSpannedDatesList');
+        const defaultStart = document.getElementById('manage_cat_start_time')?.value || '09:00';
+        const defaultEnd = document.getElementById('manage_cat_end_time')?.value || '19:00';
+        if (!sInput || !eInput || !list) return;
+
+        if (!sInput.value) {
+            list.innerHTML = '<p style="color: var(--text-muted); font-size: 0.8rem; margin: 0;">Please select start and end dates.</p>';
+            return;
+        }
+
+        const startDate = new Date(sInput.value + 'T00:00:00');
+        const endDate = new Date((eInput.value || sInput.value) + 'T00:00:00');
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return;
+
+        let parsedSchedule = {};
+        if (typeof existingCatDailySchedule === 'string') {
+            try { parsedSchedule = JSON.parse(existingCatDailySchedule); } catch(e) {}
+        } else if (typeof existingCatDailySchedule === 'object' && existingCatDailySchedule !== null) {
+            parsedSchedule = existingCatDailySchedule;
+        }
+
+        let html = '';
+        let dayCount = 1;
+        const cur = new Date(startDate);
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        while (cur <= endDate) {
+            const y = cur.getFullYear();
+            const m = String(cur.getMonth() + 1).padStart(2, '0');
+            const d = String(cur.getDate()).padStart(2, '0');
+            const dateStr = `${y}-${m}-${d}`;
+            const dayLabel = `${dayNames[cur.getDay()]}, ${d} ${monthNames[cur.getMonth()]} ${y}`;
+
+            const curStart = (parsedSchedule[dateStr] && parsedSchedule[dateStr].start) ? parsedSchedule[dateStr].start : defaultStart;
+            const curEnd = (parsedSchedule[dateStr] && parsedSchedule[dateStr].end) ? parsedSchedule[dateStr].end : defaultEnd;
+
+            html += `
+            <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-card); padding: 0.45rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); flex-wrap: wrap; gap: 0.4rem;">
+                <div style="font-weight: 600; font-size: 0.82rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.4rem; min-width: 170px;">
+                    <span style="color: var(--accent-primary); font-size: 0.78rem; font-weight: 700;">Day ${dayCount}:</span>
+                    <span>${dayLabel}</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 0.25rem;">
+                        <label style="font-size: 0.75rem; color: var(--text-muted);">Start:</label>
+                        <input type="time" name="daily_start_${dateStr}" class="form-input manage-daily-start" value="${curStart}" style="padding: 0.2rem 0.4rem; font-size: 0.8rem; width: 105px;">
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.25rem;">
+                        <label style="font-size: 0.75rem; color: var(--text-muted);">End:</label>
+                        <input type="time" name="daily_end_${dateStr}" class="form-input manage-daily-end" value="${curEnd}" style="padding: 0.2rem 0.4rem; font-size: 0.8rem; width: 105px;">
+                    </div>
+                </div>
+            </div>`;
+
+            cur.setDate(cur.getDate() + 1);
+            dayCount++;
+        }
+
+        list.innerHTML = html;
+    }
+
+    function applyManageCatDefaultTimes() {
+        const defaultStart = document.getElementById('manage_cat_start_time')?.value || '09:00';
+        const defaultEnd = document.getElementById('manage_cat_end_time')?.value || '19:00';
+        document.querySelectorAll('.manage-daily-start').forEach(el => el.value = defaultStart);
+        document.querySelectorAll('.manage-daily-end').forEach(el => el.value = defaultEnd);
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         if (document.getElementById('scoring_format')) toggleScoringFields();
         if (document.getElementById('format')) toggleGroupStageFields();
+        syncManageTabFromHash();
+        onManageCatDateChange();
     });
+    window.addEventListener('hashchange', syncManageTabFromHash);
     document.addEventListener('turbo:load', function() {
         if (document.getElementById('scoring_format')) toggleScoringFields();
         if (document.getElementById('format')) toggleGroupStageFields();
+        syncManageTabFromHash();
+        onManageCatDateChange();
     });
 </script>
 {% endblock %}

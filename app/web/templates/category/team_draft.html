@@ -1,0 +1,898 @@
+{% extends "base.html" %}
+
+{% block title %}Team Draft & Tiers - {{ category.name }}{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1400px; margin: 0 auto; padding: 1.5rem 1rem;">
+    <!-- Page Header -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                <span style="font-size: 1.5rem;">🎪</span>
+                <h1 style="margin: 0; font-size: 1.85rem; font-weight: 800; color: var(--text-primary);">
+                    Team Draft & Skill Tiers: {{ category.name }}
+                </h1>
+            </div>
+            <p style="margin: 0; color: var(--text-muted); font-size: 0.95rem;">
+                Organize registered players into skill tiers, form balanced squads (Captains, Vice-Captains & Members), and configure group start times.
+            </p>
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            <a href="{{ url_for('category.manage_category', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-secondary">
+                ⚙️ Category Settings
+            </a>
+            <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-secondary">
+                ← Back to Category
+            </a>
+        </div>
+    </div>
+
+    <!-- Step-by-Step Procedure Wizard -->
+    {% include "components/team_league_wizard.html" %}
+
+    <!-- Dynamic Specs & Calculations Bar -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+            <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.05em;">Registered Players</div>
+            <div style="font-size: 1.6rem; font-weight: 800; color: var(--primary); margin-top: 0.25rem;">
+                {{ total_players }}
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem;">Available in pool</div>
+        </div>
+
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+            <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.05em;">Players per Team (K)</div>
+            <div style="font-size: 1.6rem; font-weight: 800; color: #10b981; margin-top: 0.25rem;">
+                {{ players_per_team }}
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem;">1 Captain, 1 VC, 3 Members</div>
+        </div>
+
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+            <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.05em;">Calculated Teams (N)</div>
+            <div style="font-size: 1.6rem; font-weight: 800; color: #f59e0b; margin-top: 0.25rem;">
+                {{ calculated_teams }}
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem;">Formula: Total ÷ {{ players_per_team }}</div>
+        </div>
+
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+            <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.05em;">Groups Configured (G)</div>
+            <div style="font-size: 1.6rem; font-weight: 800; color: #8b5cf6; margin-top: 0.25rem;">
+                {{ num_groups }} Groups
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem;">{{ teams_per_group }} teams/group</div>
+        </div>
+
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+            <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.05em;">Total Games (T)</div>
+            <div style="font-size: 1.6rem; font-weight: 800; color: #ec4899; margin-top: 0.25rem;">
+                {{ category.total_games or 7 }}
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem;">Tiebreak at {{ ((category.total_games or 7) - 1) // 2 }}–{{ ((category.total_games or 7) - 1) // 2 }} all</div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs Between Stages -->
+    <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 2px solid var(--border-color); padding-bottom: 0.5rem;">
+        <button type="button" class="tab-btn active" id="tabBtnTiers" onclick="switchStage('tiers')" style="background: none; border: none; font-size: 1rem; font-weight: 700; color: var(--primary); padding: 0.5rem 1.25rem; border-bottom: 3px solid var(--primary); cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+            <span>1. Skill Tiers Assignment</span>
+            <span class="badge" style="background: var(--bg-secondary); padding: 0.2rem 0.5rem; border-radius: 9999px; font-size: 0.75rem;">Step 1</span>
+        </button>
+        <button type="button" class="tab-btn" id="tabBtnTeams" onclick="switchStage('teams')" style="background: none; border: none; font-size: 1rem; font-weight: 700; color: var(--text-muted); padding: 0.5rem 1.25rem; border-bottom: 3px solid transparent; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+            <span>2. Team Allocation (Chits / Auto)</span>
+            <span class="badge" style="background: var(--bg-secondary); padding: 0.2rem 0.5rem; border-radius: 9999px; font-size: 0.75rem;">Step 2</span>
+        </button>
+        <button type="button" class="tab-btn" id="tabBtnTimings" onclick="switchStage('timings')" style="background: none; border: none; font-size: 1rem; font-weight: 700; color: var(--text-muted); padding: 0.5rem 1.25rem; border-bottom: 3px solid transparent; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+            <span>3. Group Session Timings</span>
+            <span class="badge" style="background: var(--bg-secondary); padding: 0.2rem 0.5rem; border-radius: 9999px; font-size: 0.75rem;">Step 3</span>
+        </button>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- STAGE 1: SKILL TIERS ASSIGNMENT BOARD -->
+    <!-- ========================================================================= -->
+    <div id="stageTiers" class="stage-section">
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h3 style="margin: 0; font-size: 1.25rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+                        <span>🎯 Sort Players into 5 Skill Tiers</span>
+                    </h3>
+                    <p style="margin: 0.25rem 0 0 0; color: var(--text-muted); font-size: 0.85rem;">
+                        Drag and drop players or tap to assign into Tiers. Each tier should contain exactly <strong>{{ calculated_teams }} players</strong> (1 per team).
+                    </p>
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button type="button" onclick="autoDistributeTiers()" class="btn btn-secondary" style="font-size: 0.85rem;">
+                        ⚡ Quick Fill Tiers Evenly
+                    </button>
+                    <button type="button" onclick="saveTierAssignments()" class="btn btn-primary" style="font-size: 0.85rem; font-weight: 700;">
+                        💾 Save Skill Tiers
+                    </button>
+                </div>
+            </div>
+
+            <!-- Unassigned Pool -->
+            <div style="background: var(--bg-secondary); border: 1px dashed var(--border-color); border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                    <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+                        <span>📥 Unassigned Players Pool</span>
+                        <span id="unassignedCount" style="background: var(--bg-card); padding: 0.15rem 0.6rem; border-radius: 9999px; font-size: 0.8rem; border: 1px solid var(--border-color);">
+                            {{ unassigned_players|length }}
+                        </span>
+                    </div>
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">Tap a player or drag to a tier below</span>
+                </div>
+                <div id="poolContainer" class="drop-target player-chips-container" data-tier="NONE" ondragover="handleDragOver(event)" ondrop="handleDrop(event, 'NONE')" style="display: flex; flex-wrap: wrap; gap: 0.5rem; min-height: 48px; align-items: center;">
+                    {% for p in unassigned_players %}
+                    <div class="player-chip" id="player-chip-{{ p.id }}" draggable="true" ondragstart="handleDragStart(event, {{ p.id }}, '{{ p.name|e }}')" onclick="openTierPickerModal({{ p.id }}, '{{ p.name|e }}')" style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 0.4rem 0.85rem; border-radius: var(--radius-md); font-size: 0.85rem; cursor: grab; display: flex; align-items: center; gap: 0.5rem; user-select: none;">
+                        <span style="font-weight: 600; color: var(--text-primary);">{{ p.name }}</span>
+                        <span style="font-size: 0.75rem; color: var(--text-muted); cursor: pointer;" title="Tap to assign">➕</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- 5 Skill Tiers Columns -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
+                <!-- Tier A (Captains) -->
+                <div class="tier-card" style="background: var(--bg-secondary); border: 2px solid rgba(245, 158, 11, 0.4); border-radius: var(--radius-lg); padding: 1rem; display: flex; flex-direction: column;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 1px solid rgba(245, 158, 11, 0.2); padding-bottom: 0.5rem;">
+                        <div>
+                            <span style="font-size: 0.75rem; text-transform: uppercase; color: #f59e0b; font-weight: 800; letter-spacing: 0.05em;">👑 Tier A</span>
+                            <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);">Captains</div>
+                        </div>
+                        <span id="tierCount-A" class="tier-counter-badge" data-tier="A" data-target="{{ calculated_teams }}" style="padding: 0.2rem 0.5rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3);">
+                            {{ tiers_map['A']|length }} / {{ calculated_teams }}
+                        </span>
+                    </div>
+                    <div id="tierContainer-A" class="drop-target tier-drop-box" data-tier="A" ondragover="handleDragOver(event)" ondrop="handleDrop(event, 'A')" style="display: flex; flex-direction: column; gap: 0.5rem; min-height: 160px; flex-grow: 1;">
+                        {% for t in tiers_map['A'] %}
+                        <div class="player-chip in-tier" id="player-chip-{{ t.player_id }}" draggable="true" ondragstart="handleDragStart(event, {{ t.player_id }}, '{{ t.player.name|e }}')" onclick="openTierPickerModal({{ t.player_id }}, '{{ t.player.name|e }}')" style="background: var(--bg-card); border: 1px solid #f59e0b; padding: 0.45rem 0.75rem; border-radius: var(--radius-md); font-size: 0.85rem; cursor: grab; display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 600; color: var(--text-primary);">{{ t.player.name }}</span>
+                            <span style="font-size: 0.7rem; color: #f59e0b; font-weight: 700;">CAPTAIN</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Tier B (Vice-Captains) -->
+                <div class="tier-card" style="background: var(--bg-secondary); border: 2px solid rgba(16, 185, 129, 0.4); border-radius: var(--radius-lg); padding: 1rem; display: flex; flex-direction: column;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 1px solid rgba(16, 185, 129, 0.2); padding-bottom: 0.5rem;">
+                        <div>
+                            <span style="font-size: 0.75rem; text-transform: uppercase; color: #10b981; font-weight: 800; letter-spacing: 0.05em;">🛡️ Tier B</span>
+                            <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);">Vice-Captains</div>
+                        </div>
+                        <span id="tierCount-B" class="tier-counter-badge" data-tier="B" data-target="{{ calculated_teams }}" style="padding: 0.2rem 0.5rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);">
+                            {{ tiers_map['B']|length }} / {{ calculated_teams }}
+                        </span>
+                    </div>
+                    <div id="tierContainer-B" class="drop-target tier-drop-box" data-tier="B" ondragover="handleDragOver(event)" ondrop="handleDrop(event, 'B')" style="display: flex; flex-direction: column; gap: 0.5rem; min-height: 160px; flex-grow: 1;">
+                        {% for t in tiers_map['B'] %}
+                        <div class="player-chip in-tier" id="player-chip-{{ t.player_id }}" draggable="true" ondragstart="handleDragStart(event, {{ t.player_id }}, '{{ t.player.name|e }}')" onclick="openTierPickerModal({{ t.player_id }}, '{{ t.player.name|e }}')" style="background: var(--bg-card); border: 1px solid #10b981; padding: 0.45rem 0.75rem; border-radius: var(--radius-md); font-size: 0.85rem; cursor: grab; display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 600; color: var(--text-primary);">{{ t.player.name }}</span>
+                            <span style="font-size: 0.7rem; color: #10b981; font-weight: 700;">VC</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Tier C (Squad Member 1) -->
+                <div class="tier-card" style="background: var(--bg-secondary); border: 2px solid rgba(2, 132, 199, 0.4); border-radius: var(--radius-lg); padding: 1rem; display: flex; flex-direction: column;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 1px solid rgba(2, 132, 199, 0.2); padding-bottom: 0.5rem;">
+                        <div>
+                            <span style="font-size: 0.75rem; text-transform: uppercase; color: #0284c7; font-weight: 800; letter-spacing: 0.05em;">🎾 Tier C</span>
+                            <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);">Member 1</div>
+                        </div>
+                        <span id="tierCount-C" class="tier-counter-badge" data-tier="C" data-target="{{ calculated_teams }}" style="padding: 0.2rem 0.5rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; background: rgba(2, 132, 199, 0.15); color: #0284c7; border: 1px solid rgba(2, 132, 199, 0.3);">
+                            {{ tiers_map['C']|length }} / {{ calculated_teams }}
+                        </span>
+                    </div>
+                    <div id="tierContainer-C" class="drop-target tier-drop-box" data-tier="C" ondragover="handleDragOver(event)" ondrop="handleDrop(event, 'C')" style="display: flex; flex-direction: column; gap: 0.5rem; min-height: 160px; flex-grow: 1;">
+                        {% for t in tiers_map['C'] %}
+                        <div class="player-chip in-tier" id="player-chip-{{ t.player_id }}" draggable="true" ondragstart="handleDragStart(event, {{ t.player_id }}, '{{ t.player.name|e }}')" onclick="openTierPickerModal({{ t.player_id }}, '{{ t.player.name|e }}')" style="background: var(--bg-card); border: 1px solid #0284c7; padding: 0.45rem 0.75rem; border-radius: var(--radius-md); font-size: 0.85rem; cursor: grab; display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 600; color: var(--text-primary);">{{ t.player.name }}</span>
+                            <span style="font-size: 0.7rem; color: #0284c7; font-weight: 700;">SLOT C</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Tier D (Squad Member 2) -->
+                <div class="tier-card" style="background: var(--bg-secondary); border: 2px solid rgba(139, 92, 246, 0.4); border-radius: var(--radius-lg); padding: 1rem; display: flex; flex-direction: column;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 1px solid rgba(139, 92, 246, 0.2); padding-bottom: 0.5rem;">
+                        <div>
+                            <span style="font-size: 0.75rem; text-transform: uppercase; color: #8b5cf6; font-weight: 800; letter-spacing: 0.05em;">🎾 Tier D</span>
+                            <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);">Member 2</div>
+                        </div>
+                        <span id="tierCount-D" class="tier-counter-badge" data-tier="D" data-target="{{ calculated_teams }}" style="padding: 0.2rem 0.5rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; background: rgba(139, 92, 246, 0.15); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.3);">
+                            {{ tiers_map['D']|length }} / {{ calculated_teams }}
+                        </span>
+                    </div>
+                    <div id="tierContainer-D" class="drop-target tier-drop-box" data-tier="D" ondragover="handleDragOver(event)" ondrop="handleDrop(event, 'D')" style="display: flex; flex-direction: column; gap: 0.5rem; min-height: 160px; flex-grow: 1;">
+                        {% for t in tiers_map['D'] %}
+                        <div class="player-chip in-tier" id="player-chip-{{ t.player_id }}" draggable="true" ondragstart="handleDragStart(event, {{ t.player_id }}, '{{ t.player.name|e }}')" onclick="openTierPickerModal({{ t.player_id }}, '{{ t.player.name|e }}')" style="background: var(--bg-card); border: 1px solid #8b5cf6; padding: 0.45rem 0.75rem; border-radius: var(--radius-md); font-size: 0.85rem; cursor: grab; display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 600; color: var(--text-primary);">{{ t.player.name }}</span>
+                            <span style="font-size: 0.7rem; color: #8b5cf6; font-weight: 700;">SLOT D</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Tier E (Squad Member 3) -->
+                <div class="tier-card" style="background: var(--bg-secondary); border: 2px solid rgba(236, 72, 153, 0.4); border-radius: var(--radius-lg); padding: 1rem; display: flex; flex-direction: column;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 1px solid rgba(236, 72, 153, 0.2); padding-bottom: 0.5rem;">
+                        <div>
+                            <span style="font-size: 0.75rem; text-transform: uppercase; color: #ec4899; font-weight: 800; letter-spacing: 0.05em;">🎾 Tier E</span>
+                            <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);">Member 3</div>
+                        </div>
+                        <span id="tierCount-E" class="tier-counter-badge" data-tier="E" data-target="{{ calculated_teams }}" style="padding: 0.2rem 0.5rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; background: rgba(236, 72, 153, 0.15); color: #ec4899; border: 1px solid rgba(236, 72, 153, 0.3);">
+                            {{ tiers_map['E']|length }} / {{ calculated_teams }}
+                        </span>
+                    </div>
+                    <div id="tierContainer-E" class="drop-target tier-drop-box" data-tier="E" ondragover="handleDragOver(event)" ondrop="handleDrop(event, 'E')" style="display: flex; flex-direction: column; gap: 0.5rem; min-height: 160px; flex-grow: 1;">
+                        {% for t in tiers_map['E'] %}
+                        <div class="player-chip in-tier" id="player-chip-{{ t.player_id }}" draggable="true" ondragstart="handleDragStart(event, {{ t.player_id }}, '{{ t.player.name|e }}')" onclick="openTierPickerModal({{ t.player_id }}, '{{ t.player.name|e }}')" style="background: var(--bg-card); border: 1px solid #ec4899; padding: 0.45rem 0.75rem; border-radius: var(--radius-md); font-size: 0.85rem; cursor: grab; display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 600; color: var(--text-primary);">{{ t.player.name }}</span>
+                            <span style="font-size: 0.7rem; color: #ec4899; font-weight: 700;">SLOT E</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Proceed to Step 2 Button -->
+            <div style="margin-top: 2rem; display: flex; justify-content: flex-end; gap: 1rem;">
+                <button type="button" onclick="saveAndProceedToTeams()" class="btn btn-primary btn-large" style="display: flex; align-items: center; gap: 0.5rem; font-weight: 700;">
+                    <span>Save Tiers & Proceed to Team Formation</span>
+                    <span>➔</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- STAGE 2: TEAM FORMATION (MANUAL PAPER CHIT DRAW vs AUTO-CREATE) -->
+    <!-- ========================================================================= -->
+    <div id="stageTeams" class="stage-section" style="display: none;">
+        <!-- Formation Mode Switcher -->
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h3 style="margin: 0; font-size: 1.3rem; color: var(--text-primary);">
+                        🛡️ Team Formation Modes
+                    </h3>
+                    <p style="margin: 0.25rem 0 0 0; color: var(--text-muted); font-size: 0.85rem;">
+                        Choose whether to allocate squads manually as paper chits are drawn, or use 1-click instant balanced auto-draft.
+                    </p>
+                </div>
+                <div style="display: flex; gap: 0.5rem; background: var(--bg-secondary); padding: 0.25rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                    <button type="button" id="btnModeManual" onclick="switchTeamMode('manual')" class="btn btn-primary" style="font-size: 0.85rem; font-weight: 700;">
+                        📝 Mode A: Paper Chit Draw
+                    </button>
+                    <button type="button" id="btnModeAuto" onclick="switchTeamMode('auto')" class="btn btn-secondary" style="font-size: 0.85rem; font-weight: 700;">
+                        🎲 Mode B: 1-Click Auto-Draft
+                    </button>
+                </div>
+            </div>
+
+            <!-- MODE A: MANUAL PAPER CHIT DRAW FORM -->
+            <div id="modeManualView">
+                <div style="background: rgba(2, 132, 199, 0.08); border-left: 4px solid var(--primary); padding: 1rem 1.25rem; border-radius: var(--radius-sm); margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <div style="font-weight: 700; color: var(--primary); font-size: 0.95rem;">
+                            📋 Live Ballot Chit Workflow (By Category / Tier):
+                        </div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                            Select players for each team from their respective category:
+                            <strong>Category A</strong> (Captains), <strong>Category B</strong> (Vice-Captains), and <strong>Categories C, D, E</strong> (Squad Members). Each player can only be assigned to one team.
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <button type="button" onclick="autoDistributeAndSync()" class="btn btn-secondary" style="font-size: 0.85rem; font-weight: 600;">
+                            ⚡ Auto-Assign Categories &amp; Fill Dropdowns
+                        </button>
+                        <button type="button" onclick="switchStage('tiers')" class="btn btn-secondary" style="font-size: 0.85rem;">
+                            ← Edit Categories in Step 1
+                        </button>
+                    </div>
+                </div>
+
+                <form id="manualTeamsForm" method="POST" action="{{ url_for('category.create_manual_teams', slug=tournament.url_slug, category_id=category.id) }}">
+                    <input type="hidden" name="num_teams" value="{{ calculated_teams }}">
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
+                        {% for i in range(1, calculated_teams + 1) %}
+                        {% set existing_team = teams[i - 1] if teams|length >= i else None %}
+                        {% set members = existing_team.team_members if existing_team else [] %}
+                        {% set ns = namespace(captain=None, vc=None, c=None, d=None, e=None) %}
+                        {% for m in members %}
+                            {% if m.role == 'captain' or m.tier == 'A' or m.roster_order == 1 %}{% set ns.captain = m.player_id %}{% endif %}
+                            {% if m.role == 'vice_captain' or m.tier == 'B' or m.roster_order == 2 %}{% set ns.vc = m.player_id %}{% endif %}
+                            {% if m.tier == 'C' or m.roster_order == 3 %}{% set ns.c = m.player_id %}{% endif %}
+                            {% if m.tier == 'D' or m.roster_order == 4 %}{% set ns.d = m.player_id %}{% endif %}
+                            {% if m.tier == 'E' or m.roster_order == 5 %}{% set ns.e = m.player_id %}{% endif %}
+                        {% endfor %}
+                        <div class="team-setup-card" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <input type="text" name="team_{{ i }}_name" value="{{ existing_team.name if existing_team else 'Team ' ~ i }}" placeholder="Team Name" style="font-weight: 800; font-size: 1.1rem; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.35rem 0.65rem; width: 70%;">
+                                <span style="font-size: 0.75rem; background: var(--bg-card); padding: 0.2rem 0.5rem; border-radius: 9999px; color: var(--text-muted); border: 1px solid var(--border-color);">
+                                    Team #{{ i }}
+                                </span>
+                            </div>
+
+                            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                <!-- Captain (Category / Tier A) -->
+                                <div>
+                                    <label style="font-size: 0.78rem; font-weight: 700; color: #f59e0b; display: flex; align-items: center; gap: 0.3rem; margin-bottom: 0.25rem;">
+                                        <span>👑 Captain (Category A) *</span>
+                                    </label>
+                                    <select name="team_{{ i }}_captain" class="form-select chit-select" data-tier="A" onchange="updateChitDropdownAvailability()" required style="width: 100%; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.5rem; font-size: 0.9rem;">
+                                        <option value="">-- Draw Chit for Captain (Category A) --</option>
+                                        {% for t in tiers_map['A'] %}
+                                        <option value="{{ t.player_id }}" {% if ns.captain == t.player_id %}selected{% endif %}>{{ t.player.name }}</option>
+                                        {% else %}
+                                            {% for p in unassigned_players %}
+                                            <option value="{{ p.id }}" {% if ns.captain == p.id %}selected{% endif %}>{{ p.name }}</option>
+                                            {% endfor %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <!-- Vice-Captain (Category / Tier B) -->
+                                <div>
+                                    <label style="font-size: 0.78rem; font-weight: 700; color: #10b981; display: flex; align-items: center; gap: 0.3rem; margin-bottom: 0.25rem;">
+                                        <span>🛡️ Vice-Captain (Category B) *</span>
+                                    </label>
+                                    <select name="team_{{ i }}_vc" class="form-select chit-select" data-tier="B" onchange="updateChitDropdownAvailability()" required style="width: 100%; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.5rem; font-size: 0.9rem;">
+                                        <option value="">-- Draw Chit for VC (Category B) --</option>
+                                        {% for t in tiers_map['B'] %}
+                                        <option value="{{ t.player_id }}" {% if ns.vc == t.player_id %}selected{% endif %}>{{ t.player.name }}</option>
+                                        {% else %}
+                                            {% for p in unassigned_players %}
+                                            <option value="{{ p.id }}" {% if ns.vc == p.id %}selected{% endif %}>{{ p.name }}</option>
+                                            {% endfor %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <!-- Member C (Category / Tier C) -->
+                                <div>
+                                    <label style="font-size: 0.78rem; font-weight: 700; color: #0284c7; display: flex; align-items: center; gap: 0.3rem; margin-bottom: 0.25rem;">
+                                        <span>🎾 Squad Member 1 (Category C) *</span>
+                                    </label>
+                                    <select name="team_{{ i }}_c" class="form-select chit-select" data-tier="C" onchange="updateChitDropdownAvailability()" required style="width: 100%; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.5rem; font-size: 0.9rem;">
+                                        <option value="">-- Draw Chit for Member 1 (Category C) --</option>
+                                        {% for t in tiers_map['C'] %}
+                                        <option value="{{ t.player_id }}" {% if ns.c == t.player_id %}selected{% endif %}>{{ t.player.name }}</option>
+                                        {% else %}
+                                            {% for p in unassigned_players %}
+                                            <option value="{{ p.id }}" {% if ns.c == p.id %}selected{% endif %}>{{ p.name }}</option>
+                                            {% endfor %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <!-- Member D (Category / Tier D) -->
+                                <div>
+                                    <label style="font-size: 0.78rem; font-weight: 700; color: #8b5cf6; display: flex; align-items: center; gap: 0.3rem; margin-bottom: 0.25rem;">
+                                        <span>🎾 Squad Member 2 (Category D) *</span>
+                                    </label>
+                                    <select name="team_{{ i }}_d" class="form-select chit-select" data-tier="D" onchange="updateChitDropdownAvailability()" required style="width: 100%; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.5rem; font-size: 0.9rem;">
+                                        <option value="">-- Draw Chit for Member 2 (Category D) --</option>
+                                        {% for t in tiers_map['D'] %}
+                                        <option value="{{ t.player_id }}" {% if ns.d == t.player_id %}selected{% endif %}>{{ t.player.name }}</option>
+                                        {% else %}
+                                            {% for p in unassigned_players %}
+                                            <option value="{{ p.id }}" {% if ns.d == p.id %}selected{% endif %}>{{ p.name }}</option>
+                                            {% endfor %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <!-- Member E (Category / Tier E) -->
+                                <div>
+                                    <label style="font-size: 0.78rem; font-weight: 700; color: #ec4899; display: flex; align-items: center; gap: 0.3rem; margin-bottom: 0.25rem;">
+                                        <span>🎾 Squad Member 3 (Category E) *</span>
+                                    </label>
+                                    <select name="team_{{ i }}_e" class="form-select chit-select" data-tier="E" onchange="updateChitDropdownAvailability()" required style="width: 100%; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.5rem; font-size: 0.9rem;">
+                                        <option value="">-- Draw Chit for Member 3 (Category E) --</option>
+                                        {% for t in tiers_map['E'] %}
+                                        <option value="{{ t.player_id }}" {% if ns.e == t.player_id %}selected{% endif %}>{{ t.player.name }}</option>
+                                        {% else %}
+                                            {% for p in unassigned_players %}
+                                            <option value="{{ p.id }}" {% if ns.e == p.id %}selected{% endif %}>{{ p.name }}</option>
+                                            {% endfor %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+                        <button type="submit" class="btn btn-primary btn-large" style="font-weight: 700;">
+                            💾 Save Ballot Chit Teams
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- MODE B: AUTO-CREATE TEAMS -->
+            <div id="modeAutoView" style="display: none;">
+                <div style="background: rgba(16, 185, 129, 0.08); border-left: 4px solid #10b981; padding: 1.25rem; border-radius: var(--radius-sm); margin-bottom: 1.5rem;">
+                    <div style="font-weight: 800; color: #10b981; font-size: 1.05rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <span>🎲 1-Click Instant Balanced Team Draft</span>
+                    </div>
+                    <p style="font-size: 0.9rem; color: var(--text-secondary); margin: 0.5rem 0 0 0;">
+                        The system will randomly and fairly draft exactly 1 player from Tier A (Captain), 1 from Tier B (VC), 1 from Tier C, 1 from Tier D, and 1 from Tier E into each of the {{ calculated_teams }} teams.
+                    </p>
+                </div>
+
+                <div style="text-align: center; padding: 2rem 1rem;">
+                    <form method="POST" action="{{ url_for('category.auto_create_teams_endpoint', slug=tournament.url_slug, category_id=category.id) }}">
+                        <button type="submit" class="btn btn-primary btn-large" style="font-size: 1.2rem; padding: 0.9rem 2rem; border-radius: var(--radius-md); font-weight: 800; box-shadow: 0 4px 16px rgba(2, 132, 199, 0.4);">
+                            🎲 Draft {{ calculated_teams }} Balanced Teams Now
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Current Formed Teams Preview -->
+        {% if teams %}
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h4 style="margin: 0; font-size: 1.15rem; color: var(--text-primary);">
+                    🛡️ Formed Teams ({{ teams|length }} Teams)
+                </h4>
+                <form method="POST" action="{{ url_for('category.reset_teams', slug=tournament.url_slug, category_id=category.id) }}" onsubmit="return confirm('Reset all teams? This will clear team allocations.');">
+                    <button type="submit" class="btn btn-secondary" style="font-size: 0.8rem; color: #ef4444;">
+                        ✕ Reset Teams
+                    </button>
+                </form>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+                {% for team in teams %}
+                <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem;">
+                    <div style="font-weight: 800; font-size: 1.05rem; color: var(--text-primary); margin-bottom: 0.5rem; display: flex; justify-content: space-between;">
+                        <span>{{ team.name }}</span>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">5 Players</span>
+                    </div>
+                    <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.85rem;">
+                        {% for m in team.team_members|sort(attribute='roster_order') %}
+                        <li style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); padding: 0.3rem 0.6rem; border-radius: var(--radius-sm);">
+                            <span style="color: var(--text-primary); font-weight: 500;">{{ m.player.name }}</span>
+                            <span style="font-size: 0.7rem; font-weight: 700; color: {% if m.role == 'captain' %}#f59e0b{% elif m.role == 'vice_captain' %}#10b981{% else %}var(--text-muted){% endif %};">
+                                {{ m.role|upper|replace('_', ' ') }}
+                            </span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- STAGE 3: GROUP SESSION TIMINGS & ASSIGNED COURTS -->
+    <!-- ========================================================================= -->
+    <div id="stageTimings" class="stage-section" style="display: none;">
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1.5rem;">
+            <div style="margin-bottom: 1.25rem;">
+                <h3 style="margin: 0; font-size: 1.25rem; color: var(--text-primary);">
+                    ⏰ Group-Wise Staggered Session Start Timings
+                </h3>
+                <p style="margin: 0.25rem 0 0 0; color: var(--text-muted); font-size: 0.85rem;">
+                    Specify when each group starts playing to avoid player congestion. TourneyPro's Order of Play scheduler automatically distributes fixtures according to these windows.
+                </p>
+            </div>
+
+            <form method="POST" action="{{ url_for('category.update_group_timings', slug=tournament.url_slug, category_id=category.id) }}">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
+                    {% for g in groups %}
+                    <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem;">
+                        <div style="font-weight: 800; font-size: 1.1rem; color: var(--text-primary); margin-bottom: 0.75rem;">
+                            {{ g.name }}
+                        </div>
+                        <div style="margin-bottom: 0.75rem;">
+                            <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">
+                                Session Start Time (e.g. 09:00, 11:30)
+                            </label>
+                            <input type="text" name="start_time_{{ g.id }}" value="{{ g.start_time or '' }}" placeholder="09:00" class="form-input" style="width: 100%; padding: 0.45rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-sm); color: var(--text-primary);">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">
+                                Assigned Courts (comma-separated)
+                            </label>
+                            <input type="text" name="assigned_courts_{{ g.id }}" value="{{ g.assigned_courts or '' }}" placeholder="Court 1, Court 2, Court 3" class="form-input" style="width: 100%; padding: 0.45rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-sm); color: var(--text-primary);">
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div style="display: flex; justify-content: flex-end;">
+                    <button type="submit" class="btn btn-primary" style="font-weight: 700;">
+                        💾 Save Group Session Timings
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Launch Category Action -->
+        {% if category.status == 'setup' %}
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.5rem; text-align: center;">
+            <h4 style="margin: 0 0 0.5rem 0; font-size: 1.15rem; color: var(--text-primary);">
+                🚀 Ready to Start Tournament?
+            </h4>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;">
+                This will generate the 3-rubber team fixtures and schedule all matches into the Order of Play.
+            </p>
+            <form method="POST" action="{{ url_for('category.manage_category', slug=tournament.url_slug, category_id=category.id) }}">
+                <input type="hidden" name="action" value="start_category">
+                <button type="submit" class="btn btn-primary btn-large" style="font-size: 1.1rem; padding: 0.8rem 2rem; font-weight: 800;" onclick="return confirm('Start category and generate fixtures?');">
+                    🎾 Generate Fixtures & Order of Play ➔
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Quick Tap Modal for Mobile / Direct Assignment -->
+<div id="tierPickerModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center; padding: 1rem;">
+    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.5rem; max-width: 400px; width: 100%; box-shadow: 0 8px 32px rgba(0,0,0,0.5);">
+        <h4 id="pickerPlayerName" style="margin: 0 0 0.5rem 0; font-size: 1.1rem; color: var(--text-primary);">Assign Player</h4>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">Select a skill tier for this player:</p>
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem;">
+            <button type="button" onclick="assignPickedPlayerToTier('A')" class="btn" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid #f59e0b; text-align: left; font-weight: 700;">
+                👑 Tier A (Captains)
+            </button>
+            <button type="button" onclick="assignPickedPlayerToTier('B')" class="btn" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid #10b981; text-align: left; font-weight: 700;">
+                🛡️ Tier B (Vice-Captains)
+            </button>
+            <button type="button" onclick="assignPickedPlayerToTier('C')" class="btn" style="background: rgba(2, 132, 199, 0.15); color: #0284c7; border: 1px solid #0284c7; text-align: left; font-weight: 700;">
+                🎾 Tier C (Squad Member 1)
+            </button>
+            <button type="button" onclick="assignPickedPlayerToTier('D')" class="btn" style="background: rgba(139, 92, 246, 0.15); color: #8b5cf6; border: 1px solid #8b5cf6; text-align: left; font-weight: 700;">
+                🎾 Tier D (Squad Member 2)
+            </button>
+            <button type="button" onclick="assignPickedPlayerToTier('E')" class="btn" style="background: rgba(236, 72, 153, 0.15); color: #ec4899; border: 1px solid #ec4899; text-align: left; font-weight: 700;">
+                🎾 Tier E (Squad Member 3)
+            </button>
+            <button type="button" onclick="assignPickedPlayerToTier('NONE')" class="btn btn-secondary" style="text-align: left;">
+                ↩ Unassign (Move back to pool)
+            </button>
+        </div>
+        <button type="button" onclick="closeTierPickerModal()" class="btn btn-secondary" style="width: 100%;">
+            Cancel
+        </button>
+    </div>
+</div>
+
+<script>
+let draggedPlayerId = null;
+let draggedPlayerName = "";
+let selectedPlayerForModal = null;
+
+function switchStage(stage) {
+    document.querySelectorAll('.stage-section').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.style.color = 'var(--text-muted)';
+        btn.style.borderBottomColor = 'transparent';
+    });
+
+    try {
+        history.replaceState(null, null, '#' + stage);
+    } catch (e) {}
+
+    if (stage === 'tiers') {
+        document.getElementById('stageTiers').style.display = 'block';
+        document.getElementById('tabBtnTiers').style.color = 'var(--primary)';
+        document.getElementById('tabBtnTiers').style.borderBottomColor = 'var(--primary)';
+    } else if (stage === 'teams') {
+        document.getElementById('stageTeams').style.display = 'block';
+        document.getElementById('tabBtnTeams').style.color = 'var(--primary)';
+        document.getElementById('tabBtnTeams').style.borderBottomColor = 'var(--primary)';
+        populateChitDropdownsFromDOM();
+        updateChitDropdownAvailability();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (stage === 'timings') {
+        document.getElementById('stageTimings').style.display = 'block';
+        document.getElementById('tabBtnTimings').style.color = 'var(--primary)';
+        document.getElementById('tabBtnTimings').style.borderBottomColor = 'var(--primary)';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
+function switchTeamMode(mode) {
+    if (mode === 'manual') {
+        document.getElementById('modeManualView').style.display = 'block';
+        document.getElementById('modeAutoView').style.display = 'none';
+        document.getElementById('btnModeManual').className = 'btn btn-primary';
+        document.getElementById('btnModeAuto').className = 'btn btn-secondary';
+    } else {
+        document.getElementById('modeManualView').style.display = 'none';
+        document.getElementById('modeAutoView').style.display = 'block';
+        document.getElementById('btnModeManual').className = 'btn btn-secondary';
+        document.getElementById('btnModeAuto').className = 'btn btn-primary';
+    }
+}
+
+// Drag & Drop Handlers
+function handleDragStart(e, playerId, playerName) {
+    draggedPlayerId = playerId;
+    draggedPlayerName = playerName;
+    e.dataTransfer.setData('text/plain', playerId);
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+}
+
+function handleDrop(e, targetTier) {
+    e.preventDefault();
+    if (!draggedPlayerId) return;
+    movePlayerToTier(draggedPlayerId, targetTier);
+    draggedPlayerId = null;
+}
+
+function movePlayerToTier(playerId, targetTier) {
+    const chip = document.getElementById(`player-chip-${playerId}`);
+    if (!chip) return;
+
+    if (targetTier === 'NONE') {
+        document.getElementById('poolContainer').appendChild(chip);
+        chip.className = 'player-chip';
+        chip.style.borderColor = 'var(--border-color)';
+    } else {
+        const targetContainer = document.getElementById(`tierContainer-${targetTier}`);
+        if (targetContainer) {
+            targetContainer.appendChild(chip);
+            chip.className = 'player-chip in-tier';
+            const colors = { 'A': '#f59e0b', 'B': '#10b981', 'C': '#0284c7', 'D': '#8b5cf6', 'E': '#ec4899' };
+            chip.style.borderColor = colors[targetTier] || 'var(--primary)';
+        }
+    }
+    updateCounters();
+    populateChitDropdownsFromDOM();
+}
+
+function openTierPickerModal(playerId, playerName) {
+    selectedPlayerForModal = playerId;
+    document.getElementById('pickerPlayerName').textContent = playerName;
+    document.getElementById('tierPickerModal').style.display = 'flex';
+}
+
+function closeTierPickerModal() {
+    document.getElementById('tierPickerModal').style.display = 'none';
+    selectedPlayerForModal = null;
+}
+
+function assignPickedPlayerToTier(tier) {
+    if (selectedPlayerForModal) {
+        movePlayerToTier(selectedPlayerForModal, tier);
+    }
+    closeTierPickerModal();
+}
+
+function updateCounters() {
+    ['A', 'B', 'C', 'D', 'E'].forEach(tier => {
+        const count = document.getElementById(`tierContainer-${tier}`).children.length;
+        const badge = document.getElementById(`tierCount-${tier}`);
+        const target = parseInt(badge.getAttribute('data-target')) || 0;
+        badge.textContent = `${count} / ${target}`;
+        if (count === target) {
+            badge.style.background = 'rgba(16, 185, 129, 0.2)';
+            badge.style.color = '#10b981';
+            badge.style.borderColor = '#10b981';
+        } else {
+            badge.style.background = '';
+            badge.style.color = '';
+            badge.style.borderColor = '';
+        }
+    });
+    const poolCount = document.getElementById('poolContainer').children.length;
+    document.getElementById('unassignedCount').textContent = poolCount;
+}
+
+function autoDistributeTiers() {
+    const chips = Array.from(document.querySelectorAll('.player-chip'));
+    const tiers = ['A', 'B', 'C', 'D', 'E'];
+    const targetPerTier = {{ calculated_teams }};
+
+    let chipIdx = 0;
+    tiers.forEach(tier => {
+        const container = document.getElementById(`tierContainer-${tier}`);
+        while (container.children.length < targetPerTier && chipIdx < chips.length) {
+            const chip = chips[chipIdx++];
+            container.appendChild(chip);
+            const colors = { 'A': '#f59e0b', 'B': '#10b981', 'C': '#0284c7', 'D': '#8b5cf6', 'E': '#ec4899' };
+            chip.style.borderColor = colors[tier];
+        }
+    });
+    updateCounters();
+    populateChitDropdownsFromDOM();
+}
+
+function autoDistributeAndSync() {
+    autoDistributeTiers();
+    saveAndProceedToTeams();
+}
+
+function populateChitDropdownsFromDOM() {
+    const tiers = ['A', 'B', 'C', 'D', 'E'];
+    const tierLabels = {
+        'A': 'Captain (Category A)',
+        'B': 'VC (Category B)',
+        'C': 'Member 1 (Category C)',
+        'D': 'Member 2 (Category D)',
+        'E': 'Member 3 (Category E)'
+    };
+
+    tiers.forEach(tier => {
+        const container = document.getElementById(`tierContainer-${tier}`);
+        const domPlayers = [];
+        if (container) {
+            Array.from(container.children).forEach(chip => {
+                const pid = chip.id.replace('player-chip-', '');
+                const nameSpan = chip.querySelector('span:first-child');
+                const name = nameSpan ? nameSpan.textContent.trim() : chip.textContent.trim();
+                if (pid && name) {
+                    domPlayers.push({ id: pid, name: name });
+                }
+            });
+        }
+
+        const selects = document.querySelectorAll(`.chit-select[data-tier="${tier}"]`);
+        selects.forEach(select => {
+            const currentSelectedVal = select.value;
+            if (domPlayers.length > 0) {
+                const existingOptionValues = Array.from(select.options).map(o => o.value).filter(v => v);
+                const domIds = domPlayers.map(p => p.id);
+                const isMatch = existingOptionValues.length === domIds.length && existingOptionValues.every(id => domIds.includes(id));
+                if (!isMatch) {
+                    select.innerHTML = `<option value="">-- Draw Chit for ${tierLabels[tier]} --</option>`;
+                    domPlayers.forEach(p => {
+                        const opt = document.createElement('option');
+                        opt.value = p.id;
+                        opt.textContent = p.name;
+                        if (p.id === currentSelectedVal) {
+                            opt.selected = true;
+                        }
+                        select.appendChild(opt);
+                    });
+                }
+            }
+        });
+    });
+
+    updateChitDropdownAvailability();
+}
+
+function saveTierAssignments() {
+    const assignments = [];
+    ['A', 'B', 'C', 'D', 'E'].forEach(tier => {
+        const container = document.getElementById(`tierContainer-${tier}`);
+        Array.from(container.children).forEach(chip => {
+            const pid = chip.id.replace('player-chip-', '');
+            const role = tier === 'A' ? 'captain' : (tier === 'B' ? 'vice_captain' : 'player');
+            assignments.push({ player_id: parseInt(pid), tier: tier, role: role });
+        });
+    });
+
+    if (assignments.length === 0) {
+        alert("Please assign players to tiers before saving.");
+        return;
+    }
+
+    fetch("{{ url_for('category.assign_player_tiers', slug=tournament.url_slug, category_id=category.id) }}", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assignments: assignments })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alert("✓ Skill Categories / Tiers saved successfully!");
+            window.location.hash = 'tiers';
+            location.reload();
+        } else {
+            alert("Error: " + (data.error || "Failed to save tiers"));
+        }
+    })
+    .catch(err => {
+        alert("Network error saving tiers.");
+    });
+}
+
+function saveAndProceedToTeams() {
+    const assignments = [];
+    ['A', 'B', 'C', 'D', 'E'].forEach(tier => {
+        const container = document.getElementById(`tierContainer-${tier}`);
+        Array.from(container.children).forEach(chip => {
+            const pid = chip.id.replace('player-chip-', '');
+            const role = tier === 'A' ? 'captain' : (tier === 'B' ? 'vice_captain' : 'player');
+            assignments.push({ player_id: parseInt(pid), tier: tier, role: role });
+        });
+    });
+
+    if (assignments.length > 0) {
+        fetch("{{ url_for('category.assign_player_tiers', slug=tournament.url_slug, category_id=category.id) }}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ assignments: assignments })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                window.location.hash = 'teams';
+                window.location.reload();
+            } else {
+                populateChitDropdownsFromDOM();
+                switchStage('teams');
+            }
+        })
+        .catch(() => {
+            populateChitDropdownsFromDOM();
+            switchStage('teams');
+        });
+    } else {
+        populateChitDropdownsFromDOM();
+        switchStage('teams');
+    }
+}
+
+// Client-side Duplicate Prevention for Manual Ballot Chit Draw
+function updateChitDropdownAvailability() {
+    const selects = Array.from(document.querySelectorAll('.chit-select'));
+    const selectedValues = new Set();
+
+    selects.forEach(s => {
+        if (s.value) {
+            selectedValues.add(s.value);
+        }
+    });
+
+    selects.forEach(s => {
+        const currentVal = s.value;
+        Array.from(s.options).forEach(opt => {
+            if (opt.value && opt.value !== currentVal) {
+                if (selectedValues.has(opt.value)) {
+                    opt.disabled = true;
+                    opt.textContent = opt.textContent.replace(' (Assigned)', '') + ' (Assigned)';
+                } else {
+                    opt.disabled = false;
+                    opt.textContent = opt.textContent.replace(' (Assigned)', '');
+                }
+            }
+        });
+    });
+}
+
+function syncStageFromHash() {
+    const hash = (window.location.hash || '').toLowerCase();
+    if (hash === '#teams' || hash === '#stageteams') {
+        switchStage('teams');
+    } else if (hash === '#timings' || hash === '#stagetimings') {
+        switchStage('timings');
+    } else if (hash === '#tiers' || hash === '#stagetiers') {
+        switchStage('tiers');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    updateCounters();
+    populateChitDropdownsFromDOM();
+    updateChitDropdownAvailability();
+    syncStageFromHash();
+});
+
+window.addEventListener('hashchange', syncStageFromHash);
+</script>
+{% endblock %}

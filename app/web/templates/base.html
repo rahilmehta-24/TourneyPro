@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{% block title %}Tournament Platform{% endblock %}</title>
     <script>
         // Check for saved theme preference, otherwise use system preference
@@ -13,6 +14,51 @@
         } else if (!savedTheme && window.matchMedia('(prefers-color-scheme: light)').matches) {
             document.documentElement.setAttribute('data-theme', 'light');
         }
+
+        // Automatic CSRF token injector for Turbo, fetch, and native forms
+        document.addEventListener('turbo:before-fetch-request', function(event) {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            if (csrfToken) {
+                event.detail.fetchOptions.headers['X-CSRFToken'] = csrfToken;
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            if (!csrfToken) return;
+
+            function injectCsrfIntoForms() {
+                document.querySelectorAll('form[method="POST"], form[method="post"]').forEach(function(form) {
+                    if (!form.querySelector('input[name="csrf_token"]')) {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'csrf_token';
+                        input.value = csrfToken;
+                        form.appendChild(input);
+                    }
+                });
+            }
+
+            injectCsrfIntoForms();
+            document.addEventListener('turbo:render', injectCsrfIntoForms);
+            document.addEventListener('turbo:frame-load', injectCsrfIntoForms);
+
+            // Hook native fetch
+            const originalFetch = window.fetch;
+            window.fetch = function(url, options = {}) {
+                if (options.method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(options.method.toUpperCase())) {
+                    options.headers = options.headers || {};
+                    if (options.headers instanceof Headers) {
+                        if (!options.headers.has('X-CSRFToken')) options.headers.append('X-CSRFToken', csrfToken);
+                    } else if (Array.isArray(options.headers)) {
+                        options.headers.push(['X-CSRFToken', csrfToken]);
+                    } else {
+                        options.headers['X-CSRFToken'] = csrfToken;
+                    }
+                }
+                return originalFetch(url, options);
+            };
+        });
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,7 +68,7 @@
     <noscript>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     </noscript>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2.3">
     <!-- Turbo.js for instant page navigation -->
     <script type="module" src="https://unpkg.com/@hotwired/turbo@8.0.4/dist/turbo.es2017-umd.js"></script>
     {% block extra_css %}{% endblock %}
@@ -336,6 +382,10 @@
                     document.documentElement.setAttribute('data-theme', newTheme);
                     localStorage.setItem('tourneypro-theme', newTheme);
                     updateThemeDisplay(newTheme);
+                    window.dispatchEvent(new CustomEvent('tourneypro:themechange', { detail: { theme: newTheme } }));
+                    if (typeof renderBracketConnectors === 'function') {
+                        requestAnimationFrame(renderBracketConnectors);
+                    }
                 };
 
                 const themeButtons = document.querySelectorAll('#themeToggleBtn, #profilePageThemeBtn');
@@ -388,9 +438,11 @@
                 
                 // Selectors for elements that display scores, brackets, standings, or match schedules
                 const containersToUpdate = [
-                    '.bracket',
-                    '.groups-section',
-                    '.group-standings-section',
+                    '.round-matches',
+                    '.standings-table',
+                    '.group-fixtures-container',
+                    '.group-stage-status-banner',
+                    '.matches-list',
                     '.category-grid',
                     '.overall-leaderboard',
                     '.podium-container',
@@ -413,6 +465,12 @@
                     // Don't refresh while user has an input, textarea, or select focused
                     const active = document.activeElement;
                     if (active && ['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName)) return true;
+
+                    // Don't refresh while user has modified unsaved scores in the grid matrix
+                    const matrixInputs = document.querySelectorAll('#group-matrix-form input[type="number"]');
+                    for (let i = 0; i < matrixInputs.length; i++) {
+                        if (matrixInputs[i].value !== matrixInputs[i].defaultValue) return true;
+                    }
                     return false;
                 }
 
@@ -487,6 +545,14 @@
                         // Re-evaluate client schedule filters (session, search, category) after live update
                         if (typeof window.applyScheduleFilters === 'function') {
                             window.applyScheduleFilters();
+                        }
+                        // Re-evaluate active group tab after live update
+                        if (typeof window.reapplyActiveGroupView === 'function') {
+                            window.reapplyActiveGroupView();
+                        }
+                        // Re-render bracket connectors if bracket rounds were updated or connectors missing
+                        if (typeof window.renderBracketConnectors === 'function') {
+                            window.renderBracketConnectors();
                         }
                     } catch (err) {
                         // Silent fail for network glitches

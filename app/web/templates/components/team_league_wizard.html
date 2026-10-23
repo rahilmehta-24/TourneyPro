@@ -1,0 +1,329 @@
+<!-- Step-by-Step Procedure Wizard: Sequential Pipeline with No-Backtracking Lock -->
+{% set players_count = total_players or (participants|length) or 0 %}
+{% set teams_count = (teams|length) if teams is defined and teams else (participants | selectattr('team_members') | list | length if participants is defined else 0) %}
+{% set has_teams = (teams_count and teams_count > 0) %}
+{% set is_started = (category.status in ['in_progress', 'completed']) %}
+
+{# Calculate current active step in the sequential lifecycle #}
+{% if not has_teams %}
+    {% if players_count == 0 %}
+        {% set current_step = 1 %}
+    {% elif tiers_map is defined and calculated_teams is defined and (tiers_map['A']|length < calculated_teams) %}
+        {% set current_step = 2 %}
+    {% else %}
+        {% set current_step = 3 %}
+    {% endif %}
+{% elif not is_started %}
+    {% set current_step = 4 %}
+{% else %}
+    {% set ns_lineups = namespace(pending=false) %}
+    {% if matches is defined %}
+        {% for m in matches %}
+            {% if m.match_type == 'rubber' and (not m.p1_player1_id or not m.p2_player1_id) %}
+                {% set ns_lineups.pending = true %}
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+    {% if ns_lineups.pending %}
+        {% set current_step = 5 %}
+    {% else %}
+        {% set current_step = 6 %}
+    {% endif %}
+{% endif %}
+
+<div class="team-wizard-container" {% if not hide_wizard_outer %}style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 16px rgba(0,0,0,0.15);"{% endif %}>
+    {% if not hide_wizard_header %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <span style="font-size: 1.5rem;">📋</span>
+            <div>
+                <h4 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text-primary); letter-spacing: 0.02em;">
+                    Team League Workflow: Step-by-Step Procedure
+                </h4>
+                <p style="margin: 0.2rem 0 0; font-size: 0.8rem; color: var(--text-muted);">
+                    Linear tournament lifecycle: Step 1 ➔ Step 6. Once teams are created, initial draft steps are locked.
+                </p>
+            </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 0.78rem; font-weight: 700; color: var(--accent-primary); background: rgba(249, 115, 22, 0.12); border: 1px solid rgba(249, 115, 22, 0.3); padding: 0.25rem 0.65rem; border-radius: 9999px;">
+                Current Stage: Step {{ current_step }} of 6
+            </span>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Top Stepper Pipeline Breadcrumb -->
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; overflow-x: auto; padding: 0.5rem 0.25rem; gap: 0.5rem;">
+        {% set step_titles = [
+            ('1', 'Players'),
+            ('2', 'Skill Tiers'),
+            ('3', 'Formation'),
+            ('4', 'Groups & Times'),
+            ('5', 'Lineup Slips'),
+            ('6', 'Play & Score')
+        ] %}
+        {% for num_str, title in step_titles %}
+            {% set s_num = num_str|int %}
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
+                <div style="display: flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.75rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 700; transition: all 0.2s;
+                    {% if s_num < current_step or (has_teams and s_num <= 3) %}
+                        background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4);
+                    {% elif s_num == current_step %}
+                        background: rgba(249, 115, 22, 0.2); color: #f97316; border: 2px solid #f97316; box-shadow: 0 0 10px rgba(249, 115, 22, 0.3);
+                    {% else %}
+                        background: var(--bg-secondary); color: var(--text-muted); border: 1px solid var(--border-color); opacity: 0.65;
+                    {% endif %}">
+                    <span>
+                        {% if s_num < current_step or (has_teams and s_num <= 3) %}✓{% else %}{{ s_num }}{% endif %}
+                    </span>
+                    <span>{{ title }}</span>
+                </div>
+                {% if not loop.last %}
+                <span style="color: var(--text-muted); font-size: 0.85rem; opacity: 0.5;">➔</span>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Sequential Stepper Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; position: relative;">
+        
+        <!-- STEP 1: PLAYER REGISTRATION -->
+        {% set s1_done = (has_teams or players_count >= 5) %}
+        {% set s1_active = (current_step == 1) %}
+        <div style="background: var(--bg-secondary); border: {% if s1_active %}2px solid #3b82f6{% elif s1_done %}1px solid rgba(16, 185, 129, 0.3){% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between; {% if has_teams %}opacity: 0.85;{% endif %}">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: {% if s1_done %}#10b981{% else %}#3b82f6{% endif %}; letter-spacing: 0.05em;">
+                        Step 1
+                    </span>
+                    {% if has_teams %}
+                        <span style="font-size: 0.72rem; background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">✓ Locked</span>
+                    {% elif s1_active %}
+                        <span style="font-size: 0.72rem; background: rgba(59, 130, 246, 0.2); color: #60a5fa; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">⚡ Current</span>
+                    {% else %}
+                        <span style="font-size: 0.72rem; background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 2px 7px; border-radius: 9999px; font-weight: 600;">✓ Done</span>
+                    {% endif %}
+                </div>
+                <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.35rem;">
+                    👥 Player Registration
+                </div>
+                <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0 0 0.75rem; line-height: 1.4;">
+                    Register participants into category pool.
+                </p>
+            </div>
+            <div>
+                <div style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem;">
+                    Pool: <strong style="color: var(--text-primary);">{{ players_count }} players</strong>
+                </div>
+                {% if has_teams %}
+                    <div style="padding: 0.4rem; text-align: center; font-size: 0.75rem; font-weight: 600; color: #10b981; background: rgba(16, 185, 129, 0.08); border-radius: var(--radius-sm);">
+                        ✓ Squads Allotted &amp; Locked
+                    </div>
+                {% elif s1_active %}
+                    <a href="{{ url_for('category.manage_category', slug=tournament.url_slug, category_id=category.id) }}#participants" class="btn btn-primary btn-small" style="width: 100%; text-align: center; font-size: 0.78rem; padding: 0.4rem; font-weight: 700;">
+                        + Register Players ➔
+                    </a>
+                {% else %}
+                    <div style="padding: 0.35rem; text-align: center; font-size: 0.75rem; color: var(--text-muted);">
+                        ✓ Registration Complete
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- STEP 2: ASSIGN SKILL TIERS -->
+        {% set s2_done = (has_teams or current_step > 2) %}
+        {% set s2_active = (current_step == 2) %}
+        <div style="background: var(--bg-secondary); border: {% if s2_active %}2px solid #8b5cf6{% elif s2_done %}1px solid rgba(16, 185, 129, 0.3){% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between; {% if has_teams %}opacity: 0.85;{% endif %}">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: {% if s2_done %}#10b981{% else %}#8b5cf6{% endif %}; letter-spacing: 0.05em;">
+                        Step 2
+                    </span>
+                    {% if has_teams %}
+                        <span style="font-size: 0.72rem; background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">✓ Locked</span>
+                    {% elif s2_active %}
+                        <span style="font-size: 0.72rem; background: rgba(139, 92, 246, 0.2); color: #a78bfa; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">⚡ Current</span>
+                    {% elif s2_done %}
+                        <span style="font-size: 0.72rem; background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 2px 7px; border-radius: 9999px; font-weight: 600;">✓ Done</span>
+                    {% else %}
+                        <span style="font-size: 0.72rem; background: rgba(255, 255, 255, 0.05); color: var(--text-muted); padding: 2px 7px; border-radius: 9999px;">Step 2</span>
+                    {% endif %}
+                </div>
+                <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.35rem;">
+                    🎯 Tiers &amp; Captains
+                </div>
+                <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0 0 0.75rem; line-height: 1.4;">
+                    Assign players into 5 tiers (Captains, VCs, Members).
+                </p>
+            </div>
+            <div>
+                {% if has_teams %}
+                    <div style="padding: 0.4rem; text-align: center; font-size: 0.75rem; font-weight: 600; color: #10b981; background: rgba(16, 185, 129, 0.08); border-radius: var(--radius-sm);">
+                        ✓ Tiers Allotted &amp; Locked
+                    </div>
+                {% elif s2_active %}
+                    <a href="{{ url_for('category.team_draft_view', slug=tournament.url_slug, category_id=category.id) }}#stageTiers" class="btn btn-primary btn-small" style="width: 100%; text-align: center; font-size: 0.78rem; padding: 0.4rem; font-weight: 700;">
+                        🎯 Assign Tiers ➔
+                    </a>
+                {% elif s2_done %}
+                    <div style="padding: 0.35rem; text-align: center; font-size: 0.75rem; color: var(--text-muted);">
+                        ✓ Tiers Assigned
+                    </div>
+                {% else %}
+                    <div style="padding: 0.35rem; text-align: center; font-size: 0.75rem; color: var(--text-muted);">
+                        🔒 Pending Step 1
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- STEP 3: TEAM FORMATION -->
+        {% set s3_done = has_teams %}
+        {% set s3_active = (current_step == 3) %}
+        <div style="background: var(--bg-secondary); border: {% if s3_active %}2px solid #f59e0b{% elif s3_done %}1px solid rgba(16, 185, 129, 0.3){% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between; {% if has_teams %}opacity: 0.9;{% endif %}">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: {% if s3_done %}#10b981{% else %}#f59e0b{% endif %}; letter-spacing: 0.05em;">
+                        Step 3
+                    </span>
+                    {% if s3_done %}
+                        <span style="font-size: 0.72rem; background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">✓ Formed &amp; Locked</span>
+                    {% elif s3_active %}
+                        <span style="font-size: 0.72rem; background: rgba(245, 158, 11, 0.2); color: #fbbf24; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">⚡ Current</span>
+                    {% else %}
+                        <span style="font-size: 0.72rem; background: rgba(255, 255, 255, 0.05); color: var(--text-muted); padding: 2px 7px; border-radius: 9999px;">Step 3</span>
+                    {% endif %}
+                </div>
+                <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.35rem;">
+                    🎲 Team Formation
+                </div>
+                <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0 0 0.75rem; line-height: 1.4;">
+                    Chit draw or balanced draft to create squad rosters.
+                </p>
+            </div>
+            <div>
+                {% if s3_done %}
+                    <div style="padding: 0.4rem; text-align: center; font-size: 0.75rem; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.1); border-radius: var(--radius-sm); border: 1px solid rgba(16, 185, 129, 0.2);">
+                        ✓ {{ teams_count }} Teams Created (Locked)
+                    </div>
+                {% elif s3_active %}
+                    <a href="{{ url_for('category.team_draft_view', slug=tournament.url_slug, category_id=category.id) }}#stageTeams" class="btn btn-primary btn-small" style="width: 100%; text-align: center; font-size: 0.78rem; padding: 0.4rem; font-weight: 700;">
+                        🎲 Form Teams Now ➔
+                    </a>
+                {% else %}
+                    <div style="padding: 0.35rem; text-align: center; font-size: 0.75rem; color: var(--text-muted);">
+                        🔒 Pending Step 2
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- STEP 4: GROUP ALLOCATION & TIMINGS -->
+        {% set s4_done = is_started %}
+        {% set s4_active = (current_step == 4) %}
+        <div style="background: var(--bg-secondary); border: {% if s4_active %}2px solid #10b981{% elif s4_done %}1px solid rgba(16, 185, 129, 0.3){% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #10b981; letter-spacing: 0.05em;">Step 4</span>
+                    {% if s4_done %}
+                        <span style="font-size: 0.72rem; background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 2px 7px; border-radius: 9999px; font-weight: 600;">✓ Scheduled</span>
+                    {% elif s4_active %}
+                        <span style="font-size: 0.72rem; background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">⚡ Next Action</span>
+                    {% else %}
+                        <span style="font-size: 0.72rem; background: rgba(255, 255, 255, 0.05); color: var(--text-muted); padding: 2px 7px; border-radius: 9999px;">Step 4</span>
+                    {% endif %}
+                </div>
+                <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.35rem;">
+                    🗓️ Groups &amp; Fixtures
+                </div>
+                <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0 0 0.75rem; line-height: 1.4;">
+                    Set session start times &amp; courts, then generate ties.
+                </p>
+            </div>
+            <div>
+                {% if s4_active %}
+                    <a href="{{ url_for('category.team_draft_view', slug=tournament.url_slug, category_id=category.id) }}#stageTimings" class="btn btn-primary btn-small" style="width: 100%; text-align: center; font-size: 0.78rem; padding: 0.4rem; font-weight: 700;">
+                        ⚙️ Set Times &amp; Launch ➔
+                    </a>
+                {% elif s4_done %}
+                    <div style="padding: 0.35rem; text-align: center; font-size: 0.75rem; color: #10b981; font-weight: 600;">
+                        ✓ Fixtures Generated
+                    </div>
+                {% else %}
+                    <div style="padding: 0.35rem; text-align: center; font-size: 0.75rem; color: var(--text-muted);">
+                        🔒 Pending Team Formation
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- STEP 5: CAPTAINS' LINEUP ALLOTMENT -->
+        {% set s5_done = (current_step > 5) %}
+        {% set s5_active = (current_step == 5) %}
+        <div style="background: var(--bg-secondary); border: {% if s5_active %}2px solid #ec4899{% elif s5_done %}1px solid rgba(16, 185, 129, 0.3){% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #ec4899; letter-spacing: 0.05em;">Step 5</span>
+                    {% if s5_done %}
+                        <span style="font-size: 0.72rem; background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 2px 7px; border-radius: 9999px; font-weight: 600;">✓ Done</span>
+                    {% elif s5_active %}
+                        <span style="font-size: 0.72rem; background: rgba(236, 72, 153, 0.2); color: #f472b6; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">⚡ Current</span>
+                    {% else %}
+                        <span style="font-size: 0.72rem; background: rgba(255, 255, 255, 0.05); color: var(--text-muted); padding: 2px 7px; border-radius: 9999px;">Step 5</span>
+                    {% endif %}
+                </div>
+                <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.35rem;">
+                    📋 Lineup Allotment
+                </div>
+                <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0 0 0.75rem; line-height: 1.4;">
+                    Captains submit slips for 1 Singles &amp; 2 Doubles per tie.
+                </p>
+            </div>
+            <div>
+                {% if s5_active %}
+                    <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=category.id) }}#fixtures" class="btn btn-primary btn-small" style="width: 100%; text-align: center; font-size: 0.78rem; padding: 0.4rem; font-weight: 700;" onclick="if(window.location.pathname.endsWith('/categories/{{ category.id }}')) { event.preventDefault(); if (typeof handleCategorySectionNav === 'function') { handleCategorySectionNav('fixtures'); } else { document.getElementById('fixtures')?.scrollIntoView({behavior: 'smooth'}); } }">
+                        📋 Allot Slips ➔
+                    </a>
+                {% elif s5_done %}
+                    <div style="padding: 0.35rem; text-align: center; font-size: 0.75rem; color: #10b981; font-weight: 600;">
+                        ✓ Lineups Allotted
+                    </div>
+                {% else %}
+                    <div style="padding: 0.35rem; text-align: center; font-size: 0.75rem; color: var(--text-muted);">
+                        🔒 Pending Step 4
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- STEP 6: MATCH PLAY & GAMES SCORING -->
+        {% set s6_active = (current_step == 6) %}
+        <div style="background: var(--bg-secondary); border: {% if s6_active %}2px solid #f97316{% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #f97316; letter-spacing: 0.05em;">Step 6</span>
+                    {% if s6_active %}
+                        <span style="font-size: 0.72rem; background: rgba(249, 115, 22, 0.2); color: #fb923c; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">🎾 Match Day</span>
+                    {% else %}
+                        <span style="font-size: 0.72rem; background: rgba(255, 255, 255, 0.05); color: var(--text-muted); padding: 2px 7px; border-radius: 9999px;">Step 6</span>
+                    {% endif %}
+                </div>
+                <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.35rem;">
+                    🎾 Games Scoring
+                </div>
+                <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0 0 0.75rem; line-height: 1.4;">
+                    Play according to Order of Play. Report rubber scores.
+                </p>
+            </div>
+            <div>
+                <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug) }}" class="btn {% if s6_active %}btn-primary{% else %}btn-secondary{% endif %} btn-small" style="width: 100%; text-align: center; font-size: 0.78rem; padding: 0.4rem; font-weight: 700;">
+                    📅 Order of Play ➔
+                </a>
+            </div>
+        </div>
+
+    </div>
+</div>

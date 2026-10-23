@@ -130,9 +130,9 @@
 
         <div id="total-games-fields" style="display: none;">
             <div class="form-group">
-                <label for="total_games">Total Games To Play (Match Setting) *</label>
-                <input type="number" id="total_games" name="total_games" class="form-input" min="1" max="50" value="7">
-                <small>Total number of games played in each match (e.g., if 7, score can be 5-2)</small>
+                <label for="total_games">Total Games Target Per Rubber (T) *</label>
+                <input type="number" id="total_games" name="total_games" class="form-input" min="3" max="21" step="2" value="7">
+                <small style="color: var(--text-muted);">Total games per rubber (Default: 7). Tiebreak triggers at 3–3, rubber decided at 4–3. Team tie clinched by first to 11 of 21 games.</small>
             </div>
         </div>
 
@@ -158,8 +158,8 @@
         <div class="form-group">
             <label for="max_players_per_team">Max Players Per Team</label>
             <input type="number" id="max_players_per_team" name="max_players_per_team" class="form-input" min="1"
-                placeholder="Leave empty for unlimited">
-            <small>Optional - set a limit on the number of players per participant/team</small>
+                placeholder="5 for Team League">
+            <small>Number of players per squad (Default: 5 - 1 Captain, 1 VC, 3 Members)</small>
         </div>
 
         <div class="form-group">
@@ -173,20 +173,87 @@
             <input type="number" id="entry_fee" name="entry_fee" class="form-input" min="0" step="0.01" value="0.0">
             <small>Set to 0 for a free category.</small>
         </div>
-        <div style="margin-top: 1.5rem; margin-bottom: 1.5rem; padding: 0.85rem 1.25rem; background: rgba(59, 130, 246, 0.05); border-left: 3px solid var(--accent-primary, #3b82f6); border-radius: var(--radius-sm); font-size: 0.9rem; color: var(--text-secondary);">
-            📅 <strong>Tournament Scheduling:</strong> Courts, match durations, daily operating hours, and tournament dates are managed globally from the tournament dashboard.
+        <!-- CATEGORY DATES & OPERATING HOURS (Item 5) -->
+        <div style="margin-top: 1.5rem; margin-bottom: 1.5rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                <label style="display: block; font-size: 1rem; font-weight: 700; color: var(--text-primary); margin: 0;">
+                    📅 Category Dates &amp; Daily Operating Hours *
+                </label>
+                <span style="font-size: 0.78rem; color: var(--text-muted); background: var(--bg-card); padding: 0.2rem 0.5rem; border-radius: 9999px; border: 1px solid var(--border-color);">
+                    Required for Order of Play
+                </span>
+            </div>
+            <p style="margin: 0 0 1rem; color: var(--text-secondary); font-size: 0.83rem; line-height: 1.4;">
+                Specify the start and end dates for this category, along with the start and end times for all dates it spans.
+            </p>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                <div>
+                    <label for="category_start_date" style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.3rem;">
+                        Category Start Date *
+                    </label>
+                    <input type="date" id="category_start_date" name="start_date" class="form-input" required
+                           value="{{ tournament.start_date.strftime('%Y-%m-%d') if tournament.start_date else '' }}"
+                           min="{{ tournament.start_date.strftime('%Y-%m-%d') if tournament.start_date else '' }}"
+                           onchange="onCategoryDateChange()">
+                </div>
+
+                <div>
+                    <label for="category_end_date" style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.3rem;">
+                        Category End Date *
+                    </label>
+                    <input type="date" id="category_end_date" name="end_date" class="form-input" required
+                           value="{{ tournament.end_date.strftime('%Y-%m-%d') if tournament.end_date else (tournament.start_date.strftime('%Y-%m-%d') if tournament.start_date else '') }}"
+                           min="{{ tournament.start_date.strftime('%Y-%m-%d') if tournament.start_date else '' }}"
+                           onchange="onCategoryDateChange()">
+                </div>
+
+                <div>
+                    <label for="category_start_time" style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.3rem;">
+                        Default Daily Start Time *
+                    </label>
+                    <input type="time" id="category_start_time" name="start_time" class="form-input" required
+                           value="{{ tournament.court_operating_start or '09:00' }}"
+                           onchange="applyDefaultTimesToAllDates()">
+                </div>
+
+                <div>
+                    <label for="category_end_time" style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.3rem;">
+                        Default Daily End Time *
+                    </label>
+                    <input type="time" id="category_end_time" name="end_time" class="form-input" required
+                           value="{{ tournament.court_operating_end or '19:00' }}"
+                           onchange="applyDefaultTimesToAllDates()">
+                </div>
+            </div>
+
+            <!-- Dynamic Table of Spanned Dates -->
+            <div id="spannedDatesContainer" style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; flex-wrap: wrap; gap: 0.5rem;">
+                    <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary);">
+                        ⏰ Daily Match Windows Across Spanned Dates
+                    </span>
+                    <button type="button" class="btn btn-secondary btn-small" onclick="applyDefaultTimesToAllDates()" style="font-size: 0.75rem; padding: 0.2rem 0.55rem;">
+                        ⚡ Apply Defaults to All Days
+                    </button>
+                </div>
+                <div id="spannedDatesList" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <!-- Injected by JavaScript -->
+                </div>
+            </div>
         </div>
 
         <div id="group-stage-fields" style="display: none;">
             <h3>Group Stage Configuration</h3>
 
-            <div class="form-group">
-                <label for="num_groups">Number of Groups *</label>
-                <input type="number" id="num_groups" name="num_groups" class="form-input" min="2"
-                    placeholder="e.g., 2, 4, 8">
+            <div class="form-group" id="num-groups-container">
+                <label for="num_groups">Number of Groups</label>
+                <input type="number" id="num_groups" name="num_groups" class="form-input" min="2" max="16" value="2"
+                    placeholder="2">
+                <small style="color: var(--text-muted);">Default: 2 Groups (Group A &amp; Group B). Teams per group will be calculated dynamically once players register (N ÷ G).</small>
             </div>
 
-            <div class="form-group">
+            <div class="form-group" id="teams-per-group-container">
                 <label for="teams_per_group">Teams Per Group *</label>
                 <input type="number" id="teams_per_group" name="teams_per_group" class="form-input" min="2"
                     placeholder="e.g., 4">
@@ -202,8 +269,8 @@
             <div class="form-group">
                 <label for="qualifiers_per_group">Qualifiers Per Group *</label>
                 <input type="number" id="qualifiers_per_group" name="qualifiers_per_group" class="form-input" min="1"
-                    placeholder="e.g., 2">
-                <small>How many teams advance to knockout from each group</small>
+                    value="2" placeholder="2">
+                <small>How many teams advance to knockout from each group (Default: Top 2)</small>
             </div>
 
             <div class="form-group" style="margin-top: 1rem;">
@@ -284,10 +351,25 @@
     }
 
     function toggleScoringFields() {
+        const format = document.getElementById('format').value;
         const scoringFormat = document.getElementById('scoring_format').value;
         const legacyScoringFields = document.getElementById('legacy-scoring-fields');
         const pointsToWinFields = document.getElementById('points-to-win-fields');
         const totalGamesFields = document.getElementById('total-games-fields');
+
+        // When format is group_stage, sets/games_per_set are NOT used!
+        if (format === 'group_stage') {
+            if (legacyScoringFields) legacyScoringFields.style.display = 'none';
+            if (pointsToWinFields) pointsToWinFields.style.display = 'none';
+            if (totalGamesFields) {
+                totalGamesFields.style.display = 'block';
+                document.getElementById('total_games').required = true;
+            }
+            document.getElementById('num_sets').required = false;
+            document.getElementById('games_per_set').required = false;
+            document.getElementById('points_to_win').required = false;
+            return;
+        }
 
         if (scoringFormat === 'points') {
             if (legacyScoringFields) legacyScoringFields.style.display = 'none';
@@ -295,13 +377,18 @@
                 pointsToWinFields.style.display = 'block';
                 document.getElementById('points_to_win').required = true;
             }
-            // For now, total games is tied to 'group_stage' format, handled separately or kept here if needed.
+            if (totalGamesFields) totalGamesFields.style.display = 'none';
+            document.getElementById('num_sets').required = false;
+            document.getElementById('games_per_set').required = false;
         } else {
             if (legacyScoringFields) legacyScoringFields.style.display = 'block';
             if (pointsToWinFields) {
                 pointsToWinFields.style.display = 'none';
                 document.getElementById('points_to_win').required = false;
             }
+            if (totalGamesFields) totalGamesFields.style.display = 'none';
+            document.getElementById('num_sets').required = true;
+            document.getElementById('games_per_set').required = true;
         }
     }
 
@@ -309,6 +396,9 @@
         const format = document.getElementById('format').value;
         const groupFields = document.getElementById('group-stage-fields');
         const totalGamesFields = document.getElementById('total-games-fields');
+        const scoringFormatGroup = document.getElementById('scoring_format').closest('.form-group');
+        const legacyScoringFields = document.getElementById('legacy-scoring-fields');
+        const teamsPerGroupContainer = document.getElementById('teams-per-group-container');
         
         // Reset global fields
         const maxPlayersField = document.getElementById('max_players_per_team');
@@ -323,37 +413,66 @@
         }
 
         if (format === 'group_stage') {
+            // Hide scoring format dropdown and legacy sets/games fields
+            if (scoringFormatGroup) scoringFormatGroup.style.display = 'none';
+            if (legacyScoringFields) legacyScoringFields.style.display = 'none';
+            const pointsToWinFields = document.getElementById('points-to-win-fields');
+            if (pointsToWinFields) pointsToWinFields.style.display = 'none';
+            document.getElementById('num_sets').required = false;
+            document.getElementById('games_per_set').required = false;
+            document.getElementById('points_to_win').required = false;
+
             if (groupFields) {
                 groupFields.style.display = 'block';
                 document.querySelector('#group-stage-fields h3').innerText = 'Group Stage Configuration';
-                document.querySelector('label[for="teams_per_group"]').innerText = 'Teams Per Group *';
-                document.getElementById('max_players_per_team').closest('.form-group').style.display = 'block';
-                document.getElementById('qualifiers_per_group').closest('.form-group').style.display = 'block';
-                document.getElementById('qualifiers_per_group').required = true;
+                
+                // For group stage team format:
+                // Teams per group is dynamically calculated from N / G once players register, so hide it here!
+                if (teamsPerGroupContainer) teamsPerGroupContainer.style.display = 'none';
+                document.getElementById('teams_per_group').required = false;
+
+                // Max players per team defaults to 5
+                if (maxPlayersField && !maxPlayersField.value) maxPlayersField.value = 5;
+
+                // Number of Groups defaults to 2
+                const numGroupsInput = document.getElementById('num_groups');
+                if (numGroupsInput && !numGroupsInput.value) numGroupsInput.value = 2;
+                numGroupsInput.required = false;
+
+                // Qualifiers per group defaults to 2
+                const qualifiersInput = document.getElementById('qualifiers_per_group');
+                qualifiersInput.closest('.form-group').style.display = 'block';
+                qualifiersInput.required = true;
+                if (!qualifiersInput.value) qualifiersInput.value = 2;
+
                 document.getElementById('allow_lucky_losers').closest('.form-group').style.display = 'block';
-                document.getElementById('num_groups').closest('.form-group').style.display = 'block';
-                document.getElementById('num_groups').required = true;
             }
             if (totalGamesFields) {
                 totalGamesFields.style.display = 'block';
                 document.getElementById('total_games').required = true;
+                if (!document.getElementById('total_games').value) {
+                    document.getElementById('total_games').value = 7;
+                }
             }
         } else if (format === 'round_robin') {
+            if (scoringFormatGroup) scoringFormatGroup.style.display = 'block';
             if (groupFields) {
                 groupFields.style.display = 'block';
                 document.querySelector('#group-stage-fields h3').innerText = 'Round Robin Configuration';
                 const subFormat = document.querySelector('input[name="sub_format"]:checked');
                 document.querySelector('label[for="teams_per_group"]').innerText = (subFormat && subFormat.value === 'doubles') ? 'Teams Per Group *' : 'Players Per Group *';
                 
+                // Show teams per group for Round Robin
+                if (teamsPerGroupContainer) teamsPerGroupContainer.style.display = 'block';
+                document.getElementById('teams_per_group').required = true;
+                document.getElementById('teams_per_group').min = "3";
+
                 // Show num_groups for manual override (optional)
                 document.getElementById('num_groups').closest('.form-group').style.display = 'block';
                 document.getElementById('num_groups').required = false;
                 
-                document.getElementById('teams_per_group').required = true;
-                document.getElementById('teams_per_group').min = "3";
-                
                 // Hide max players per team
-                document.getElementById('max_players_per_team').closest('.form-group').style.display = 'none';
+                if (maxPlayersField) maxPlayersField.closest('.form-group').style.display = 'none';
                 
                 if (rrKnockoutContainer) rrKnockoutContainer.style.display = 'block';
                 
@@ -363,15 +482,20 @@
                 totalGamesFields.style.display = 'none';
                 document.getElementById('total_games').required = false;
             }
+            toggleScoringFields();
         } else if (format) {
+            if (scoringFormatGroup) scoringFormatGroup.style.display = 'block';
             if (groupFields) groupFields.style.display = 'none';
             if (totalGamesFields) {
                 totalGamesFields.style.display = 'none';
                 document.getElementById('total_games').required = false;
             }
+            toggleScoringFields();
         } else {
+            if (scoringFormatGroup) scoringFormatGroup.style.display = 'block';
             if (groupFields) groupFields.style.display = 'none';
             if (totalGamesFields) totalGamesFields.style.display = 'none';
+            toggleScoringFields();
         }
     }
 
@@ -408,9 +532,85 @@
         }
     }
 
+    // Dynamic Spanned Dates Breakdown (Item 5)
+    function onCategoryDateChange() {
+        const sInput = document.getElementById('category_start_date');
+        const eInput = document.getElementById('category_end_date');
+        if (!sInput || !eInput) return;
+        
+        if (sInput.value && (!eInput.value || eInput.value < sInput.value)) {
+            eInput.value = sInput.value;
+        }
+        eInput.min = sInput.value;
+        renderCategoryDatesBreakdown();
+    }
+
+    function renderCategoryDatesBreakdown() {
+        const sInput = document.getElementById('category_start_date');
+        const eInput = document.getElementById('category_end_date');
+        const list = document.getElementById('spannedDatesList');
+        const defaultStart = document.getElementById('category_start_time')?.value || '09:00';
+        const defaultEnd = document.getElementById('category_end_time')?.value || '19:00';
+        if (!sInput || !eInput || !list) return;
+
+        if (!sInput.value) {
+            list.innerHTML = '<p style="color: var(--text-muted); font-size: 0.8rem; margin: 0;">Please select category start and end dates.</p>';
+            return;
+        }
+
+        const startDate = new Date(sInput.value + 'T00:00:00');
+        const endDate = new Date((eInput.value || sInput.value) + 'T00:00:00');
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return;
+
+        let html = '';
+        let dayCount = 1;
+        const cur = new Date(startDate);
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        while (cur <= endDate) {
+            const y = cur.getFullYear();
+            const m = String(cur.getMonth() + 1).padStart(2, '0');
+            const d = String(cur.getDate()).padStart(2, '0');
+            const dateStr = `${y}-${m}-${d}`;
+            const dayLabel = `${dayNames[cur.getDay()]}, ${d} ${monthNames[cur.getMonth()]} ${y}`;
+
+            html += `
+            <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-card); padding: 0.55rem 0.85rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); flex-wrap: wrap; gap: 0.5rem;">
+                <div style="font-weight: 600; font-size: 0.85rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.4rem; min-width: 190px;">
+                    <span style="color: var(--accent-primary); font-size: 0.8rem; font-weight: 700;">Day ${dayCount}:</span>
+                    <span>${dayLabel}</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 0.35rem;">
+                        <label style="font-size: 0.78rem; color: var(--text-muted);">Start:</label>
+                        <input type="time" name="daily_start_${dateStr}" class="form-input daily-start-time" value="${defaultStart}" style="padding: 0.25rem 0.5rem; font-size: 0.82rem; width: 110px;">
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.35rem;">
+                        <label style="font-size: 0.78rem; color: var(--text-muted);">End:</label>
+                        <input type="time" name="daily_end_${dateStr}" class="form-input daily-end-time" value="${defaultEnd}" style="padding: 0.25rem 0.5rem; font-size: 0.82rem; width: 110px;">
+                    </div>
+                </div>
+            </div>`;
+
+            cur.setDate(cur.getDate() + 1);
+            dayCount++;
+        }
+
+        list.innerHTML = html;
+    }
+
+    function applyDefaultTimesToAllDates() {
+        const defaultStart = document.getElementById('category_start_time')?.value || '09:00';
+        const defaultEnd = document.getElementById('category_end_time')?.value || '19:00';
+        document.querySelectorAll('.daily-start-time').forEach(el => el.value = defaultStart);
+        document.querySelectorAll('.daily-end-time').forEach(el => el.value = defaultEnd);
+    }
+
     // Call once on load
     toggleScoringFields();
     toggleGroupStageFields();
     toggleAgeCategory(document.getElementById('gender'), 'age_category');
+    onCategoryDateChange();
 </script>
 {% endblock %}

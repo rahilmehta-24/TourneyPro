@@ -53,6 +53,67 @@ def create_tournament():
         num_sets = 1
         games_per_set = 6
 
+        # Extract tournament duration & daily operating timings
+        start_date_str = request.form.get('start_date')
+        end_date_str = request.form.get('end_date')
+        duration_days = request.form.get('duration_days', type=int)
+        court_operating_start = request.form.get('court_operating_start') or '09:00'
+        court_operating_end = request.form.get('court_operating_end') or '19:00'
+        num_courts = request.form.get('num_courts', type=int) or 2
+        court_names = request.form.get('court_names', '').strip() or None
+
+        start_date = None
+        end_date = None
+        if start_date_str:
+            try:
+                start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                pass
+        if end_date_str:
+            try:
+                end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                pass
+
+        if start_date and duration_days and duration_days >= 1:
+            computed_end = start_date + timedelta(days=duration_days - 1)
+            if not end_date or end_date < start_date:
+                end_date = computed_end
+        elif start_date and not end_date:
+            end_date = start_date
+        elif end_date and not start_date:
+            start_date = end_date
+        if start_date and end_date and end_date < start_date:
+            end_date = start_date
+
+        # Parse dynamic per-day operating hours
+        daily_dict = {}
+        raw_json = request.form.get('daily_operating_hours')
+        if raw_json:
+            try:
+                daily_dict = json.loads(raw_json)
+            except Exception:
+                daily_dict = {}
+
+        for k, v in request.form.items():
+            if k.startswith('daily_start_'):
+                d_key = k[len('daily_start_'):]
+                if d_key not in daily_dict:
+                    daily_dict[d_key] = {}
+                daily_dict[d_key]['start'] = v
+            elif k.startswith('daily_end_'):
+                d_key = k[len('daily_end_'):]
+                if d_key not in daily_dict:
+                    daily_dict[d_key] = {}
+                daily_dict[d_key]['end'] = v
+
+        if start_date and end_date:
+            num_days = (end_date - start_date).days + 1
+            valid_range = {(start_date + timedelta(days=i)).strftime('%Y-%m-%d') for i in range(num_days)}
+            daily_dict = {dk: dv for dk, dv in daily_dict.items() if dk in valid_range}
+
+        daily_operating_hours = json.dumps(daily_dict) if daily_dict else None
+
         # Generate URL slug
         url_slug = slugify(name)
 
@@ -76,7 +137,14 @@ def create_tournament():
             has_categories=True,  # Force categories for all new tournaments
             academy_id=academy_id if academy_id else None,
             is_internal=is_internal,
-            payment_upi_id=payment_upi_id if payment_upi_id else None
+            payment_upi_id=payment_upi_id if payment_upi_id else None,
+            start_date=start_date,
+            end_date=end_date,
+            court_operating_start=court_operating_start,
+            court_operating_end=court_operating_end,
+            daily_operating_hours=daily_operating_hours,
+            num_courts=num_courts,
+            court_names=court_names
         )
 
         try:
@@ -871,6 +939,13 @@ def manage_tournament(slug):
             elif action == 'update_schedule_settings':
                 start_date_str = request.form.get('start_date', '').strip()
                 end_date_str = request.form.get('end_date', '').strip()
+                duration_days = request.form.get('duration_days', type=int)
+                if start_date_str and duration_days and duration_days >= 1 and not end_date_str:
+                    try:
+                        s_dt = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+                        end_date_str = (s_dt + timedelta(days=duration_days - 1)).strftime('%Y-%m-%d')
+                    except Exception:
+                        pass
                 if start_date_str or end_date_str:
                     ok, dates_or_err = validate_tournament_dates(start_date_str, end_date_str)
                     if not ok:
@@ -1013,6 +1088,21 @@ def report_match_result(slug, match_id):
         if not allowed:
             flash(f"Progression locked: {reason}", 'error')
             return redirect(url_for('tournament.view_tournament', slug=slug))
+    else:
+        from app.services.utils.audit import log_audit
+        reason = request.form.get('audit_reason') or "Score Entry Mistake"
+        explanation = request.form.get('audit_explanation', '')
+        if not explanation or len(explanation.strip()) < 20:
+            explanation = "Score modification submitted by tournament administrator."
+        p1_label = match.participant1.name if match.participant1 else 'TBD'
+        p2_label = match.participant2.name if match.participant2 else 'TBD'
+        log_audit(
+            action_type='modify_match',
+            target_id=match.id,
+            target_name=f"Match {match.match_number or match.id} ({p1_label} vs {p2_label})",
+            reason=reason,
+            explanation=explanation
+        )
 
     # Extract set scores from request
     form_data = {
@@ -1062,33 +1152,24 @@ def report_match_result(slug, match_id):
             scoring_format = match.scoring_format or (category.scoring_format if category else 'games')
             
             if category and category.format == 'group_stage':
-                # New scoring system based on total games
-                total_games_target = category.total_games
-                g1_val = form_data.get('set1_p1')
-                g2_val = form_data.get('set1_p2')
-                
-                if not g1_val or not g2_val:
-                    raise ValueError("Score is required.")
-                
-                try:
-                    g1 = int(g1_val)
-                    g2 = int(g2_val)
-                except ValueError:
-                    raise ValueError("Score must be integers.")
-                    
-                if g1 < 0 or g2 < 0:
-                    raise ValueError("Scores cannot be negative.")
-
-                if not is_live_update:
-                    if g1 + g2 != total_games_target:
-                        raise ValueError(f"Total games must sum to {total_games_target}. You entered {g1} and {g2} (sum: {g1+g2}).")
-                        
-                    actual_winner = match.participant1_id if g1 > g2 else match.participant2_id
-                    if winner_id != actual_winner:
+                from app.services.tennis_logic import validate_team_rubber_score
+                p1_tb = form_data.get('tb1_p1') or request.form.get('tb1_p1')
+                p2_tb = form_data.get('tb1_p2') or request.form.get('tb1_p2')
+                score1, score2, winner_ind = validate_team_rubber_score(
+                    p1_games=form_data.get('set1_p1'),
+                    p2_games=form_data.get('set1_p2'),
+                    p1_tb_pts=p1_tb,
+                    p2_tb_pts=p2_tb,
+                    total_games=category.total_games or 7,
+                    is_live_update=is_live_update
+                )
+                if not is_live_update and winner_ind:
+                    actual_winner = match.participant1_id if winner_ind == 1 else match.participant2_id
+                    if winner_id and winner_id != actual_winner:
                         raise ValueError("Selected winner does not match the scores.")
-                    
-                match.score1 = str(g1)
-                match.score2 = str(g2)
+                    winner_id = actual_winner
+                match.score1 = score1
+                match.score2 = score2
                 
             elif scoring_format == 'points' or (category and category.format in ['round_robin', 'doubles_round_robin']):
                 points_to_win = match.points_to_win or (category.points_to_win if category else 11)
@@ -1362,6 +1443,7 @@ def court_schedule(slug):
         evening_session_count=data.get('evening_session_count', 0),
         session_filter='all',
         total_matches_scheduled=data.get('total_matches_scheduled', 0),
+        total_rubbers_scheduled=data.get('total_rubbers_scheduled', 0),
         is_provisional=data.get('is_provisional', False),
         earlier_pending_count=data.get('earlier_pending_count', 0),
         current_day_number=data.get('current_day_number', 1),
@@ -1474,6 +1556,7 @@ def order_of_play(slug):
         evening_session_count=data.get('evening_session_count', 0),
         session_filter=session_filter,
         total_matches_scheduled=data['total_matches_scheduled'],
+        total_rubbers_scheduled=data.get('total_rubbers_scheduled', 0),
         is_provisional=data.get('is_provisional', False),
         earlier_pending_count=data.get('earlier_pending_count', 0),
         current_day_number=data.get('current_day_number', 1),
