@@ -1,11 +1,67 @@
-__pycache__
-instance
-venv
-*.env*
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment configurations & secrets
+.env
+.env.*
+*.env
+*.env.*
+!.env.example
+
+# Database files & local instances
+instance/
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+*.db-wal
+
+# User uploaded files (keep uploads dir structure via .gitkeep)
+app/web/static/uploads/*
+!app/web/static/uploads/.gitkeep
+
+# Temporary / scratch files & folders
+scratch/
+tmp/
+temp/
+
+# Testing & Linting caches
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+
+# OS-generated files
 .DS_Store
-*.md
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE and Editor configurations
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Exported documents and media files
 *.pdf
 *.png
 *.webp
 *.gif
-
+*.md
+!README.md
