@@ -125,8 +125,8 @@
                 🔗 Share Link
             </button>
             {% if current_user and current_user.role in ['admin', 'superadmin'] %}
-            <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=category.id, export='1') }}" target="_blank" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">
-                🖨️ Export PDF
+            <a href="{{ url_for('export.export_category_pdf', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-secondary" id="btnExportDrawPdf" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;" title="Download official draw PDF">
+                🖨️ Export Draw PDF
             </a>
             {% endif %}
         </div>

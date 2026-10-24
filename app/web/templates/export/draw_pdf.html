@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ draw_data.tournament_name }} - {{ draw_data.category_name }} Draw</title>
+    <style>
+        @page {
+            size: a3 landscape;
+            margin: 6mm 8mm;
+        }
+
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            color: #0f172a;
+            background-color: #ffffff;
+            margin: 0;
+            padding: 0;
+            font-size: 7pt;
+        }
+
+        .pdf-page {
+            page-break-after: always;
+            width: 100%;
+        }
+
+        .pdf-page:last-child {
+            page-break-after: avoid;
+        }
+
+        /* Tournament & Category Header */
+        .tourney-header {
+            width: 100%;
+            border-bottom: 2px solid #0f172a;
+            padding-bottom: 4px;
+            margin-bottom: 4px;
+        }
+
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .header-table td {
+            vertical-align: middle;
+            padding: 0;
+        }
+
+        .tourney-name {
+            font-size: 15pt;
+            font-weight: bold;
+            color: #0f172a;
+            letter-spacing: -0.3px;
+        }
+
+        .category-name {
+            font-size: 11pt;
+            font-weight: bold;
+            color: #2563eb;
+            margin-top: 1px;
+        }
+
+        .meta-text {
+            font-size: 7pt;
+            color: #475569;
+            margin-top: 2px;
+        }
+
+        .meta-pill {
+            display: inline-block;
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-weight: bold;
+            color: #334155;
+            margin-right: 4px;
+        }
+
+        .badge-official {
+            background-color: #0f172a;
+            color: #ffffff;
+            font-size: 8pt;
+            font-weight: bold;
+            padding: 4px 10px;
+            text-align: center;
+            border-radius: 3px;
+            display: inline-block;
+            letter-spacing: 0.5px;
+        }
+
+        /* Section Banner */
+        .section-banner {
+            width: 100%;
+            background-color: #f8fafc;
+            border: 1px solid #cbd5e1;
+            padding: 3px 8px;
+            margin-bottom: 4px;
+            border-radius: 3px;
+        }
+
+        .section-banner-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .section-banner-table td {
+            vertical-align: middle;
+            padding: 0;
+        }
+
+        .section-badge {
+            font-size: 7.5pt;
+            font-weight: bold;
+            color: #ffffff;
+            background-color: #2563eb;
+            padding: 2px 6px;
+            border-radius: 2px;
+            display: inline-block;
+        }
+
+        .section-title {
+            font-size: 8.5pt;
+            font-weight: bold;
+            color: #0f172a;
+            margin-left: 6px;
+        }
+
+        .section-sub {
+            font-size: 7pt;
+            color: #64748b;
+            font-style: italic;
+            margin-left: 8px;
+        }
+
+        .page-counter {
+            font-size: 7.5pt;
+            font-weight: bold;
+            color: #334155;
+            text-align: right;
+        }
+
+        /* Column Headers for Rounds */
+        .round-headers-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            margin-bottom: 3px;
+        }
+
+        .round-header-box {
+            background-color: #0f172a;
+            color: #ffffff;
+            font-size: 7pt;
+            font-weight: bold;
+            text-align: center;
+            padding: 3px 4px;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+            border-radius: 2px;
+        }
+
+        /* Master Bracket Grid Table */
+        table.bracket-grid {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        table.bracket-grid td {
+            padding: 0;
+            margin: 0;
+            vertical-align: middle;
+        }
+
+        /* Match Card */
+        .match-card {
+            border: 1px solid #334155;
+            background-color: #ffffff;
+            margin: 2px 0;
+            border-radius: 2px;
+        }
+
+        .match-header {
+            background-color: #f1f5f9;
+            font-size: 5.5pt;
+            font-weight: bold;
+            color: #475569;
+            padding: 1px 4px;
+            border-bottom: 0.5px solid #cbd5e1;
+        }
+
+        .match-court {
+            float: right;
+            color: #2563eb;
+        }
+
+        .player-row {
+            padding: 2px 4px;
+            font-size: 6.5pt;
+            border-bottom: 0.5px solid #e2e8f0;
+            white-space: nowrap;
+            overflow: hidden;
+            background-color: #ffffff;
+        }
+
+        .player-row.last {
+            border-bottom: none;
+        }
+
+        .player-row.winner {
+            font-weight: bold;
+            background-color: #eff6ff;
+            color: #1e3a8a;
+        }
+
+        .seed-badge {
+            color: #64748b;
+            font-size: 5.5pt;
+            font-weight: bold;
+            margin-right: 2px;
+        }
+
+        .score-box {
+            float: right;
+            font-weight: bold;
+            font-size: 6.5pt;
+            margin-left: 4px;
+            color: #0f172a;
+        }
+
+        .score-bye {
+            float: right;
+            font-style: italic;
+            color: #94a3b8;
+            font-size: 6pt;
+        }
+
+        /* Connectors */
+        .c-col {
+            width: 8px;
+        }
+
+        .c-empty {
+            border: none;
+        }
+
+        .c-top-branch {
+            border-bottom: 1.5px solid #0f172a;
+        }
+
+        .c-bot-branch {
+            border-top: 1.5px solid #0f172a;
+        }
+
+        .c-vert {
+            border-right: 1.5px solid #0f172a;
+        }
+
+        .c-stem {
+            border-top: 1.5px solid #0f172a;
+        }
+
+        /* Target Card (Champion or Next Stage Qualifier) */
+        .target-card-champ {
+            border: 2px solid #059669;
+            background-color: #ecfdf5;
+            padding: 8px 6px;
+            text-align: center;
+            margin: 0 4px;
+            border-radius: 4px;
+        }
+
+        .target-title-champ {
+            font-size: 7.5pt;
+            font-weight: bold;
+            color: #047857;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .target-name-champ {
+            font-size: 9.5pt;
+            font-weight: bold;
+            color: #064e3b;
+            margin-top: 3px;
+        }
+
+        .target-card-qualifier {
+            border: 1.5px dashed #2563eb;
+            background-color: #eff6ff;
+            padding: 8px 6px;
+            text-align: center;
+            margin: 0 4px;
+            border-radius: 4px;
+        }
+
+        .target-title-qualifier {
+            font-size: 7pt;
+            font-weight: bold;
+            color: #1d4ed8;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .target-name-qualifier {
+            font-size: 8.5pt;
+            font-weight: bold;
+            color: #1e3a8a;
+            margin-top: 3px;
+        }
+
+        /* Footer */
+        .page-footer {
+            margin-top: 4px;
+            padding-top: 2px;
+            border-top: 0.5px solid #cbd5e1;
+            font-size: 6pt;
+            color: #94a3b8;
+            width: 100%;
+        }
+
+        .footer-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .footer-table td {
+            vertical-align: middle;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+
+{% for page in draw_data.pages %}
+<div class="pdf-page">
+    <!-- Header -->
+    <div class="tourney-header">
+        <table class="header-table">
+            <tr>
+                <td style="width: 70%;">
+                    <div class="tourney-name">{{ draw_data.tournament_name }}</div>
+                    <div class="category-name">{{ draw_data.category_name }} &bull; {{ draw_data.format_name }}</div>
+                    <div class="meta-text">
+                        {% if draw_data.dates %}
+                        <span class="meta-pill">Date: {{ draw_data.dates }}</span>
+                        {% endif %}
+                        {% if draw_data.venue %}
+                        <span class="meta-pill">Venue: {{ draw_data.venue }}</span>
+                        {% endif %}
+                        <span class="meta-pill">Draw Size: {{ draw_data.bracket_size }} Participants</span>
+                        {% if draw_data.scoring_summary %}
+                        <span class="meta-pill">Scoring: {{ draw_data.scoring_summary }}</span>
+                        {% endif %}
+                        <span class="meta-pill">Status: {{ draw_data.status.replace('_', ' ').title() }}</span>
+                    </div>
+                </td>
+                <td style="width: 30%; text-align: right;">
+                    <div class="badge-official">OFFICIAL BRACKET DRAW</div>
+                    <div style="font-size: 6.5pt; color: #64748b; margin-top: 3px;">
+                        TourneyPro Verification &bull; Immutable Match Records
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Section Banner -->
+    <div class="section-banner">
+        <table class="section-banner-table">
+            <tr>
+                <td style="width: 70%;">
+                    <span class="section-badge">{{ page.section_badge }}</span>
+                    <span class="section-title">{{ page.section_title }}</span>
+                    {% if page.section_subtitle %}
+                    <span class="section-sub">{{ page.section_subtitle }}</span>
+                    {% endif %}
+                </td>
+                <td style="width: 30%;" class="page-counter">
+                    Page {{ page.page_num }} of {{ page.total_pages }}
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Column Headers -->
+    <table class="round-headers-table">
+        <tr>
+            {% for header in page.round_headers %}
+            <td style="padding: 0 4px;">
+                <div class="round-header-box">{{ header }}</div>
+            </td>
+            {% if not loop.last %}
+            <td class="c-col">&nbsp;</td>
+            <td class="c-col">&nbsp;</td>
+            {% endif %}
+            {% endfor %}
+            <td class="c-col">&nbsp;</td>
+            <td style="width: 16%; padding: 0 4px;">
+                <div class="round-header-box" style="background-color: {% if page.is_final_page %}#059669{% else %}#2563eb{% endif %};">
+                    {% if page.is_final_page %}PODIUM &bull; CHAMPION{% else %}ADVANCEMENT{% endif %}
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Bracket Table Grid -->
+    <table class="bracket-grid">
+        {% for row in page.grid_cells %}
+        <tr>
+            {% for cell in row %}
+                {% if cell.type == 'match' %}
+                    {% set m = cell.data %}
+                    <td rowspan="{{ cell.rowspan }}" style="width: {{ cell.width }}; padding: 0 2px;">
+                        <div class="match-card">
+                            <div class="match-header">
+                                <span>Match #{{ m.match_number }} ({{ m.round_name }})</span>
+                                {% if m.court_name %}
+                                <span class="match-court">Crt: {{ m.court_name }}</span>
+                                {% elif m.scheduled_time %}
+                                <span class="match-court">{{ m.scheduled_time }}</span>
+                                {% endif %}
+                            </div>
+                            <!-- Player 1 -->
+                            <div class="player-row {% if m.p1.is_winner %}winner{% endif %}">
+                                {% if m.p1.seed %}
+                                <span class="seed-badge">[{{ m.p1.seed }}]</span>
+                                {% endif %}
+                                <span style="{% if m.p1.is_bye %}font-style: italic; color: #94a3b8;{% endif %}">{{ m.p1.name }}</span>
+                                {% if m.p1.score %}
+                                <span class="score-box">{{ m.p1.score }}</span>
+                                {% endif %}
+                            </div>
+                            <!-- Player 2 -->
+                            <div class="player-row last {% if m.p2.is_winner %}winner{% endif %}">
+                                {% if m.p2.seed %}
+                                <span class="seed-badge">[{{ m.p2.seed }}]</span>
+                                {% endif %}
+                                <span style="{% if m.p2.is_bye %}font-style: italic; color: #94a3b8;{% endif %}">{{ m.p2.name }}</span>
+                                {% if m.p2.score %}
+                                <span class="score-box">{{ m.p2.score }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                {% elif cell.type in ('conn', 'conn_stem', 'target_stem', 'target_stem_top') %}
+                    <td rowspan="{{ cell.rowspan }}" class="c-col {{ cell.classes }}">&nbsp;</td>
+                {% elif cell.type == 'target' %}
+                    {% set t = cell.data %}
+                    <td rowspan="{{ cell.rowspan }}" style="width: {{ cell.width }}; padding: 0 4px;">
+                        {% if t.type == 'champion' %}
+                        <div class="target-card-champ">
+                            <div class="target-title-champ">{{ t.title }}</div>
+                            <div class="target-name-champ">
+                                {% if t.name %}
+                                    {% if t.seed %}[{{ t.seed }}] {% endif %}{{ t.name }}
+                                {% else %}
+                                    <span style="color: #94a3b8; font-style: italic; font-weight: normal; font-size: 8pt;">Tournament In Progress</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="target-card-qualifier">
+                            <div class="target-title-qualifier">{{ t.title }}</div>
+                            <div class="target-name-qualifier">{{ t.name }}</div>
+                        </div>
+                        {% endif %}
+                    </td>
+                {% endif %}
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </table>
+
+    <!-- Footer -->
+    <div class="page-footer">
+        <table class="footer-table">
+            <tr>
+                <td style="width: 50%;">
+                    TourneyPro &bull; Lawn Tennis Tournament Engine &bull; Official Single Elimination Draw
+                </td>
+                <td style="width: 50%; text-align: right;">
+                    {{ draw_data.category_name }} &bull; Page {{ page.page_num }} of {{ page.total_pages }}
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+{% endfor %}
+
+</body>
+</html>
