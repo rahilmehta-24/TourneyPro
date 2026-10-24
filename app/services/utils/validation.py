@@ -65,9 +65,11 @@ def validate_email(email: Optional[str], required: bool = False, field_name: str
     return True, cleaned
 
 
-def validate_age(age_val: Any, min_age: int = 4, max_age: int = 100, field_name: str = "Age") -> Tuple[bool, Union[int, str]]:
+def validate_age(age_val: Any, min_age: int = 4, max_age: int = 100, field_name: str = "Age", required: bool = True) -> Tuple[bool, Union[int, str, None]]:
     """Validate age within competitive bounds."""
     if age_val is None or (isinstance(age_val, str) and not age_val.strip()):
+        if not required:
+            return True, None
         return False, f"{field_name} is required."
     try:
         age_int = int(age_val)

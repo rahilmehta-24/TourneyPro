@@ -138,6 +138,10 @@ class Participant(db.Model):
     group_losses = db.Column(db.Integer, default=0)
     group_points = db.Column(db.Integer, default=0)
 
+    # Payment info
+    payment_status = db.Column(db.String(20), default='paid')
+    payment_method = db.Column(db.String(50), nullable=True) # online, cash, free
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Match(db.Model):
@@ -411,6 +415,7 @@ class Registration(db.Model):
     payment_status = db.Column(db.String(20), default='pending') # pending, paid, refunded
     amount_due = db.Column(db.Float, default=0.0)
     transaction_id = db.Column(db.String(100)) # User's submitted UPI transaction ID
+    payment_method = db.Column(db.String(50), nullable=True) # online, cash, free
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships
