@@ -1,9 +1,18 @@
-from flask import Blueprint, make_response, abort, redirect, url_for
-from app.domain.models import Tournament, Category, Match, Group
 import csv
 import io
+import logging
+from flask import Blueprint, make_response, abort, redirect, url_for, flash
+from slugify import slugify
+
+from app.domain.models import Tournament, Category, Match, Group
+from app.web.controllers.auth import login_required, role_required, check_tournament_ownership
+from app.services.pdf.draw_adapter import DrawExportAdapter
+from app.services.pdf.pdf_generator import DrawPdfService
+
+logger = logging.getLogger(__name__)
 
 export_bp = Blueprint('export', __name__)
+
 
 def get_category_winners(category):
     winners = []
@@ -43,12 +52,73 @@ def get_category_winners(category):
                 
     return winners
 
+
 @export_bp.route('/tournaments/<slug>/category/<int:category_id>/export_pdf')
+@export_bp.route('/tournaments/<slug>/category/<int:category_id>/export_draw_pdf')
+@export_bp.route('/tournaments/<slug>/categories/<int:category_id>/export_pdf')
+@export_bp.route('/tournaments/<slug>/categories/<int:category_id>/export_draw_pdf')
+@export_bp.route('/t/<slug>/categories/<int:category_id>/export_pdf')
+@export_bp.route('/t/<slug>/categories/<int:category_id>/export_draw_pdf')
+@login_required
+@role_required('admin', 'superadmin')
 def export_category_pdf(slug, category_id):
-    # Simply redirect to the view page with export=1 flag
-    return redirect(url_for('category.view_category', slug=slug, category_id=category_id, export=1))
+    """
+    Retrieve the existing saved Single Elimination draw, populate the template,
+    and return a downloadable PDF.
+    Read-only: Never regenerates, reseeds, advances, or mutates database state.
+    """
+    slug = slug.strip()
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    category = Category.query.get_or_404(category_id)
+
+    # Validate tournament/category association
+    if category.tournament_id != tournament.id:
+        abort(404)
+
+    # Enforce strict authorization and tournament ownership
+    check_tournament_ownership(tournament)
+
+    # Verify that a saved draw exists in the database
+    matches = Match.query.filter(
+        Match.category_id == category.id,
+        Match.match_type == 'knockout',
+        Match.parent_match_id.is_(None)
+    ).all()
+
+    if not matches or category.status == 'setup':
+        flash(
+            "The tournament draw has not been generated yet. "
+            "Please start the category to generate the draw before exporting.",
+            "warning"
+        )
+        return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
+
+    try:
+        # Load and adapt the existing saved draw (read-only)
+        draw_data = DrawExportAdapter.adapt(tournament, category)
+        pdf_buffer = DrawPdfService.render_draw_pdf(draw_data)
+    except Exception as e:
+        logger.error(f"Error exporting draw PDF for category {category_id}: {e}", exc_info=True)
+        flash("An error occurred while generating the draw PDF.", "danger")
+        return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
+
+    # Sanitize filename to prevent path traversal or invalid characters
+    safe_tournament = slugify(tournament.name, separator='_') or f"tournament_{tournament.id}"
+    safe_category = slugify(category.name, separator='_') or f"category_{category.id}"
+    filename = f"tourneypro_{safe_tournament}_{safe_category}_draw.pdf"
+
+    response = make_response(pdf_buffer.getvalue())
+    response.headers["Content-Type"] = "application/pdf"
+    response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
 
 @export_bp.route('/tournaments/<slug>/category/<int:category_id>/export_matches_csv')
+@export_bp.route('/tournaments/<slug>/categories/<int:category_id>/export_matches_csv')
+@export_bp.route('/t/<slug>/categories/<int:category_id>/export_matches_csv')
 def export_matches_csv(slug, category_id):
     slug = slug.strip()
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
@@ -80,12 +150,19 @@ def export_matches_csv(slug, category_id):
                 
         writer.writerow([match.round, match.match_number, match.status, p1_name, p2_name, score, winner_name])
         
+    safe_tournament = slugify(tournament.name, separator='_') or f"tournament_{tournament.id}"
+    safe_category = slugify(category.name, separator='_') or f"category_{category.id}"
+    filename = f"{safe_tournament}_{safe_category}_Matches.csv"
+
     output = make_response(si.getvalue())
-    output.headers["Content-Disposition"] = f"attachment; filename=\"{tournament.name}_{category.name}_Matches.csv\""
+    output.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
     output.headers["Content-type"] = "text/csv"
     return output
 
+
 @export_bp.route('/tournaments/<slug>/category/<int:category_id>/export_standings_csv')
+@export_bp.route('/tournaments/<slug>/categories/<int:category_id>/export_standings_csv')
+@export_bp.route('/t/<slug>/categories/<int:category_id>/export_standings_csv')
 def export_standings_csv(slug, category_id):
     slug = slug.strip()
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
@@ -131,7 +208,11 @@ def export_standings_csv(slug, category_id):
             ])
         writer.writerow([])
         
+    safe_tournament = slugify(tournament.name, separator='_') or f"tournament_{tournament.id}"
+    safe_category = slugify(category.name, separator='_') or f"category_{category.id}"
+    filename = f"{safe_tournament}_{safe_category}_Standings.csv"
+
     output = make_response(si.getvalue())
-    output.headers["Content-Disposition"] = f"attachment; filename=\"{tournament.name}_{category.name}_Standings.csv\""
+    output.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
     output.headers["Content-type"] = "text/csv"
     return output
