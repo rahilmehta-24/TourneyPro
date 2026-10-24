@@ -31,18 +31,14 @@ class DrawPdfService:
             RuntimeError: If template rendering or PDF compilation fails.
         """
         try:
-            rendered_html = render_template('export/draw_pdf.html', draw_data=draw_data)
+            rendered_html = render_template("export/draw_pdf.html", draw_data=draw_data)
         except Exception as e:
             logger.error(f"Template rendering failed for draw PDF: {e}", exc_info=True)
             raise RuntimeError(f"Failed to render draw bracket template: {e}") from e
 
         pdf_buffer = io.BytesIO()
         try:
-            pisa_status = pisa.CreatePDF(
-                src=rendered_html,
-                dest=pdf_buffer,
-                encoding='utf-8'
-            )
+            pisa_status = pisa.CreatePDF(src=rendered_html, dest=pdf_buffer, encoding="utf-8")
         except Exception as e:
             logger.error(f"xhtml2pdf compiler exception during draw PDF export: {e}", exc_info=True)
             raise RuntimeError(f"xhtml2pdf compilation failure: {e}") from e
@@ -81,24 +77,24 @@ class DrawPdfService:
             RuntimeError: If template rendering or PDF compilation fails.
         """
         try:
-            rendered_html = render_template('export/order_of_play_pdf.html', oop_data=oop_data)
+            rendered_html = render_template("export/order_of_play_pdf.html", oop_data=oop_data)
         except Exception as e:
             logger.error(f"Template rendering failed for Order of Play PDF: {e}", exc_info=True)
             raise RuntimeError(f"Failed to render Order of Play template: {e}") from e
 
         pdf_buffer = io.BytesIO()
         try:
-            pisa_status = pisa.CreatePDF(
-                src=rendered_html,
-                dest=pdf_buffer,
-                encoding='utf-8'
-            )
+            pisa_status = pisa.CreatePDF(src=rendered_html, dest=pdf_buffer, encoding="utf-8")
         except Exception as e:
-            logger.error(f"xhtml2pdf compiler exception during Order of Play PDF export: {e}", exc_info=True)
+            logger.error(
+                f"xhtml2pdf compiler exception during Order of Play PDF export: {e}", exc_info=True
+            )
             raise RuntimeError(f"xhtml2pdf compilation failure: {e}") from e
 
         if pisa_status.err:
-            logger.error(f"xhtml2pdf returned error code {pisa_status.err} during Order of Play export")
+            logger.error(
+                f"xhtml2pdf returned error code {pisa_status.err} during Order of Play export"
+            )
             raise RuntimeError(f"PDF rendering engine returned error status: {pisa_status.err}")
 
         # Validate generated PDF integrity
@@ -109,8 +105,12 @@ class DrawPdfService:
                 raise RuntimeError("Generated Order of Play PDF document contains no pages.")
             _ = reader.pages[0].mediabox
         except Exception as e:
-            logger.error(f"pypdf integrity check failed on generated Order of Play PDF: {e}", exc_info=True)
-            raise RuntimeError(f"Generated Order of Play PDF failed integrity verification: {e}") from e
+            logger.error(
+                f"pypdf integrity check failed on generated Order of Play PDF: {e}", exc_info=True
+            )
+            raise RuntimeError(
+                f"Generated Order of Play PDF failed integrity verification: {e}"
+            ) from e
 
         pdf_buffer.seek(0)
         return pdf_buffer

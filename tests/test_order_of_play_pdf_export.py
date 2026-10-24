@@ -27,14 +27,14 @@ from app.domain.models import db, User, Tournament, Category, Match, Participant
 class OrderOfPlayPdfExportTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.db_fd, cls.db_path = tempfile.mkstemp(suffix='.db')
+        cls.db_fd, cls.db_path = tempfile.mkstemp(suffix=".db")
         os.close(cls.db_fd)
 
         class TestConfig:
             TESTING = True
-            SECRET_KEY = 'test-secret-key'
-            JWT_SECRET_KEY = 'jwt-test-secret'
-            SQLALCHEMY_DATABASE_URI = f'sqlite:///{cls.db_path}'
+            SECRET_KEY = "test-secret-key"
+            JWT_SECRET_KEY = "jwt-test-secret"
+            SQLALCHEMY_DATABASE_URI = f"sqlite:///{cls.db_path}"
             SQLALCHEMY_TRACK_MODIFICATIONS = False
             WTF_CSRF_ENABLED = False
             UPLOAD_FOLDER = tempfile.mkdtemp()
@@ -63,8 +63,8 @@ class OrderOfPlayPdfExportTestCase(unittest.TestCase):
             User.query.delete()
             db.session.commit()
 
-            self.organizer = User(username='organizer1', email='org1@test.com', role='admin')
-            self.organizer.set_password('pass123')
+            self.organizer = User(username="organizer1", email="org1@test.com", role="admin")
+            self.organizer.set_password("pass123")
             db.session.add(self.organizer)
             db.session.commit()
 
@@ -78,7 +78,7 @@ class OrderOfPlayPdfExportTestCase(unittest.TestCase):
                 court_operating_start="09:00",
                 court_operating_end="19:00",
                 start_date=date(2026, 7, 1),
-                end_date=date(2026, 7, 7)
+                end_date=date(2026, 7, 7),
             )
             db.session.add(self.tournament)
             db.session.commit()
@@ -89,15 +89,39 @@ class OrderOfPlayPdfExportTestCase(unittest.TestCase):
                 format="single_elimination",
                 status="in_progress",
                 num_sets=3,
-                games_per_set=6
+                games_per_set=6,
             )
             db.session.add(self.category)
             db.session.commit()
 
-            self.p1 = Participant(tournament_id=self.tournament.id, category_id=self.category.id, name="Novak Djokovic", seed=1, manual_seed=1)
-            self.p2 = Participant(tournament_id=self.tournament.id, category_id=self.category.id, name="Carlos Alcaraz", seed=2, manual_seed=2)
-            self.p3 = Participant(tournament_id=self.tournament.id, category_id=self.category.id, name="Jannik Sinner", seed=3, manual_seed=3)
-            self.p4 = Participant(tournament_id=self.tournament.id, category_id=self.category.id, name="Daniil Medvedev", seed=4, manual_seed=4)
+            self.p1 = Participant(
+                tournament_id=self.tournament.id,
+                category_id=self.category.id,
+                name="Novak Djokovic",
+                seed=1,
+                manual_seed=1,
+            )
+            self.p2 = Participant(
+                tournament_id=self.tournament.id,
+                category_id=self.category.id,
+                name="Carlos Alcaraz",
+                seed=2,
+                manual_seed=2,
+            )
+            self.p3 = Participant(
+                tournament_id=self.tournament.id,
+                category_id=self.category.id,
+                name="Jannik Sinner",
+                seed=3,
+                manual_seed=3,
+            )
+            self.p4 = Participant(
+                tournament_id=self.tournament.id,
+                category_id=self.category.id,
+                name="Daniil Medvedev",
+                seed=4,
+                manual_seed=4,
+            )
             db.session.add_all([self.p1, self.p2, self.p3, self.p4])
             db.session.commit()
 
@@ -108,7 +132,7 @@ class OrderOfPlayPdfExportTestCase(unittest.TestCase):
                 category_id=self.category.id,
                 round=1,
                 match_number=1,
-                match_type='knockout',
+                match_type="knockout",
                 participant1_id=self.p1.id,
                 participant2_id=self.p4.id,
                 court_name="Court 1",
@@ -116,7 +140,7 @@ class OrderOfPlayPdfExportTestCase(unittest.TestCase):
                 status="completed",
                 winner_id=self.p1.id,
                 score1="6-4, 6-3",
-                score2="4-6, 3-6"
+                score2="4-6, 3-6",
             )
             # Court 1, Evening session (17:00, NB)
             self.m2 = Match(
@@ -124,13 +148,13 @@ class OrderOfPlayPdfExportTestCase(unittest.TestCase):
                 category_id=self.category.id,
                 round=1,
                 match_number=2,
-                match_type='knockout',
+                match_type="knockout",
                 participant1_id=self.p2.id,
                 participant2_id=self.p3.id,
                 court_name="Court 1",
                 scheduled_time=datetime(2026, 7, 1, 17, 0),
                 is_not_before=True,
-                status="in_progress"
+                status="in_progress",
             )
             # Court 2, Day session (10:00)
             self.m3 = Match(
@@ -138,12 +162,12 @@ class OrderOfPlayPdfExportTestCase(unittest.TestCase):
                 category_id=self.category.id,
                 round=2,
                 match_number=1,
-                match_type='knockout',
+                match_type="knockout",
                 participant1_id=self.p1.id,
                 participant2_id=self.p2.id,
                 court_name="Court 2",
                 scheduled_time=datetime(2026, 7, 1, 10, 0),
-                status="pending"
+                status="pending",
             )
             # Match on Day 2 (2026-07-02)
             self.m4 = Match(
@@ -151,12 +175,12 @@ class OrderOfPlayPdfExportTestCase(unittest.TestCase):
                 category_id=self.category.id,
                 round=2,
                 match_number=2,
-                match_type='knockout',
+                match_type="knockout",
                 participant1_id=self.p3.id,
                 participant2_id=self.p4.id,
                 court_name="Court 1",
                 scheduled_time=datetime(2026, 7, 2, 11, 0),
-                status="pending"
+                status="pending",
             )
             db.session.add_all([self.m1, self.m2, self.m3, self.m4])
             db.session.commit()
@@ -171,7 +195,10 @@ class OrderOfPlayPdfExportTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.headers.get("Content-Type"), "application/pdf")
         self.assertIn("attachment; filename=", res.headers.get("Content-Disposition", ""))
-        self.assertIn("tourneypro_wimbledon_championship_order_of_play_", res.headers.get("Content-Disposition"))
+        self.assertIn(
+            "tourneypro_wimbledon_championship_order_of_play_",
+            res.headers.get("Content-Disposition"),
+        )
 
         pdf_reader = PdfReader(BytesIO(res.data))
         self.assertGreaterEqual(len(pdf_reader.pages), 1)
@@ -191,7 +218,9 @@ class OrderOfPlayPdfExportTestCase(unittest.TestCase):
 
     def test_02_export_order_of_play_date_filtering(self):
         """Test filtering by date only exports matches for that specific date."""
-        res = self.client.get(f"/tournaments/{self.tournament_slug}/order-of-play/export_pdf?date=2026-07-02")
+        res = self.client.get(
+            f"/tournaments/{self.tournament_slug}/order-of-play/export_pdf?date=2026-07-02"
+        )
         self.assertEqual(res.status_code, 200)
         self.assertIn("20260702", res.headers.get("Content-Disposition", ""))
 
@@ -204,7 +233,9 @@ class OrderOfPlayPdfExportTestCase(unittest.TestCase):
 
     def test_03_export_order_of_play_court_filtering(self):
         """Test filtering by court only includes matches from that court."""
-        res = self.client.get(f"/tournaments/{self.tournament_slug}/order-of-play/export_pdf?date=2026-07-01&court=Court+2")
+        res = self.client.get(
+            f"/tournaments/{self.tournament_slug}/order-of-play/export_pdf?date=2026-07-01&court=Court+2"
+        )
         self.assertEqual(res.status_code, 200)
         self.assertIn("court_2", res.headers.get("Content-Disposition", ""))
 
@@ -216,7 +247,9 @@ class OrderOfPlayPdfExportTestCase(unittest.TestCase):
     def test_04_export_order_of_play_session_filtering(self):
         """Test filtering by session (day vs evening) includes only target session matches."""
         # Evening session on 2026-07-01 (Match 2 at 17:00)
-        res = self.client.get(f"/tournaments/{self.tournament_slug}/order-of-play/export_pdf?date=2026-07-01&session=evening")
+        res = self.client.get(
+            f"/tournaments/{self.tournament_slug}/order-of-play/export_pdf?date=2026-07-01&session=evening"
+        )
         self.assertEqual(res.status_code, 200)
         self.assertIn("evening", res.headers.get("Content-Disposition", ""))
 
@@ -233,7 +266,7 @@ class OrderOfPlayPdfExportTestCase(unittest.TestCase):
                 name="Club League",
                 format="group_stage",
                 has_group_stage=True,
-                status="in_progress"
+                status="in_progress",
             )
             db.session.add(cat)
             db.session.flush()
@@ -242,8 +275,18 @@ class OrderOfPlayPdfExportTestCase(unittest.TestCase):
             db.session.add(grp)
             db.session.flush()
 
-            t1 = Participant(tournament_id=self.tournament_id, category_id=cat.id, group_id=grp.id, name="Dragons Team")
-            t2 = Participant(tournament_id=self.tournament_id, category_id=cat.id, group_id=grp.id, name="Phoenix Team")
+            t1 = Participant(
+                tournament_id=self.tournament_id,
+                category_id=cat.id,
+                group_id=grp.id,
+                name="Dragons Team",
+            )
+            t2 = Participant(
+                tournament_id=self.tournament_id,
+                category_id=cat.id,
+                group_id=grp.id,
+                name="Phoenix Team",
+            )
             db.session.add_all([t1, t2])
             db.session.flush()
 
@@ -253,12 +296,12 @@ class OrderOfPlayPdfExportTestCase(unittest.TestCase):
                 group_id=grp.id,
                 participant1_id=t1.id,
                 participant2_id=t2.id,
-                match_type='group_stage',
+                match_type="group_stage",
                 round=1,
                 match_number=10,
                 court_name="Court 1",
                 scheduled_time=datetime(2026, 7, 3, 10, 0),
-                status="in_progress"
+                status="in_progress",
             )
             db.session.add(parent)
             db.session.flush()
@@ -270,18 +313,20 @@ class OrderOfPlayPdfExportTestCase(unittest.TestCase):
                 parent_match_id=parent.id,
                 round=1,
                 match_number=10,
-                rubber_type='singles',
+                rubber_type="singles",
                 rubber_number=1,
                 court_name="Court 1",
                 scheduled_time=datetime(2026, 7, 3, 10, 0),
                 status="completed",
                 score1="6-3, 6-4",
-                score2="3-6, 4-6"
+                score2="3-6, 4-6",
             )
             db.session.add(r1)
             db.session.commit()
 
-        res = self.client.get(f"/tournaments/{self.tournament_slug}/order-of-play/export_pdf?date=2026-07-03")
+        res = self.client.get(
+            f"/tournaments/{self.tournament_slug}/order-of-play/export_pdf?date=2026-07-03"
+        )
         self.assertEqual(res.status_code, 200)
 
         pdf_reader = PdfReader(BytesIO(res.data))
@@ -292,7 +337,9 @@ class OrderOfPlayPdfExportTestCase(unittest.TestCase):
 
     def test_06_completed_matches_display_scores(self):
         """Test that completed match displays recorded scoreline."""
-        res = self.client.get(f"/tournaments/{self.tournament_slug}/order-of-play/export_pdf?date=2026-07-01")
+        res = self.client.get(
+            f"/tournaments/{self.tournament_slug}/order-of-play/export_pdf?date=2026-07-01"
+        )
         self.assertEqual(res.status_code, 200)
 
         pdf_reader = PdfReader(BytesIO(res.data))
@@ -301,7 +348,9 @@ class OrderOfPlayPdfExportTestCase(unittest.TestCase):
 
     def test_07_empty_order_of_play_returns_valid_pdf(self):
         """Test that a date with no scheduled matches returns a valid PDF with empty notice."""
-        res = self.client.get(f"/tournaments/{self.tournament_slug}/order-of-play/export_pdf?date=2026-07-05")
+        res = self.client.get(
+            f"/tournaments/{self.tournament_slug}/order-of-play/export_pdf?date=2026-07-05"
+        )
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.headers.get("Content-Type"), "application/pdf")
 
@@ -317,14 +366,19 @@ class OrderOfPlayPdfExportTestCase(unittest.TestCase):
 
     def test_09_legacy_export_query_param_redirects(self):
         """Test that legacy order-of-play?export=1 redirects to export_order_of_play_pdf."""
-        res = self.client.get(f"/tournaments/{self.tournament_slug}/order-of-play?export=1&date=2026-07-01")
+        res = self.client.get(
+            f"/tournaments/{self.tournament_slug}/order-of-play?export=1&date=2026-07-01"
+        )
         self.assertEqual(res.status_code, 302)
         self.assertIn("/order-of-play/export_pdf", res.headers.get("Location", ""))
 
     def test_10_database_immutability(self):
         """Test that Order of Play export is strictly read-only and does not mutate any records."""
         with self.app.app_context():
-            matches_before = [(m.id, m.status, m.winner_id, m.score1, m.score2, m.court_name, m.scheduled_time) for m in Match.query.all()]
+            matches_before = [
+                (m.id, m.status, m.winner_id, m.score1, m.score2, m.court_name, m.scheduled_time)
+                for m in Match.query.all()
+            ]
             participants_before = [(p.id, p.name, p.seed) for p in Participant.query.all()]
             t = db.session.get(Tournament, self.tournament_id)
             tourn_before = (t.name, t.status)
@@ -334,7 +388,10 @@ class OrderOfPlayPdfExportTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
 
         with self.app.app_context():
-            matches_after = [(m.id, m.status, m.winner_id, m.score1, m.score2, m.court_name, m.scheduled_time) for m in Match.query.all()]
+            matches_after = [
+                (m.id, m.status, m.winner_id, m.score1, m.score2, m.court_name, m.scheduled_time)
+                for m in Match.query.all()
+            ]
             participants_after = [(p.id, p.name, p.seed) for p in Participant.query.all()]
             t = db.session.get(Tournament, self.tournament_id)
             tourn_after = (t.name, t.status)
@@ -344,5 +401,5 @@ class OrderOfPlayPdfExportTestCase(unittest.TestCase):
         self.assertEqual(tourn_before, tourn_after)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
