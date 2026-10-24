@@ -1,12 +1,14 @@
 import csv
 import io
 import logging
-from flask import Blueprint, make_response, abort, redirect, url_for, flash
+from datetime import datetime
+from flask import Blueprint, make_response, abort, redirect, url_for, flash, request
 from slugify import slugify
 
 from app.domain.models import Tournament, Category, Match, Group
 from app.web.controllers.auth import login_required, role_required, check_tournament_ownership
 from app.services.pdf.draw_adapter import DrawExportAdapter
+from app.services.pdf.order_of_play_adapter import OrderOfPlayExportAdapter
 from app.services.pdf.pdf_generator import DrawPdfService
 
 logger = logging.getLogger(__name__)
@@ -106,6 +108,60 @@ def export_category_pdf(slug, category_id):
     safe_tournament = slugify(tournament.name, separator='_') or f"tournament_{tournament.id}"
     safe_category = slugify(category.name, separator='_') or f"category_{category.id}"
     filename = f"tourneypro_{safe_tournament}_{safe_category}_draw.pdf"
+
+    response = make_response(pdf_buffer.getvalue())
+    response.headers["Content-Type"] = "application/pdf"
+    response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
+
+@export_bp.route('/t/<slug>/order-of-play/export_pdf')
+@export_bp.route('/tournaments/<slug>/order-of-play/export_pdf')
+def export_order_of_play_pdf(slug):
+    """
+    Retrieve and format the existing Order of Play schedule for a tournament,
+    render the static template, and return a downloadable PDF.
+    Read-only: Never regenerates, reschedules, or mutates database state.
+    """
+    slug = slug.strip()
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+
+    # Parse optional filter arguments
+    date_param = request.args.get('date')
+    filter_date = None
+    if date_param:
+        try:
+            filter_date = datetime.strptime(date_param, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+
+    selected_court = request.args.get('court') or None
+    session_filter = request.args.get('session', 'all')
+    if session_filter not in ('all', 'day', 'evening'):
+        session_filter = 'all'
+
+    try:
+        oop_data = OrderOfPlayExportAdapter.adapt(
+            tournament=tournament,
+            filter_date=filter_date,
+            selected_court=selected_court,
+            session_filter=session_filter
+        )
+        pdf_buffer = DrawPdfService.render_order_of_play_pdf(oop_data)
+    except Exception as e:
+        logger.error(f"Error exporting Order of Play PDF for tournament {slug}: {e}", exc_info=True)
+        flash("An error occurred while generating the Order of Play PDF.", "danger")
+        return redirect(url_for('tournament.order_of_play', slug=slug, date=date_param or ''))
+
+    # Build safe, sanitized download filename
+    safe_tournament = slugify(tournament.name, separator='_') or f"tournament_{tournament.id}"
+    date_suffix = filter_date.strftime("%Y%m%d") if filter_date else "full"
+    court_suffix = f"_{slugify(selected_court, separator='_')}" if selected_court else ""
+    session_suffix = f"_{session_filter}" if session_filter in ('day', 'evening') else ""
+    filename = f"tourneypro_{safe_tournament}_order_of_play_{date_suffix}{court_suffix}{session_suffix}.pdf"
 
     response = make_response(pdf_buffer.getvalue())
     response.headers["Content-Type"] = "application/pdf"

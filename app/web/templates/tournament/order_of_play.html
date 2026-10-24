@@ -803,8 +803,8 @@
         ⚙️ Organizer Controls
       </a>
       {% endif %}
-      <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug, court=selected_court or '', date=active_date.strftime('%Y-%m-%d') if active_date else '', session=session_filter or 'all', export='1') }}"
-         target="_blank" class="btn btn-secondary btn-sm">🖨️ Export PDF</a>
+      <a href="{{ url_for('export.export_order_of_play_pdf', slug=tournament.url_slug, court=selected_court or '', date=active_date.strftime('%Y-%m-%d') if active_date else '', session=session_filter or 'all') }}"
+         id="btnExportOopPdf" class="btn btn-secondary btn-sm" title="Download official Order of Play PDF">🖨️ Export PDF</a>
     </div>
   </div>
 

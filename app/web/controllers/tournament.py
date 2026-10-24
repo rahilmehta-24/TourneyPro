@@ -1533,7 +1533,15 @@ def order_of_play(slug):
     session_filter = request.args.get('session', 'all')
     if session_filter not in ('all', 'day', 'evening'):
         session_filter = 'all'
-    is_export = request.args.get('export', '0') == '1'
+    if request.args.get('export', '0') == '1':
+        return redirect(url_for(
+            'export.export_order_of_play_pdf',
+            slug=slug,
+            date=date_param or '',
+            court=selected_court or '',
+            session=session_filter or 'all'
+        ))
+    is_export = False
 
     courts = data['courts']
     if selected_court and selected_court in courts:
