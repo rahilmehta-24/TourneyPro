@@ -1,7 +1,7 @@
 import unittest
 import os
 import tempfile
-from datetime import datetime, date
+from datetime import date
 from app import create_app
 from app.domain.models import db, User, Tournament, Category, Participant, Player, Registration
 
