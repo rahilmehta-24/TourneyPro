@@ -173,7 +173,7 @@
         <!-- 3. DOUBLES PARTNERS CONTAINER (DYNAMIC) -->
         <div id="doubles_partners_container"></div>
 
-        <!-- 4. PAYMENT & UPI SECTION -->
+        <!-- 4. PAYMENT & SELECTION SECTION -->
         <div id="payment_summary" style="display: none; background: var(--bg-card); border-radius: var(--radius-lg); padding: 1.75rem; border: 1px solid var(--accent-primary); box-shadow: 0 4px 20px rgba(59, 130, 246, 0.15); text-align: center;">
             <span style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-primary); font-weight: 700;">Registration Fee Summary</span>
             <h2 style="margin: 0.35rem 0 0.5rem; font-size: 2rem; color: var(--text-primary); font-weight: 800;">
@@ -183,8 +183,46 @@
                 (Doubles team entries cover both partner slots)
             </p>
 
+            <!-- Payment Method Choice (Online vs Cash) -->
+            <div style="margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border-color); text-align: left;">
+                <label style="display: block; font-size: 0.88rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.65rem; text-align: center;">
+                    Select Payment Method *
+                </label>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.85rem; max-width: 520px; margin: 0 auto;">
+                    
+                    {% if tournament.payment_upi_id %}
+                    <!-- Pay Online Option -->
+                    <label id="playerPayMethodOnlineLabel" onclick="setRegPaymentMethod('online')" style="cursor: pointer; border: 2px solid var(--accent-primary); background: rgba(59, 130, 246, 0.08); border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; gap: 0.3rem; transition: all 0.15s ease;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <span style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.4rem;">
+                                💳 Pay Online (UPI QR)
+                            </span>
+                            <input type="radio" name="payment_method" value="online" id="regPayMethodOnline" checked style="accent-color: var(--accent-primary);">
+                        </div>
+                        <span style="font-size: 0.78rem; color: var(--text-secondary);">
+                            Instant UPI scan &amp; verify via UTR
+                        </span>
+                    </label>
+                    {% endif %}
+
+                    <!-- Pay Cash Option -->
+                    <label id="playerPayMethodCashLabel" onclick="setRegPaymentMethod('cash')" style="cursor: pointer; border: {% if not tournament.payment_upi_id %}2px solid var(--accent-success){% else %}1px solid var(--border-color){% endif %}; background: {% if not tournament.payment_upi_id %}rgba(16, 185, 129, 0.08){% else %}var(--bg-secondary){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; gap: 0.3rem; transition: all 0.15s ease;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <span style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.4rem;">
+                                💵 Pay in Cash
+                            </span>
+                            <input type="radio" name="payment_method" value="cash" id="regPayMethodCash" {% if not tournament.payment_upi_id %}checked{% endif %} style="accent-color: var(--accent-success);">
+                        </div>
+                        <span style="font-size: 0.78rem; color: var(--text-secondary);">
+                            Pay at tournament venue desk on arrival
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- ONLINE SECTION: UPI QR & UTR input -->
             {% if tournament.payment_upi_id %}
-            <div id="upi_payment_section" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
+            <div id="online_payment_section" style="margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border-color);">
                 <h4 style="margin: 0 0 0.5rem; font-size: 1.05rem; color: var(--text-primary); font-weight: 700;">📲 Scan to Pay via UPI</h4>
                 <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0 0 1rem;">Scan with Google Pay, PhonePe, Paytm, or any BHIM UPI app</p>
                 
@@ -197,18 +235,34 @@
                     <strong style="color: var(--text-primary); font-size: 0.95rem;">{{ tournament.payment_upi_id }}</strong>
                 </div>
 
-                <div class="form-group" style="max-width: 320px; margin: 0 auto; text-align: left;">
+                <div class="form-group" style="max-width: 340px; margin: 0 auto; text-align: left;">
                     <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Transaction ID / UTR Number *</label>
-                    <input type="text" name="transaction_id" id="transaction_id" class="form-input" placeholder="e.g. 402194829391" minlength="8" maxlength="35" required style="width: 100%; font-size: 0.95rem; letter-spacing: 0.5px;">
+                    <input type="text" name="transaction_id" id="transaction_id" class="form-input" placeholder="e.g. 402194829391" minlength="8" maxlength="35" style="width: 100%; font-size: 0.95rem; letter-spacing: 0.5px;">
                     <small style="display: block; margin-top: 0.3rem; color: var(--text-muted); font-size: 0.75rem;">Enter 12-digit UTR from your payment confirmation screen.</small>
                 </div>
             </div>
             {% endif %}
+
+            <!-- CASH SECTION: Venue desk instructions -->
+            <div id="cash_payment_section" style="display: {% if not tournament.payment_upi_id %}block{% else %}none{% endif %}; margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border-color);">
+                <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: var(--radius-md); padding: 1.25rem; max-width: 480px; margin: 0 auto; text-align: left;">
+                    <div style="display: flex; align-items: center; gap: 0.45rem; font-weight: 700; color: #10b981; font-size: 1rem; margin-bottom: 0.35rem;">
+                        <span>💵 Pay in Cash at Tournament Desk</span>
+                    </div>
+                    <p style="margin: 0 0 0.6rem; font-size: 0.85rem; color: var(--text-primary); line-height: 1.45;">
+                        Please bring the exact entry fee of <strong id="cashDueDisplay" style="color: var(--accent-success);">₹0.00</strong> in cash to the tournament reception desk before your first scheduled match.
+                    </p>
+                    <div style="font-size: 0.78rem; color: var(--text-secondary); display: flex; align-items: flex-start; gap: 0.4rem;">
+                        <span>ℹ️</span>
+                        <span>The tournament admin will collect your payment on arrival and officially activate your entry in the system.</span>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div style="background: var(--bg-secondary); padding: 0.85rem 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); font-size: 0.82rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.6rem;">
             <span>ℹ️</span>
-            <span>Free categories are instantly confirmed. Paid registrations are activated once payment UTR is verified by the organizers.</span>
+            <span id="reg_status_info_text">Free categories are instantly confirmed. Paid registrations are activated once payment is verified by the organizers.</span>
         </div>
 
         <!-- FORM ACTIONS -->
@@ -216,7 +270,7 @@
             <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug, view='bracket') }}" class="btn btn-secondary" style="padding: 0.65rem 1.25rem; font-size: 0.9rem;">
                 Cancel
             </a>
-            <button type="submit" class="btn btn-primary" style="padding: 0.65rem 2rem; font-size: 0.95rem; font-weight: 700; background: var(--accent-success); border-color: var(--accent-success);">
+            <button type="submit" id="submitRegBtn" class="btn btn-primary" style="padding: 0.65rem 2rem; font-size: 0.95rem; font-weight: 700; background: var(--accent-success); border-color: var(--accent-success);">
                 ✓ Complete Registration
             </button>
         </div>
@@ -224,6 +278,69 @@
 </div>
 
 <script>
+let currentRegMethod = {% if tournament.payment_upi_id %}'online'{% else %}'cash'{% endif %};
+
+function setRegPaymentMethod(method) {
+    currentRegMethod = method;
+    const radioOnline = document.getElementById('regPayMethodOnline');
+    const radioCash = document.getElementById('regPayMethodCash');
+    const labelOnline = document.getElementById('playerPayMethodOnlineLabel');
+    const labelCash = document.getElementById('playerPayMethodCashLabel');
+    const onlineSec = document.getElementById('online_payment_section');
+    const cashSec = document.getElementById('cash_payment_section');
+    const txInput = document.getElementById('transaction_id');
+    const submitBtn = document.getElementById('submitRegBtn');
+    const infoText = document.getElementById('reg_status_info_text');
+
+    if (method === 'online') {
+        if (radioOnline) radioOnline.checked = true;
+        if (labelOnline) {
+            labelOnline.style.borderColor = 'var(--accent-primary)';
+            labelOnline.style.background = 'rgba(59, 130, 246, 0.08)';
+            labelOnline.style.boxShadow = '0 0 0 1px var(--accent-primary)';
+        }
+        if (labelCash) {
+            labelCash.style.borderColor = 'var(--border-color)';
+            labelCash.style.background = 'var(--bg-secondary)';
+            labelCash.style.boxShadow = 'none';
+        }
+        if (onlineSec) onlineSec.style.display = 'block';
+        if (cashSec) cashSec.style.display = 'none';
+        if (txInput) {
+            txInput.required = true;
+        }
+        if (submitBtn) {
+            submitBtn.textContent = '✓ Submit Online Registration';
+        }
+        if (infoText) {
+            infoText.textContent = 'Online payments are approved once the organizer verifies the submitted UTR reference.';
+        }
+    } else {
+        if (radioCash) radioCash.checked = true;
+        if (labelCash) {
+            labelCash.style.borderColor = 'var(--accent-success)';
+            labelCash.style.background = 'rgba(16, 185, 129, 0.08)';
+            labelCash.style.boxShadow = '0 0 0 1px var(--accent-success)';
+        }
+        if (labelOnline) {
+            labelOnline.style.borderColor = 'var(--border-color)';
+            labelOnline.style.background = 'var(--bg-secondary)';
+            labelOnline.style.boxShadow = 'none';
+        }
+        if (onlineSec) onlineSec.style.display = 'none';
+        if (cashSec) cashSec.style.display = 'block';
+        if (txInput) {
+            txInput.required = false;
+        }
+        if (submitBtn) {
+            submitBtn.textContent = '✓ Submit Cash Registration';
+        }
+        if (infoText) {
+            infoText.textContent = 'Cash registrations are approved by organizers at the tournament desk upon fee collection.';
+        }
+    }
+}
+
 function autoCalcAgeFromDob(dobStr) {
     if (!dobStr) return;
     const dob = new Date(dobStr);
@@ -329,6 +446,8 @@ function updateForm() {
     if (checkboxes.length > 0 && totalFee > 0) {
         if (paymentSummary) paymentSummary.style.display = 'block';
         if (totalAmountSpan) totalAmountSpan.innerText = '₹' + totalFee.toFixed(2);
+        const cashDueDisplay = document.getElementById('cashDueDisplay');
+        if (cashDueDisplay) cashDueDisplay.innerText = '₹' + totalFee.toFixed(2);
         
         {% if tournament.payment_upi_id %}
         const upiId = "{{ tournament.payment_upi_id }}";
@@ -338,16 +457,17 @@ function updateForm() {
         if (qrImg) {
             qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiString)}`;
         }
-        const tIdInput = document.getElementById('transaction_id');
-        if (tIdInput) tIdInput.required = true;
         {% endif %}
+        setRegPaymentMethod(currentRegMethod);
     } else {
         if (paymentSummary) paymentSummary.style.display = 'none';
         if (totalAmountSpan) totalAmountSpan.innerText = '₹0.00';
-        {% if tournament.payment_upi_id %}
         const tIdInput = document.getElementById('transaction_id');
         if (tIdInput) tIdInput.required = false;
-        {% endif %}
+        const submitBtn = document.getElementById('submitRegBtn');
+        if (submitBtn) submitBtn.textContent = '✓ Complete Registration';
+        const infoText = document.getElementById('reg_status_info_text');
+        if (infoText) infoText.textContent = 'Free categories are instantly confirmed. Paid registrations are activated once approved by organizers.';
     }
 }
 
