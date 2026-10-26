@@ -400,13 +400,28 @@ def register_for_tournament(slug):
             else (cat.entry_fee or 0.0)
             for cat in selected_categories
         )
+
+        # Payment method handling: 'online' or 'cash'
+        payment_method = request.form.get("payment_method", "online").strip().lower()
+        if payment_method not in ["online", "cash"]:
+            payment_method = "online"
+
         transaction_id = request.form.get("transaction_id", "").strip()
-        if total_due > 0 and tournament.payment_upi_id:
-            ok, tx_res = validate_transaction_id(transaction_id, required=True)
-            if not ok:
-                flash(tx_res, "error")
-                return redirect(url_for("tournament.register_for_tournament", slug=slug))
-            transaction_id = tx_res
+        if total_due > 0:
+            if payment_method == "online" and tournament.payment_upi_id:
+                ok, tx_res = validate_transaction_id(transaction_id, required=True)
+                if not ok:
+                    flash(tx_res, "error")
+                    return redirect(url_for("tournament.register_for_tournament", slug=slug))
+                transaction_id = tx_res
+            elif payment_method == "cash":
+                transaction_id = "CASH / Pay at Venue"
+            else:
+                payment_method = "cash"
+                transaction_id = "CASH / Pay at Venue"
+        else:
+            payment_method = "free"
+            transaction_id = None
 
         partners_data = {}
         for cat in selected_categories:
@@ -647,6 +662,7 @@ def register_for_tournament(slug):
                 amount_due=amount_due,
                 transaction_id=transaction_id if amount_due > 0 else None,
                 payment_status="pending" if amount_due > 0 else "paid",
+                payment_method=payment_method if amount_due > 0 else "free",
             )
             db.session.add(reg)
 
@@ -668,14 +684,28 @@ def register_for_tournament(slug):
                     dob=participant_dob,
                     partner_name=cat_partner_name,
                     partner_mobile=cat_partner_mobile,
+                    payment_status="paid",
+                    payment_method="free",
                 )
                 db.session.add(p)
 
         db.session.commit()
 
-        flash(
-            "Registration successful! You are now officially enrolled in the tournament.", "success"
-        )
+        if total_due > 0:
+            if payment_method == "cash":
+                flash(
+                    "Registration submitted! Please pay the entry fee in cash at the tournament desk to confirm your entry.",
+                    "success",
+                )
+            else:
+                flash(
+                    "Registration submitted! Your entry will be officially confirmed once the organizer verifies your payment UTR.",
+                    "success",
+                )
+        else:
+            flash(
+                "Registration successful! You are now officially enrolled in the tournament.", "success"
+            )
         return redirect(url_for("tournament.view_tournament", slug=slug))
 
     return render_template(
@@ -702,9 +732,30 @@ def manage_tournament(slug):
         try:
             if action == "approve_registration":
                 reg_id = request.form.get("registration_id", type=int)
+                payment_method = request.form.get("payment_method", "online").strip().lower()
+                if payment_method not in ["online", "cash"]:
+                    payment_method = "online"
+
+                custom_tx_id = request.form.get("transaction_id", "").strip()
+                cash_notes = request.form.get("cash_notes", "").strip()
+
                 reg = Registration.query.get(reg_id)
                 if reg:
                     reg.status = "approved"
+                    reg.payment_status = "paid"
+                    reg.payment_method = payment_method
+
+                    if payment_method == "online":
+                        if custom_tx_id:
+                            reg.transaction_id = custom_tx_id
+                    elif payment_method == "cash":
+                        if custom_tx_id:
+                            reg.transaction_id = custom_tx_id
+                        elif cash_notes:
+                            reg.transaction_id = f"CASH: {cash_notes}"
+                        elif not reg.transaction_id:
+                            reg.transaction_id = "CASH"
+
                     # Create Participant
                     participant = Participant(
                         tournament_id=tournament.id,
@@ -714,20 +765,28 @@ def manage_tournament(slug):
                         player2_id=reg.player2_id,
                         partner_name=reg.partner_name,
                         partner_mobile=reg.partner_mobile,
+                        email=reg.player.email or "",
+                        mobile=reg.player.contact_number or "",
+                        gender=reg.player.gender or "",
+                        dob=reg.player.dob,
+                        payment_status="paid",
+                        payment_method=payment_method,
                     )
                     db.session.add(participant)
                     db.session.commit()
-                    flash(f"Registration for {participant.name} approved.", "success")
-                return redirect(url_for("tournament.manage_tournament", slug=slug))
+                    method_name = "Online" if payment_method == "online" else "Cash"
+                    flash(f"Registration for {participant.name} approved ({method_name} payment verified).", "success")
+                return redirect(url_for("tournament.manage_tournament", slug=slug) + "#players")
 
             elif action == "reject_registration":
                 reg_id = request.form.get("registration_id", type=int)
                 reg = Registration.query.get(reg_id)
                 if reg:
+                    player_name = reg.player.name if reg.player else "player"
                     reg.status = "rejected"
                     db.session.commit()
-                    flash("Registration rejected.", "warning")
-                return redirect(url_for("tournament.manage_tournament", slug=slug))
+                    flash(f"Registration for {player_name} rejected.", "warning")
+                return redirect(url_for("tournament.manage_tournament", slug=slug) + "#players")
 
             elif action == "add_participant":
                 participant_name = request.form.get("participant_name", "").strip()
@@ -897,6 +956,9 @@ def manage_tournament(slug):
                             db.session.flush()
 
                     display_name = f"{p1_name} / {p2_name}" if p2_name else p1_name
+                    late_payment_method = request.form.get("payment_method", "cash").strip().lower()
+                    if late_payment_method not in ["cash", "online", "free"]:
+                        late_payment_method = "cash"
                     participant = Participant(
                         tournament_id=tournament.id,
                         category_id=category_id,
@@ -910,6 +972,8 @@ def manage_tournament(slug):
                         partner_name=p2_name if p2_name else None,
                         partner_mobile=p2_mobile if p2_mobile else None,
                         manual_seed=manual_seed if len(names) == 1 else None,
+                        payment_status="paid" if late_payment_method != "free" else "free",
+                        payment_method=late_payment_method,
                     )
                     db.session.add(participant)
                     added_names.append(display_name)
@@ -917,7 +981,7 @@ def manage_tournament(slug):
                 db.session.commit()
 
                 flash(f"Added participant(s): {', '.join(added_names)}", "success")
-                return redirect(url_for("tournament.manage_tournament", slug=slug))
+                return redirect(url_for("tournament.manage_tournament", slug=slug) + "#players")
 
             elif action == "delete_participant":
                 participant_id = request.form.get("participant_id", type=int)
@@ -930,7 +994,7 @@ def manage_tournament(slug):
                             "Audit validation failed: Reason required to delete a participant.",
                             "error",
                         )
-                        return redirect(url_for("tournament.manage_tournament", slug=slug))
+                        return redirect(url_for("tournament.manage_tournament", slug=slug) + "#players")
 
                     log_audit(
                         action_type="delete_participant",
@@ -942,7 +1006,7 @@ def manage_tournament(slug):
                     db.session.delete(participant)
                     db.session.commit()
                     flash(f"Removed participant: {participant.name}", "info")
-                return redirect(url_for("tournament.manage_tournament", slug=slug))
+                return redirect(url_for("tournament.manage_tournament", slug=slug) + "#players")
 
             elif action == "open_registration":
                 tournament.status = "registration"

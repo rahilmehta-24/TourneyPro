@@ -198,6 +198,14 @@
                                     <input type="number" id="tournDurationDays" name="duration_days" min="1" max="30" class="form-input" style="width: 80px; padding: 0.45rem; text-align: center; font-weight: 700;">
                                     <span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">Day(s)</span>
                                 </div>
+                                <div role="tablist" aria-label="Schedule duration presets" style="display: flex; gap: 0.25rem; align-items: center; margin-top: 0.35rem; flex-wrap: wrap;">
+                                    <button type="button" role="tab" onclick="setManageDurationDays(1)" class="btn btn-secondary manage-dur-pill" data-days="1" style="padding: 0.12rem 0.5rem; font-size: 0.72rem; border-radius: 9999px; cursor: pointer;">1D</button>
+                                    <button type="button" role="tab" onclick="setManageDurationDays(2)" class="btn btn-secondary manage-dur-pill" data-days="2" style="padding: 0.12rem 0.5rem; font-size: 0.72rem; border-radius: 9999px; cursor: pointer;">2D</button>
+                                    <button type="button" role="tab" onclick="setManageDurationDays(3)" class="btn btn-secondary manage-dur-pill" data-days="3" style="padding: 0.12rem 0.5rem; font-size: 0.72rem; border-radius: 9999px; cursor: pointer;">3D</button>
+                                    <button type="button" role="tab" onclick="setManageDurationDays(4)" class="btn btn-secondary manage-dur-pill" data-days="4" style="padding: 0.12rem 0.5rem; font-size: 0.72rem; border-radius: 9999px; cursor: pointer;">4D</button>
+                                    <button type="button" role="tab" onclick="setManageDurationDays(5)" class="btn btn-secondary manage-dur-pill" data-days="5" style="padding: 0.12rem 0.5rem; font-size: 0.72rem; border-radius: 9999px; cursor: pointer;">5D</button>
+                                    <button type="button" role="tab" onclick="setManageDurationDays(7)" class="btn btn-secondary manage-dur-pill" data-days="7" style="padding: 0.12rem 0.5rem; font-size: 0.72rem; border-radius: 9999px; cursor: pointer;">7D</button>
+                                </div>
                             </div>
                             <div>
                                 <label class="form-label" style="font-size: 0.82rem; font-weight: 600; margin-bottom: 0.25rem; display: block;">Tournament End Date</label>
@@ -286,27 +294,61 @@
                         {% for reg in pending_registrations %}
                         <div style="background: var(--bg-card); padding: 0.85rem 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
                             <div>
-                                <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);">
-                                    {{ reg.player.name }}
+                                <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                                    <span>{{ reg.player.name }}</span>
                                     {% if reg.player2 %}
-                                        <span style="color: var(--text-muted);"> &amp; </span> {{ reg.player2.name }}
+                                        <span style="color: var(--text-muted); font-weight: 400;">&amp;</span> <span>{{ reg.player2.name }}</span>
+                                    {% elif reg.partner_name %}
+                                        <span style="color: var(--text-muted); font-weight: 400;">&amp;</span> <span>{{ reg.partner_name }}</span>
+                                    {% endif %}
+                                    {% if reg.category %}
+                                    <span style="font-size: 0.72rem; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 1px 7px; border-radius: 9999px; font-weight: 500;">
+                                        {{ reg.category.name }}
+                                    </span>
                                     {% endif %}
                                 </div>
-                                <div style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 0.2rem;">
-                                    <strong>Category:</strong> {{ reg.category.name if reg.category else 'N/A' }}
-                                    &bull; <span style="color: var(--text-muted);">{{ reg.created_at.strftime('%b %d') }}</span>
+                                <div style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 0.25rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                                    <span>Fee: <strong style="color: var(--accent-success);">₹{{ '%.0f'|format(reg.amount_due) }}</strong></span>
+                                    {% if reg.payment_method == 'cash' %}
+                                    <span>&bull;</span>
+                                    <span style="background: rgba(16, 185, 129, 0.12); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 1px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
+                                        💵 Cash on Arrival
+                                    </span>
+                                    {% elif reg.transaction_id %}
+                                    <span>&bull;</span>
+                                    <span style="background: rgba(59, 130, 246, 0.12); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); padding: 1px 6px; border-radius: 4px; font-size: 0.75rem; font-family: monospace;">
+                                        UTR: {{ reg.transaction_id }}
+                                    </span>
+                                    {% endif %}
+                                    {% if reg.player.contact_number %}
+                                    <span>&bull;</span>
+                                    <span style="color: var(--text-muted);">📱 {{ reg.player.contact_number }}</span>
+                                    {% endif %}
+                                    <span>&bull;</span>
+                                    <span style="color: var(--text-muted);">{{ reg.created_at.strftime('%b %d, %H:%M') }}</span>
                                 </div>
                             </div>
-                            <div style="display: flex; gap: 0.4rem;">
+                            <div style="display: flex; gap: 0.45rem; align-items: center;">
+                                <button type="button" class="btn btn-small btn-primary open-approval-modal-btn"
+                                    data-reg-id="{{ reg.id }}"
+                                    data-player-name="{{ reg.player.name }}"
+                                    data-partner-name="{{ reg.partner_name or (reg.player2.name if reg.player2 else '') }}"
+                                    data-category-name="{{ reg.category.name if reg.category else 'General' }}"
+                                    data-amount-due="{{ '%.0f'|format(reg.amount_due) }}"
+                                    data-transaction-id="{{ reg.transaction_id or '' }}"
+                                    data-payment-method="{{ reg.payment_method or 'online' }}"
+                                    data-player-mobile="{{ reg.player.contact_number or '' }}"
+                                    data-date="{{ reg.created_at.strftime('%b %d, %Y') }}"
+                                    style="background: var(--accent-success); border-color: var(--accent-success); padding: 0.35rem 0.85rem; font-size: 0.82rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer;">
+                                    <span>✅ Approve</span>
+                                </button>
                                 <form method="POST" style="display: inline; margin: 0;">
-                                    <input type="hidden" name="action" value="approve_registration">
-                                    <input type="hidden" name="registration_id" value="{{ reg.id }}">
-                                    <button type="submit" class="btn btn-small btn-primary" style="background: var(--accent-success); border-color: var(--accent-success); padding: 0.3rem 0.7rem; font-size: 0.8rem;">Approve</button>
-                                </form>
-                                <form method="POST" style="display: inline; margin: 0;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <input type="hidden" name="action" value="reject_registration">
                                     <input type="hidden" name="registration_id" value="{{ reg.id }}">
-                                    <button type="submit" class="btn btn-small btn-secondary" style="color: var(--accent-danger); padding: 0.3rem 0.7rem; font-size: 0.8rem;" onclick="return confirm('Reject this registration?');">Reject</button>
+                                    <button type="submit" class="btn btn-small btn-secondary" style="color: var(--accent-danger); padding: 0.35rem 0.65rem; font-size: 0.82rem;" onclick="return confirm('Reject registration for {{ reg.player.name }}?');">
+                                        ✕ Reject
+                                    </button>
                                 </form>
                             </div>
                         </div>
@@ -338,6 +380,7 @@
                                     <th style="padding: 0.6rem 0.75rem; color: var(--text-muted); font-weight: 600;">Category</th>
                                     {% endif %}
                                     <th style="padding: 0.6rem 0.75rem; color: var(--text-muted); font-weight: 600;">Email</th>
+                                    <th style="padding: 0.6rem 0.75rem; color: var(--text-muted); font-weight: 600; width: 100px;">Payment</th>
                                     {% if tournament.status == 'setup' %}
                                     <th style="padding: 0.6rem 0.75rem; text-align: right; color: var(--text-muted); font-weight: 600; width: 70px;">Action</th>
                                     {% endif %}
@@ -370,6 +413,23 @@
                                     {% endif %}
                                     <td style="padding: 0.6rem 0.75rem; color: var(--text-secondary); font-size: 0.8rem;">
                                         {{ participant.email or '-' }}
+                                    </td>
+                                    <td style="padding: 0.6rem 0.75rem;">
+                                        {% if participant.payment_method == 'online' %}
+                                        <span style="display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.73rem; background: rgba(59, 130, 246, 0.12); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); padding: 2px 7px; border-radius: 9999px; font-weight: 600;">
+                                            💳 Online
+                                        </span>
+                                        {% elif participant.payment_method == 'cash' %}
+                                        <span style="display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.73rem; background: rgba(16, 185, 129, 0.12); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 2px 7px; border-radius: 9999px; font-weight: 600;">
+                                            💵 Cash
+                                        </span>
+                                        {% elif participant.payment_method == 'free' %}
+                                        <span style="font-size: 0.73rem; background: rgba(255, 255, 255, 0.05); color: var(--text-muted); border: 1px solid var(--border-color); padding: 2px 7px; border-radius: 9999px;">
+                                            Free
+                                        </span>
+                                        {% else %}
+                                        <span style="font-size: 0.73rem; color: var(--text-muted);">-</span>
+                                        {% endif %}
                                     </td>
                                     {% if (not tournament.has_categories and tournament.status == 'setup') or (tournament.has_categories and participant.category and participant.category.status == 'setup') %}
                                     <td style="padding: 0.6rem 0.75rem; text-align: right;">
@@ -734,6 +794,24 @@ function copyShareLink(url, btn) {
                 durationInput.value = Math.max(1, diffDays);
             }
 
+            if (durationInput) {
+                const curDur = parseInt(durationInput.value, 10);
+                document.querySelectorAll('.manage-dur-pill').forEach(pill => {
+                    const pDays = parseInt(pill.getAttribute('data-days'), 10);
+                    if (pDays === curDur) {
+                        pill.style.background = 'var(--accent-primary)';
+                        pill.style.color = '#fff';
+                        pill.style.borderColor = 'var(--accent-primary)';
+                        pill.setAttribute('aria-selected', 'true');
+                    } else {
+                        pill.style.background = 'var(--bg-card)';
+                        pill.style.color = 'var(--text-secondary)';
+                        pill.style.borderColor = 'var(--border-color)';
+                        pill.setAttribute('aria-selected', 'false');
+                    }
+                });
+            }
+
             container.innerHTML = '';
             container.style.display = 'grid';
             if (emptyPrompt) emptyPrompt.style.display = 'none';
@@ -854,10 +932,12 @@ function copyShareLink(url, btn) {
     function initPage() {
         initDynamicDailySchedule();
 
-        // Restore active tab from hash
+        // Restore active tab from hash, default to categories
         const hash = window.location.hash.replace('#', '');
         if (['categories', 'schedule', 'players', 'settings'].includes(hash)) {
             switchDashboardTab(hash);
+        } else {
+            switchDashboardTab('categories');
         }
 
         // Set timezone offset input
@@ -868,6 +948,49 @@ function copyShareLink(url, btn) {
     document.addEventListener('DOMContentLoaded', initPage);
     document.addEventListener('turbo:load', initPage);
 })();
+
+function switchDashboardTab(tabName) {
+    const tabs = ['categories', 'schedule', 'players', 'settings'];
+    tabs.forEach(t => {
+        const cap = t.charAt(0).toUpperCase() + t.slice(1);
+        const content = document.getElementById('tabContent' + cap);
+        const btn = document.getElementById('tabBtn' + cap);
+        if (content) {
+            content.style.display = (t === tabName) ? 'block' : 'none';
+        }
+        if (btn) {
+            if (t === tabName) {
+                btn.style.background = 'var(--accent-primary)';
+                btn.style.color = 'white';
+                btn.style.border = 'none';
+            } else {
+                btn.style.background = 'var(--bg-secondary)';
+                btn.style.color = 'var(--text-secondary)';
+                btn.style.border = '1px solid var(--border-color)';
+            }
+        }
+    });
+    if (history.replaceState) {
+        history.replaceState(null, null, '#' + tabName);
+    } else {
+        window.location.hash = tabName;
+    }
+}
+
+window.addEventListener('hashchange', function() {
+    const hash = window.location.hash.replace('#', '');
+    if (['categories', 'schedule', 'players', 'settings'].includes(hash)) {
+        switchDashboardTab(hash);
+    }
+});
+
+function setManageDurationDays(days) {
+    const durInput = document.getElementById('tournDurationDays');
+    if (durInput) {
+        durInput.value = days;
+        durInput.dispatchEvent(new Event('input'));
+    }
+}
 
 function openAddLatePlayerModal() {
     const modal = document.getElementById('addLatePlayerModal');
@@ -902,6 +1025,143 @@ function toggleLateEntryDoubles(selectEl) {
         if (partnerMobile) partnerMobile.required = false;
     }
 }
+
+function openApproveModal(regData) {
+    const modal = document.getElementById('approveRegistrationModal');
+    if (!modal) return;
+
+    const regIdInput = document.getElementById('modalRegistrationId');
+    if (regIdInput) regIdInput.value = regData.id || '';
+    
+    // Player and partner name
+    let nameText = regData.playerName || 'Player';
+    if (regData.partnerName) {
+        nameText += ' & ' + regData.partnerName;
+    }
+    const nameEl = document.getElementById('modalPlayerNameDisplay');
+    if (nameEl) nameEl.textContent = nameText;
+
+    const catEl = document.getElementById('modalCategoryDisplay');
+    if (catEl) catEl.textContent = 'Category: ' + (regData.categoryName || 'General');
+
+    const phoneEl = document.getElementById('modalContactDisplay');
+    if (phoneEl) phoneEl.textContent = 'Phone: ' + (regData.playerMobile || 'Not provided');
+
+    const amountEl = document.getElementById('modalAmountDisplay');
+    if (amountEl) amountEl.textContent = '₹' + (regData.amountDue || '0');
+
+    const cashAmountLabel = document.getElementById('modalCashAmountNote');
+    if (cashAmountLabel) cashAmountLabel.textContent = '₹' + (regData.amountDue || '0');
+
+    // Submitted UTR
+    const utrBanner = document.getElementById('modalSubmittedUtrBanner');
+    const utrVal = document.getElementById('modalSubmittedUtrVal');
+    const txInput = document.getElementById('modalTxIdInput');
+    const cashNotes = document.getElementById('modalCashNotesInput');
+    if (cashNotes) cashNotes.value = '';
+
+    if (regData.paymentMethod === 'cash') {
+        if (utrBanner) utrBanner.style.display = 'none';
+        if (txInput) txInput.value = '';
+        toggleApprovalMethod('cash');
+    } else if (regData.transactionId && !regData.transactionId.startsWith('CASH')) {
+        if (utrBanner) utrBanner.style.display = 'block';
+        if (utrVal) utrVal.textContent = regData.transactionId;
+        if (txInput) txInput.value = regData.transactionId;
+        toggleApprovalMethod('online');
+    } else {
+        if (utrBanner) utrBanner.style.display = 'none';
+        if (txInput) txInput.value = '';
+        toggleApprovalMethod('online');
+    }
+
+    modal.style.display = 'flex';
+}
+
+function closeApproveModal() {
+    const modal = document.getElementById('approveRegistrationModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function toggleApprovalMethod(method) {
+    const radioOnline = document.getElementById('modalPayMethodOnline');
+    const radioCash = document.getElementById('modalPayMethodCash');
+    const labelOnline = document.getElementById('labelPayOnline');
+    const labelCash = document.getElementById('labelPayCash');
+    const onlineFields = document.getElementById('onlinePaymentFields');
+    const cashFields = document.getElementById('cashPaymentFields');
+    const confirmBtn = document.getElementById('modalConfirmApproveBtn');
+
+    if (method === 'online') {
+        if (radioOnline) radioOnline.checked = true;
+        if (labelOnline) {
+            labelOnline.style.borderColor = 'var(--accent-primary)';
+            labelOnline.style.background = 'rgba(59, 130, 246, 0.08)';
+            labelOnline.style.boxShadow = '0 0 0 1px var(--accent-primary)';
+        }
+        if (labelCash) {
+            labelCash.style.borderColor = 'var(--border-color)';
+            labelCash.style.background = 'var(--bg-secondary)';
+            labelCash.style.boxShadow = 'none';
+        }
+        if (onlineFields) onlineFields.style.display = 'block';
+        if (cashFields) cashFields.style.display = 'none';
+        if (confirmBtn) {
+            confirmBtn.style.background = 'var(--accent-primary)';
+            confirmBtn.style.borderColor = 'var(--accent-primary)';
+            confirmBtn.innerHTML = '<span>💳 Confirm Online Approval</span>';
+        }
+    } else {
+        if (radioCash) radioCash.checked = true;
+        if (labelCash) {
+            labelCash.style.borderColor = 'var(--accent-success)';
+            labelCash.style.background = 'rgba(16, 185, 129, 0.08)';
+            labelCash.style.boxShadow = '0 0 0 1px var(--accent-success)';
+        }
+        if (labelOnline) {
+            labelOnline.style.borderColor = 'var(--border-color)';
+            labelOnline.style.background = 'var(--bg-secondary)';
+            labelOnline.style.boxShadow = 'none';
+        }
+        if (onlineFields) onlineFields.style.display = 'none';
+        if (cashFields) cashFields.style.display = 'block';
+        if (confirmBtn) {
+            confirmBtn.style.background = 'var(--accent-success)';
+            confirmBtn.style.borderColor = 'var(--accent-success)';
+            confirmBtn.innerHTML = '<span>💵 Confirm Cash Approval</span>';
+        }
+    }
+}
+
+// Event delegation for opening approve modal
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.open-approval-modal-btn');
+    if (btn) {
+        e.preventDefault();
+        const data = {
+            id: btn.getAttribute('data-reg-id'),
+            playerName: btn.getAttribute('data-player-name'),
+            partnerName: btn.getAttribute('data-partner-name'),
+            categoryName: btn.getAttribute('data-category-name'),
+            amountDue: btn.getAttribute('data-amount-due'),
+            transactionId: btn.getAttribute('data-transaction-id'),
+            paymentMethod: btn.getAttribute('data-payment-method') || 'online',
+            playerMobile: btn.getAttribute('data-player-mobile'),
+            date: btn.getAttribute('data-date')
+        };
+        openApproveModal(data);
+    }
+    const modal = document.getElementById('approveRegistrationModal');
+    if (modal && e.target === modal) {
+        closeApproveModal();
+    }
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeApproveModal();
+    }
+});
 </script>
 
 <!-- ADD PLAYER / LATE ENTRY MODAL -->
@@ -971,6 +1231,15 @@ function toggleLateEntryDoubles(selectEl) {
                 <input type="number" name="manual_seed" class="form-input" placeholder="e.g. 1" min="1" style="width: 100%;">
             </div>
 
+            <div class="form-group" style="margin: 0;">
+                <label class="form-label" style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; display: block; color: var(--text-secondary);">Payment Method</label>
+                <select name="payment_method" class="form-input" style="width: 100%;">
+                    <option value="cash" selected>💵 Cash Payment (Collected at desk)</option>
+                    <option value="online">💳 Online Payment (UPI / Transfer verified)</option>
+                    <option value="free">🎟️ Free / Waived Entry</option>
+                </select>
+            </div>
+
             <!-- DOUBLES PARTNER FIELDS -->
             <div id="lateEntryDoublesFields" style="display: none; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem; margin-top: 0.25rem;">
                 <h4 style="margin: 0 0 0.5rem; font-size: 0.95rem; color: var(--accent-primary); font-weight: 700;">👥 Doubles Partner Details</h4>
@@ -999,6 +1268,121 @@ function toggleLateEntryDoubles(selectEl) {
             <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border-color);">
                 <button type="button" onclick="closeAddLatePlayerModal()" class="btn btn-secondary" style="padding: 0.5rem 1rem;">Cancel</button>
                 <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1.25rem; font-weight: 600;">➕ Add Player</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- REGISTRATION APPROVAL MODAL (ONLINE & CASH APPROVAL BOX) -->
+<div id="approveRegistrationModal" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(5px); z-index: 10000; align-items: center; justify-content: center; padding: 1rem;">
+    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); width: 100%; max-width: 500px; padding: 1.5rem; box-shadow: var(--shadow-lg);">
+        
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+            <div>
+                <h3 style="margin: 0; font-size: 1.2rem; color: var(--text-primary); font-weight: 700; display: flex; align-items: center; gap: 0.45rem;">
+                    ✅ Approve Tournament Entry
+                </h3>
+                <p style="margin: 0.25rem 0 0; font-size: 0.82rem; color: var(--text-secondary);">
+                    Select whether the entry fee was received via Online transfer or in Cash.
+                </p>
+            </div>
+            <button type="button" onclick="closeApproveModal()" style="background: transparent; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; line-height: 1; padding: 0;">&times;</button>
+        </div>
+
+        <!-- Entry Summary Card -->
+        <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.85rem 1rem; margin-bottom: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem;">
+                <div>
+                    <div id="modalPlayerNameDisplay" style="font-weight: 700; font-size: 1rem; color: var(--text-primary);">-</div>
+                    <div id="modalCategoryDisplay" style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 0.2rem;">Category: -</div>
+                    <div id="modalContactDisplay" style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.15rem;">Phone: -</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Amount Due</div>
+                    <div id="modalAmountDisplay" style="font-size: 1.25rem; font-weight: 800; color: var(--accent-success); margin-top: 0.1rem;">₹0</div>
+                </div>
+            </div>
+            <div id="modalSubmittedUtrBanner" style="display: none; margin-top: 0.65rem; padding-top: 0.5rem; border-top: 1px solid rgba(255, 255, 255, 0.05); font-size: 0.78rem; color: var(--text-secondary);">
+                <span>Player Submitted UTR:</span>
+                <span id="modalSubmittedUtrVal" style="font-family: monospace; font-weight: 700; color: var(--accent-primary); background: rgba(59, 130, 246, 0.1); padding: 1px 6px; border-radius: 4px; margin-left: 0.35rem;">-</span>
+            </div>
+        </div>
+
+        <form id="approveRegistrationForm" method="POST" style="display: flex; flex-direction: column; gap: 1rem;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="approve_registration">
+            <input type="hidden" name="registration_id" id="modalRegistrationId" value="">
+
+            <!-- Approval Method Selection Box (Online vs Cash) -->
+            <div>
+                <label style="display: block; font-size: 0.85rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                    Select Approval Type *
+                </label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
+                    
+                    <!-- Online Option Card -->
+                    <label id="labelPayOnline" onclick="toggleApprovalMethod('online')" style="cursor: pointer; border: 2px solid var(--accent-primary); background: rgba(59, 130, 246, 0.08); border-radius: var(--radius-md); padding: 0.85rem; display: flex; flex-direction: column; gap: 0.3rem; transition: all 0.15s ease;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <span style="font-weight: 700; font-size: 0.92rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.35rem;">
+                                💳 Online
+                            </span>
+                            <input type="radio" name="payment_method" value="online" id="modalPayMethodOnline" checked style="accent-color: var(--accent-primary);">
+                        </div>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">
+                            UPI / NetBanking / QR
+                        </span>
+                    </label>
+
+                    <!-- Cash Option Card -->
+                    <label id="labelPayCash" onclick="toggleApprovalMethod('cash')" style="cursor: pointer; border: 1px solid var(--border-color); background: var(--bg-secondary); border-radius: var(--radius-md); padding: 0.85rem; display: flex; flex-direction: column; gap: 0.3rem; transition: all 0.15s ease;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <span style="font-weight: 700; font-size: 0.92rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.35rem;">
+                                💵 Cash
+                            </span>
+                            <input type="radio" name="payment_method" value="cash" id="modalPayMethodCash" style="accent-color: var(--accent-success);">
+                        </div>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">
+                            Collected at venue desk
+                        </span>
+                    </label>
+
+                </div>
+            </div>
+
+            <!-- Conditional Section: Online Payment Fields -->
+            <div id="onlinePaymentFields" style="display: block; background: rgba(59, 130, 246, 0.04); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: var(--radius-md); padding: 0.85rem;">
+                <label for="modalTxIdInput" style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">
+                    UTR / Transaction Reference ID
+                </label>
+                <input type="text" name="transaction_id" id="modalTxIdInput" class="form-input" placeholder="e.g. 402194829391" style="width: 100%; font-size: 0.9rem; font-family: monospace;">
+                <span style="display: block; font-size: 0.73rem; color: var(--text-muted); margin-top: 0.3rem;">
+                    Admin can verify or edit the payment reference number.
+                </span>
+            </div>
+
+            <!-- Conditional Section: Cash Payment Fields -->
+            <div id="cashPaymentFields" style="display: none; background: rgba(16, 185, 129, 0.04); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: var(--radius-md); padding: 0.85rem;">
+                <div style="font-size: 0.82rem; color: #10b981; font-weight: 600; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.35rem;">
+                    💵 Cash Payment Confirmation
+                </div>
+                <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.65rem;">
+                    Entry fee of <strong id="modalCashAmountNote">₹0</strong> has been received in physical cash at the tournament desk.
+                </div>
+                <label for="modalCashNotesInput" style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">
+                    Receipt Number / Collector Note (Optional)
+                </label>
+                <input type="text" name="cash_notes" id="modalCashNotesInput" class="form-input" placeholder="e.g. Desk Receipt #104 / Collected by Admin" style="width: 100%; font-size: 0.88rem;">
+            </div>
+
+            <!-- Modal Action Buttons -->
+            <div style="display: flex; justify-content: flex-end; gap: 0.65rem; margin-top: 0.5rem; padding-top: 0.75rem; border-top: 1px solid var(--border-color);">
+                <button type="button" onclick="closeApproveModal()" class="btn btn-secondary" style="padding: 0.45rem 1rem; font-size: 0.85rem;">
+                    Cancel
+                </button>
+                <button type="submit" id="modalConfirmApproveBtn" class="btn btn-primary" style="background: var(--accent-primary); border-color: var(--accent-primary); padding: 0.45rem 1.25rem; font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem;">
+                    <span>💳 Confirm Online Approval</span>
+                </button>
             </div>
         </form>
     </div>

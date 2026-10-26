@@ -46,11 +46,29 @@ def create_app(config_class=Config):
         if not os.environ.get('VERCEL'):
             try:
                 db.create_all()
+                # Ensure newly added columns exist on existing tables in SQLite/Postgres
+                from sqlalchemy import inspect, text
+                inspector = inspect(db.engine)
+                tables = inspector.get_table_names()
+                if 'registrations' in tables:
+                    reg_cols = [c['name'] for c in inspector.get_columns('registrations')]
+                    if 'payment_method' not in reg_cols:
+                        with db.engine.begin() as conn:
+                            conn.execute(text("ALTER TABLE registrations ADD COLUMN payment_method VARCHAR(50)"))
+                if 'participants' in tables:
+                    part_cols = [c['name'] for c in inspector.get_columns('participants')]
+                    if 'payment_status' not in part_cols:
+                        with db.engine.begin() as conn:
+                            conn.execute(text("ALTER TABLE participants ADD COLUMN payment_status VARCHAR(20) DEFAULT 'paid'"))
+                    if 'payment_method' not in part_cols:
+                        with db.engine.begin() as conn:
+                            conn.execute(text("ALTER TABLE participants ADD COLUMN payment_method VARCHAR(50)"))
+
                 from app.web.controllers.auth import bootstrap_superadmin
                 bootstrap_superadmin()
             except Exception as e:
                 import logging
-                logging.error(f'Error during db.create_all: {e}')
+                logging.error(f'Error during db.create_all / column check: {e}')
 
     # Register Blueprints
     from app.web.controllers.main import main_bp
