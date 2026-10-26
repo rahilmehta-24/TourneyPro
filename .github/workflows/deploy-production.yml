@@ -6,8 +6,13 @@ on:
       - main
   workflow_dispatch:
 
+concurrency:
+  group: deploy-prod-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  migrate:
+  migrate-production:
+    name: Migrate & Sync Production Database
     runs-on: ubuntu-latest
 
     steps:
@@ -29,16 +34,20 @@ jobs:
         DATABASE_URL: ${{ secrets.DATABASE_URL }}
         FLASK_APP: run.py
       run: |
-        echo "Applying pending migrations to Supabase..."
         export DATABASE_URL=$(echo -n "$DATABASE_URL" | tr -d '\r\n' | xargs)
+        if [ -z "$DATABASE_URL" ]; then
+          echo "[Error] DATABASE_URL secret is not configured in GitHub repository secrets."
+          exit 1
+        fi
+        echo "Applying pending migrations to Production Supabase..."
         flask db upgrade
-        echo "Migration completed successfully!"
+        echo "Production migration completed successfully!"
 
     - name: Compare & Synchronize Schema with Supabase
       env:
         DATABASE_URL: ${{ secrets.DATABASE_URL }}
         FLASK_APP: run.py
       run: |
-        echo "Comparing UAT database models against Supabase production schema..."
         export DATABASE_URL=$(echo -n "$DATABASE_URL" | tr -d '\r\n' | xargs)
+        echo "Comparing database models against Supabase production schema..."
         python scripts/sync_db_schema.py

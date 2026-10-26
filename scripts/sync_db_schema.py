@@ -100,6 +100,13 @@ def sync_schema():
                         print(f"[Error] Failed to add column {table_name}.{col.name}: {e}", file=sys.stderr)
                         return 1
 
+        # 3. Bootstrap superadmin if database has no users
+        try:
+            from app.web.controllers.auth import bootstrap_superadmin
+            bootstrap_superadmin()
+        except Exception as e:
+            print(f"[Notice] Superadmin bootstrap check: {e}")
+
         print("-" * 60)
         if added_tables or added_columns:
             print(f"[Success] Schema sync complete: Added {len(added_tables)} tables, {len(added_columns)} columns.")
@@ -108,7 +115,7 @@ def sync_schema():
             if added_columns:
                 print(f"  - New Columns: {', '.join(added_columns)}")
         else:
-            print("[Success] All tables and columns are 100% in sync with UAT models. No additions required.")
+            print("[Success] All tables and columns are 100% in sync with models. No additions required.")
         print("=" * 60)
         return 0
 

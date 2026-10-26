@@ -1,0 +1,57 @@
+name: UAT Database Migration
+
+on:
+  push:
+    branches:
+      - uat
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-uat-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  migrate-uat:
+    name: Migrate & Sync UAT Database
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+    - name: Execute Database Migration on UAT Supabase
+      env:
+        UAT_DB_SECRET: ${{ secrets.UAT_DATABASE_URL }}
+        PROD_DB_SECRET: ${{ secrets.DATABASE_URL }}
+        FLASK_APP: run.py
+      run: |
+        TARGET_URL="${UAT_DB_SECRET:-$PROD_DB_SECRET}"
+        export DATABASE_URL=$(echo -n "$TARGET_URL" | tr -d '\r\n' | xargs)
+        if [ -z "$DATABASE_URL" ]; then
+          echo "[Error] Neither UAT_DATABASE_URL nor DATABASE_URL secret is configured."
+          exit 1
+        fi
+        echo "Applying pending migrations to UAT Supabase..."
+        flask db upgrade
+        echo "UAT Migration completed successfully!"
+
+    - name: Compare & Synchronize Schema with UAT Supabase
+      env:
+        UAT_DB_SECRET: ${{ secrets.UAT_DATABASE_URL }}
+        PROD_DB_SECRET: ${{ secrets.DATABASE_URL }}
+        FLASK_APP: run.py
+      run: |
+        TARGET_URL="${UAT_DB_SECRET:-$PROD_DB_SECRET}"
+        export DATABASE_URL=$(echo -n "$TARGET_URL" | tr -d '\r\n' | xargs)
+        echo "Comparing database models against UAT Supabase schema..."
+        python scripts/sync_db_schema.py
