@@ -9,6 +9,7 @@ from app.domain.models import Tournament, Category, Match, Group
 from app.web.controllers.auth import login_required, role_required, check_tournament_ownership
 from app.services.pdf.draw_adapter import DrawExportAdapter
 from app.services.pdf.order_of_play_adapter import OrderOfPlayExportAdapter
+from app.services.pdf.participants_adapter import ParticipantsExportAdapter
 from app.services.pdf.pdf_generator import DrawPdfService
 
 logger = logging.getLogger(__name__)
@@ -285,3 +286,42 @@ def export_standings_csv(slug, category_id):
     output.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
     output.headers["Content-type"] = "text/csv"
     return output
+
+
+@export_bp.route("/tournaments/<slug>/participants/export_pdf")
+@export_bp.route("/tournaments/<slug>/export_participants_pdf")
+@export_bp.route("/t/<slug>/participants/export_pdf")
+@login_required
+@role_required("admin", "superadmin")
+def export_participants_pdf(slug):
+    """
+    Retrieve and format all tournament participants grouped by category with payment method
+    and multi-category tags, and return a downloadable PDF.
+    Read-only: Never mutates tournament state.
+    """
+    slug = slug.strip()
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+
+    # Enforce tournament ownership and authorization
+    check_tournament_ownership(tournament)
+
+    try:
+        participants_data = ParticipantsExportAdapter.adapt(tournament)
+        pdf_buffer = DrawPdfService.render_participants_pdf(participants_data)
+    except Exception as e:
+        logger.error(
+            f"Error exporting participants PDF for tournament {tournament.id}: {e}", exc_info=True
+        )
+        flash("An error occurred while generating the participants PDF.", "danger")
+        return redirect(url_for("tournament.view_tournament", slug=slug))
+
+    safe_tournament = slugify(tournament.name, separator="_") or f"tournament_{tournament.id}"
+    filename = f"tourneypro_{safe_tournament}_participants.pdf"
+
+    response = make_response(pdf_buffer.getvalue())
+    response.headers["Content-Type"] = "application/pdf"
+    response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
