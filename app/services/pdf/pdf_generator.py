@@ -114,3 +114,59 @@ class DrawPdfService:
 
         pdf_buffer.seek(0)
         return pdf_buffer
+
+    @staticmethod
+    def render_participants_pdf(participants_data: dict) -> io.BytesIO:
+        """
+        Populate the static Jinja2 participants template with tournament roster data
+        and compile to PDF.
+
+        Args:
+            participants_data: Normalized dictionary produced by ParticipantsExportAdapter.
+
+        Returns:
+            io.BytesIO: In-memory binary buffer containing the valid PDF file.
+
+        Raises:
+            RuntimeError: If template rendering or PDF compilation fails.
+        """
+        try:
+            rendered_html = render_template(
+                "export/participants_pdf.html", participants_data=participants_data
+            )
+        except Exception as e:
+            logger.error(f"Template rendering failed for participants PDF: {e}", exc_info=True)
+            raise RuntimeError(f"Failed to render participants template: {e}") from e
+
+        pdf_buffer = io.BytesIO()
+        try:
+            pisa_status = pisa.CreatePDF(src=rendered_html, dest=pdf_buffer, encoding="utf-8")
+        except Exception as e:
+            logger.error(
+                f"xhtml2pdf compiler exception during participants PDF export: {e}", exc_info=True
+            )
+            raise RuntimeError(f"xhtml2pdf compilation failure: {e}") from e
+
+        if pisa_status.err:
+            logger.error(
+                f"xhtml2pdf returned error code {pisa_status.err} during participants export"
+            )
+            raise RuntimeError(f"PDF rendering engine returned error status: {pisa_status.err}")
+
+        # Validate generated PDF integrity
+        pdf_buffer.seek(0)
+        try:
+            reader = PdfReader(pdf_buffer)
+            if len(reader.pages) == 0:
+                raise RuntimeError("Generated participants PDF document contains no pages.")
+            _ = reader.pages[0].mediabox
+        except Exception as e:
+            logger.error(
+                f"pypdf integrity check failed on generated participants PDF: {e}", exc_info=True
+            )
+            raise RuntimeError(
+                f"Generated participants PDF failed integrity verification: {e}"
+            ) from e
+
+        pdf_buffer.seek(0)
+        return pdf_buffer

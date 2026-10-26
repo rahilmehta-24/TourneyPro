@@ -358,9 +358,9 @@ def view_tournament(slug):
 @tournament_bp.route("/t/<slug>/print")
 @tournament_bp.route("/tournaments/<slug>/print")
 def print_tournament(slug):
-    """Print tournament bracket and standings"""
+    """Print tournament participants roster or export PDF."""
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
-    return render_template("tournament/print.html", tournament=tournament)
+    return redirect(url_for("export.export_participants_pdf", slug=tournament.url_slug))
 
 
 @tournament_bp.route("/t/<slug>/register", methods=["GET", "POST"])
@@ -704,7 +704,8 @@ def register_for_tournament(slug):
                 )
         else:
             flash(
-                "Registration successful! You are now officially enrolled in the tournament.", "success"
+                "Registration successful! You are now officially enrolled in the tournament.",
+                "success",
             )
         return redirect(url_for("tournament.view_tournament", slug=slug))
 
@@ -775,7 +776,10 @@ def manage_tournament(slug):
                     db.session.add(participant)
                     db.session.commit()
                     method_name = "Online" if payment_method == "online" else "Cash"
-                    flash(f"Registration for {participant.name} approved ({method_name} payment verified).", "success")
+                    flash(
+                        f"Registration for {participant.name} approved ({method_name} payment verified).",
+                        "success",
+                    )
                 return redirect(url_for("tournament.manage_tournament", slug=slug) + "#players")
 
             elif action == "reject_registration":
@@ -994,7 +998,9 @@ def manage_tournament(slug):
                             "Audit validation failed: Reason required to delete a participant.",
                             "error",
                         )
-                        return redirect(url_for("tournament.manage_tournament", slug=slug) + "#players")
+                        return redirect(
+                            url_for("tournament.manage_tournament", slug=slug) + "#players"
+                        )
 
                     log_audit(
                         action_type="delete_participant",
