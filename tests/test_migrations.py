@@ -63,6 +63,13 @@ class MigrationTestCase(unittest.TestCase):
             self.assertIn('payment_method', Participant.__table__.columns)
             self.assertIn('payment_status', Participant.__table__.columns)
 
+            # Verify category scheduling columns from 21e2eb139372
+            self.assertIn('start_date', Category.__table__.columns)
+            self.assertIn('end_date', Category.__table__.columns)
+            self.assertIn('start_time', Category.__table__.columns)
+            self.assertIn('end_time', Category.__table__.columns)
+            self.assertIn('daily_schedule', Category.__table__.columns)
+
     def test_02_sqlite_batch_mode_enabled(self):
         """Verify that render_as_batch is enabled on the migrate extension"""
         migrate = self.app.extensions.get('migrate')

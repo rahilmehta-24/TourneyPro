@@ -1,7 +1,7 @@
 """add payment method and status fields
 
 Revision ID: f2a4b8c91d03
-Revises: e7cb93d109e7
+Revises: 21e2eb139372
 Create Date: 2026-10-24 15:10:00.000000
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = 'f2a4b8c91d03'
-down_revision = 'e7cb93d109e7'
+down_revision = '21e2eb139372'
 branch_labels = None
 depends_on = None
 
