@@ -1,11 +1,23 @@
 import csv
+import hashlib
 import io
 import logging
 from datetime import datetime
-from flask import Blueprint, make_response, abort, redirect, url_for, flash, request
+from typing import Optional
+from flask import (
+    Blueprint,
+    make_response,
+    abort,
+    redirect,
+    url_for,
+    flash,
+    request,
+    Response,
+    current_app,
+)
 from slugify import slugify
 
-from app.domain.models import Tournament, Category, Match, Group
+from app.domain.models import db, Tournament, Category, Match, Group, Participant, Registration
 from app.web.controllers.auth import login_required, role_required, check_tournament_ownership
 from app.services.pdf.draw_adapter import DrawExportAdapter
 from app.services.pdf.order_of_play_adapter import OrderOfPlayExportAdapter
@@ -15,6 +27,25 @@ from app.services.pdf.pdf_generator import DrawPdfService
 logger = logging.getLogger(__name__)
 
 export_bp = Blueprint("export", __name__)
+
+
+def make_pdf_response(pdf_bytes: bytes, filename: str, etag: Optional[str] = None) -> Response:
+    """Build high-performance downloadable PDF response with Content-Length, ETag, and caching."""
+    if not etag:
+        etag = hashlib.md5(pdf_bytes).hexdigest()
+
+    # Conditional GET support (instant 304 response)
+    if_none_match = request.headers.get("If-None-Match")
+    if if_none_match and if_none_match.strip('"') == etag.strip('"'):
+        return Response(status=304)
+
+    response = make_response(pdf_bytes)
+    response.headers["Content-Type"] = "application/pdf"
+    response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response.headers["Content-Length"] = str(len(pdf_bytes))
+    response.headers["ETag"] = f'"{etag}"'
+    response.headers["Cache-Control"] = "private, max-age=120, must-revalidate"
+    return response
 
 
 def get_category_winners(category):
@@ -96,27 +127,41 @@ def export_category_pdf(slug, category_id):
         )
         return redirect(url_for("category.view_category", slug=slug, category_id=category_id))
 
-    try:
-        # Load and adapt the existing saved draw (read-only)
-        draw_data = DrawExportAdapter.adapt(tournament, category)
-        pdf_buffer = DrawPdfService.render_draw_pdf(draw_data)
-    except Exception as e:
-        logger.error(f"Error exporting draw PDF for category {category_id}: {e}", exc_info=True)
-        flash("An error occurred while generating the draw PDF.", "danger")
-        return redirect(url_for("category.view_category", slug=slug, category_id=category_id))
-
     # Sanitize filename to prevent path traversal or invalid characters
     safe_tournament = slugify(tournament.name, separator="_") or f"tournament_{tournament.id}"
     safe_category = slugify(category.name, separator="_") or f"category_{category.id}"
     filename = f"tourneypro_{safe_tournament}_{safe_category}_draw.pdf"
 
-    response = make_response(pdf_buffer.getvalue())
-    response.headers["Content-Type"] = "application/pdf"
-    response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    response.headers["Pragma"] = "no-cache"
-    response.headers["Expires"] = "0"
-    return response
+    # Fast fingerprint check against in-memory cache
+    m_stats = (
+        db.session.query(
+            db.func.count(Match.id),
+            db.func.count(Match.completed_at),
+            db.func.max(Match.completed_at),
+            db.func.max(Match.winner_id),
+        )
+        .filter(Match.category_id == category.id, Match.match_type == "knockout")
+        .first()
+    )
+    safe_cat_name = slugify(category.name or "", separator="_")
+    cache_key = f"draw_pdf_{tournament.url_slug}_{category.id}_{safe_cat_name}_{category.format}_{m_stats[0]}_{m_stats[1]}_{m_stats[2]}_{m_stats[3]}"
+
+    cached_pdf = (
+        None if current_app.config.get("TESTING") else DrawPdfService.get_cached_pdf(cache_key)
+    )
+    if cached_pdf:
+        return make_pdf_response(cached_pdf, filename)
+
+    try:
+        # Load and adapt the existing saved draw (read-only)
+        draw_data = DrawExportAdapter.adapt(tournament, category)
+        pdf_buffer = DrawPdfService.render_draw_pdf(draw_data, cache_key=cache_key)
+    except Exception as e:
+        logger.error(f"Error exporting draw PDF for category {category_id}: {e}", exc_info=True)
+        flash("An error occurred while generating the draw PDF.", "danger")
+        return redirect(url_for("category.view_category", slug=slug, category_id=category_id))
+
+    return make_pdf_response(pdf_buffer.getvalue(), filename)
 
 
 @export_bp.route("/t/<slug>/order-of-play/export_pdf")
@@ -144,19 +189,6 @@ def export_order_of_play_pdf(slug):
     if session_filter not in ("all", "day", "evening"):
         session_filter = "all"
 
-    try:
-        oop_data = OrderOfPlayExportAdapter.adapt(
-            tournament=tournament,
-            filter_date=filter_date,
-            selected_court=selected_court,
-            session_filter=session_filter,
-        )
-        pdf_buffer = DrawPdfService.render_order_of_play_pdf(oop_data)
-    except Exception as e:
-        logger.error(f"Error exporting Order of Play PDF for tournament {slug}: {e}", exc_info=True)
-        flash("An error occurred while generating the Order of Play PDF.", "danger")
-        return redirect(url_for("tournament.order_of_play", slug=slug, date=date_param or ""))
-
     # Build safe, sanitized download filename
     safe_tournament = slugify(tournament.name, separator="_") or f"tournament_{tournament.id}"
     date_suffix = filter_date.strftime("%Y%m%d") if filter_date else "full"
@@ -164,13 +196,39 @@ def export_order_of_play_pdf(slug):
     session_suffix = f"_{session_filter}" if session_filter in ("day", "evening") else ""
     filename = f"tourneypro_{safe_tournament}_order_of_play_{date_suffix}{court_suffix}{session_suffix}.pdf"
 
-    response = make_response(pdf_buffer.getvalue())
-    response.headers["Content-Type"] = "application/pdf"
-    response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    response.headers["Pragma"] = "no-cache"
-    response.headers["Expires"] = "0"
-    return response
+    # Build fast state fingerprint for OOP cache
+    oop_stats = (
+        db.session.query(
+            db.func.count(Match.id),
+            db.func.count(Match.completed_at),
+            db.func.max(Match.completed_at),
+            db.func.max(Match.id),
+        )
+        .filter(Match.tournament_id == tournament.id)
+        .first()
+    )
+    cache_key = f"oop_pdf_{tournament.url_slug}_{date_suffix}_{court_suffix}_{session_suffix}_{oop_stats[0]}_{oop_stats[1]}_{oop_stats[2]}_{oop_stats[3]}"
+
+    cached_pdf = (
+        None if current_app.config.get("TESTING") else DrawPdfService.get_cached_pdf(cache_key)
+    )
+    if cached_pdf:
+        return make_pdf_response(cached_pdf, filename)
+
+    try:
+        oop_data = OrderOfPlayExportAdapter.adapt(
+            tournament=tournament,
+            filter_date=filter_date,
+            selected_court=selected_court,
+            session_filter=session_filter,
+        )
+        pdf_buffer = DrawPdfService.render_order_of_play_pdf(oop_data, cache_key=cache_key)
+    except Exception as e:
+        logger.error(f"Error exporting Order of Play PDF for tournament {slug}: {e}", exc_info=True)
+        flash("An error occurred while generating the Order of Play PDF.", "danger")
+        return redirect(url_for("tournament.order_of_play", slug=slug, date=date_param or ""))
+
+    return make_pdf_response(pdf_buffer.getvalue(), filename)
 
 
 @export_bp.route("/tournaments/<slug>/category/<int:category_id>/export_matches_csv")
@@ -305,9 +363,31 @@ def export_participants_pdf(slug):
     # Enforce tournament ownership and authorization
     check_tournament_ownership(tournament)
 
+    safe_tournament = slugify(tournament.name, separator="_") or f"tournament_{tournament.id}"
+    filename = f"tourneypro_{safe_tournament}_participants.pdf"
+
+    # Fast state fingerprint check for participants roster cache
+    p_stats = (
+        db.session.query(db.func.count(Participant.id), db.func.max(Participant.id))
+        .filter(Participant.tournament_id == tournament.id)
+        .first()
+    )
+    reg_stats = (
+        db.session.query(db.func.count(Registration.id), db.func.max(Registration.id))
+        .filter(Registration.tournament_id == tournament.id)
+        .first()
+    )
+    cache_key = f"participants_pdf_{tournament.url_slug}_{p_stats[0]}_{p_stats[1]}_{reg_stats[0]}_{reg_stats[1]}"
+
+    cached_pdf = (
+        None if current_app.config.get("TESTING") else DrawPdfService.get_cached_pdf(cache_key)
+    )
+    if cached_pdf:
+        return make_pdf_response(cached_pdf, filename)
+
     try:
         participants_data = ParticipantsExportAdapter.adapt(tournament)
-        pdf_buffer = DrawPdfService.render_participants_pdf(participants_data)
+        pdf_buffer = DrawPdfService.render_participants_pdf(participants_data, cache_key=cache_key)
     except Exception as e:
         logger.error(
             f"Error exporting participants PDF for tournament {tournament.id}: {e}", exc_info=True
@@ -315,13 +395,4 @@ def export_participants_pdf(slug):
         flash("An error occurred while generating the participants PDF.", "danger")
         return redirect(url_for("tournament.view_tournament", slug=slug))
 
-    safe_tournament = slugify(tournament.name, separator="_") or f"tournament_{tournament.id}"
-    filename = f"tourneypro_{safe_tournament}_participants.pdf"
-
-    response = make_response(pdf_buffer.getvalue())
-    response.headers["Content-Type"] = "application/pdf"
-    response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    response.headers["Pragma"] = "no-cache"
-    response.headers["Expires"] = "0"
-    return response
+    return make_pdf_response(pdf_buffer.getvalue(), filename)
