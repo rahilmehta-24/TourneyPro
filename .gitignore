@@ -65,8 +65,5 @@ Thumbs.db
 *.webp
 *.gif
 *.md
-!README.md
-RULEBOOK.md
-new_features.md
-TECH_STACK_AND_ENVIRONMENT.md
-docs/**
+!docs/
+!docs/*.md
