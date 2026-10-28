@@ -143,7 +143,7 @@
             {{ cat.name }} {% if cat.status == 'in_progress' %}<span style="color: #ef4444; font-size: 0.75rem;">● Live</span>{% elif cat.status == 'completed' %}<span style="color: #10b981; font-size: 0.75rem;">✓</span>{% endif %}
         </a>
         {% endfor %}
-        <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug) }}" class="btn btn-sm btn-secondary" style="border-radius: 9999px; white-space: nowrap; padding: 0.35rem 0.85rem; font-size: 0.82rem; font-weight: 500;">
+        <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug) }}" class="btn btn-sm btn-secondary" style="border-radius: 9999px; white-space: nowrap; padding: 0.35rem 0.85rem; font-size: 0.82rem; font-weight: 500;" id="btnOrderOfPlayCategoryTab" data-turbo="false">
             📋 Order of Play
         </a>
     </div>
@@ -210,7 +210,7 @@
         {% endif %}
         
         <div style="margin-left: auto; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-            <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug) }}" class="btn btn-sm btn-secondary" style="font-weight: 600; border-radius: 9999px; padding: 0.35rem 0.85rem; font-size: 0.82rem;">
+            <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug) }}" class="btn btn-sm btn-secondary" style="font-weight: 600; border-radius: 9999px; padding: 0.35rem 0.85rem; font-size: 0.82rem;" id="btnOrderOfPlayCategoryAction" data-turbo="false">
                 📅 Order of Play
             </a>
         </div>

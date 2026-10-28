@@ -6,6 +6,7 @@ PDF documents using xhtml2pdf in memory.
 
 import io
 import logging
+from typing import Dict, Optional
 from flask import render_template
 from xhtml2pdf import pisa
 from pypdf import PdfReader
@@ -14,15 +15,41 @@ logger = logging.getLogger(__name__)
 
 
 class DrawPdfService:
-    """PDF generation service for single elimination tournament brackets."""
+    """PDF generation service for single elimination tournament brackets and reports."""
 
-    @staticmethod
-    def render_draw_pdf(draw_data: dict) -> io.BytesIO:
+    _cache: Dict[str, bytes] = {}
+    _cache_limit: int = 100
+
+    @classmethod
+    def get_cached_pdf(cls, cache_key: Optional[str]) -> Optional[bytes]:
+        """Retrieve pre-compiled PDF bytes from memory cache if available."""
+        if cache_key and cache_key in cls._cache:
+            return cls._cache[cache_key]
+        return None
+
+    @classmethod
+    def set_cached_pdf(cls, cache_key: Optional[str], pdf_bytes: bytes) -> None:
+        """Store compiled PDF bytes into bounded memory cache."""
+        if not cache_key:
+            return
+        if len(cls._cache) >= cls._cache_limit:
+            oldest_key = next(iter(cls._cache))
+            cls._cache.pop(oldest_key, None)
+        cls._cache[cache_key] = pdf_bytes
+
+    @classmethod
+    def clear_cache(cls) -> None:
+        """Clear all cached PDF binaries."""
+        cls._cache.clear()
+
+    @classmethod
+    def render_draw_pdf(cls, draw_data: dict, cache_key: Optional[str] = None) -> io.BytesIO:
         """
         Populate the static Jinja2 bracket template with draw data and compile to PDF.
 
         Args:
             draw_data: Normalized dictionary produced by DrawExportAdapter.
+            cache_key: Optional unique fingerprint string to look up / store precompiled PDF.
 
         Returns:
             io.BytesIO: In-memory binary buffer containing the valid PDF file.
@@ -30,6 +57,10 @@ class DrawPdfService:
         Raises:
             RuntimeError: If template rendering or PDF compilation fails.
         """
+        if cache_key:
+            cached_bytes = cls.get_cached_pdf(cache_key)
+            if cached_bytes:
+                return io.BytesIO(cached_bytes)
         try:
             rendered_html = render_template("export/draw_pdf.html", draw_data=draw_data)
         except Exception as e:
@@ -59,16 +90,22 @@ class DrawPdfService:
             logger.error(f"pypdf integrity check failed on generated draw PDF: {e}", exc_info=True)
             raise RuntimeError(f"Generated draw PDF failed integrity verification: {e}") from e
 
+        if cache_key:
+            cls.set_cached_pdf(cache_key, pdf_buffer.getvalue())
+
         pdf_buffer.seek(0)
         return pdf_buffer
 
-    @staticmethod
-    def render_order_of_play_pdf(oop_data: dict) -> io.BytesIO:
+    @classmethod
+    def render_order_of_play_pdf(
+        cls, oop_data: dict, cache_key: Optional[str] = None
+    ) -> io.BytesIO:
         """
         Populate the static Jinja2 Order of Play template with schedule data and compile to PDF.
 
         Args:
             oop_data: Normalized dictionary produced by OrderOfPlayExportAdapter.
+            cache_key: Optional unique fingerprint string to look up / store precompiled PDF.
 
         Returns:
             io.BytesIO: In-memory binary buffer containing the valid PDF file.
@@ -76,6 +113,11 @@ class DrawPdfService:
         Raises:
             RuntimeError: If template rendering or PDF compilation fails.
         """
+        if cache_key:
+            cached_bytes = cls.get_cached_pdf(cache_key)
+            if cached_bytes:
+                return io.BytesIO(cached_bytes)
+
         try:
             rendered_html = render_template("export/order_of_play_pdf.html", oop_data=oop_data)
         except Exception as e:
@@ -112,17 +154,23 @@ class DrawPdfService:
                 f"Generated Order of Play PDF failed integrity verification: {e}"
             ) from e
 
+        if cache_key:
+            cls.set_cached_pdf(cache_key, pdf_buffer.getvalue())
+
         pdf_buffer.seek(0)
         return pdf_buffer
 
-    @staticmethod
-    def render_participants_pdf(participants_data: dict) -> io.BytesIO:
+    @classmethod
+    def render_participants_pdf(
+        cls, participants_data: dict, cache_key: Optional[str] = None
+    ) -> io.BytesIO:
         """
         Populate the static Jinja2 participants template with tournament roster data
         and compile to PDF.
 
         Args:
             participants_data: Normalized dictionary produced by ParticipantsExportAdapter.
+            cache_key: Optional unique fingerprint string to look up / store precompiled PDF.
 
         Returns:
             io.BytesIO: In-memory binary buffer containing the valid PDF file.
@@ -130,6 +178,11 @@ class DrawPdfService:
         Raises:
             RuntimeError: If template rendering or PDF compilation fails.
         """
+        if cache_key:
+            cached_bytes = cls.get_cached_pdf(cache_key)
+            if cached_bytes:
+                return io.BytesIO(cached_bytes)
+
         try:
             rendered_html = render_template(
                 "export/participants_pdf.html", participants_data=participants_data
@@ -167,6 +220,9 @@ class DrawPdfService:
             raise RuntimeError(
                 f"Generated participants PDF failed integrity verification: {e}"
             ) from e
+
+        if cache_key:
+            cls.set_cached_pdf(cache_key, pdf_buffer.getvalue())
 
         pdf_buffer.seek(0)
         return pdf_buffer

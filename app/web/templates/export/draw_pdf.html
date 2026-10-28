@@ -408,6 +408,9 @@
     <table class="bracket-grid">
         {% for row in page.grid_cells %}
         <tr>
+            {% if not row %}
+            <td class="c-col c-empty">&nbsp;</td>
+            {% else %}
             {% for cell in row %}
                 {% if cell.type == 'match' %}
                     {% set m = cell.data %}
@@ -468,6 +471,7 @@
                     </td>
                 {% endif %}
             {% endfor %}
+            {% endif %}
         </tr>
         {% endfor %}
     </table>

@@ -8,7 +8,7 @@ Read-only: Performs zero database writes or mutations.
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Set
 
-from app.domain.models import Tournament, Category, Participant, Registration
+from app.domain.models import db, Tournament, Category, Participant, Registration
 
 
 class ParticipantsExportAdapter:
@@ -145,8 +145,12 @@ class ParticipantsExportAdapter:
             palette = cls.TAG_PALETTES[idx % len(cls.TAG_PALETTES)]
             cat_palette_map[cat.id] = palette
 
-        # Fetch all registrations for this tournament to cross-link
-        registrations = Registration.query.filter_by(tournament_id=tournament.id).all()
+        # Fetch all registrations for this tournament with player joined to avoid N+1 queries
+        registrations = (
+            Registration.query.options(db.joinedload(Registration.player))
+            .filter_by(tournament_id=tournament.id)
+            .all()
+        )
         reg_by_cat_and_player: Dict[tuple, Registration] = {}
         for reg in registrations:
             if reg.category_id:
@@ -166,7 +170,10 @@ class ParticipantsExportAdapter:
             player_to_category_ids[player_key].add(cat_id)
 
         all_participants = (
-            Participant.query.filter_by(tournament_id=tournament.id)
+            Participant.query.options(
+                db.joinedload(Participant.player), db.joinedload(Participant.group)
+            )
+            .filter_by(tournament_id=tournament.id)
             .order_by(Participant.category_id, Participant.seed, Participant.id)
             .all()
         )
