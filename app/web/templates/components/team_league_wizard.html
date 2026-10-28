@@ -46,7 +46,7 @@
             </div>
         </div>
         <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <span style="font-size: 0.78rem; font-weight: 700; color: var(--accent-primary); background: rgba(var(--accent-primary-rgb), 0.12); border: 1px solid rgba(var(--accent-primary-rgb), 0.3); padding: 0.25rem 0.65rem; border-radius: 9999px;">
+            <span style="font-size: 0.78rem; font-weight: 700; color: var(--accent-primary); background: rgba(249, 115, 22, 0.12); border: 1px solid rgba(249, 115, 22, 0.3); padding: 0.25rem 0.65rem; border-radius: 9999px;">
                 Current Stage: Step {{ current_step }} of 6
             </span>
         </div>
@@ -70,7 +70,7 @@
                     {% if s_num < current_step or (has_teams and s_num <= 3) %}
                         background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4);
                     {% elif s_num == current_step %}
-                        background: rgba(var(--accent-primary-rgb), 0.2); color: var(--accent-primary); border: 2px solid var(--accent-primary); box-shadow: 0 0 10px rgba(var(--accent-primary-rgb), 0.3);
+                        background: rgba(249, 115, 22, 0.2); color: #f97316; border: 2px solid #f97316; box-shadow: 0 0 10px rgba(249, 115, 22, 0.3);
                     {% else %}
                         background: var(--bg-secondary); color: var(--text-muted); border: 1px solid var(--border-color); opacity: 0.65;
                     {% endif %}">
@@ -301,12 +301,12 @@
 
         <!-- STEP 6: MATCH PLAY & GAMES SCORING -->
         {% set s6_active = (current_step == 6) %}
-        <div style="background: var(--bg-secondary); border: {% if s6_active %}2px solid var(--accent-primary){% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between;">
+        <div style="background: var(--bg-secondary); border: {% if s6_active %}2px solid #f97316{% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between;">
             <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--accent-primary); letter-spacing: 0.05em;">Step 6</span>
+                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #f97316; letter-spacing: 0.05em;">Step 6</span>
                     {% if s6_active %}
-                        <span style="font-size: 0.72rem; background: rgba(var(--accent-primary-rgb), 0.2); color: var(--accent-primary); padding: 2px 7px; border-radius: 9999px; font-weight: 700;">🎾 Match Day</span>
+                        <span style="font-size: 0.72rem; background: rgba(249, 115, 22, 0.2); color: #fb923c; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">🎾 Match Day</span>
                     {% else %}
                         <span style="font-size: 0.72rem; background: rgba(255, 255, 255, 0.05); color: var(--text-muted); padding: 2px 7px; border-radius: 9999px;">Step 6</span>
                     {% endif %}
