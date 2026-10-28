@@ -206,7 +206,7 @@
                                         <span id="themeIcon">☀️</span>
                                         <span>Theme</span>
                                     </span>
-                                    <span id="themeBadge" style="font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 9999px; background: var(--bg-secondary); color: var(--text-muted); border: 1px solid var(--border-color);">Dark</span>
+                                    <span id="themeBadge" style="font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 9999px; background: var(--bg-secondary); color: var(--text-muted); border: 1px solid var(--border-color);">Theme 1 (Dark)</span>
                                 </button>
                             </div>
 
@@ -221,6 +221,10 @@
                         </div>
                     </div>
                 {% else %}
+                    <button type="button" id="themeToggleBtn" class="btn btn-outline btn-small" title="Toggle Theme" style="padding: 0.45rem 0.65rem; border-radius: var(--radius-md); display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.82rem; cursor: pointer;">
+                        <span id="themeIcon">☀️</span>
+                        <span id="themeBadge">Theme 1 (Dark)</span>
+                    </button>
                     <a href="{{ url_for('auth.login') }}" class="nav-link login-link">Log In</a>
                     <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-small">Register</a>
                 {% endif %}
@@ -342,7 +346,7 @@
             // --- SECURITY WATERMARK LOG ---
             console.log("%cSTOP!", "color: red; font-family: sans-serif; font-size: 4em; font-weight: bolder; text-shadow: #000 1px 1px;");
             console.log("%cThis is a browser feature intended for developers. If someone told you to copy-paste something here, it is a scam and will give them access to your account.", "font-family: sans-serif; font-size: 1.2em; font-weight: bold;");
-            console.log("%c© Built for Tennis by Rahil Mehta. All rights reserved.", "color: #f97316; font-family: monospace; font-size: 1.1em; font-weight: bold; margin-top: 10px;");
+            console.log("%c© Built for Tennis by Rahil Mehta. All rights reserved.", "color: #E10600; font-family: monospace; font-size: 1.1em; font-weight: bold; margin-top: 10px;");
             // ------------------------------
 
             document.addEventListener('turbo:load', () => {
@@ -362,13 +366,12 @@
                     document.querySelectorAll('#themeIcon, #profilePageThemeIcon').forEach(icon => {
                         icon.textContent = isLight ? '🌙' : '☀️';
                     });
-                    const themeBadge = document.getElementById('themeBadge');
-                    if (themeBadge) {
-                        themeBadge.textContent = isLight ? 'Light' : 'Dark';
-                    }
+                    document.querySelectorAll('#themeBadge').forEach(badge => {
+                        badge.textContent = isLight ? 'Theme 2 (Light)' : 'Theme 1 (Dark)';
+                    });
                     const profilePageThemeText = document.getElementById('profilePageThemeText');
                     if (profilePageThemeText) {
-                        profilePageThemeText.textContent = isLight ? 'Switch to Dark Mode' : 'Switch to Light Mode';
+                        profilePageThemeText.textContent = isLight ? 'Switch to Theme 1 (Dark)' : 'Switch to Theme 2 (Light)';
                     }
                 };
 

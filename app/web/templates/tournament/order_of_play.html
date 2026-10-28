@@ -8,11 +8,11 @@
   @page { size: A4; margin: 1.2cm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: Arial, sans-serif; font-size: 11px; color: #1a1a1a; background: #fff !important; }
-  .header { text-align: center; margin-bottom: 1.5rem; border-bottom: 3px solid #f97316; padding-bottom: 1rem; }
-  .header h1 { font-size: 22px; color: #f97316; }
+  .header { text-align: center; margin-bottom: 1.5rem; border-bottom: 3px solid #E10600; padding-bottom: 1rem; }
+  .header h1 { font-size: 22px; color: #E10600; }
   .header p { font-size: 11px; color: #555; margin-top: 4px; }
   .court-block { margin-bottom: 2rem; page-break-inside: avoid; }
-  .court-title { background: #f97316; color: white; padding: 8px 14px; font-size: 14px; font-weight: bold; border-radius: 4px 4px 0 0; }
+  .court-title { background: #E10600; color: white; padding: 8px 14px; font-size: 14px; font-weight: bold; border-radius: 4px 4px 0 0; }
   .oop-table { width: 100%; border-collapse: collapse; }
   .oop-table th { background: #2a2a2a; color: white; padding: 8px 10px; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
   .oop-table td { padding: 8px 10px; border-bottom: 1px solid #e5e5e5; vertical-align: middle; }
@@ -23,7 +23,7 @@
   .status-in_progress { color: #f59e0b; font-weight: bold; }
   .status-completed { color: #10b981; font-weight: bold; }
   .footer { text-align: center; font-size: 9px; color: #9ca3af; margin-top: 2rem; padding-top: 0.5rem; border-top: 1px solid #e5e5e5; }
-  .round-badge { background: #f97316; color: white; font-size: 9px; padding: 2px 6px; border-radius: 9999px; font-weight: bold; }
+  .round-badge { background: #E10600; color: white; font-size: 9px; padding: 2px 6px; border-radius: 9999px; font-weight: bold; }
 </style>
 {% endif %}
 
@@ -100,7 +100,7 @@
   .oop-day-tab.active {
     background: var(--accent-primary) !important;
     color: #ffffff !important;
-    box-shadow: 0 2px 10px rgba(249, 115, 22, 0.35);
+    box-shadow: 0 2px 10px rgba(var(--accent-primary-rgb), 0.35);
   }
   .oop-day-tab.inactive {
     background: var(--bg-secondary) !important;
@@ -154,10 +154,10 @@
     transform: translateY(-1px);
   }
   .oop-session-pill.active {
-    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+    background: var(--gradient-primary);
     color: #ffffff;
-    border-color: #f97316;
-    box-shadow: 0 2px 8px rgba(249, 115, 22, 0.4);
+    border-color: var(--accent-primary);
+    box-shadow: 0 2px 8px rgba(var(--accent-primary-rgb), 0.4);
   }
   .oop-session-pill.active[data-session="day"] {
     background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
@@ -490,7 +490,7 @@
   }
 
   .oop-round-badge {
-    background: rgba(249, 115, 22, 0.15);
+    background: rgba(var(--accent-primary-rgb), 0.15);
     color: var(--accent-primary);
     padding: 0.3rem 0.75rem !important;
     border-radius: 9999px;
@@ -498,7 +498,7 @@
     font-weight: 600;
     white-space: nowrap;
     display: inline-block;
-    border: 1px solid rgba(249, 115, 22, 0.3);
+    border: 1px solid rgba(var(--accent-primary-rgb), 0.3);
     line-height: normal;
   }
 
@@ -559,12 +559,12 @@
   }
 
   .oop-player-chip:hover {
-    background: rgba(249, 115, 22, 0.18);
+    background: rgba(var(--accent-primary-rgb), 0.18);
     border-color: var(--accent-primary);
     color: var(--accent-primary);
     text-decoration: none;
     transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(249, 115, 22, 0.25);
+    box-shadow: 0 2px 8px rgba(var(--accent-primary-rgb), 0.25);
   }
 
   .oop-player-chip.static {
@@ -623,8 +623,8 @@
   }
   .oop-bracket-link:hover {
     text-decoration: underline;
-    color: #fb923c;
-    background: rgba(249, 115, 22, 0.08);
+    color: var(--accent-primary);
+    background: rgba(var(--accent-primary-rgb), 0.08);
   }
 
   .oop-dispatch-select {
@@ -672,7 +672,7 @@
       transition: border-color 0.15s;
     }
     .oop-match-card:hover {
-      border-color: rgba(249, 115, 22, 0.4);
+      border-color: rgba(var(--accent-primary-rgb), 0.4);
     }
 
     .oop-card-top {
