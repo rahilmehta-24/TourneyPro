@@ -75,6 +75,9 @@
             }
         }
         
+        window.showLoader = showLoader;
+        window.hideLoader = hideLoader;
+        
         // Listen to normal form submissions across the document via delegation
         document.addEventListener('submit', function(e) {
             if (e.defaultPrevented) return;
@@ -85,10 +88,40 @@
         });
         
         // Listen to turbo actions
-        document.addEventListener('turbo:click', showLoader);
+        document.addEventListener('turbo:click', function(e) {
+            const anchor = e.target ? e.target.closest('a') : null;
+            if (anchor) {
+                const href = anchor.getAttribute('href') || '';
+                // Never show full-screen navigation loader for exports, file downloads, or non-Turbo links
+                if (
+                    anchor.dataset.turbo === 'false' ||
+                    anchor.hasAttribute('download') ||
+                    anchor.target === '_blank' ||
+                    href.includes('export_') ||
+                    href.includes('/export') ||
+                    href.includes('.pdf') ||
+                    href.includes('.csv')
+                ) {
+                    return;
+                }
+            }
+            showLoader();
+        });
         document.addEventListener('turbo:submit-start', showLoader);
         document.addEventListener('turbo:load', hideLoader);
+        document.addEventListener('turbo:render', hideLoader);
         document.addEventListener('turbo:submit-end', hideLoader);
+        document.addEventListener('turbo:fetch-request-error', hideLoader);
+        document.addEventListener('turbo:before-fetch-response', function(e) {
+            const response = e.detail && e.detail.response;
+            if (response && response.headers) {
+                const cd = response.headers.get('content-disposition') || '';
+                const ct = response.headers.get('content-type') || '';
+                if (cd.includes('attachment') || !ct.includes('text/html')) {
+                    hideLoader();
+                }
+            }
+        });
         
         // Handle window pageshow for back/forward cache
         window.addEventListener('pageshow', function(e) {

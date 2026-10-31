@@ -45,6 +45,7 @@ def make_pdf_response(pdf_bytes: bytes, filename: str, etag: Optional[str] = Non
     response.headers["Content-Length"] = str(len(pdf_bytes))
     response.headers["ETag"] = f'"{etag}"'
     response.headers["Cache-Control"] = "private, max-age=120, must-revalidate"
+    response.set_cookie("fileDownloadToken", "true", path="/", max_age=30, samesite="Lax")
     return response
 
 

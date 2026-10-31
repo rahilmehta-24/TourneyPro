@@ -125,7 +125,7 @@
                 🔗 Share Link
             </button>
             {% if current_user and current_user.role in ['admin', 'superadmin'] %}
-            <a href="{{ url_for('export.export_category_pdf', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-secondary" id="btnExportDrawPdf" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;" title="Download official draw PDF">
+            <a href="{{ url_for('export.export_category_pdf', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-secondary" id="btnExportDrawPdf" data-turbo="false" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;" title="Download official draw PDF">
                 🖨️ Export Draw PDF
             </a>
             {% endif %}
@@ -179,11 +179,11 @@
             </div>
             {% if current_user and current_user.role in ['admin', 'superadmin'] %}
             <div class="action-group secondary-actions">
-                <a href="{{ url_for('export.export_matches_csv', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-small btn-secondary" target="_blank">
+                <a href="{{ url_for('export.export_matches_csv', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-small btn-secondary" data-turbo="false" target="_blank">
                     📄 Matches CSV
                 </a>
                 {% if category.format in ['round_robin', 'group_stage'] %}
-                <a href="{{ url_for('export.export_standings_csv', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-small btn-secondary" target="_blank">
+                <a href="{{ url_for('export.export_standings_csv', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-small btn-secondary" data-turbo="false" target="_blank">
                     📊 Standings CSV
                 </a>
                 {% endif %}

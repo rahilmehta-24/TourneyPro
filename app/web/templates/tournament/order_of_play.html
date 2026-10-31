@@ -853,7 +853,7 @@
       </a>
       {% endif %}
       <a href="{{ url_for('export.export_order_of_play_pdf', slug=tournament.url_slug, court=selected_court or '', date=active_date.strftime('%Y-%m-%d') if active_date else '', session=session_filter or 'all') }}"
-         id="btnExportOopPdf" class="btn btn-secondary btn-sm" title="Download official Order of Play PDF">🖨️ Export PDF</a>
+         id="btnExportOopPdf" data-turbo="false" class="btn btn-secondary btn-sm" title="Download official Order of Play PDF">🖨️ Export PDF</a>
     </div>
   </div>
 

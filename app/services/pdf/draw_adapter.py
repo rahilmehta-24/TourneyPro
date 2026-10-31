@@ -7,7 +7,7 @@ Never generates, reseeds, shuffles, mutates, advances, or recalculates tournamen
 """
 
 from typing import Any, Dict, List, Optional
-from app.domain.models import db, Tournament, Category, Match, Participant
+from app.domain.models import db, Tournament, Category, Match, Participant, Player
 from app.services.utils.scheduler import extract_participant_players
 
 
@@ -327,8 +327,29 @@ class DrawExportAdapter:
         if category.num_sets:
             scoring_summary = f"{category.num_sets} Sets ({category.games_per_set or 6} Games)"
 
-        # In-memory player name lookup cache to eliminate N+1 DB queries
-        player_cache: Dict[str, Any] = {}
+        # In-memory player name lookup cache to eliminate N+1 DB queries across matches
+        all_candidate_names: set = set()
+        for m in matches:
+            for p in (m.participant1, m.participant2):
+                if p and p.name and p.name not in ("TBD", "Bye", ""):
+                    for sep in (" / ", "/", " & "):
+                        if sep in p.name:
+                            all_candidate_names.update(part.strip() for part in p.name.split(sep, 1))
+                            break
+                    else:
+                        all_candidate_names.add(p.name.strip())
+                    if getattr(p, "partner_name", None):
+                        all_candidate_names.add(p.partner_name.strip())
+
+        player_cache: Dict[str, Any] = {name: None for name in all_candidate_names}
+        if all_candidate_names:
+            # Batch-fetch matching player records in a single query
+            for pid, name in (
+                db.session.query(Player.id, Player.name)
+                .filter(Player.name.in_(all_candidate_names))
+                .all()
+            ):
+                player_cache[name] = pid
 
         # Champion determination (strictly from persisted final match)
         champion_name: Optional[str] = None
