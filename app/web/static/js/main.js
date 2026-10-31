@@ -32,14 +32,19 @@ document.addEventListener('DOMContentLoaded', initFlashes);
 document.addEventListener('turbo:load', initFlashes);
 
 // Add slide out animation
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideOut {
-        from { transform: translateX(0); opacity: 1; }
-        to { transform: translateX(400px); opacity: 0; }
+(function() {
+    if (!document.getElementById('slideout-animation-style')) {
+        const style = document.createElement('style');
+        style.id = 'slideout-animation-style';
+        style.textContent = `
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(400px); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
     }
-`;
-document.head.appendChild(style);
+})();
 
 // Form validation helper
 function validateForm(formId) {

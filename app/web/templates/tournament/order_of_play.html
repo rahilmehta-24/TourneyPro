@@ -75,15 +75,64 @@
     line-height: normal !important;
   }
 
-  /* Multi-Day Navigation Tabs */
+  /* Multi-Day Navigation Tabs Slidebar */
+  .oop-day-slider-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 1.5rem;
+    width: 100%;
+  }
+  .oop-day-slide-arrow {
+    flex-shrink: 0;
+    width: 36px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-card, #1e293b);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+    border-radius: var(--radius-md, 8px);
+    color: var(--text-secondary, #94a3b8);
+    cursor: pointer;
+    font-size: 1.15rem;
+    font-weight: bold;
+    transition: all 0.2s ease;
+    user-select: none;
+    z-index: 2;
+  }
+  .oop-day-slide-arrow:hover:not(:disabled) {
+    background: var(--bg-secondary, #334155);
+    color: var(--text-primary, #ffffff);
+    border-color: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+  .oop-day-slide-arrow:disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
+  }
   .oop-day-tabs {
     display: flex;
     gap: 0.5rem;
-    margin-bottom: 1.5rem;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: 0.5rem;
+    scroll-behavior: smooth;
+    padding: 0.25rem 0.25rem 0.5rem 0.25rem;
+    flex-grow: 1;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
     border-bottom: 1px solid var(--border-color);
+  }
+  .oop-day-tabs::-webkit-scrollbar {
+    height: 5px;
+  }
+  .oop-day-tabs::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 9999px;
+  }
+  .oop-day-tabs::-webkit-scrollbar-track {
+    background: transparent;
   }
   .oop-day-tab {
     text-decoration: none;
@@ -804,7 +853,7 @@
       </a>
       {% endif %}
       <a href="{{ url_for('export.export_order_of_play_pdf', slug=tournament.url_slug, court=selected_court or '', date=active_date.strftime('%Y-%m-%d') if active_date else '', session=session_filter or 'all') }}"
-         id="btnExportOopPdf" class="btn btn-secondary btn-sm" title="Download official Order of Play PDF">🖨️ Export PDF</a>
+         id="btnExportOopPdf" data-turbo="false" class="btn btn-secondary btn-sm" title="Download official Order of Play PDF">🖨️ Export PDF</a>
     </div>
   </div>
 
@@ -828,23 +877,32 @@
     </div>
   </div>
 
-  <!-- MULTI-DAY TABS NAVIGATION -->
+  <!-- MULTI-DAY TABS SLIDEBAR NAVIGATION -->
   {% if days_meta and days_meta|length > 1 %}
-  <div class="oop-day-tabs">
-    {% for dm in days_meta %}
-    <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug, date=dm.date_str, court=selected_court or '', session=session_filter or 'all') }}"
-       class="oop-day-tab {% if dm.is_active %}active{% else %}inactive{% endif %}">
-      📅 {{ dm.label }}
-      {% if dm.is_provisional %}
-      <span style="font-size: 0.72rem; padding: 1px 6px; border-radius: 9999px; background: rgba(234, 179, 8, 0.25); color: #fde047; font-weight: 700; margin-left: 2px;" title="Schedule is provisional awaiting earlier day results">⏳ Provisional</span>
-      {% endif %}
-      {% if dm.match_count is defined %}
-      <span style="font-size: 0.78rem; padding: 2px 7px; border-radius: 9999px; background: rgba(255, 255, 255, 0.12); margin-left: 4px; font-weight: 700;">
-        {{ dm.match_count }} {% if dm.rubbers_count and dm.rubbers_count > 0 %}<span style="opacity: 0.8; font-size: 0.7rem;">({{ dm.rubbers_count }} rubbers)</span>{% endif %}
-      </span>
-      {% endif %}
-    </a>
-    {% endfor %}
+  <div class="oop-day-slider-wrapper">
+    <button type="button" class="oop-day-slide-arrow prev" onclick="slideDayTabs(-1)" aria-label="Slide previous days" title="Slide earlier days">
+      &#10094;
+    </button>
+    <div class="oop-day-tabs" id="oopDayTabs">
+      {% for dm in days_meta %}
+      <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug, date=dm.date_str, court=selected_court or '', session=session_filter or 'all') }}"
+         class="oop-day-tab {% if dm.is_active %}active{% else %}inactive{% endif %}"
+         {% if dm.is_active %}id="activeDayTab" data-active-day="true"{% endif %}>
+        📅 {{ dm.label }}
+        {% if dm.is_provisional %}
+        <span style="font-size: 0.72rem; padding: 1px 6px; border-radius: 9999px; background: rgba(234, 179, 8, 0.25); color: #fde047; font-weight: 700; margin-left: 2px;" title="Schedule is provisional awaiting earlier day results">⏳ Provisional</span>
+        {% endif %}
+        {% if dm.match_count is defined %}
+        <span style="font-size: 0.78rem; padding: 2px 7px; border-radius: 9999px; background: rgba(255, 255, 255, 0.12); margin-left: 4px; font-weight: 700;">
+          {{ dm.match_count }} {% if dm.rubbers_count and dm.rubbers_count > 0 %}<span style="opacity: 0.8; font-size: 0.7rem;">({{ dm.rubbers_count }} rubbers)</span>{% endif %}
+        </span>
+        {% endif %}
+      </a>
+      {% endfor %}
+    </div>
+    <button type="button" class="oop-day-slide-arrow next" onclick="slideDayTabs(1)" aria-label="Slide next days" title="Slide later days">
+      &#10095;
+    </button>
   </div>
   {% endif %}
 
@@ -910,7 +968,7 @@
         ☀️ Day Session: {{ active_day_start or '09:00' }} &ndash; {{ evening_session_start or '16:00' }}
       </span>
       <span class="oop-session-legend-item evening">
-        🌙 Evening Session: Not Before {{ evening_session_start or '16:00' }} (4:00 PM) &ndash; {{ active_day_end or '20:00' }}
+        🌙 Evening Session: Not Before {{ evening_session_start or '16:00' }} &ndash; {{ active_day_end or '20:00' }}
       </span>
     </div>
   </div>
@@ -1405,7 +1463,7 @@
           <span style="font-size: 1.15rem;">🌙</span>
           <div>
             <span class="oop-session-title-text">Evening Session</span>
-            <span class="oop-session-title-sub">Not Before {{ evening_session_start or '16:00' }} (4:00 PM)</span>
+            <span class="oop-session-title-sub">Not Before {{ evening_session_start or '16:00' }}</span>
           </div>
         </div>
         <span class="oop-session-badge evening">
@@ -1503,7 +1561,7 @@
 
       {% if matches.evening_matches and session_filter != 'day' %}
       <div style="background: #eef2ff; border-left: 4px solid #4f46e5; padding: 6px 12px; font-weight: bold; font-size: 11px; color: #3730a3; margin-top: 14px;">
-        🌙 EVENING SESSION &mdash; Not Before {{ evening_session_start or '16:00' }} (4:00 PM) ({{ matches.evening_matches|length }} match{{ 'es' if matches.evening_matches|length != 1 else '' }})
+        🌙 EVENING SESSION &mdash; Not Before {{ evening_session_start or '16:00' }} ({{ matches.evening_matches|length }} match{{ 'es' if matches.evening_matches|length != 1 else '' }})
       </div>
       <table class="oop-table">
         <thead>
@@ -1617,14 +1675,81 @@ function selectSession(session) {
     applyScheduleFilters();
 }
 
-// Expose on window for auto-refresh hook in base.html
-window.selectSession = selectSession;
-window.applyScheduleFilters = applyScheduleFilters;
+// Center the active day tab and handle day slidebar navigation
+function centerActiveDayTab(smooth = false) {
+    const tabsContainer = document.getElementById('oopDayTabs');
+    const activeTab = document.getElementById('activeDayTab') || document.querySelector('.oop-day-tabs .oop-day-tab.active');
+    if (!tabsContainer || !activeTab) return;
+
+    const containerWidth = tabsContainer.clientWidth;
+    const tabLeft = activeTab.offsetLeft;
+    const tabWidth = activeTab.offsetWidth;
+    const targetScrollLeft = tabLeft - (containerWidth / 2) + (tabWidth / 2);
+
+    tabsContainer.scrollTo({
+        left: Math.max(0, targetScrollLeft),
+        behavior: smooth ? 'smooth' : 'auto'
+    });
+    updateDaySlideArrows();
+}
+
+function slideDayTabs(direction) {
+    const tabsContainer = document.getElementById('oopDayTabs');
+    if (!tabsContainer) return;
+    const scrollAmount = Math.max(220, tabsContainer.clientWidth * 0.65);
+    tabsContainer.scrollBy({
+        left: direction * scrollAmount,
+        behavior: 'smooth'
+    });
+    setTimeout(updateDaySlideArrows, 320);
+}
+
+function updateDaySlideArrows() {
+    const tabsContainer = document.getElementById('oopDayTabs');
+    const prevBtn = document.querySelector('.oop-day-slide-arrow.prev');
+    const nextBtn = document.querySelector('.oop-day-slide-arrow.next');
+    if (!tabsContainer) return;
+
+    const isScrollable = tabsContainer.scrollWidth > tabsContainer.clientWidth + 5;
+    if (!isScrollable) {
+        if (prevBtn) prevBtn.style.display = 'none';
+        if (nextBtn) nextBtn.style.display = 'none';
+        return;
+    }
+    if (prevBtn) {
+        prevBtn.style.display = '';
+        prevBtn.disabled = tabsContainer.scrollLeft <= 5;
+    }
+    if (nextBtn) {
+        nextBtn.style.display = '';
+        const maxScroll = tabsContainer.scrollWidth - tabsContainer.clientWidth - 5;
+        nextBtn.disabled = tabsContainer.scrollLeft >= maxScroll;
+    }
+}
+
+window.slideDayTabs = slideDayTabs;
+window.centerActiveDayTab = centerActiveDayTab;
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Center the active day tab in the slidebar so it never defaults to Day 1
+    centerActiveDayTab(false);
+    setTimeout(() => centerActiveDayTab(false), 50);
+    setTimeout(() => centerActiveDayTab(false), 200);
+
+    const tabsContainer = document.getElementById('oopDayTabs');
+    if (tabsContainer) {
+        tabsContainer.addEventListener('scroll', updateDaySlideArrows, { passive: true });
+    }
+    updateDaySlideArrows();
+
     if (currentSessionFilter && currentSessionFilter !== 'all') {
         selectSession(currentSessionFilter);
     }
+});
+
+window.addEventListener('resize', () => {
+    centerActiveDayTab(false);
+    updateDaySlideArrows();
 });
 
 function applyScheduleFilters() {
