@@ -14,6 +14,7 @@ jobs:
   migrate-uat:
     name: Migrate & Sync UAT Database
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/uat'
 
     steps:
     - name: Checkout repository
@@ -31,14 +32,14 @@ jobs:
 
     - name: Execute Database Migration on UAT Supabase
       env:
-        UAT_DB_SECRET: ${{ secrets.UAT_DATABASE_URL }}
-        PROD_DB_SECRET: ${{ secrets.DATABASE_URL }}
+        DATABASE_URL: ${{ secrets.UAT_DATABASE_URL }}
         FLASK_APP: run.py
       run: |
-        TARGET_URL="${UAT_DB_SECRET:-$PROD_DB_SECRET}"
-        export DATABASE_URL=$(echo -n "$TARGET_URL" | tr -d '\r\n' | xargs)
+        export DATABASE_URL=$(echo -n "$DATABASE_URL" | tr -d '\r\n' | xargs)
         if [ -z "$DATABASE_URL" ]; then
-          echo "[Error] Neither UAT_DATABASE_URL nor DATABASE_URL secret is configured."
+          echo "[Error] UAT_DATABASE_URL secret is not configured in GitHub repository secrets."
+          echo "[Error] Halting workflow to prevent accidental modifications to Production."
+          echo "Please configure 'UAT_DATABASE_URL' in GitHub Repo Settings -> Secrets and variables -> Actions."
           exit 1
         fi
         echo "Applying pending migrations to UAT Supabase..."
@@ -47,11 +48,13 @@ jobs:
 
     - name: Compare & Synchronize Schema with UAT Supabase
       env:
-        UAT_DB_SECRET: ${{ secrets.UAT_DATABASE_URL }}
-        PROD_DB_SECRET: ${{ secrets.DATABASE_URL }}
+        DATABASE_URL: ${{ secrets.UAT_DATABASE_URL }}
         FLASK_APP: run.py
       run: |
-        TARGET_URL="${UAT_DB_SECRET:-$PROD_DB_SECRET}"
-        export DATABASE_URL=$(echo -n "$TARGET_URL" | tr -d '\r\n' | xargs)
+        export DATABASE_URL=$(echo -n "$DATABASE_URL" | tr -d '\r\n' | xargs)
+        if [ -z "$DATABASE_URL" ]; then
+          echo "[Error] UAT_DATABASE_URL secret is not configured in GitHub repository secrets."
+          exit 1
+        fi
         echo "Comparing database models against UAT Supabase schema..."
         python scripts/sync_db_schema.py
