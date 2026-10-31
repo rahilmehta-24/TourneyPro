@@ -142,7 +142,7 @@ class OrderOfPlayExportAdapter:
 
                 # Child rubbers (for team league fixtures)
                 rubbers: List[Dict[str, Any]] = []
-                if match_obj and match_obj.sub_matches:
+                if match_obj and m_dict.get("has_rubbers") and match_obj.sub_matches:
                     for sub in sorted(
                         match_obj.sub_matches, key=lambda s: getattr(s, "rubber_number", 0)
                     ):

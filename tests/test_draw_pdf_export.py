@@ -13,14 +13,14 @@ from app.services.format_engine import get_format
 class DrawPdfExportTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.db_fd, cls.db_path = tempfile.mkstemp(suffix='.db')
+        cls.db_fd, cls.db_path = tempfile.mkstemp(suffix=".db")
         os.close(cls.db_fd)
 
         class TestConfig:
             TESTING = True
-            SECRET_KEY = 'test-secret-key'
-            JWT_SECRET_KEY = 'jwt-test-secret'
-            SQLALCHEMY_DATABASE_URI = f'sqlite:///{cls.db_path}'
+            SECRET_KEY = "test-secret-key"
+            JWT_SECRET_KEY = "jwt-test-secret"
+            SQLALCHEMY_DATABASE_URI = f"sqlite:///{cls.db_path}"
             SQLALCHEMY_TRACK_MODIFICATIONS = False
             WTF_CSRF_ENABLED = False
             UPLOAD_FOLDER = tempfile.mkdtemp()
@@ -49,18 +49,18 @@ class DrawPdfExportTestCase(unittest.TestCase):
             db.session.commit()
 
             # Authorized Organizer
-            self.organizer = User(username='organizer1', email='org1@test.com', role='admin')
-            self.organizer.set_password('pass123')
+            self.organizer = User(username="organizer1", email="org1@test.com", role="admin")
+            self.organizer.set_password("pass123")
             db.session.add(self.organizer)
 
             # Unauthorized Attacker Organizer
-            self.attacker = User(username='attacker', email='attacker@test.com', role='admin')
-            self.attacker.set_password('pass123')
+            self.attacker = User(username="attacker", email="attacker@test.com", role="admin")
+            self.attacker.set_password("pass123")
             db.session.add(self.attacker)
 
             # Regular Player / User
-            self.regular_user = User(username='player_user', email='player@test.com', role='user')
-            self.regular_user.set_password('pass123')
+            self.regular_user = User(username="player_user", email="player@test.com", role="user")
+            self.regular_user.set_password("pass123")
             db.session.add(self.regular_user)
 
             db.session.commit()
@@ -72,7 +72,7 @@ class DrawPdfExportTestCase(unittest.TestCase):
                 user_id=self.organizer.id,
                 status="in_progress",
                 start_date=date(2026, 7, 1),
-                end_date=date(2026, 7, 14)
+                end_date=date(2026, 7, 14),
             )
             db.session.add(self.tournament)
             db.session.commit()
@@ -82,11 +82,19 @@ class DrawPdfExportTestCase(unittest.TestCase):
 
         self.client = self.app.test_client()
 
-    def _login(self, username, password='pass123'):
-        self.client.get('/logout')
-        return self.client.post('/login', data={'username': username, 'password': password}, follow_redirects=True)
+    def _login(self, username, password="pass123"):
+        self.client.get("/logout")
+        return self.client.post(
+            "/login", data={"username": username, "password": password}, follow_redirects=True
+        )
 
-    def _create_single_elim_category(self, num_players, category_name="Men's Singles", is_doubles=False, custom_format='single_elimination'):
+    def _create_single_elim_category(
+        self,
+        num_players,
+        category_name="Men's Singles",
+        is_doubles=False,
+        custom_format="single_elimination",
+    ):
         """Helper to create participants, start category, and generate authoritative saved draw."""
         with self.app.app_context():
             tourn = Tournament.query.filter_by(url_slug=self.tournament_slug).first()
@@ -94,11 +102,11 @@ class DrawPdfExportTestCase(unittest.TestCase):
                 tournament_id=tourn.id,
                 name=category_name,
                 format=custom_format,
-                status='setup',
+                status="setup",
                 num_sets=3,
                 games_per_set=6,
                 start_date=date(2026, 7, 2),
-                end_date=date(2026, 7, 10)
+                end_date=date(2026, 7, 10),
             )
             db.session.add(cat)
             db.session.commit()
@@ -112,7 +120,7 @@ class DrawPdfExportTestCase(unittest.TestCase):
                     category_id=cat.id,
                     name=p_name,
                     seed=i if i <= 8 else None,
-                    manual_seed=i if i <= 4 else None
+                    manual_seed=i if i <= 4 else None,
                 )
                 db.session.add(part)
                 participants.append(part)
@@ -123,12 +131,12 @@ class DrawPdfExportTestCase(unittest.TestCase):
             fmt = get_format(cat.format)
             matches_data = fmt.generate(cat, participants)
             for m_data in matches_data:
-                m_data['tournament_id'] = tourn.id
-                m_data['category_id'] = cat.id
+                m_data["tournament_id"] = tourn.id
+                m_data["category_id"] = cat.id
                 match = Match(**m_data)
                 db.session.add(match)
 
-            cat.status = 'in_progress'
+            cat.status = "in_progress"
             db.session.commit()
 
             return cat.id
@@ -138,7 +146,7 @@ class DrawPdfExportTestCase(unittest.TestCase):
     # -------------------------------------------------------------
     def test_01_export_8_participant_draw(self):
         cat_id = self._create_single_elim_category(8, "Men's Singles 8")
-        self._login('organizer1')
+        self._login("organizer1")
 
         res = self.client.get(f"/tournaments/{self.tournament_slug}/category/{cat_id}/export_pdf")
         self.assertEqual(res.status_code, 200)
@@ -161,7 +169,7 @@ class DrawPdfExportTestCase(unittest.TestCase):
 
     def test_02_export_16_participant_draw(self):
         cat_id = self._create_single_elim_category(16, "Men's Singles 16")
-        self._login('organizer1')
+        self._login("organizer1")
 
         res = self.client.get(f"/tournaments/{self.tournament_slug}/category/{cat_id}/export_pdf")
         self.assertEqual(res.status_code, 200)
@@ -173,7 +181,7 @@ class DrawPdfExportTestCase(unittest.TestCase):
 
     def test_03_export_32_participant_draw(self):
         cat_id = self._create_single_elim_category(32, "Men's Singles 32")
-        self._login('organizer1')
+        self._login("organizer1")
 
         res = self.client.get(f"/tournaments/{self.tournament_slug}/category/{cat_id}/export_pdf")
         self.assertEqual(res.status_code, 200)
@@ -189,7 +197,7 @@ class DrawPdfExportTestCase(unittest.TestCase):
 
     def test_04_export_64_participant_draw_multipage(self):
         cat_id = self._create_single_elim_category(64, "Men's Singles 64")
-        self._login('organizer1')
+        self._login("organizer1")
 
         res = self.client.get(f"/tournaments/{self.tournament_slug}/category/{cat_id}/export_pdf")
         self.assertEqual(res.status_code, 200)
@@ -207,7 +215,7 @@ class DrawPdfExportTestCase(unittest.TestCase):
 
     def test_05_export_128_participant_draw_multipage(self):
         cat_id = self._create_single_elim_category(128, "Men's Singles 128")
-        self._login('organizer1')
+        self._login("organizer1")
 
         res = self.client.get(f"/tournaments/{self.tournament_slug}/category/{cat_id}/export_pdf")
         self.assertEqual(res.status_code, 200)
@@ -225,7 +233,7 @@ class DrawPdfExportTestCase(unittest.TestCase):
     def test_06_non_power_of_two_draw_and_byes(self):
         # 6 players -> 8 bracket size with 2 Byes
         cat_id = self._create_single_elim_category(6, "Non-Power-of-Two 6 Draw")
-        self._login('organizer1')
+        self._login("organizer1")
 
         res = self.client.get(f"/tournaments/{self.tournament_slug}/category/{cat_id}/export_pdf")
         self.assertEqual(res.status_code, 200)
@@ -239,8 +247,10 @@ class DrawPdfExportTestCase(unittest.TestCase):
     # 3. Doubles Representation
     # -------------------------------------------------------------
     def test_07_doubles_team_names(self):
-        cat_id = self._create_single_elim_category(8, "Men's Doubles", is_doubles=True, custom_format='doubles_elimination')
-        self._login('organizer1')
+        cat_id = self._create_single_elim_category(
+            8, "Men's Doubles", is_doubles=True, custom_format="doubles_elimination"
+        )
+        self._login("organizer1")
 
         res = self.client.get(f"/tournaments/{self.tournament_slug}/category/{cat_id}/export_pdf")
         self.assertEqual(res.status_code, 200)
@@ -256,7 +266,11 @@ class DrawPdfExportTestCase(unittest.TestCase):
         cat_id = self._create_single_elim_category(8, "Completed Championship")
         with self.app.app_context():
             # Complete all matches up to the Final
-            matches = Match.query.filter_by(category_id=cat_id).order_by(Match.round, Match.match_number).all()
+            matches = (
+                Match.query.filter_by(category_id=cat_id)
+                .order_by(Match.round, Match.match_number)
+                .all()
+            )
             p1 = Participant.query.filter_by(category_id=cat_id, name="Player 1").first()
 
             # Set match results
@@ -271,7 +285,7 @@ class DrawPdfExportTestCase(unittest.TestCase):
             cat.status = "completed"
             db.session.commit()
 
-        self._login('organizer1')
+        self._login("organizer1")
         res = self.client.get(f"/tournaments/{self.tournament_slug}/category/{cat_id}/export_pdf")
         self.assertEqual(res.status_code, 200)
         reader = PdfReader(BytesIO(res.data))
@@ -286,13 +300,13 @@ class DrawPdfExportTestCase(unittest.TestCase):
             # Final match has no winner yet
             matches = Match.query.filter_by(category_id=cat_id).all()
             for m in matches:
-                m.status = 'pending'
+                m.status = "pending"
                 m.winner_id = None
                 m.score1 = None
                 m.score2 = None
             db.session.commit()
 
-        self._login('organizer1')
+        self._login("organizer1")
         res = self.client.get(f"/tournaments/{self.tournament_slug}/category/{cat_id}/export_pdf")
         self.assertEqual(res.status_code, 200)
         reader = PdfReader(BytesIO(res.data))
@@ -306,30 +320,60 @@ class DrawPdfExportTestCase(unittest.TestCase):
         cat_id = self._create_single_elim_category(8, "Immutability Test")
         with self.app.app_context():
             matches_before = [
-                (m.id, m.round, m.match_number, m.participant1_id, m.participant2_id, m.winner_id, m.score1, m.score2, m.status)
+                (
+                    m.id,
+                    m.round,
+                    m.match_number,
+                    m.participant1_id,
+                    m.participant2_id,
+                    m.winner_id,
+                    m.score1,
+                    m.score2,
+                    m.status,
+                )
                 for m in Match.query.filter_by(category_id=cat_id).order_by(Match.id).all()
             ]
             participants_before = [
                 (p.id, p.name, p.seed, p.manual_seed)
-                for p in Participant.query.filter_by(category_id=cat_id).order_by(Participant.id).all()
+                for p in Participant.query.filter_by(category_id=cat_id)
+                .order_by(Participant.id)
+                .all()
             ]
 
-        self._login('organizer1')
+        self._login("organizer1")
         res = self.client.get(f"/tournaments/{self.tournament_slug}/category/{cat_id}/export_pdf")
         self.assertEqual(res.status_code, 200)
 
         with self.app.app_context():
             matches_after = [
-                (m.id, m.round, m.match_number, m.participant1_id, m.participant2_id, m.winner_id, m.score1, m.score2, m.status)
+                (
+                    m.id,
+                    m.round,
+                    m.match_number,
+                    m.participant1_id,
+                    m.participant2_id,
+                    m.winner_id,
+                    m.score1,
+                    m.score2,
+                    m.status,
+                )
                 for m in Match.query.filter_by(category_id=cat_id).order_by(Match.id).all()
             ]
             participants_after = [
                 (p.id, p.name, p.seed, p.manual_seed)
-                for p in Participant.query.filter_by(category_id=cat_id).order_by(Participant.id).all()
+                for p in Participant.query.filter_by(category_id=cat_id)
+                .order_by(Participant.id)
+                .all()
             ]
 
-            self.assertEqual(matches_before, matches_after, "Database matches were mutated during export!")
-            self.assertEqual(participants_before, participants_after, "Database participants were mutated during export!")
+            self.assertEqual(
+                matches_before, matches_after, "Database matches were mutated during export!"
+            )
+            self.assertEqual(
+                participants_before,
+                participants_after,
+                "Database participants were mutated during export!",
+            )
 
     # -------------------------------------------------------------
     # 6. Security, Authorization, and Ownership Protection
@@ -344,7 +388,7 @@ class DrawPdfExportTestCase(unittest.TestCase):
     def test_12_cross_organizer_idor_blocked(self):
         cat_id = self._create_single_elim_category(8, "IDOR Protection Test")
         # Log in as attacker (different admin)
-        self._login('attacker')
+        self._login("attacker")
         res = self.client.get(f"/tournaments/{self.tournament_slug}/category/{cat_id}/export_pdf")
         # Forbidden
         self.assertEqual(res.status_code, 403)
@@ -352,13 +396,13 @@ class DrawPdfExportTestCase(unittest.TestCase):
     def test_13_regular_player_role_blocked(self):
         cat_id = self._create_single_elim_category(8, "Role RBAC Test")
         # Log in as normal user
-        self._login('player_user')
+        self._login("player_user")
         res = self.client.get(f"/tournaments/{self.tournament_slug}/category/{cat_id}/export_pdf")
         self.assertEqual(res.status_code, 403)
 
     def test_14_invalid_tournament_or_category_returns_404(self):
         cat_id = self._create_single_elim_category(8, "404 Test")
-        self._login('organizer1')
+        self._login("organizer1")
 
         # Invalid slug
         res1 = self.client.get(f"/tournaments/non-existent-slug/category/{cat_id}/export_pdf")
@@ -375,12 +419,12 @@ class DrawPdfExportTestCase(unittest.TestCase):
                 name="Other Tournament",
                 url_slug="other-tourn",
                 user_id=self.organizer_id,
-                status="in_progress"
+                status="in_progress",
             )
             db.session.add(other_tourn)
             db.session.commit()
 
-        self._login('organizer1')
+        self._login("organizer1")
         # Request cat_id under other_tourn slug
         res = self.client.get(f"/tournaments/other-tourn/category/{cat_id}/export_pdf")
         self.assertEqual(res.status_code, 404)
@@ -395,23 +439,109 @@ class DrawPdfExportTestCase(unittest.TestCase):
                 tournament_id=tourn.id,
                 name="Unstarted Category",
                 format="single_elimination",
-                status="setup"
+                status="setup",
             )
             db.session.add(unstarted_cat)
             db.session.commit()
             unstarted_id = unstarted_cat.id
 
-        self._login('organizer1')
-        res = self.client.get(f"/tournaments/{self.tournament_slug}/category/{unstarted_id}/export_pdf", follow_redirects=True)
+        self._login("organizer1")
+        res = self.client.get(
+            f"/tournaments/{self.tournament_slug}/category/{unstarted_id}/export_pdf",
+            follow_redirects=True,
+        )
         self.assertEqual(res.status_code, 200)
         self.assertIn(b"The tournament draw has not been generated yet", res.data)
 
     # -------------------------------------------------------------
-    # 8. Regression Checks for CSV Exports
+    # 8. Regression Checks for CSV Exports & Download Performance
     # -------------------------------------------------------------
     def test_17_regression_matches_csv_export(self):
         cat_id = self._create_single_elim_category(8, "CSV Regression Test")
-        res = self.client.get(f"/tournaments/{self.tournament_slug}/category/{cat_id}/export_matches_csv")
+        res = self.client.get(
+            f"/tournaments/{self.tournament_slug}/category/{cat_id}/export_matches_csv"
+        )
         self.assertEqual(res.status_code, 200)
         self.assertIn("text/csv", res.headers.get("Content-Type"))
-        self.assertIn("Round,Match Number,Status,Player 1,Player 2,Score,Winner", res.data.decode('utf-8'))
+        self.assertIn(
+            "Round,Match Number,Status,Player 1,Player 2,Score,Winner", res.data.decode("utf-8")
+        )
+
+    def test_18_pdf_response_headers_and_etag_caching(self):
+        cat_id = self._create_single_elim_category(8, "Header Performance Test")
+        self._login("organizer1")
+
+        res = self.client.get(f"/tournaments/{self.tournament_slug}/category/{cat_id}/export_pdf")
+        self.assertEqual(res.status_code, 200)
+        self.assertIn("application/pdf", res.headers.get("Content-Type"))
+        self.assertIn("Content-Length", res.headers)
+        self.assertEqual(int(res.headers["Content-Length"]), len(res.data))
+        self.assertIn("ETag", res.headers)
+        etag = res.headers["ETag"]
+        self.assertIn("private, max-age=120", res.headers.get("Cache-Control", ""))
+
+        # Conditional GET with ETag should return 304 Not Modified instantly
+        res_304 = self.client.get(
+            f"/tournaments/{self.tournament_slug}/category/{cat_id}/export_pdf",
+            headers={"If-None-Match": etag},
+        )
+        self.assertEqual(res_304.status_code, 304)
+        self.assertEqual(len(res_304.data), 0)
+
+    def test_19_in_memory_pdf_service_cache(self):
+        from app.services.pdf.pdf_generator import DrawPdfService
+
+        test_key = "test_cache_key_123"
+        fake_bytes = b"%PDF-1.4 test binary data"
+
+        DrawPdfService.clear_cache()
+        self.assertIsNone(DrawPdfService.get_cached_pdf(test_key))
+
+        DrawPdfService.set_cached_pdf(test_key, fake_bytes)
+        cached = DrawPdfService.get_cached_pdf(test_key)
+        self.assertEqual(cached, fake_bytes)
+
+        DrawPdfService.clear_cache()
+        self.assertIsNone(DrawPdfService.get_cached_pdf(test_key))
+
+    def test_20_draw_with_byes_uneven_multipage_rendering(self):
+        # 5-round draw with 31 matches in round 1 (e.g. 58 participants with byes)
+        from app.services.pdf.draw_adapter import DrawExportAdapter
+        from app.services.pdf.pdf_generator import DrawPdfService
+
+        with self.app.app_context():
+            tourn = Tournament.query.filter_by(url_slug=self.tournament_slug).first()
+            cat = Category(
+                tournament_id=tourn.id,
+                name="58-Player Uneven Draw",
+                format="single_elimination",
+                status="in_progress",
+            )
+            db.session.add(cat)
+            db.session.commit()
+
+            # Create matches: R1: 31, R2: 15, R3: 7, R4: 3, R5: 1
+            counts = {1: 31, 2: 15, 3: 7, 4: 3, 5: 1}
+            for r_num, count in counts.items():
+                for m_num in range(1, count + 1):
+                    m = Match(
+                        tournament_id=tourn.id,
+                        category_id=cat.id,
+                        round=r_num,
+                        match_number=m_num,
+                        bracket_type="main",
+                        match_type="knockout",
+                        status="pending",
+                    )
+                    db.session.add(m)
+            db.session.commit()
+
+            data = DrawExportAdapter.adapt(tourn, cat)
+            self.assertEqual(len(data["pages"]), 3)
+            self.assertEqual(data["pages"][0]["section_badge"], "Top Half Bracket")
+            self.assertEqual(data["pages"][1]["section_badge"], "Bottom Half Bracket")
+            self.assertEqual(data["pages"][2]["section_badge"], "Championship Finals Stage")
+
+            with self.app.test_request_context():
+                pdf_buf = DrawPdfService.render_draw_pdf(data)
+                self.assertGreater(len(pdf_buf.getvalue()), 5000)

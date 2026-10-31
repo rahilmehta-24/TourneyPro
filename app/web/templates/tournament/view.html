@@ -33,9 +33,9 @@
             {% else %}
             <button onclick="copyShareLink('{{ url_for('tournament.view_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">🔗 Share Link</button>
             {% endif %}
-            <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug) }}" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">📋 Order of Play</a>
+            <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug) }}" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;" id="btnOrderOfPlayTop" data-turbo="false">📋 Order of Play</a>
             {% if current_user and current_user.role in ['admin', 'superadmin'] and tournament.categories %}
-            <a href="{{ url_for('export.export_participants_pdf', slug=tournament.url_slug) }}" target="_blank" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;" id="btnExportTournament" title="Export Participants Roster PDF">🖨️ Export PDF</a>
+            <a href="{{ url_for('export.export_participants_pdf', slug=tournament.url_slug) }}" class="btn btn-secondary" data-turbo="false" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;" id="btnExportTournament" title="Export Participants Roster PDF">🖨️ Export PDF</a>
             {% endif %}
         </div>
     </div>
@@ -79,7 +79,7 @@
             {{ cat.name }} {% if cat.status == 'in_progress' %}<span style="color: #ef4444; font-size: 0.75rem;">● Live</span>{% elif cat.status == 'completed' %}<span style="color: #10b981; font-size: 0.75rem;">✓ Done</span>{% endif %}
         </a>
         {% endfor %}
-        <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug) }}" class="btn btn-sm btn-secondary" style="border-radius: 9999px; white-space: nowrap; padding: 0.4rem 1rem; font-size: 0.85rem; font-weight: 500;">
+        <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug) }}" class="btn btn-sm btn-secondary" style="border-radius: 9999px; white-space: nowrap; padding: 0.4rem 1rem; font-size: 0.85rem; font-weight: 500;" id="btnOrderOfPlayTab" data-turbo="false">
             📋 Order of Play
         </a>
     </div>

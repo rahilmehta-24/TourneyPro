@@ -7,7 +7,7 @@ Never generates, reseeds, shuffles, mutates, advances, or recalculates tournamen
 """
 
 from typing import Any, Dict, List, Optional
-from app.domain.models import db, Tournament, Category, Match, Participant
+from app.domain.models import db, Tournament, Category, Match, Participant, Player
 from app.services.utils.scheduler import extract_participant_players
 
 
@@ -35,32 +35,44 @@ class DrawExportAdapter:
         return f"Round {round_num}"
 
     @staticmethod
-    def format_participant_name(participant: Optional[Participant]) -> str:
-        """Format singles player or doubles pair name cleanly."""
+    def format_participant_name(
+        participant: Optional[Participant], player_cache: Optional[Dict[str, Any]] = None
+    ) -> str:
+        """Format singles player or doubles pair name cleanly without redundant DB queries."""
         if not participant:
             return "TBD"
-        players = extract_participant_players(participant)
-        names = [pl['name'] for pl in players if pl.get('name') and pl['name'] not in ('TBD', 'Bye')]
+        if player_cache is None:
+            player_cache = {}
+        players = extract_participant_players(participant, player_cache=player_cache)
+        names = [
+            pl["name"] for pl in players if pl.get("name") and pl["name"] not in ("TBD", "Bye")
+        ]
         if names:
             return " / ".join(names)
         return participant.name or "TBD"
 
     @staticmethod
-    def format_participant_slot(participant: Optional[Participant], match: Match, is_p1: bool) -> Dict[str, Any]:
+    def format_participant_slot(
+        participant: Optional[Participant],
+        match: Match,
+        is_p1: bool,
+        player_cache: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         """Build normalized display structure for a participant slot in a match."""
         is_bye = False
         p_name = ""
         seed = None
 
         if participant:
-            p_name = DrawExportAdapter.format_participant_name(participant)
+            p_name = DrawExportAdapter.format_participant_name(
+                participant, player_cache=player_cache
+            )
             seed = participant.manual_seed or participant.seed
         else:
             other_p = match.participant2 if is_p1 else match.participant1
             # Check if this slot represents a Bye
-            is_bye_match = (
-                (match.score1 == 'Bye' or match.score2 == 'Bye') or
-                (match.round == 1 and other_p is not None and match.status == 'completed')
+            is_bye_match = (match.score1 == "Bye" or match.score2 == "Bye") or (
+                match.round == 1 and other_p is not None and match.status == "completed"
             )
             if is_bye_match:
                 p_name = "Bye"
@@ -80,38 +92,92 @@ class DrawExportAdapter:
             score_display = "Bye"
 
         return {
-            'id': participant.id if participant else None,
-            'name': p_name,
-            'seed': seed,
-            'is_winner': is_winner,
-            'is_bye': is_bye,
-            'score': score_display
+            "id": participant.id if participant else None,
+            "name": p_name,
+            "seed": seed,
+            "is_winner": is_winner,
+            "is_bye": is_bye,
+            "score": score_display,
         }
 
     @staticmethod
-    def format_match_card(match: Match, round_num: int, total_rounds: int) -> Dict[str, Any]:
+    def format_match_card(
+        match: Match,
+        round_num: int,
+        total_rounds: int,
+        player_cache: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         """Convert a database Match record into a normalized match card structure."""
-        p1_data = DrawExportAdapter.format_participant_slot(match.participant1, match, is_p1=True)
-        p2_data = DrawExportAdapter.format_participant_slot(match.participant2, match, is_p1=False)
+        p1_data = DrawExportAdapter.format_participant_slot(
+            match.participant1, match, is_p1=True, player_cache=player_cache
+        )
+        p2_data = DrawExportAdapter.format_participant_slot(
+            match.participant2, match, is_p1=False, player_cache=player_cache
+        )
 
         time_str = ""
         if match.scheduled_time:
             time_str = match.scheduled_time.strftime("%d/%m %I:%M %p")
 
         return {
-            'id': match.id,
-            'match_number': match.match_number,
-            'round': match.round,
-            'round_name': DrawExportAdapter.get_round_name(round_num, total_rounds),
-            'status': match.status or 'pending',
-            'court_name': match.court_name or '',
-            'scheduled_time': time_str,
-            'p1': p1_data,
-            'p2': p2_data
+            "id": match.id,
+            "match_number": match.match_number,
+            "round": match.round,
+            "round_name": DrawExportAdapter.get_round_name(round_num, total_rounds),
+            "status": match.status or "pending",
+            "court_name": match.court_name or "",
+            "scheduled_time": time_str,
+            "p1": p1_data,
+            "p2": p2_data,
         }
 
     @staticmethod
-    def build_grid_cells(round_matches_list: List[List[Dict[str, Any]]], target_card: Optional[Dict[str, Any]] = None) -> List[List[Dict[str, Any]]]:
+    def _create_bye_match_card(match_num: int, round_num: int, total_rounds: int) -> Dict[str, Any]:
+        """Create a lightweight bye placeholder match card for proper grid alignment."""
+        return {
+            "id": None,
+            "match_number": match_num,
+            "round": round_num,
+            "round_name": DrawExportAdapter.get_round_name(round_num, total_rounds),
+            "status": "completed",
+            "court_name": "",
+            "scheduled_time": "",
+            "p1": {
+                "id": None,
+                "name": "Bye",
+                "seed": None,
+                "is_winner": True,
+                "is_bye": True,
+                "score": "",
+            },
+            "p2": {
+                "id": None,
+                "name": "Bye",
+                "seed": None,
+                "is_winner": False,
+                "is_bye": True,
+                "score": "",
+            },
+        }
+
+    @classmethod
+    def _pad_round_matches(
+        cls,
+        matches_list: List[Dict[str, Any]],
+        target_len: int,
+        round_num: int,
+        total_rounds: int,
+    ) -> List[Dict[str, Any]]:
+        """Pad round matches to target power-of-2 length so bracket rows align seamlessly."""
+        padded = list(matches_list)
+        while len(padded) < target_len:
+            padded.append(cls._create_bye_match_card(len(padded) + 1, round_num, total_rounds))
+        return padded
+
+    @staticmethod
+    def build_grid_cells(
+        round_matches_list: List[List[Dict[str, Any]]], target_card: Optional[Dict[str, Any]] = None
+    ) -> List[List[Dict[str, Any]]]:
         """
         Generate mathematical table-grid cells for pixel-perfect bracket trees and connectors.
         Guarantees that match boxes and connectors align seamlessly without client-side JS.
@@ -132,12 +198,14 @@ class DrawExportAdapter:
             for m_idx, match in enumerate(matches_in_r):
                 start_row = m_idx * span
                 if start_row < total_rows:
-                    rows_cells[start_row].append({
-                        'type': 'match',
-                        'data': match,
-                        'rowspan': span,
-                        'width': f"{max(12, int(72 / (num_rounds + (1 if target_card else 0))))}%"
-                    })
+                    rows_cells[start_row].append(
+                        {
+                            "type": "match",
+                            "data": match,
+                            "rowspan": span,
+                            "width": f"{max(12, int(72 / (num_rounds + (1 if target_card else 0))))}%",
+                        }
+                    )
 
             # Connectors between round r and round r+1
             if r < num_rounds - 1:
@@ -149,32 +217,54 @@ class DrawExportAdapter:
                     p_start = p * pair_span
                     if p_start + 3 * half_sub < total_rows:
                         # Sub-block 0: empty above top branch
-                        rows_cells[p_start].append({'type': 'conn', 'rowspan': half_sub, 'classes': 'c-top-branch'})
-                        rows_cells[p_start].append({'type': 'conn_stem', 'rowspan': half_sub, 'classes': 'c-empty'})
+                        rows_cells[p_start].append(
+                            {"type": "conn", "rowspan": half_sub, "classes": "c-top-branch"}
+                        )
+                        rows_cells[p_start].append(
+                            {"type": "conn_stem", "rowspan": half_sub, "classes": "c-empty"}
+                        )
 
                         # Sub-block 1: top vertical bar
-                        rows_cells[p_start + half_sub].append({'type': 'conn', 'rowspan': half_sub, 'classes': 'c-vert'})
-                        rows_cells[p_start + half_sub].append({'type': 'conn_stem', 'rowspan': half_sub, 'classes': 'c-empty'})
+                        rows_cells[p_start + half_sub].append(
+                            {"type": "conn", "rowspan": half_sub, "classes": "c-vert"}
+                        )
+                        rows_cells[p_start + half_sub].append(
+                            {"type": "conn_stem", "rowspan": half_sub, "classes": "c-empty"}
+                        )
 
                         # Sub-block 2: bottom vertical bar + stem to next round
-                        rows_cells[p_start + 2 * half_sub].append({'type': 'conn', 'rowspan': half_sub, 'classes': 'c-vert'})
-                        rows_cells[p_start + 2 * half_sub].append({'type': 'conn_stem', 'rowspan': half_sub, 'classes': 'c-stem'})
+                        rows_cells[p_start + 2 * half_sub].append(
+                            {"type": "conn", "rowspan": half_sub, "classes": "c-vert"}
+                        )
+                        rows_cells[p_start + 2 * half_sub].append(
+                            {"type": "conn_stem", "rowspan": half_sub, "classes": "c-stem"}
+                        )
 
                         # Sub-block 3: empty below bottom branch
-                        rows_cells[p_start + 3 * half_sub].append({'type': 'conn', 'rowspan': half_sub, 'classes': 'c-bot-branch'})
-                        rows_cells[p_start + 3 * half_sub].append({'type': 'conn_stem', 'rowspan': half_sub, 'classes': 'c-empty'})
+                        rows_cells[p_start + 3 * half_sub].append(
+                            {"type": "conn", "rowspan": half_sub, "classes": "c-bot-branch"}
+                        )
+                        rows_cells[p_start + 3 * half_sub].append(
+                            {"type": "conn_stem", "rowspan": half_sub, "classes": "c-empty"}
+                        )
 
         # Target card (Champion or Section Advancer)
         if target_card:
             stem_start = total_rows // 2
-            rows_cells[0].append({'type': 'target_stem_top', 'rowspan': stem_start, 'classes': 'c-empty'})
-            rows_cells[stem_start].append({'type': 'target_stem', 'rowspan': total_rows - stem_start, 'classes': 'c-stem'})
-            rows_cells[0].append({
-                'type': 'target',
-                'data': target_card,
-                'rowspan': total_rows,
-                'width': '16%'
-            })
+            rows_cells[0].append(
+                {"type": "target_stem_top", "rowspan": stem_start, "classes": "c-empty"}
+            )
+            rows_cells[stem_start].append(
+                {"type": "target_stem", "rowspan": total_rows - stem_start, "classes": "c-stem"}
+            )
+            rows_cells[0].append(
+                {"type": "target", "data": target_card, "rowspan": total_rows, "width": "16%"}
+            )
+
+        # Ensure no row is completely empty so xhtml2pdf / PmlTable never encounters 0-cell <tr>
+        for r_idx in range(total_rows):
+            if len(rows_cells[r_idx]) == 0:
+                rows_cells[r_idx].append({"type": "conn", "rowspan": 1, "classes": "c-empty"})
 
         return rows_cells
 
@@ -184,15 +274,20 @@ class DrawExportAdapter:
         Load authoritative persisted draw and adapt it into presentation pages.
         Does NOT alter or regenerate any records.
         """
-        matches = Match.query.options(
-            db.joinedload(Match.participant1),
-            db.joinedload(Match.participant2),
-            db.joinedload(Match.winner)
-        ).filter(
-            Match.category_id == category.id,
-            Match.match_type == 'knockout',
-            Match.parent_match_id.is_(None)
-        ).order_by(Match.round, Match.match_number).all()
+        matches = (
+            Match.query.options(
+                db.joinedload(Match.participant1),
+                db.joinedload(Match.participant2),
+                db.joinedload(Match.winner),
+            )
+            .filter(
+                Match.category_id == category.id,
+                Match.match_type == "knockout",
+                Match.parent_match_id.is_(None),
+            )
+            .order_by(Match.round, Match.match_number)
+            .all()
+        )
 
         if not matches:
             raise ValueError(
@@ -232,19 +327,49 @@ class DrawExportAdapter:
         if category.num_sets:
             scoring_summary = f"{category.num_sets} Sets ({category.games_per_set or 6} Games)"
 
+        # In-memory player name lookup cache to eliminate N+1 DB queries across matches
+        all_candidate_names: set = set()
+        for m in matches:
+            for p in (m.participant1, m.participant2):
+                if p and p.name and p.name not in ("TBD", "Bye", ""):
+                    for sep in (" / ", "/", " & "):
+                        if sep in p.name:
+                            all_candidate_names.update(part.strip() for part in p.name.split(sep, 1))
+                            break
+                    else:
+                        all_candidate_names.add(p.name.strip())
+                    if getattr(p, "partner_name", None):
+                        all_candidate_names.add(p.partner_name.strip())
+
+        player_cache: Dict[str, Any] = {name: None for name in all_candidate_names}
+        if all_candidate_names:
+            # Batch-fetch matching player records in a single query
+            for pid, name in (
+                db.session.query(Player.id, Player.name)
+                .filter(Player.name.in_(all_candidate_names))
+                .all()
+            ):
+                player_cache[name] = pid
+
         # Champion determination (strictly from persisted final match)
         champion_name: Optional[str] = None
         champion_seed: Optional[int] = None
-        final_match_obj = rounds_dict[total_rounds][0] if total_rounds in rounds_dict and rounds_dict[total_rounds] else None
-        if final_match_obj and final_match_obj.status == 'completed' and final_match_obj.winner:
-            champion_name = cls.format_participant_name(final_match_obj.winner)
+        final_match_obj = (
+            rounds_dict[total_rounds][0]
+            if total_rounds in rounds_dict and rounds_dict[total_rounds]
+            else None
+        )
+        if final_match_obj and final_match_obj.status == "completed" and final_match_obj.winner:
+            champion_name = cls.format_participant_name(
+                final_match_obj.winner, player_cache=player_cache
+            )
             champion_seed = final_match_obj.winner.manual_seed or final_match_obj.winner.seed
 
         # Convert matches to formatted card structures
         formatted_rounds: Dict[int, List[Dict[str, Any]]] = {}
         for r_num, m_list in rounds_dict.items():
             formatted_rounds[r_num] = [
-                cls.format_match_card(m, r_num, total_rounds)
+                cls.format_match_card(m, r_num, total_rounds, player_cache=player_cache)
                 for m in m_list
             ]
 
@@ -255,41 +380,56 @@ class DrawExportAdapter:
             # CASE 1: 8, 16, or 32 participants -> Single Comprehensive Bracket Page
             round_matches_list = [formatted_rounds[r] for r in range(1, total_rounds + 1)]
             champ_target = {
-                'type': 'champion',
-                'title': 'CHAMPION',
-                'name': champion_name,
-                'seed': champion_seed
+                "type": "champion",
+                "title": "CHAMPION",
+                "name": champion_name,
+                "seed": champion_seed,
             }
             grid_cells = cls.build_grid_cells(round_matches_list, champ_target)
-            round_headers = [cls.get_round_name(r, total_rounds) for r in range(1, total_rounds + 1)]
+            round_headers = [
+                cls.get_round_name(r, total_rounds) for r in range(1, total_rounds + 1)
+            ]
 
-            pages.append({
-                'page_num': 1,
-                'total_pages': 1,
-                'section_badge': 'Official Championship Draw',
-                'section_title': f"{bracket_size}-Player Draw",
-                'section_subtitle': 'Complete Bracket Progression',
-                'round_headers': round_headers,
-                'grid_cells': grid_cells,
-                'is_final_page': True
-            })
+            pages.append(
+                {
+                    "page_num": 1,
+                    "total_pages": 1,
+                    "section_badge": "Official Championship Draw",
+                    "section_title": f"{bracket_size}-Player Draw",
+                    "section_subtitle": "Complete Bracket Progression",
+                    "round_headers": round_headers,
+                    "grid_cells": grid_cells,
+                    "is_final_page": True,
+                }
+            )
 
-        elif num_r1_matches == 32:
-            # CASE 2: 64 participants -> 5 Pages (4 Quarters + Finals Stage)
+        elif num_r1_matches <= 32 and total_rounds >= 6:
+            # CASE 2: 64 participants with 6 rounds -> 5 Pages (4 Quarters + Finals Stage)
             total_pages = 5
             # Quarters 1 to 4
             for q in range(4):
-                q_r1 = formatted_rounds[1][q * 8 : (q + 1) * 8]
-                q_r2 = formatted_rounds[2][q * 4 : (q + 1) * 4]
-                q_r3 = formatted_rounds[3][q * 2 : (q + 1) * 2]
-                q_r4 = [formatted_rounds[4][q]]
+                q_r1 = cls._pad_round_matches(
+                    formatted_rounds.get(1, [])[q * 8 : (q + 1) * 8], 8, 1, total_rounds
+                )
+                q_r2 = cls._pad_round_matches(
+                    formatted_rounds.get(2, [])[q * 4 : (q + 1) * 4], 4, 2, total_rounds
+                )
+                q_r3 = cls._pad_round_matches(
+                    formatted_rounds.get(3, [])[q * 2 : (q + 1) * 2], 2, 3, total_rounds
+                )
+                q_r4_matches = formatted_rounds.get(4, [])
+                q_r4 = (
+                    [q_r4_matches[q]]
+                    if q < len(q_r4_matches)
+                    else [cls._create_bye_match_card(q + 1, 4, total_rounds)]
+                )
 
                 advances_to_sf = f"Semifinal {q // 2 + 1} (Page 5)"
                 target = {
-                    'type': 'qualifier',
-                    'title': 'ADVANCES TO',
-                    'name': advances_to_sf,
-                    'seed': None
+                    "type": "qualifier",
+                    "title": "ADVANCES TO",
+                    "name": advances_to_sf,
+                    "seed": None,
                 }
                 q_list = [q_r1, q_r2, q_r3, q_r4]
                 grid_cells = cls.build_grid_cells(q_list, target)
@@ -297,48 +437,141 @@ class DrawExportAdapter:
                     cls.get_round_name(1, total_rounds),
                     cls.get_round_name(2, total_rounds),
                     cls.get_round_name(3, total_rounds),
-                    "Quarter-Final"
+                    "Quarter-Final",
                 ]
 
-                pages.append({
-                    'page_num': q + 1,
-                    'total_pages': total_pages,
-                    'section_badge': f"Quarter {q + 1} of 4",
-                    'section_title': f"Seeds {q * 16 + 1}–{(q + 1) * 16}",
-                    'section_subtitle': f"Winner advances to {advances_to_sf}",
-                    'round_headers': round_headers,
-                    'grid_cells': grid_cells,
-                    'is_final_page': False
-                })
+                pages.append(
+                    {
+                        "page_num": q + 1,
+                        "total_pages": total_pages,
+                        "section_badge": f"Quarter {q + 1} of 4",
+                        "section_title": f"Seeds {q * 16 + 1}–{(q + 1) * 16}",
+                        "section_subtitle": f"Winner advances to {advances_to_sf}",
+                        "round_headers": round_headers,
+                        "grid_cells": grid_cells,
+                        "is_final_page": False,
+                    }
+                )
 
             # Page 5: Championship Stage (Quarterfinals to Final)
-            qf_matches = formatted_rounds[4]
-            sf_matches = formatted_rounds[5]
-            f_matches = formatted_rounds[6]
+            qf_matches = cls._pad_round_matches(formatted_rounds.get(4, []), 4, 4, total_rounds)
+            sf_matches = cls._pad_round_matches(formatted_rounds.get(5, []), 2, 5, total_rounds)
+            f_matches = cls._pad_round_matches(formatted_rounds.get(6, []), 1, 6, total_rounds)
 
             champ_target = {
-                'type': 'champion',
-                'title': 'CHAMPION',
-                'name': champion_name,
-                'seed': champion_seed
+                "type": "champion",
+                "title": "CHAMPION",
+                "name": champion_name,
+                "seed": champion_seed,
             }
             champ_list = [qf_matches, sf_matches, f_matches]
             champ_grid = cls.build_grid_cells(champ_list, champ_target)
             round_headers = ["Quarter-Finals", "Semi-Finals", "Final"]
 
-            pages.append({
-                'page_num': 5,
-                'total_pages': total_pages,
-                'section_badge': "Championship Finals Stage",
-                'section_title': "Quarterfinals • Semifinals • Championship Final",
-                'section_subtitle': "Official Tournament Climax & Podium",
-                'round_headers': round_headers,
-                'grid_cells': champ_grid,
-                'is_final_page': True
-            })
+            pages.append(
+                {
+                    "page_num": 5,
+                    "total_pages": total_pages,
+                    "section_badge": "Championship Finals Stage",
+                    "section_title": "Quarterfinals • Semifinals • Championship Final",
+                    "section_subtitle": "Official Tournament Climax & Podium",
+                    "round_headers": round_headers,
+                    "grid_cells": champ_grid,
+                    "is_final_page": True,
+                }
+            )
+
+        elif num_r1_matches <= 32 and total_rounds == 5:
+            # CASE 3: 58-64 participants with 5 rounds -> 3 Pages (Top Half, Bottom Half, Finals Stage)
+            total_pages = 3
+            # Top Half: R1 1..16, R2 1..8, R3 1..4, R4 1..2
+            top_r1 = cls._pad_round_matches(formatted_rounds.get(1, [])[:16], 16, 1, total_rounds)
+            top_r2 = cls._pad_round_matches(formatted_rounds.get(2, [])[:8], 8, 2, total_rounds)
+            top_r3 = cls._pad_round_matches(formatted_rounds.get(3, [])[:4], 4, 3, total_rounds)
+            top_r4 = cls._pad_round_matches(formatted_rounds.get(4, [])[:2], 2, 4, total_rounds)
+
+            advances_to_f = "Championship Final (Page 3)"
+            target1 = {
+                "type": "qualifier",
+                "title": "ADVANCES TO",
+                "name": advances_to_f,
+                "seed": None,
+            }
+            grid1 = cls.build_grid_cells([top_r1, top_r2, top_r3, top_r4], target1)
+            round_headers_halves = [
+                cls.get_round_name(1, total_rounds),
+                cls.get_round_name(2, total_rounds),
+                cls.get_round_name(3, total_rounds),
+                cls.get_round_name(4, total_rounds),
+            ]
+
+            pages.append(
+                {
+                    "page_num": 1,
+                    "total_pages": total_pages,
+                    "section_badge": "Top Half Bracket",
+                    "section_title": "Seeds 1–32",
+                    "section_subtitle": f"Winner advances to {advances_to_f}",
+                    "round_headers": round_headers_halves,
+                    "grid_cells": grid1,
+                    "is_final_page": False,
+                }
+            )
+
+            # Bottom Half: R1 17..32, R2 9..16, R3 5..8, R4 3..4
+            bot_r1 = cls._pad_round_matches(formatted_rounds.get(1, [])[16:], 16, 1, total_rounds)
+            bot_r2 = cls._pad_round_matches(formatted_rounds.get(2, [])[8:], 8, 2, total_rounds)
+            bot_r3 = cls._pad_round_matches(formatted_rounds.get(3, [])[4:], 4, 3, total_rounds)
+            bot_r4 = cls._pad_round_matches(formatted_rounds.get(4, [])[2:], 2, 4, total_rounds)
+
+            target2 = {
+                "type": "qualifier",
+                "title": "ADVANCES TO",
+                "name": advances_to_f,
+                "seed": None,
+            }
+            grid2 = cls.build_grid_cells([bot_r1, bot_r2, bot_r3, bot_r4], target2)
+
+            pages.append(
+                {
+                    "page_num": 2,
+                    "total_pages": total_pages,
+                    "section_badge": "Bottom Half Bracket",
+                    "section_title": "Seeds 33–64",
+                    "section_subtitle": f"Winner advances to {advances_to_f}",
+                    "round_headers": round_headers_halves,
+                    "grid_cells": grid2,
+                    "is_final_page": False,
+                }
+            )
+
+            # Page 3: Championship Final
+            sf_matches = cls._pad_round_matches(formatted_rounds.get(4, []), 2, 4, total_rounds)
+            f_matches = formatted_rounds.get(5, [])
+            champ_target = {
+                "type": "champion",
+                "title": "CHAMPION",
+                "name": champion_name,
+                "seed": champion_seed,
+            }
+            champ_grid = cls.build_grid_cells([sf_matches, f_matches], champ_target)
+            round_headers_final = ["Semi-Finals", "Final"]
+
+            pages.append(
+                {
+                    "page_num": 3,
+                    "total_pages": total_pages,
+                    "section_badge": "Championship Finals Stage",
+                    "section_title": "Semifinals • Championship Final",
+                    "section_subtitle": "Official Tournament Climax & Podium",
+                    "round_headers": round_headers_final,
+                    "grid_cells": champ_grid,
+                    "is_final_page": True,
+                }
+            )
 
         elif num_r1_matches == 64:
-            # CASE 3: 128 participants -> 9 Pages (8 Sections + Finals Stage)
+            # CASE 4: 128 participants -> 9 Pages (8 Sections + Finals Stage)
             total_pages = 9
             for s in range(8):
                 s_r1 = formatted_rounds[1][s * 8 : (s + 1) * 8]
@@ -348,10 +581,10 @@ class DrawExportAdapter:
 
                 advances_to_qf = f"Quarterfinal {s // 2 + 1} (Page 9)"
                 target = {
-                    'type': 'qualifier',
-                    'title': 'ADVANCES TO',
-                    'name': advances_to_qf,
-                    'seed': None
+                    "type": "qualifier",
+                    "title": "ADVANCES TO",
+                    "name": advances_to_qf,
+                    "seed": None,
                 }
                 s_list = [s_r1, s_r2, s_r3, s_r4]
                 grid_cells = cls.build_grid_cells(s_list, target)
@@ -359,19 +592,21 @@ class DrawExportAdapter:
                     cls.get_round_name(1, total_rounds),
                     cls.get_round_name(2, total_rounds),
                     cls.get_round_name(3, total_rounds),
-                    cls.get_round_name(4, total_rounds)
+                    cls.get_round_name(4, total_rounds),
                 ]
 
-                pages.append({
-                    'page_num': s + 1,
-                    'total_pages': total_pages,
-                    'section_badge': f"Section {s + 1} of 8",
-                    'section_title': f"Seeds {s * 16 + 1}–{(s + 1) * 16}",
-                    'section_subtitle': f"Winner advances to {advances_to_qf}",
-                    'round_headers': round_headers,
-                    'grid_cells': grid_cells,
-                    'is_final_page': False
-                })
+                pages.append(
+                    {
+                        "page_num": s + 1,
+                        "total_pages": total_pages,
+                        "section_badge": f"Section {s + 1} of 8",
+                        "section_title": f"Seeds {s * 16 + 1}–{(s + 1) * 16}",
+                        "section_subtitle": f"Winner advances to {advances_to_qf}",
+                        "round_headers": round_headers,
+                        "grid_cells": grid_cells,
+                        "is_final_page": False,
+                    }
+                )
 
             # Page 9: Championship Stage
             qf_matches = formatted_rounds[5]
@@ -379,62 +614,72 @@ class DrawExportAdapter:
             f_matches = formatted_rounds[7]
 
             champ_target = {
-                'type': 'champion',
-                'title': 'CHAMPION',
-                'name': champion_name,
-                'seed': champion_seed
+                "type": "champion",
+                "title": "CHAMPION",
+                "name": champion_name,
+                "seed": champion_seed,
             }
             champ_list = [qf_matches, sf_matches, f_matches]
             champ_grid = cls.build_grid_cells(champ_list, champ_target)
             round_headers = ["Quarter-Finals", "Semi-Finals", "Final"]
 
-            pages.append({
-                'page_num': 9,
-                'total_pages': total_pages,
-                'section_badge': "Championship Finals Stage",
-                'section_title': "Quarterfinals • Semifinals • Championship Final",
-                'section_subtitle': "Official Tournament Climax & Podium",
-                'round_headers': round_headers,
-                'grid_cells': champ_grid,
-                'is_final_page': True
-            })
+            pages.append(
+                {
+                    "page_num": 9,
+                    "total_pages": total_pages,
+                    "section_badge": "Championship Finals Stage",
+                    "section_title": "Quarterfinals • Semifinals • Championship Final",
+                    "section_subtitle": "Official Tournament Climax & Podium",
+                    "round_headers": round_headers,
+                    "grid_cells": champ_grid,
+                    "is_final_page": True,
+                }
+            )
 
         else:
             # Fallback for arbitrary size: render all rounds on single scalable page
             round_matches_list = [formatted_rounds[r] for r in range(1, total_rounds + 1)]
             champ_target = {
-                'type': 'champion',
-                'title': 'CHAMPION',
-                'name': champion_name,
-                'seed': champion_seed
+                "type": "champion",
+                "title": "CHAMPION",
+                "name": champion_name,
+                "seed": champion_seed,
             }
             grid_cells = cls.build_grid_cells(round_matches_list, champ_target)
-            round_headers = [cls.get_round_name(r, total_rounds) for r in range(1, total_rounds + 1)]
+            round_headers = [
+                cls.get_round_name(r, total_rounds) for r in range(1, total_rounds + 1)
+            ]
 
-            pages.append({
-                'page_num': 1,
-                'total_pages': 1,
-                'section_badge': 'Official Championship Draw',
-                'section_title': f"{bracket_size}-Player Draw",
-                'section_subtitle': 'Complete Bracket Progression',
-                'round_headers': round_headers,
-                'grid_cells': grid_cells,
-                'is_final_page': True
-            })
+            pages.append(
+                {
+                    "page_num": 1,
+                    "total_pages": 1,
+                    "section_badge": "Official Championship Draw",
+                    "section_title": f"{bracket_size}-Player Draw",
+                    "section_subtitle": "Complete Bracket Progression",
+                    "round_headers": round_headers,
+                    "grid_cells": grid_cells,
+                    "is_final_page": True,
+                }
+            )
 
         return {
-            'tournament_name': tournament.name,
-            'category_name': category.name,
-            'format_name': "Single Elimination" if category.format in ('single_elimination', 'doubles_elimination') else category.format.replace('_', ' ').title(),
-            'gender': category.gender,
-            'age_category': category.age_category,
-            'total_participants': len(category.participants) if category.participants else bracket_size,
-            'bracket_size': bracket_size,
-            'dates': dates_str,
-            'venue': venue,
-            'status': category.status,
-            'scoring_summary': scoring_summary,
-            'champion_name': champion_name,
-            'champion_seed': champion_seed,
-            'pages': pages
+            "tournament_name": tournament.name,
+            "category_name": category.name,
+            "format_name": "Single Elimination"
+            if category.format in ("single_elimination", "doubles_elimination")
+            else category.format.replace("_", " ").title(),
+            "gender": category.gender,
+            "age_category": category.age_category,
+            "total_participants": len(category.participants)
+            if category.participants
+            else bracket_size,
+            "bracket_size": bracket_size,
+            "dates": dates_str,
+            "venue": venue,
+            "status": category.status,
+            "scoring_summary": scoring_summary,
+            "champion_name": champion_name,
+            "champion_seed": champion_seed,
+            "pages": pages,
         }
