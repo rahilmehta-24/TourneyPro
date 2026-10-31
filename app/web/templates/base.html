@@ -477,6 +477,13 @@
                 let isFetching = false;
                 async function performScoreRefresh() {
                     if (isFetching || isUserInteracting() || document.hidden) return;
+                    
+                    // On Order of Play, skip auto-refresh if there are no active in-progress matches
+                    if (window.location.pathname.includes('/order-of-play')) {
+                        const hasActiveMatch = document.querySelector('.oop-status-badge.in_progress, .status-in_progress, .live-active');
+                        if (!hasActiveMatch) return;
+                    }
+
                     isFetching = true;
                     
                     try {
@@ -561,12 +568,12 @@
                     }
                 }
 
-                // Periodic refresh every 6 seconds if tab is active
+                // Periodic refresh every 25 seconds if tab is active (throttled to protect pooler)
                 window.tourneyAutoRefreshInterval = setInterval(() => {
                     if (!document.hidden) {
                         performScoreRefresh();
                     }
-                }, 6000);
+                }, 25000);
 
                 // Immediate refresh as soon as user returns to the tab
                 if (!window._tourneyVisibilityListenerAttached) {

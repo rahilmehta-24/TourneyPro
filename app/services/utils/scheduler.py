@@ -25,7 +25,7 @@ Features:
 
 import json
 from datetime import datetime, date, time, timedelta
-from app.domain.models import db, Match, Category, Tournament, Participant, Group, Player
+from app.domain.models import db, Match, Category, Tournament, Participant, Group, Player, TeamMember
 
 
 def parse_time_str(time_str: str, default: time = time(9, 0)) -> time:
@@ -383,9 +383,17 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
     max_daily_matches = tournament.max_matches_per_player_day  # Can be None (no limit) or integer
 
     # 3. Gather all pending/in-progress matches across all categories (only top-level matches)
+    # Pre-fetch all groups in this tournament to avoid N+1 queries in the loop
+    groups = {g.id: g for g in Group.query.join(Category).filter(Category.tournament_id == tournament_id).all()}
+
     all_matches = (
         Match.query.filter_by(tournament_id=tournament_id)
         .filter(Match.status != "completed", Match.parent_match_id.is_(None))
+        .options(
+            db.joinedload(Match.participant1),
+            db.joinedload(Match.participant2),
+            db.selectinload(Match.sub_matches),
+        )
         .all()
     )
     if not all_matches:
@@ -437,6 +445,7 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
     round_ready_at: dict[tuple[int, int], datetime] = {} # (category_id, round) -> earliest datetime
 
     scheduled_count = 0
+    match_updates: list[dict] = []
 
     for match in sorted_matches:
         cat = cat_map.get(match.category_id)
@@ -478,7 +487,7 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
             earliest_time = max(earliest_time, prev_round_end + same_day_round_rest)
 
         # Respect Group Session Start Timing (e.g. Group A @ 09:00 AM, Group B @ 11:30 AM)
-        grp = Group.query.get(match.group_id) if match.group_id else None
+        grp = groups.get(match.group_id) if match.group_id else None
         if grp and grp.start_time:
             grp_time = parse_time_str(grp.start_time, default=None)
             if grp_time and target_days:
@@ -645,9 +654,18 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
             court_next_available[fallback_day][best_court] = f_end + court_buffer
             scheduled_count += 1
 
+        match_updates.append({
+            "id": match.id,
+            "scheduled_time": match.scheduled_time,
+            "scheduled_date": match.scheduled_date,
+            "scheduled_end_time": match.scheduled_end_time,
+            "court_name": match.court_name,
+            "is_not_before": match.is_not_before,
+        })
+
         # Synchronize child rubbers with parent fixture
         if match.sub_matches:
-            grp = Group.query.get(match.group_id) if match.group_id else None
+            grp = groups.get(match.group_id) if match.group_id else None
             assigned_c_list = [c.strip() for c in (grp.assigned_courts or '').split(',') if c.strip()] if grp else []
             sub_courts = assigned_c_list if len(assigned_c_list) >= len(match.sub_matches) else courts
             for idx, r in enumerate(match.sub_matches):
@@ -659,7 +677,18 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
                     r.court_name = sub_courts[idx % len(sub_courts)]
                 else:
                     r.court_name = match.court_name
+                match_updates.append({
+                    "id": r.id,
+                    "scheduled_time": r.scheduled_time,
+                    "scheduled_date": r.scheduled_date,
+                    "scheduled_end_time": r.scheduled_end_time,
+                    "court_name": r.court_name,
+                    "is_not_before": r.is_not_before,
+                })
 
+    if match_updates:
+        db.session.bulk_update_mappings(Match, match_updates)
+    db.session.expire_all()
     db.session.commit()
     return {
         "scheduled": scheduled_count,
@@ -799,31 +828,30 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
         .all()
     )
 
-    # Pre-fetch player lookup cache in a single query
-    player_cache = {
-        name: pid
-        for pid, name in db.session.query(Player.id, Player.name).filter(Player.name.isnot(None)).all()
-    }
+    evening_start_str = getattr(tournament, 'evening_session_start', None) or '16:00'
+    evening_cutoff = parse_time_str(evening_start_str, default=time(16, 0))
 
-    # Query all matches with court assignment and eager load relationships
-    query = (
-        Match.query.options(
-            db.joinedload(Match.participant1),
-            db.joinedload(Match.participant2),
-            db.joinedload(Match.p1_player1),
-            db.joinedload(Match.p1_player2),
-            db.joinedload(Match.p2_player1),
-            db.joinedload(Match.p2_player2),
+    # 1. Fast lightweight summary query (no relationship joins) to discover dates, tab counts, and progress
+    summary_rows = (
+        db.session.query(
+            Match.id,
+            Match.scheduled_date,
+            Match.scheduled_time,
+            Match.parent_match_id,
+            Match.status,
+            Match.category_id,
+            Match.round,
+            Match.match_type,
+            Match.court_name,
         )
-        .filter_by(tournament_id=tournament.id)
-        .filter(Match.scheduled_time.isnot(None), Match.court_name.isnot(None))
+        .filter(
+            Match.tournament_id == tournament.id,
+            Match.scheduled_time.isnot(None),
+            Match.court_name.isnot(None),
+        )
+        .order_by(Match.scheduled_time)
+        .all()
     )
-
-    all_matches = query.order_by(Match.scheduled_time).all()
-
-    # Enforce day-to-day progression only if tournament has started matches
-    if any(m.status in ('completed', 'in_progress') for m in all_matches):
-        enforce_order_of_play_day_progression(tournament.id)
 
     # Discover all operating tournament dates:
     calendar_dates = set()
@@ -831,7 +859,7 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
         num_calendar_days = (tournament.end_date - tournament.start_date).days + 1
         calendar_dates = {tournament.start_date + timedelta(days=i) for i in range(num_calendar_days)}
 
-    match_dates = {m.scheduled_time.date() for m in all_matches if m.scheduled_time}
+    match_dates = {r.scheduled_date or r.scheduled_time.date() for r in summary_rows if r.scheduled_time}
     all_dates_set = calendar_dates.union(match_dates)
     unique_dates = sorted(list(all_dates_set)) if all_dates_set else sorted(list(match_dates))
 
@@ -841,33 +869,107 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
         dates_with_matches = sorted(list(match_dates))
         active_date = dates_with_matches[0] if dates_with_matches else unique_dates[0]
 
-    # In the Order of Play, display top-level matches / parent fixtures
-    filtered_all = [m for m in all_matches if m.parent_match_id is None]
-    if active_date:
-        matches = [m for m in filtered_all if m.scheduled_time and m.scheduled_time.date() == active_date]
-    else:
-        matches = filtered_all
+    filtered_all = [r for r in summary_rows if r.parent_match_id is None]
 
-    # Progression & Provisional Check:
-    incomplete_dates = {m.scheduled_time.date() for m in all_matches if m.scheduled_time and m.status != 'completed'}
+    # Progression & Provisional Check using in-memory summary rows (0 extra queries)
+    incomplete_dates = {
+        r.scheduled_date or r.scheduled_time.date()
+        for r in summary_rows
+        if r.scheduled_time and r.status != 'completed'
+    }
     earlier_pending = [
-        m for m in all_matches
-        if m.scheduled_time and active_date and m.scheduled_time.date() < active_date and m.status != 'completed'
+        r
+        for r in summary_rows
+        if r.scheduled_time
+        and active_date
+        and (r.scheduled_date or r.scheduled_time.date()) < active_date
+        and r.status != 'completed'
     ]
     earlier_pending_count = len(earlier_pending)
-    is_provisional = (earlier_pending_count > 0)
+    is_provisional = earlier_pending_count > 0
 
-    current_day_number = (unique_dates.index(active_date) + 1) if (active_date and active_date in unique_dates) else 1
+    current_day_number = (
+        (unique_dates.index(active_date) + 1)
+        if (active_date and active_date in unique_dates)
+        else 1
+    )
     previous_day_number = max(1, current_day_number - 1)
     previous_day_label = f"Day {previous_day_number}"
 
-    # Map max round per category for knockout round naming
+    # Map max round per category for knockout round naming from summary rows
     max_rounds_by_cat: dict[int | None, int] = {}
-    for m in all_matches:
-        if m.match_type not in ('group_stage', 'round_robin'):
-            cid = m.category_id
-            if cid not in max_rounds_by_cat or m.round > max_rounds_by_cat[cid]:
-                max_rounds_by_cat[cid] = m.round
+    for r in summary_rows:
+        if r.match_type not in ('group_stage', 'round_robin'):
+            cid = r.category_id
+            if cid not in max_rounds_by_cat or r.round > max_rounds_by_cat[cid]:
+                max_rounds_by_cat[cid] = r.round
+
+    # 2. FULL HYDRATION ONLY FOR ACTIVE DATE MATCHES (~27 matches instead of all 689)
+    active_query = (
+        Match.query.options(
+            db.joinedload(Match.participant1),
+            db.joinedload(Match.participant2),
+            db.joinedload(Match.p1_player1),
+            db.joinedload(Match.p1_player2),
+            db.joinedload(Match.p2_player1),
+            db.joinedload(Match.p2_player2),
+        )
+        .filter_by(tournament_id=tournament.id)
+        .filter(
+            Match.parent_match_id.is_(None),
+            Match.scheduled_time.isnot(None),
+            Match.court_name.isnot(None),
+        )
+    )
+    if active_date:
+        active_query = active_query.filter(
+            db.or_(
+                Match.scheduled_date == active_date,
+                db.and_(
+                    Match.scheduled_date.is_(None),
+                    db.func.date(Match.scheduled_time) == active_date,
+                ),
+            )
+        )
+    matches = active_query.order_by(Match.scheduled_time).all()
+
+    # Pre-fetch player lookup cache SCOPED strictly to active matches (prevents global player table dump)
+    active_player_names = set()
+    active_participant_ids = set()
+    for m in matches:
+        for p in [m.participant1, m.participant2]:
+            if p:
+                active_participant_ids.add(p.id)
+                if p.name and p.name not in ('TBD', 'Bye', '') and not p.player_id:
+                    for sep in [' / ', '/', ' & ']:
+                        if sep in p.name:
+                            parts = [x.strip() for x in p.name.split(sep, 1)]
+                            active_player_names.update(parts)
+                            break
+                    else:
+                        active_player_names.add(p.name.strip())
+                if p.partner_name and not getattr(p, 'player2_id', None):
+                    active_player_names.add(p.partner_name.strip())
+
+    player_cache: dict[str, int | None] = {name: None for name in active_player_names}
+    if active_player_names:
+        for pid, name in (
+            db.session.query(Player.id, Player.name)
+            .filter(Player.name.in_(active_player_names))
+            .all()
+        ):
+            player_cache[name] = pid
+
+    # Pre-fetch team participant IDs in a single query to eliminate N+1 queries on team_members
+    team_participant_ids = set()
+    if active_participant_ids:
+        team_participant_ids = {
+            pid
+            for (pid,) in db.session.query(TeamMember.participant_id)
+            .filter(TeamMember.participant_id.in_(active_participant_ids))
+            .distinct()
+            .all()
+        }
 
     def get_match_round_name(m: Match) -> str:
         b_type = getattr(m, 'bracket_type', None)
@@ -877,7 +979,11 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
             return "3rd Place"
 
         if getattr(m, 'rubber_type', None):
-            rubber_lbl = "Singles" if m.rubber_type == 'singles' else ("Doubles 1" if m.rubber_type == 'doubles_1' else "Doubles 2")
+            rubber_lbl = (
+                "Singles"
+                if m.rubber_type == 'singles'
+                else ("Doubles 1" if m.rubber_type == 'doubles_1' else "Doubles 2")
+            )
             if m.group_id and m.group_id in groups:
                 return f"{groups[m.group_id].name} ({rubber_lbl})"
             return f"Rubber ({rubber_lbl})"
@@ -900,10 +1006,7 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
             else:
                 return f"Round {m.round}"
 
-    evening_start_str = getattr(tournament, 'evening_session_start', None) or '16:00'
-    evening_cutoff = parse_time_str(evening_start_str, default=time(16, 0))
-
-    # Group by court
+    # Group active matches by court
     order: dict[str, list] = {}
     for match in matches:
         court = match.court_name
@@ -924,7 +1027,7 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
             sub_count > 0
             or (cat and cat.format == 'group_stage')
             or (match.participant1 and getattr(match.participant1, 'participant_type', None) == 'team')
-            or (match.participant1 and hasattr(match.participant1, 'team_members') and match.participant1.team_members)
+            or (match.participant1 and match.participant1.id in team_participant_ids)
         )
 
         if is_team:
@@ -950,38 +1053,44 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
         session_icon = '🌙' if is_evening else '☀️'
         is_locked = bool(is_provisional and match.status != 'completed')
 
-        grp_name = groups[match.group_id].name if (match.group_id and match.group_id in groups) else None
+        grp_name = (
+            groups[match.group_id].name
+            if (match.group_id and match.group_id in groups)
+            else None
+        )
 
-        order[court].append({
-            "match": match,
-            "category_name": cat_name,
-            "category_id": match.category_id,
-            "time": time_str,
-            "is_not_before": is_nb,
-            "time_display": f"NB {time_str}" if is_nb else time_str,
-            "session": session_type,
-            "session_label": session_label,
-            "session_icon": session_icon,
-            "is_evening": is_evening,
-            "is_locked": is_locked,
-            "date": match.scheduled_time.strftime("%d %b %Y") if match.scheduled_time else "",
-            "raw_date": match.scheduled_time.date() if match.scheduled_time else None,
-            "p1": p1,
-            "p2": p2,
-            "p1_player_id": p1_player_id,
-            "p2_player_id": p2_player_id,
-            "p1_players": p1_players,
-            "p2_players": p2_players,
-            "round": match.round,
-            "round_name": get_match_round_name(match),
-            "group_name": grp_name,
-            "match_number": match.match_number,
-            "status": match.status,
-            "court": court,
-            "is_team": is_team,
-            "has_rubbers": (sub_count > 0),
-            "sub_matches_count": sub_count,
-        })
+        order[court].append(
+            {
+                "match": match,
+                "category_name": cat_name,
+                "category_id": match.category_id,
+                "time": time_str,
+                "is_not_before": is_nb,
+                "time_display": f"NB {time_str}" if is_nb else time_str,
+                "session": session_type,
+                "session_label": session_label,
+                "session_icon": session_icon,
+                "is_evening": is_evening,
+                "is_locked": is_locked,
+                "date": match.scheduled_time.strftime("%d %b %Y") if match.scheduled_time else "",
+                "raw_date": match.scheduled_time.date() if match.scheduled_time else None,
+                "p1": p1,
+                "p2": p2,
+                "p1_player_id": p1_player_id,
+                "p2_player_id": p2_player_id,
+                "p1_players": p1_players,
+                "p2_players": p2_players,
+                "round": match.round,
+                "round_name": get_match_round_name(match),
+                "group_name": grp_name,
+                "match_number": match.match_number,
+                "status": match.status,
+                "court": court,
+                "is_team": is_team,
+                "has_rubbers": (sub_count > 0),
+                "sub_matches_count": sub_count,
+            }
+        )
 
     # Naturally sort courts (Court 1, Court 2, ...) and wrap in CourtSchedule
     sorted_order = {}
@@ -990,19 +1099,19 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
         eve_m = [m for m in c_matches if m.get("session") == "evening"]
         sorted_order[court] = CourtSchedule(c_matches, day_m, eve_m)
 
-    # Build days metadata list for UI tabs: count displayed fixtures and child rubbers
+    # Build days metadata list for UI tabs: count displayed fixtures and child rubbers from summary
     fixtures_per_date: dict[date, int] = {}
     rubbers_per_date: dict[date, int] = {}
     day_matches_per_date: dict[date, int] = {}
     eve_matches_per_date: dict[date, int] = {}
 
-    for m in filtered_all:
-        if m.scheduled_time:
-            d = m.scheduled_time.date()
+    for r in filtered_all:
+        if r.scheduled_time:
+            d = r.scheduled_date or r.scheduled_time.date()
             fixtures_per_date[d] = fixtures_per_date.get(d, 0) + 1
-            s_cnt = sub_counts.get(m.id, 0)
+            s_cnt = sub_counts.get(r.id, 0)
             rubbers_per_date[d] = rubbers_per_date.get(d, 0) + s_cnt
-            if m.scheduled_time.time() < evening_cutoff:
+            if r.scheduled_time.time() < evening_cutoff:
                 day_matches_per_date[d] = day_matches_per_date.get(d, 0) + 1
             else:
                 eve_matches_per_date[d] = eve_matches_per_date.get(d, 0) + 1
@@ -1015,17 +1124,19 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
         eve_cnt = eve_matches_per_date.get(d, 0)
         label = f"Day {idx + 1} ({d.strftime('%d %b')})"
         day_is_provisional = any(inc_d < d for inc_d in incomplete_dates)
-        days_meta.append({
-            "date": d,
-            "date_str": d.strftime("%Y-%m-%d"),
-            "label": label,
-            "match_count": count,
-            "rubbers_count": rub_count,
-            "day_session_count": day_cnt,
-            "evening_session_count": eve_cnt,
-            "is_active": (d == active_date),
-            "is_provisional": day_is_provisional
-        })
+        days_meta.append(
+            {
+                "date": d,
+                "date_str": d.strftime("%Y-%m-%d"),
+                "label": label,
+                "match_count": count,
+                "rubbers_count": rub_count,
+                "day_session_count": day_cnt,
+                "evening_session_count": eve_cnt,
+                "is_active": (d == active_date),
+                "is_provisional": day_is_provisional,
+            }
+        )
 
     # Discover active day's operating hours
     active_day_start = tournament.court_operating_start or "09:00"
@@ -1037,9 +1148,26 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
             active_day_end = act_sched["end"].strftime("%H:%M")
 
     # Active day session totals across all courts
-    active_day_matches = [m for m in matches if m.scheduled_time and m.scheduled_time.date() == active_date] if active_date else matches
-    total_day_session = sum(1 for m in active_day_matches if m.scheduled_time and m.scheduled_time.time() < evening_cutoff)
-    total_evening_session = sum(1 for m in active_day_matches if m.scheduled_time and m.scheduled_time.time() >= evening_cutoff)
+    active_day_matches = (
+        [
+            m
+            for m in matches
+            if m.scheduled_time
+            and (m.scheduled_date or m.scheduled_time.date()) == active_date
+        ]
+        if active_date
+        else matches
+    )
+    total_day_session = sum(
+        1
+        for m in active_day_matches
+        if m.scheduled_time and m.scheduled_time.time() < evening_cutoff
+    )
+    total_evening_session = sum(
+        1
+        for m in active_day_matches
+        if m.scheduled_time and m.scheduled_time.time() >= evening_cutoff
+    )
 
     total_rubbers = sum(sub_counts.values())
 

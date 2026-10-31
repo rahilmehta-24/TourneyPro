@@ -1703,11 +1703,30 @@ def court_schedule(slug):
     """Public Court Schedule — shows all scheduled matches across all courts."""
     from app.services.utils.scheduler import get_order_of_play
 
-    data = get_order_of_play(slug)
+    date_param = request.args.get("date")
+    filter_date = None
+    if date_param:
+        try:
+            filter_date = datetime.strptime(date_param, "%Y-%m-%d").date()
+        except ValueError:
+            pass
+
+    data = get_order_of_play(slug, filter_date=filter_date)
+    selected_court = request.args.get("court", None)
+    session_filter = request.args.get("session", "all")
+    if session_filter not in ("all", "day", "evening"):
+        session_filter = "all"
+
+    courts = data["courts"]
+    if selected_court and selected_court in courts:
+        filtered_courts = {selected_court: courts[selected_court]}
+    else:
+        filtered_courts = courts
+
     return render_template(
         "tournament/order_of_play.html",
-        courts=data["courts"],
-        all_courts=list(data["courts"].keys()),
+        courts=filtered_courts,
+        all_courts=list(courts.keys()),
         tournament=data["tournament"],
         days_meta=data.get("days_meta", []),
         active_date=data.get("active_date"),
@@ -1716,7 +1735,7 @@ def court_schedule(slug):
         evening_session_start=data.get("evening_session_start", "16:00"),
         day_session_count=data.get("day_session_count", 0),
         evening_session_count=data.get("evening_session_count", 0),
-        session_filter="all",
+        session_filter=session_filter,
         total_matches_scheduled=data.get("total_matches_scheduled", 0),
         total_rubbers_scheduled=data.get("total_rubbers_scheduled", 0),
         is_provisional=data.get("is_provisional", False),
@@ -1724,7 +1743,7 @@ def court_schedule(slug):
         current_day_number=data.get("current_day_number", 1),
         previous_day_number=data.get("previous_day_number", 1),
         previous_day_label=data.get("previous_day_label", "Day 1"),
-        selected_court=None,
+        selected_court=selected_court,
         is_export=request.args.get("export", "0") == "1",
     )
 
