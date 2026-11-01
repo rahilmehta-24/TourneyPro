@@ -123,6 +123,11 @@ python -m unittest tests/test_team_league.py -v
 python -m unittest tests.test_team_league.TeamLeagueTestCase.test_01_rubber_scoring_default_t7
 ```
 
+### 4.4 Run Test Suite with Pytest
+```bash
+PYTHONPATH=. pytest
+```
+
 ---
 
 ## 5. Continuous Integration (CI/CD Quality Gate)
@@ -152,3 +157,16 @@ jobs:
         run: python -m unittest discover tests -v
 ```
 All pull requests require passing status checks before merging.
+
+---
+
+## 6. Mobile Responsiveness & Viewport Quality Assurance
+
+To ensure zero regressions across mobile platforms, UI enhancements undergo systematic validation:
+
+* **Viewport Range Matrix:** Audited across small mobile (`320px` to `375px`, iPhone SE), modern standard mobile (`390px` to `430px`, iPhone 14/15/16, Google Pixel, Galaxy S24), and tablet (`768px` to `992px`, iPad).
+* **Safe-Area Verification:** Confirms notch, dynamic island, and bottom gesture bar spacing using `viewport-fit=cover` and `env(safe-area-inset-bottom)`.
+* **Touch Event Validation:** Confirms `touchstart`, `touchmove`, `touchend` listeners pan the bracket canvas smoothly without altering horizontal SVG connector alignments.
+* **Input Usability Check:** Confirms `font-size: 16px !important;` prevents iOS Safari auto-zoom on form focus, and `inputmode="numeric"` engages numeric keypads.
+* **Desktop Regression Check:** Validates desktop screens (`> 992px`) maintain pixel-perfect layout, multi-column grids, and centered modal dialogs.
+
