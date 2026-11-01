@@ -71,6 +71,13 @@ This document details the current **technology stack**, the **local and CI/CD co
 * **Styling & Design System:**
   * Vanilla CSS3 ([`app/web/static/css/style.css`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/app/web/static/css/style.css)).
   * Curated design tokens, CSS variables, Dark Mode toggle, Glassmorphism, and responsive CSS grid/flexbox layouts.
+* **Mobile-Responsive Web App & Touch Experience:**
+  * **Safe-Area Compensation:** `viewport-fit=cover` and dynamic viewport units (`dvh`) with `env(safe-area-inset-bottom)` for iPhone Dynamic Island and home indicators.
+  * **Touch Gestures & Bracket Panning:** Hardware-accelerated `touchstart`, `touchmove`, and `touchend` events powering smooth knockout bracket panning without breaking horizontal SVG vector curve math.
+  * **Mobile Navigation Drawer & Bottom Bar:** Off-canvas glassmorphic drawer with backdrop blur and fixed thumb-friendly bottom quick-action bar (`#mobileBottomBar`).
+  * **Bottom-Sheet Score Reporting Modal:** Transforms centered modal on `≤ 640px` into an iOS/Android bottom sheet with sticky footer actions and `inputmode="numeric"` numeric keypad activation.
+  * **1-Tap Mobile UPI Intent:** Auto-detected `upi://pay?pa=...` deep-link trigger and 1-tap clipboard copy button for smartphone registrations.
+  * **iOS Safari Auto-Zoom Prevention:** Form controls enforce `font-size: 16px !important;` on screens `≤ 768px`.
 * **Dynamic Bracket Connectors:** Client-side SVG connector generator rendering tournament bracket paths dynamically based on match node coordinates.
 * **Performance:** [Flask-Compress](https://github.com/colour-science/flask-compress) (v1.24) with Brotli and Gzip compression, combined with 1-hour browser cache headers for static assets.
 

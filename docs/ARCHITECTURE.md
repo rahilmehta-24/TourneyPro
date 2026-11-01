@@ -209,3 +209,24 @@ sequenceDiagram
   }
   ```
   Cold starts are optimized by skipping schema checks when `os.environ.get('VERCEL')` is detected.
+
+---
+
+## 8. Presentation & Mobile Web App Architecture
+
+The presentation layer combines lightweight server-side rendering (Jinja2) with hardware-accelerated client-side gestures, delivering an app-like mobile experience without frontend framework overhead:
+
+### 8.1 Viewport, Safe Areas & Auto-Zoom Prevention
+* **Safe-Area Inset Management:** Uses `viewport-fit=cover` in `base.html` combined with CSS `env(safe-area-inset-bottom)` to accommodate iPhone home indicator notches and Android system gesture pills.
+* **iOS Safari Auto-Zoom Prevention:** Form inputs (`input`, `select`, `textarea`) enforce `font-size: 16px !important;` on screens `≤ 768px`, eliminating automatic viewport zoom distortion on field focus.
+* **Fluid Grid Blowout Safeguards:** Replaces rigid fixed-width grids with auto-collapsing CSS `minmax(min(100%, 280px), 1fr)` patterns, preventing horizontal page wobble.
+
+### 8.2 Knockout Bracket Touch Navigation & SVG Coordinates
+* **Touch Event Gesture Engine:** `category/view.html` binds `touchstart`, `touchmove`, and `touchend` listeners to the bracket viewport for momentum panning across large draw trees.
+* **SVG Coordinate Preservation:** Bracket rounds remain horizontally organized (`display: flex; flex-direction: row;`) on all viewports, guaranteeing dynamic Bézier curve connectors calculate exact coordinates without displacement.
+* **Round Jump Tabs:** Dedicated swipeable pill navigation (`Round of 16` → `Quarterfinals` → `Semifinals` → `Finals`) smoothly scrolls the viewport to target rounds.
+
+### 8.3 Mobile Bottom Sheet & Intent Architecture
+* **Bottom Sheet Modals:** Modals adapt to app-like bottom sheets on `≤ 640px` with dynamic viewport units (`max-height: 90dvh;`), grab handles, and sticky action buttons.
+* **Deep-Linked UPI Intents:** Registration dynamically generates `upi://pay?pa=...` URIs on mobile devices, enabling 1-tap checkout into installed payment apps (GPay, PhonePe, Paytm).
+

@@ -56,6 +56,13 @@ TourneyPro features an exhaustive, interconnected documentation suite. Every doc
   * **Order of Play:** Comprehensive daily court schedule matrices with start times and durations.
   * **Participant Rosters:** Player rosters, payment tracking, and check-in sheets.
 
+### 5. First-Class Mobile Web App Experience
+* **Native Smartphone UX:** 100% responsive architecture across iOS Safari and Android Chrome (320px–430px viewports) with zero regression or alteration to the desktop interface.
+* **Knockout Bracket Touch Navigation:** Hardware-accelerated touch-drag panning (`touchstart`/`touchmove`/`touchend`) and round-by-round pill navigation tabs (`Round of 16` → `Quarterfinals` → `Semifinals` → `Finals`) that maintain full SVG connector geometry.
+* **Mobile Bottom-Sheet Score Dialog:** Transforms match score reporting into an app-like bottom sheet on `≤ 640px` screens with dynamic viewport units (`dvh`), sticky action footers, and native numeric keypads (`inputmode="numeric"`).
+* **1-Tap Mobile UPI Intent:** Direct `upi://pay` deep linking into installed UPI apps (Google Pay, PhonePe, Paytm) and 1-tap clipboard copying for frictionless on-device registrations.
+* **Thumb Navigation & Safe Areas:** Off-canvas slide-out navigation drawer with backdrop blur, sticky bottom navigation quick bar, and safe-area notch compensation (`viewport-fit=cover`).
+
 ---
 
 ## 🛠️ Technology Stack
