@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{% block title %}Tournament Platform{% endblock %}</title>
     <script>
@@ -145,6 +145,9 @@
         <p>Proprietary software structure. Unauthorized cloning is strictly prohibited.</p>
     </div>
 
+    <!-- Mobile Nav Backdrop Overlay -->
+    <div class="mobile-nav-backdrop" id="mobileNavBackdrop" aria-hidden="true"></div>
+
     <nav class="navbar modern-navbar">
         <div class="container navbar-container">
             <!-- Logo (Left) -->
@@ -154,91 +157,102 @@
             </a>
 
             <!-- Mobile Toggle -->
-            <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle menu" style="display: none;">
-                ☰
+            <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle navigation menu" aria-expanded="false" style="display: none;">
+                <span class="mobile-menu-icon">☰</span>
             </button>
 
-            <!-- Main Links (Center) -->
-            <div class="nav-links-main" id="navLinksMain">
-                <a href="{{ url_for('main.index') }}" class="nav-link">Home</a>
-                <a href="{{ url_for('academy.index') }}" class="nav-link">Academies</a>
-                <a href="{{ url_for('leaderboard.view_leaderboard') }}" class="nav-link">Leaderboard</a>
-                <a href="{{ url_for('main.tournament_list') }}" class="nav-link">Tournaments</a>
-            </div>
+            <!-- Navbar Drawer Collapse Wrapper (Desktop: contents, Mobile: off-canvas drawer) -->
+            <div class="navbar-collapse-wrapper" id="navbarCollapseWrapper">
+                <div class="mobile-drawer-header">
+                    <div class="mobile-drawer-brand">
+                        <span class="logo-icon">🏆</span>
+                        <span class="logo-text">TourneyPro</span>
+                    </div>
+                    <button type="button" class="mobile-drawer-close" id="mobileDrawerCloseBtn" aria-label="Close menu">&times;</button>
+                </div>
 
-            <!-- User Actions (Right) -->
-            <div class="nav-user-actions" id="navUserActions">
-                {% if current_user %}
-                    <!-- Profile Section Dropdown containing Theme Toggle, Admin Links, Dashboard & Logout -->
-                    <div class="profile-dropdown-container" id="profileDropdownContainer">
-                        <button type="button" id="profileDropdownTrigger" class="profile-dropdown-trigger" aria-expanded="false" aria-haspopup="true">
-                            <span>👤</span>
-                            <span class="user-name">{{ current_user.username }}</span>
-                            <span class="role-badge role-{{ current_user.role }}">{{ current_user.role.upper() }}</span>
-                            <span id="profileDropdownChevron" style="font-size: 0.65rem; color: var(--text-muted); transition: transform 0.2s;">▼</span>
-                        </button>
+                <!-- Main Links (Center) -->
+                <div class="nav-links-main" id="navLinksMain">
+                    <a href="{{ url_for('main.index') }}" class="nav-link">Home</a>
+                    <a href="{{ url_for('academy.index') }}" class="nav-link">Academies</a>
+                    <a href="{{ url_for('leaderboard.view_leaderboard') }}" class="nav-link">Leaderboard</a>
+                    <a href="{{ url_for('main.tournament_list') }}" class="nav-link">Tournaments</a>
+                </div>
 
-                        <!-- Profile Dropdown Menu -->
-                        <div class="profile-dropdown-menu" id="profileDropdownMenu">
-                            <div style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-color); background: var(--bg-secondary);">
-                                <div style="font-weight: 700; color: var(--text-primary); font-size: 0.9rem; line-height: 1.2;">{{ current_user.username }}</div>
-                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.15rem; word-break: break-all;">{{ current_user.email }}</div>
-                            </div>
+                <!-- User Actions (Right) -->
+                <div class="nav-user-actions" id="navUserActions">
+                    {% if current_user %}
+                        <!-- Profile Section Dropdown containing Theme Toggle, Admin Links, Dashboard & Logout -->
+                        <div class="profile-dropdown-container" id="profileDropdownContainer">
+                            <button type="button" id="profileDropdownTrigger" class="profile-dropdown-trigger" aria-expanded="false" aria-haspopup="true">
+                                <span>👤</span>
+                                <span class="user-name">{{ current_user.username }}</span>
+                                <span class="role-badge role-{{ current_user.role }}">{{ current_user.role.upper() }}</span>
+                                <span id="profileDropdownChevron" style="font-size: 0.65rem; color: var(--text-muted); transition: transform 0.2s;">▼</span>
+                            </button>
 
-                            <div style="padding: 0.35rem 0;">
-                                <a href="{{ url_for('auth.profile') }}" class="profile-dropdown-item">
-                                    <span>👤</span> My Profile
-                                </a>
-                                <a href="{{ url_for('player.dashboard') }}" class="profile-dropdown-item">
-                                    <span>🎾</span> Player Dashboard
-                                </a>
-                                {% if current_user.role == 'superadmin' %}
-                                <a href="{{ url_for('auth.user_management') }}" class="profile-dropdown-item">
-                                    <span>⚙️</span> User Management
-                                </a>
-                                {% endif %}
-                                {% if current_user.role in ['admin', 'superadmin'] %}
-                                <a href="{{ url_for('player.admin_players') }}" class="profile-dropdown-item">
-                                    <span>📋</span> Player Directory
-                                </a>
-                                {% endif %}
-                                {% if current_user.role == 'user' %}
-                                <form method="POST" action="{{ url_for('auth.request_admin') }}" style="margin: 0; padding: 0.1rem 0;">
-                                    <button type="submit" class="profile-dropdown-item" style="width: calc(100% - 0.7rem); border: none; background: transparent; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 0.6rem; font-family: inherit;">
-                                        <span>🛡️</span>
-                                        <span>{% if current_user.admin_requested %}Cancel Admin Request{% else %}Request Admin Access{% endif %}</span>
+                            <!-- Profile Dropdown Menu -->
+                            <div class="profile-dropdown-menu" id="profileDropdownMenu">
+                                <div style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-color); background: var(--bg-secondary);">
+                                    <div style="font-weight: 700; color: var(--text-primary); font-size: 0.9rem; line-height: 1.2;">{{ current_user.username }}</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.15rem; word-break: break-all;">{{ current_user.email }}</div>
+                                </div>
+
+                                <div style="padding: 0.35rem 0;">
+                                    <a href="{{ url_for('auth.profile') }}" class="profile-dropdown-item">
+                                        <span>👤</span> My Profile
+                                    </a>
+                                    <a href="{{ url_for('player.dashboard') }}" class="profile-dropdown-item">
+                                        <span>🎾</span> Player Dashboard
+                                    </a>
+                                    {% if current_user.role == 'superadmin' %}
+                                    <a href="{{ url_for('auth.user_management') }}" class="profile-dropdown-item">
+                                        <span>⚙️</span> User Management
+                                    </a>
+                                    {% endif %}
+                                    {% if current_user.role in ['admin', 'superadmin'] %}
+                                    <a href="{{ url_for('player.admin_players') }}" class="profile-dropdown-item">
+                                        <span>📋</span> Player Directory
+                                    </a>
+                                    {% endif %}
+                                    {% if current_user.role == 'user' %}
+                                    <form method="POST" action="{{ url_for('auth.request_admin') }}" style="margin: 0; padding: 0.1rem 0;">
+                                        <button type="submit" class="profile-dropdown-item" style="width: calc(100% - 0.7rem); border: none; background: transparent; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 0.6rem; font-family: inherit;">
+                                            <span>🛡️</span>
+                                            <span>{% if current_user.admin_requested %}Cancel Admin Request{% else %}Request Admin Access{% endif %}</span>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+
+                                <div style="border-top: 1px solid var(--border-color); margin: 0.25rem 0;"></div>
+
+                                <!-- Change Theme inside Profile Section -->
+                                <div style="padding: 0.25rem 0.35rem;">
+                                    <button type="button" id="themeToggleBtn" class="profile-dropdown-item" style="width: calc(100% - 0.7rem); border: none; background: transparent; cursor: pointer; text-align: left; display: flex; align-items: center; justify-content: space-between; font-family: inherit;">
+                                        <span style="display: flex; align-items: center; gap: 0.6rem;">
+                                            <span id="themeIcon">☀️</span>
+                                            <span>Theme</span>
+                                        </span>
+                                        <span id="themeBadge" style="font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 9999px; background: var(--bg-secondary); color: var(--text-muted); border: 1px solid var(--border-color);">Dark</span>
                                     </button>
-                                </form>
-                                {% endif %}
-                            </div>
+                                </div>
 
-                            <div style="border-top: 1px solid var(--border-color); margin: 0.25rem 0;"></div>
+                                <div style="border-top: 1px solid var(--border-color); margin: 0.25rem 0;"></div>
 
-                            <!-- Change Theme inside Profile Section -->
-                            <div style="padding: 0.25rem 0.35rem;">
-                                <button type="button" id="themeToggleBtn" class="profile-dropdown-item" style="width: calc(100% - 0.7rem); border: none; background: transparent; cursor: pointer; text-align: left; display: flex; align-items: center; justify-content: space-between; font-family: inherit;">
-                                    <span style="display: flex; align-items: center; gap: 0.6rem;">
-                                        <span id="themeIcon">☀️</span>
-                                        <span>Theme</span>
-                                    </span>
-                                    <span id="themeBadge" style="font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 9999px; background: var(--bg-secondary); color: var(--text-muted); border: 1px solid var(--border-color);">Dark</span>
-                                </button>
-                            </div>
-
-                            <div style="border-top: 1px solid var(--border-color); margin: 0.25rem 0;"></div>
-
-                            <!-- Logout inside Profile Section -->
-                            <div style="padding: 0.25rem 0.35rem;">
-                                <a href="{{ url_for('auth.logout') }}" class="profile-dropdown-item logout-item">
-                                    <span>🚪</span> Log Out
-                                </a>
+                                <!-- Logout inside Profile Section -->
+                                <div style="padding: 0.25rem 0.35rem;">
+                                    <a href="{{ url_for('auth.logout') }}" class="profile-dropdown-item logout-item">
+                                        <span>🚪</span> Log Out
+                                    </a>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                {% else %}
-                    <a href="{{ url_for('auth.login') }}" class="nav-link login-link">Log In</a>
-                    <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-small">Register</a>
-                {% endif %}
+                    {% else %}
+                        <a href="{{ url_for('auth.login') }}" class="nav-link login-link">Log In</a>
+                        <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-small">Register</a>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </nav>
@@ -270,6 +284,33 @@
         </div>
     </footer>
 
+    <!-- Mobile Sticky Bottom Quick Bar (< 768px) -->
+    <nav class="mobile-bottom-bar" id="mobileBottomBar" aria-label="Mobile Navigation">
+        <a href="{{ url_for('main.index') }}" class="mobile-bottom-item {% if request.endpoint == 'main.index' %}active{% endif %}">
+            <span class="mobile-bottom-icon">🏠</span>
+            <span class="mobile-bottom-label">Home</span>
+        </a>
+        <a href="{{ url_for('main.tournament_list') }}" class="mobile-bottom-item {% if request.endpoint and 'tournament' in request.endpoint and request.endpoint != 'tournament.order_of_play' %}active{% endif %}">
+            <span class="mobile-bottom-icon">🏆</span>
+            <span class="mobile-bottom-label">Tourneys</span>
+        </a>
+        <a href="{{ url_for('leaderboard.view_leaderboard') }}" class="mobile-bottom-item {% if request.endpoint == 'leaderboard.view_leaderboard' %}active{% endif %}">
+            <span class="mobile-bottom-icon">📊</span>
+            <span class="mobile-bottom-label">Rankings</span>
+        </a>
+        {% if current_user %}
+        <a href="{{ url_for('player.dashboard') }}" class="mobile-bottom-item {% if request.endpoint == 'player.dashboard' %}active{% endif %}">
+            <span class="mobile-bottom-icon">🎾</span>
+            <span class="mobile-bottom-label">Dashboard</span>
+        </a>
+        {% else %}
+        <a href="{{ url_for('auth.login') }}" class="mobile-bottom-item {% if request.endpoint == 'auth.login' %}active{% endif %}">
+            <span class="mobile-bottom-icon">👤</span>
+            <span class="mobile-bottom-label">Sign In</span>
+        </a>
+        {% endif %}
+    </nav>
+
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script>
         // Multi-tab session synchronization
@@ -291,10 +332,43 @@
         })();
     </script>
     <script>
-        document.getElementById('mobileMenuBtn').addEventListener('click', function() {
-            document.getElementById('navLinksMain').classList.toggle('active');
-            document.getElementById('navUserActions').classList.toggle('active');
-        });
+        // Mobile Drawer Navigation Logic
+        (function() {
+            const menuBtn = document.getElementById('mobileMenuBtn');
+            const closeBtn = document.getElementById('mobileDrawerCloseBtn');
+            const backdrop = document.getElementById('mobileNavBackdrop');
+            const drawer = document.getElementById('navbarCollapseWrapper');
+
+            function openMobileNav() {
+                if (drawer) drawer.classList.add('open');
+                if (backdrop) backdrop.classList.add('open');
+                if (menuBtn) menuBtn.setAttribute('aria-expanded', 'true');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeMobileNav() {
+                if (drawer) drawer.classList.remove('open');
+                if (backdrop) backdrop.classList.remove('open');
+                if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
+                document.body.style.overflow = '';
+            }
+
+            if (menuBtn) menuBtn.addEventListener('click', openMobileNav);
+            if (closeBtn) closeBtn.addEventListener('click', closeMobileNav);
+            if (backdrop) backdrop.addEventListener('click', closeMobileNav);
+
+            // Close drawer on escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && drawer && drawer.classList.contains('open')) {
+                    closeMobileNav();
+                }
+            });
+
+            // Close drawer when any nav link is tapped
+            document.querySelectorAll('.navbar-collapse-wrapper a').forEach(function(link) {
+                link.addEventListener('click', closeMobileNav);
+            });
+        })();
 
         // Global Loader Logic
         document.addEventListener("DOMContentLoaded", function() {

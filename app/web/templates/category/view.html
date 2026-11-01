@@ -351,18 +351,18 @@
 
     {% macro render_bracket_tree(rounds_dict) %}
     {% if not is_export %}
-    <div class="mobile-bracket-tabs">
+    <div class="mobile-bracket-tabs mobile-bracket-round-nav">
         {% set sorted_keys = rounds_dict.keys()|sort %}
         {% set total_rounds = sorted_keys|max if sorted_keys else 0 %}
         {% for round_num in sorted_keys %}
             {% set round_title %}
-                {% if round_num == total_rounds %}F
-                {% elif round_num == total_rounds - 1 %}SF
-                {% elif round_num == total_rounds - 2 %}QF
-                {% else %}R{{ round_num }}
+                {% if round_num == total_rounds %}Final
+                {% elif round_num == total_rounds - 1 %}Semi-Final
+                {% elif round_num == total_rounds - 2 %}Quarter-Final
+                {% else %}Round {{ round_num }}
                 {% endif %}
             {% endset %}
-            <button type="button" onclick="document.querySelector('#cat-bracket-round-{{ round_num }}').scrollIntoView({behavior: 'smooth', inline: 'start', block: 'nearest'})">
+            <button type="button" class="mobile-round-nav-btn {% if loop.first %}active{% endif %}" onclick="scrollToBracketRound({{ round_num }}, this)">
                 {{ round_title|trim }}
             </button>
         {% endfor %}
@@ -2392,12 +2392,27 @@ function clearPlayerPath() {
     document.querySelectorAll('.bracket-connector-path.path-highlighted').forEach(p => p.classList.remove('path-highlighted'));
 }
 
-// Drag-to-Pan Event Handlers
+// Smooth scroll to round column from mobile tabs
+function scrollToBracketRound(roundNum, btn) {
+    const roundEl = document.getElementById('cat-bracket-round-' + roundNum);
+    const viewport = document.getElementById('bracketViewport');
+    if (!roundEl || !viewport) return;
+
+    document.querySelectorAll('.mobile-bracket-tabs button, .mobile-round-nav-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+
+    const targetLeft = roundEl.offsetLeft;
+    viewport.scrollTo({ left: Math.max(0, targetLeft - 16), behavior: 'smooth' });
+    setTimeout(renderBracketConnectors, 300);
+}
+
+// Drag-to-Pan Event Handlers (Mouse & Touch)
 function setupBracketPan() {
     const viewport = document.getElementById('bracketViewport');
     if (!viewport || viewport.dataset.panSetup) return;
     viewport.dataset.panSetup = 'true';
 
+    // Mouse Dragging
     viewport.addEventListener('mousedown', (e) => {
         // Only pan if clicking on empty canvas/background, not on interactive cards or buttons
         if (e.target.closest('.tennis-match') || e.target.closest('button') || e.target.closest('a') || e.target.closest('input')) {
@@ -2429,6 +2444,40 @@ function setupBracketPan() {
         }
     });
 
+    // Touch Dragging (Mobile / Tablet)
+    let isTouchPanning = false;
+    let touchStartX = 0, touchStartY = 0;
+    let touchScrollLeft = 0, touchScrollTop = 0;
+
+    viewport.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) return;
+        if (e.target.closest('.tennis-match') || e.target.closest('button') || e.target.closest('a') || e.target.closest('input')) {
+            return;
+        }
+        isTouchPanning = true;
+        const touch = e.touches[0];
+        touchStartX = touch.pageX;
+        touchStartY = touch.pageY;
+        touchScrollLeft = viewport.scrollLeft;
+        touchScrollTop = viewport.scrollTop;
+    }, { passive: true });
+
+    viewport.addEventListener('touchmove', (e) => {
+        if (!isTouchPanning || e.touches.length !== 1) return;
+        const touch = e.touches[0];
+        const dx = touch.pageX - touchStartX;
+        const dy = touch.pageY - touchStartY;
+        viewport.scrollLeft = touchScrollLeft - dx;
+        viewport.scrollTop = touchScrollTop - dy;
+    }, { passive: true });
+
+    viewport.addEventListener('touchend', () => {
+        if (isTouchPanning) {
+            isTouchPanning = false;
+            requestAnimationFrame(renderBracketConnectors);
+        }
+    }, { passive: true });
+
     // Wheel zoom with Ctrl or Cmd
     viewport.addEventListener('wheel', (e) => {
         if (e.ctrlKey || e.metaKey) {
@@ -2443,12 +2492,13 @@ function setupBracketPan() {
 function initBracketView() {
     setupBracketPan();
 
-    // Auto-select initial density
+    // Auto-select initial density (Compact on mobile or dense draws)
     const savedDensity = localStorage.getItem('tourneypro_bracket_density');
+    const isMobile = window.innerWidth <= 768;
     const bracket = document.getElementById('bracketMainTree') || document.querySelector('.bracket');
     if (bracket) {
         const r1Matches = bracket.querySelector('.bracket-round') ? bracket.querySelector('.bracket-round').querySelectorAll('.match-card-wrapper').length : 0;
-        if (savedDensity === 'compact' || (!savedDensity && r1Matches >= 8)) {
+        if (savedDensity === 'compact' || isMobile || (!savedDensity && r1Matches >= 8)) {
             toggleBracketDensity(true);
         } else {
             toggleBracketDensity(false);

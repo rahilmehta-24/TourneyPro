@@ -128,12 +128,12 @@
                     <div style="display: flex; gap: 1.5rem; align-items: center; justify-content: center;">
                         <div style="text-align: center; flex: 1; max-width: 130px;">
                             <span id="p1GamesHeader" style="display: block; margin-bottom: 0.4rem; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">P1</span>
-                            <input type="number" name="set1_p1" id="set1_p1" min="0" max="25" class="form-input" style="width: 100%; text-align: center; font-size: 1.6rem; font-weight: 800; padding: 0.5rem; color: #f97316; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2);" placeholder="0" oninput="onGamesInputChange()">
+                            <input type="number" inputmode="numeric" pattern="[0-9]*" name="set1_p1" id="set1_p1" min="0" max="25" class="form-input" style="width: 100%; text-align: center; font-size: 1.6rem; font-weight: 800; padding: 0.5rem; color: #f97316; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2);" placeholder="0" oninput="onGamesInputChange()">
                         </div>
                         <div style="font-size: 1.6rem; font-weight: 800; color: #94a3b8; padding-top: 1.2rem;">&ndash;</div>
                         <div style="text-align: center; flex: 1; max-width: 130px;">
                             <span id="p2GamesHeader" style="display: block; margin-bottom: 0.4rem; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">P2</span>
-                            <input type="number" name="set1_p2" id="set1_p2" min="0" max="25" class="form-input" style="width: 100%; text-align: center; font-size: 1.6rem; font-weight: 800; padding: 0.5rem; color: #f97316; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2);" placeholder="0" oninput="onGamesInputChange()">
+                            <input type="number" inputmode="numeric" pattern="[0-9]*" name="set1_p2" id="set1_p2" min="0" max="25" class="form-input" style="width: 100%; text-align: center; font-size: 1.6rem; font-weight: 800; padding: 0.5rem; color: #f97316; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2);" placeholder="0" oninput="onGamesInputChange()">
                         </div>
                     </div>
 
@@ -187,9 +187,9 @@
                             Tiebreak Points:
                         </div>
                         <div style="display: inline-flex; gap: 0.75rem; align-items: center;">
-                            <input type="number" name="tb1_p1" id="tb1_p1" min="0" class="form-input" style="width: 75px; text-align: center; border-color: #ffb74d; font-weight: 700; font-size: 1.1rem;" placeholder="TB P1" oninput="onTbInputChange()">
+                            <input type="number" name="tb1_p1" id="tb1_p1" min="0" inputmode="numeric" pattern="[0-9]*" class="form-input" style="width: 75px; text-align: center; border-color: #ffb74d; font-weight: 700; font-size: 1.1rem;" placeholder="TB P1" oninput="onTbInputChange()">
                             <span style="color: #ffb74d; font-weight: 700; font-size: 1.2rem;">:</span>
-                            <input type="number" name="tb1_p2" id="tb1_p2" min="0" class="form-input" style="width: 75px; text-align: center; border-color: #ffb74d; font-weight: 700; font-size: 1.1rem;" placeholder="TB P2" oninput="onTbInputChange()">
+                            <input type="number" name="tb1_p2" id="tb1_p2" min="0" inputmode="numeric" pattern="[0-9]*" class="form-input" style="width: 75px; text-align: center; border-color: #ffb74d; font-weight: 700; font-size: 1.1rem;" placeholder="TB P2" oninput="onTbInputChange()">
                         </div>
                         <div id="tbWinnerNote" style="margin-top: 0.45rem; font-size: 0.8rem; color: #a5b4fc; font-weight: 600; display: none;"></div>
                     </div>
@@ -201,12 +201,12 @@
                     <div style="display: flex; gap: 1rem; align-items: center; justify-content: center;">
                         <div style="text-align: center; flex: 1; max-width: 130px;">
                             <span id="p1PointsHeader" style="display: block; margin-bottom: 0.4rem; font-weight: 500;">P1</span>
-                            <input type="number" id="points_p1" name="points_p1" min="0" max="200" class="form-input" style="width: 100%; text-align: center; font-size: 1.4rem; font-weight: 800; padding: 0.5rem;" placeholder="0">
+                            <input type="number" id="points_p1" name="points_p1" min="0" max="200" inputmode="numeric" pattern="[0-9]*" class="form-input" style="width: 100%; text-align: center; font-size: 1.4rem; font-weight: 800; padding: 0.5rem;" placeholder="0">
                         </div>
                         <span style="font-weight: bold; font-size: 1.4rem;">-</span>
                         <div style="text-align: center; flex: 1; max-width: 130px;">
                             <span id="p2PointsHeader" style="display: block; margin-bottom: 0.4rem; font-weight: 500;">P2</span>
-                            <input type="number" id="points_p2" name="points_p2" min="0" max="200" class="form-input" style="width: 100%; text-align: center; font-size: 1.4rem; font-weight: 800; padding: 0.5rem;" placeholder="0">
+                            <input type="number" id="points_p2" name="points_p2" min="0" max="200" inputmode="numeric" pattern="[0-9]*" class="form-input" style="width: 100%; text-align: center; font-size: 1.4rem; font-weight: 800; padding: 0.5rem;" placeholder="0">
                         </div>
                     </div>
                 </div>

@@ -223,21 +223,34 @@
             <!-- ONLINE SECTION: UPI QR & UTR input -->
             {% if tournament.payment_upi_id %}
             <div id="online_payment_section" style="margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border-color);">
-                <h4 style="margin: 0 0 0.5rem; font-size: 1.05rem; color: var(--text-primary); font-weight: 700;">📲 Scan to Pay via UPI</h4>
-                <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0 0 1rem;">Scan with Google Pay, PhonePe, Paytm, or any BHIM UPI app</p>
+                <h4 style="margin: 0 0 0.5rem; font-size: 1.05rem; color: var(--text-primary); font-weight: 700;">📲 Pay via UPI</h4>
+                <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0 0 1rem;">Pay with Google Pay, PhonePe, Paytm, or any BHIM UPI app</p>
                 
+                <!-- Mobile 1-Tap UPI Intent Button -->
+                <div id="mobileUpiPayWrapper" style="display: none; margin-bottom: 1.25rem;">
+                    <a id="btnPayUpiApp" href="#" class="btn btn-primary" style="display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%; max-width: 320px; padding: 0.75rem 1.25rem; font-weight: 700; font-size: 1rem; box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);">
+                        <span>⚡ Pay via UPI App</span>
+                    </a>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem; margin-bottom: 0;">Tap to open your installed UPI app and pay directly</p>
+                </div>
+
                 <div id="qr_code_container" style="background: white; padding: 12px; display: inline-block; border-radius: var(--radius-md); margin-bottom: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
                     <img id="upi_qr_img" src="" alt="UPI QR Code" loading="lazy" decoding="async" style="width: 190px; height: 190px; display: block;">
                 </div>
 
-                <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.6rem 1rem; max-width: 320px; margin: 0 auto 1.25rem;">
-                    <span style="font-size: 0.75rem; color: var(--text-muted); display: block;">UPI ID</span>
-                    <strong style="color: var(--text-primary); font-size: 0.95rem;">{{ tournament.payment_upi_id }}</strong>
+                <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.6rem 1rem; max-width: 320px; margin: 0 auto 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+                    <div style="text-align: left;">
+                        <span style="font-size: 0.75rem; color: var(--text-muted); display: block;">UPI ID</span>
+                        <strong style="color: var(--text-primary); font-size: 0.95rem; word-break: break-all;">{{ tournament.payment_upi_id }}</strong>
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="copyUpiId(this)" style="padding: 0.35rem 0.65rem; font-size: 0.75rem; border-radius: var(--radius-sm); white-space: nowrap;">
+                        📋 Copy
+                    </button>
                 </div>
 
                 <div class="form-group" style="max-width: 340px; margin: 0 auto; text-align: left;">
                     <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Transaction ID / UTR Number *</label>
-                    <input type="text" name="transaction_id" id="transaction_id" class="form-input" placeholder="e.g. 402194829391" minlength="8" maxlength="35" style="width: 100%; font-size: 0.95rem; letter-spacing: 0.5px;">
+                    <input type="text" name="transaction_id" id="transaction_id" class="form-input" placeholder="e.g. 402194829391" minlength="8" maxlength="35" inputmode="numeric" style="width: 100%; font-size: 0.95rem; letter-spacing: 0.5px;">
                     <small style="display: block; margin-top: 0.3rem; color: var(--text-muted); font-size: 0.75rem;">Enter 12-digit UTR from your payment confirmation screen.</small>
                 </div>
             </div>
@@ -457,6 +470,13 @@ function updateForm() {
         if (qrImg) {
             qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiString)}`;
         }
+        const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 768;
+        const mobileWrapper = document.getElementById('mobileUpiPayWrapper');
+        const upiBtn = document.getElementById('btnPayUpiApp');
+        if (mobileWrapper && upiBtn) {
+            mobileWrapper.style.display = isMobileDevice ? 'block' : 'none';
+            upiBtn.href = upiString;
+        }
         {% endif %}
         setRegPaymentMethod(currentRegMethod);
     } else {
@@ -468,6 +488,21 @@ function updateForm() {
         if (submitBtn) submitBtn.textContent = '✓ Complete Registration';
         const infoText = document.getElementById('reg_status_info_text');
         if (infoText) infoText.textContent = 'Free categories are instantly confirmed. Paid registrations are activated once approved by organizers.';
+    }
+}
+
+function copyUpiId(btn) {
+    const upiText = "{{ tournament.payment_upi_id }}";
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(upiText).then(() => {
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '✓ Copied!';
+            setTimeout(() => { btn.innerHTML = originalText; }, 2000);
+        }).catch(() => {
+            alert("UPI ID: " + upiText);
+        });
+    } else {
+        alert("UPI ID: " + upiText);
     }
 }
 
