@@ -113,41 +113,37 @@ class SingleEliminationFormat(TournamentFormat):
                 continue
 
         matches = []
-        match_number = 1
+        r1_matches_count = bracket_size // 2
 
-        for i in range(0, bracket_size, 2):
+        for match_num in range(1, r1_matches_count + 1):
+            i = (match_num - 1) * 2
             p1 = participant_slots[i]
             p2 = participant_slots[i + 1]
 
-            if p1 or p2:
-                match = {
-                    'round': 1,
-                    'match_number': match_number,
-                    'participant1_id': p1.id if p1 else None,
-                    'participant2_id': p2.id if p2 else None,
-                    'bracket_type': 'main',
-                    'match_type': 'knockout'
-                }
-                matches.append(match)
-                match_number += 1
+            match = {
+                'round': 1,
+                'match_number': match_num,
+                'participant1_id': p1.id if p1 else None,
+                'participant2_id': p2.id if p2 else None,
+                'bracket_type': 'main',
+                'match_type': 'knockout'
+            }
+            matches.append(match)
 
-        current_round_matches = len(matches)
-
+        # Subsequent rounds strictly follow binary tree progression down to 1 Final match
         for round_num in range(2, num_rounds + 1):
-            next_round_matches = current_round_matches // 2
+            round_matches_count = bracket_size // (2 ** round_num)
 
-            for match_num in range(next_round_matches):
+            for match_num in range(1, round_matches_count + 1):
                 match = {
                     'round': round_num,
-                    'match_number': match_num + 1,
+                    'match_number': match_num,
                     'participant1_id': None,
                     'participant2_id': None,
                     'bracket_type': 'main',
                     'match_type': 'knockout'
                 }
                 matches.append(match)
-
-            current_round_matches = next_round_matches
 
         for match in matches:
             if match['round'] == 1:

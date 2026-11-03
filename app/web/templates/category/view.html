@@ -359,6 +359,9 @@
                 {% if round_num == total_rounds %}Final
                 {% elif round_num == total_rounds - 1 %}Semi-Final
                 {% elif round_num == total_rounds - 2 %}Quarter-Final
+                {% elif round_num == total_rounds - 3 %}Round of 16
+                {% elif round_num == total_rounds - 4 %}Round of 32
+                {% elif round_num == total_rounds - 5 %}Round of 64
                 {% else %}Round {{ round_num }}
                 {% endif %}
             {% endset %}
@@ -391,6 +394,12 @@
                 Semi-Final
                 {% elif round_num == total_rounds - 2 %}
                 Quarter-Final
+                {% elif round_num == total_rounds - 3 %}
+                Round of 16
+                {% elif round_num == total_rounds - 4 %}
+                Round of 32
+                {% elif round_num == total_rounds - 5 %}
+                Round of 64
                 {% else %}
                 Round {{ round_num }}
                 {% endif %}
