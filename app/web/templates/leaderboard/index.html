@@ -34,8 +34,8 @@
     <div class="filters" style="background: var(--bg-card); padding: 1.25rem 1.5rem; border-radius: var(--radius-lg); margin-bottom: 1.5rem; border: 1px solid var(--border-color);">
         <form method="GET" action="{{ url_for('leaderboard.view_leaderboard') }}" style="display: flex; gap: 1rem; width: 100%; align-items: flex-end; flex-wrap: wrap;">
             <div class="form-group" style="flex: 1; min-width: 180px; margin: 0;">
-                <label class="form-label" style="display: block; margin-bottom: 0.4rem; font-weight: 600; font-size: 0.85rem;">Gender</label>
-                <select name="gender" class="form-input" style="width: 100%; height: 42px;">
+                <label class="form-label" style="display: block; margin-bottom: 0.45rem; font-weight: 700; font-size: 0.9rem; color: var(--text-primary);">Gender</label>
+                <select name="gender" class="form-input" style="width: 100%; height: 44px; min-height: 44px; padding: 0.45rem 0.85rem; font-size: 16px; line-height: 1.4; color: var(--text-primary); background-color: var(--bg-tertiary); border: 1px solid var(--border-strong);">
                     <option value="All" {% if current_gender == 'All' %}selected{% endif %}>All Genders</option>
                     {% for g in genders %}
                     <option value="{{ g }}" {% if current_gender == g %}selected{% endif %}>{{ g }}</option>
@@ -43,15 +43,15 @@
                 </select>
             </div>
             <div class="form-group" style="flex: 1; min-width: 180px; margin: 0;">
-                <label class="form-label" style="display: block; margin-bottom: 0.4rem; font-weight: 600; font-size: 0.85rem;">Category</label>
-                <select name="category" class="form-input" style="width: 100%; height: 42px;">
+                <label class="form-label" style="display: block; margin-bottom: 0.45rem; font-weight: 700; font-size: 0.9rem; color: var(--text-primary);">Category</label>
+                <select name="category" class="form-input" style="width: 100%; height: 44px; min-height: 44px; padding: 0.45rem 0.85rem; font-size: 16px; line-height: 1.4; color: var(--text-primary); background-color: var(--bg-tertiary); border: 1px solid var(--border-strong);">
                     <option value="All" {% if current_category == 'All' %}selected{% endif %}>All Categories</option>
                     {% for c in categories %}
                     <option value="{{ c }}" {% if current_category == c %}selected{% endif %}>{{ c }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <button type="submit" class="btn btn-secondary" style="height: 42px; display: inline-flex; align-items: center; justify-content: center; padding: 0 1.5rem; font-weight: 600;">Filter</button>
+            <button type="submit" class="btn btn-primary" style="height: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; padding: 0 1.75rem; font-weight: 700; border-radius: var(--radius-md);">Filter</button>
         </form>
     </div>
 
@@ -73,7 +73,7 @@
     {% endif %}
 
     <!-- Leaderboard Table -->
-    <div class="table-container" style="background: var(--bg-secondary); border-radius: var(--radius-lg); overflow: hidden;">
+    <div class="table-container" style="background: var(--bg-secondary); border-radius: var(--radius-lg); overflow-x: auto; -webkit-overflow-scrolling: touch;">
         <table style="width: 100%; border-collapse: collapse; text-align: left;">
             <thead>
                 <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1);">

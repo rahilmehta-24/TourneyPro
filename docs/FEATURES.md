@@ -24,6 +24,7 @@
 | **Academy Portals** | ✅ Production | `app/web/controllers/academy.py` | `Academy`, `AcademyMember`, `AcademyAnnouncement` |
 | **Vector PDF Export Suite** | ✅ Production | `app/services/pdf/` | `DrawExportAdapter`, `DrawPdfService` |
 | **Live Score Polling Feed** | ✅ Production | `app/api/live.py` | `Match`, `Tournament` |
+| **Mobile Web App & Touch Engine** | ✅ Production | `app/web/static/css/style.css`, `base.html` | All Views / Presentation |
 | **WebSocket Score Push** | ⚡ Phase 2 Active | `app/services/live_stream/` | `Match` |
 
 ---
@@ -130,3 +131,12 @@ The scheduling engine solves resource constraints across multiple tournament day
 * **Draw Sheets:** Vector bracket rendered via `DrawPdfService`, including tournament title, category name, seeds, participant names, match scores, and progression connectors.
 * **Order of Play:** Multi-court matrix displaying daily match schedules, court assignments, and estimated match durations.
 * **HTTP 304 Caching:** PDF responses compute an MD5 hash of the PDF byte stream, returning `304 Not Modified` on unchanged requests to conserve server bandwidth.
+
+---
+
+### 2.8 Mobile Web App Experience & Touch Navigation Engine
+* **Touch-Enabled Bracket Navigation:** Native `touchstart`, `touchmove`, `touchend` event bindings with momentum pan scrolling and pill-tab round selectors (`Round of 16` → `Quarterfinals` → `Semifinals` → `Finals`) that preserve SVG connector math.
+* **Ergonomic Bottom Sheet Modals:** Converts centered dialogs on `≤ 640px` screens to bottom sheets using dynamic viewport units (`dvh`) with sticky action buttons and numeric keypads (`inputmode="numeric"`).
+* **Deep-Linked Mobile UPI Intent:** Auto-detects mobile environments to render 1-tap `upi://pay` links and 1-tap clipboard copy helpers.
+* **Auto-Collapsing Fluid Grids:** Global CSS safeguards for `repeat(auto-fit, minmax(...))` rules that prevent horizontal page wobble and viewport blowouts on narrow screens.
+* **Zero Desktop Regression:** All mobile behaviors are strictly encapsulated in responsive media queries (`@media (max-width: ...)`), keeping the desktop experience 100% pixel-perfect and untouched.
