@@ -191,3 +191,11 @@ TourneyPro delivers publication-ready vector documents:
 ### 9.3 Availability & Hosting
 * Dual database support: Zero-dependency local SQLite for rapid testing; Supabase PostgreSQL with transaction pooling (PgBouncer) for production.
 * Serverless WSGI compatibility targeting Vercel (`@vercel/python`) and containerized Gunicorn servers.
+
+### 9.4 Mobile Responsive & Touch Requirements
+* **Smartphone Screen Support:** Full native web app support for viewports from 320px up to 430px (e.g. iPhone SE, iPhone 14/15/16 Pro, Google Pixel, Samsung Galaxy).
+* **Safe-Area Inset Handling:** Support for notches, Dynamic Island, and gesture bars via `viewport-fit=cover` and dynamic viewport units (`dvh`).
+* **Touch Target Standards:** All interactive controls (buttons, tabs, inputs) maintain at least 44×44px hit areas.
+* **Input Usability:** Elimination of iOS Safari auto-zoom through strict 16px font-size floors on mobile, plus `inputmode="numeric"` on score/UTR inputs.
+* **Zero Desktop Alteration:** All mobile styling strictly isolated behind responsive breakpoints (`@media (max-width: ...)`), preserving desktop layout without compromise.
+

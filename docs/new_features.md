@@ -51,6 +51,12 @@ This phase modernizes the bracket view with real-time capabilities and automated
   - Predicts match durations to generate accurate time slots.
 - **Frontend**: Build an "Up Next / Court Schedule" public view for players to track.
 
+### 3. Native-Grade Mobile Web App Experience (✅ Implemented)
+- **Safe-Area Shell & Off-Canvas Navigation:** Integrated `viewport-fit=cover` and dynamic viewport units (`dvh`) with a glassmorphic slide-out drawer (`#navbarCollapseWrapper`) and persistent bottom thumb bar (`#mobileBottomBar`).
+- **Knockout Bracket Touch Panning:** Hardware-accelerated `touchstart`, `touchmove`, and `touchend` events with round-by-round pill navigation tabs (`scrollToBracketRound`), fully preserving horizontal SVG Bézier connector geometry.
+- **Bottom-Sheet Match Scoring:** Transforms modal dialogs on `≤ 640px` into ergonomic bottom sheets with sticky action buttons and `inputmode="numeric" pattern="[0-9]*"`.
+- **1-Tap Mobile UPI Intent:** Direct `upi://pay?pa=...` deep linking into installed payment apps (GPay, PhonePe, Paytm) and 1-tap clipboard copy button, resolving the mobile on-screen QR scanning impossibility.
+
 ---
 
 ## Phase 3: Communication & Engagement

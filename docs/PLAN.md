@@ -55,6 +55,14 @@ Phase 1 established the stable operational foundation of TourneyPro, replacing l
 5. **Quality Assurance & Deployment Automation:**
    * 72 automated unit and integration tests passing cleanly.
    * GitHub Actions CI quality gates and automated database schema synchronization (`scripts/sync_db_schema.py`) for Supabase PostgreSQL.
+6. **Mobile Responsive Web App & Touch Experience:**
+   * Safe-area notch and home indicator support (`viewport-fit=cover`, `env(safe-area-inset-bottom)`).
+   * Glassmorphic off-canvas navigation drawer with frosted backdrop blur and tap dismissal.
+   * Thumb-friendly mobile sticky bottom navigation bar (`#mobileBottomBar`).
+   * Hardware-accelerated bracket touch drag panning and round-by-round pill jump tabs maintaining horizontal SVG connector coordinate geometry.
+   * Bottom sheet score reporting modal on `≤ 640px` with dynamic viewport units (`dvh`), sticky action footers, and native numeric keypads (`inputmode="numeric"`).
+   * 1-tap mobile UPI intent links (`upi://pay`) and 1-tap clipboard copying.
+   * Smooth horizontal momentum table scrolling with sticky leading rank/player columns.
 
 ---
 

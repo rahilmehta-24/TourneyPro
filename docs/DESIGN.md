@@ -137,21 +137,43 @@ The organizer workflow is consolidated into a 4-step progressive disclosure wiza
   * Display Category pill badge (e.g. `Men's Open Singles`).
   * Progression Lock Indicator: A lock icon appears on downstream fixtures if feeder matches are still pending, preventing premature court dispatching.
 
-### 4.5 Score Reporting Modal
+### 4.5 Score Reporting Modal & Mobile Bottom Sheet
 * Dynamic form adapting to category rules:
   * If **Total Games:** Two numeric inputs with real-time differential calculation.
   * If **Tennis Sets:** Multiple set rows with game inputs and tiebreak superscript fields (e.g., Set 1: `7`-`6`, Tiebreak: `5`).
   * If **Group Stage Rubber ($T=7$):** Validation rule requiring $G_1 + G_2 = 7$ (or 4–3 with tiebreak), with automated walkover remainder allocation.
+* **Mobile Bottom Sheet Transformation (`≤ 640px`):**
+  * Modal transitions from centered desktop dialog to an app-style bottom sheet (`inset: auto 0 0 0; max-height: 90dvh; border-radius: 1.25rem 1.25rem 0 0`).
+  * Top drag pill handle (`.mobile-sheet-handle`).
+  * Pinned sticky footer buttons (`Save Score`, `Cancel`) remaining visible above virtual keyboards.
+  * Explicit `inputmode="numeric" pattern="[0-9]*"` triggering native numeric keypad on iOS and Android.
+
+### 4.6 Mobile Navigation Shell (Drawer & Bottom Quick Bar)
+* **Off-Canvas Slide-Out Drawer (`#navbarCollapseWrapper`):** On screens `≤ 900px`, navigation collapses into a glassmorphic right-hand drawer with frosted backdrop (`#mobileNavBackdrop`), closing upon tap-outside, `Escape` key, or navigation link tap.
+* **Thumb-Friendly Bottom Bar (`#mobileBottomBar`):** Fixed bottom navigation bar on screens `≤ 768px` offering 1-tap shortcuts for Tournaments, Leaderboard, Dashboard, and Admin.
+* **Safe-Area Compensation:** Integrated with `viewport-fit=cover` and `env(safe-area-inset-bottom)` to accommodate iPhone home indicator bars and Android gesture bars.
+
+### 4.7 Mobile UPI Intent & 1-Tap Copy (`tournament/register.html`)
+* **1-Tap Mobile UPI Intent (`#btnPayUpiApp`):** Direct `upi://pay?pa=...` deep link that launches installed UPI payment apps (GPay, PhonePe, Paytm, BHIM) directly on the user's mobile device, solving the "cannot scan on-screen QR code" mobile edge case.
+* **1-Tap Copy UPI ID:** Inline clipboard copy button with visual confirmation feedback (`✓ Copied!`).
 
 ---
 
 ## 5. Responsive Behavior & Breakpoints
 
-| Breakpoint | Target Devices | Layout Adaptations |
+To guarantee zero regression or visual change to the desktop experience, all mobile rules are strictly encapsulated within targeted media queries:
+
+| Breakpoint | Target Devices | Layout Adaptations & Mobile Experience |
 | :--- | :--- | :--- |
-| **Mobile (< 768px)** | Smartphones | Single-column stack. Brackets switch to horizontal swipe/scroll container with sticky round headers. Order of Play switches from multi-column grid to vertical chronological list with court filter chips. |
-| **Tablet (768px – 1024px)** | iPads / Tablets | 2-column dashboard layout. Brackets viewable in pinch-to-zoom SVG viewport. |
-| **Desktop (> 1024px)** | Laptops & Monitors | Full multi-column bracket tree with SVG vector connectors, side-by-side court matrix, and multi-pane organizer wizard. |
+| **Small Mobile (`≤ 480px`)** | iPhone SE, small Androids (320px–414px) | Single-column fluid grids (`minmax(min(100%, 280px), 1fr)`). Bottom sheet modals (`max-height: 90dvh`). Auto-compact match density. Strict `font-size: 16px !important;` on form controls to prevent iOS Safari auto-zoom. |
+| **Standard Mobile (`481px – 768px`)** | iPhone 14/15/16 Pro, large Androids | Off-canvas drawer nav, sticky bottom quick bar, horizontal momentum scrolling on tables with sticky rank/player columns, touch-panning brackets with round-by-round pill tabs. |
+| **Tablet (`769px – 992px`)** | iPads & Foldables | Adaptive 2-column dashboards, horizontal category tabs, desktop top navbar. |
+| **Desktop (`> 992px`)** | Laptops & Monitors | **100% Unaltered:** Multi-column bracket tree with SVG vector curves, side-by-side court matrix, full 2-column organizer layout, and centered modal dialogs. |
+
+### 5.1 Knockout Bracket Touch Navigation
+* **Hardware-Accelerated Touch Pan:** Smooth drag gesture listeners (`touchstart`, `touchmove`, `touchend`) on `.bracket-viewport` allowing fluid navigation across large draws.
+* **Round-by-Round Navigation Tabs:** Swipeable pill bar on mobile (`Round of 16` | `Quarterfinals` | `Semifinals` | `Finals`) that smoothly auto-scrolls to center the target round without breaking SVG connector geometry.
+* **Preservation of Horizontal Bracket Geometry:** Strict avoidance of vertical round stacking, preserving SVG bezier connector coordinates across rounds.
 
 ---
 
@@ -159,3 +181,4 @@ The organizer workflow is consolidated into a 4-step progressive disclosure wiza
 * High contrast ratio (> 4.5:1) across all text elements against dark slate backgrounds.
 * All interactive match cards, tabs, and buttons feature explicit ARIA attributes (`role="tab"`, `aria-selected`, `aria-expanded`).
 * Visible focus indicators (`outline: 2px solid var(--color-primary); outline-offset: 2px;`) for keyboard navigation.
+* Minimum touch target sizes of 44×44px (or 48×48px) for thumb-friendly mobile interaction.
