@@ -2039,11 +2039,115 @@ function bracketCanvasFitToScreen() {
     updateBracketZoomUI();
 }
 
-// Universal SVG Bracket Connectors (Connects across all rounds: R1 -> R2 -> R3 -> R4 -> Final, plus Double Elimination)
-// Guaranteed alignment and seamless cubic bezier curves for large draws (16, 32, 64, 128)
+// Precise Bracket Tree Layout (Mathematically computes midpoint spacing from Round 2 onwards)
+function layoutBracketTree() {
+    const brackets = document.querySelectorAll('.bracket');
+    if (!brackets.length) return;
+
+    brackets.forEach(bracket => {
+        const allRounds = Array.from(bracket.querySelectorAll('.bracket-round'));
+        if (allRounds.length < 2) return;
+
+        bracket.classList.add('bracket-tree-positioned');
+
+        const round1 = allRounds[0];
+        const r1MatchesContainer = round1.querySelector('.round-matches');
+        if (!r1MatchesContainer) return;
+
+        const r1Wrappers = Array.from(r1MatchesContainer.querySelectorAll('.match-card-wrapper'));
+        if (!r1Wrappers.length) return;
+
+        const zoom = (typeof bracketZoom !== 'undefined' && bracketZoom > 0) ? bracketZoom : 1.0;
+
+        // Reset Round 1 matches so they establish the natural master scroll height
+        r1MatchesContainer.style.position = 'relative';
+        r1MatchesContainer.style.height = '';
+        r1MatchesContainer.style.minHeight = '';
+        r1Wrappers.forEach(w => {
+            w.style.position = 'relative';
+            w.style.top = '';
+            w.style.left = '';
+            w.style.right = '';
+        });
+
+        const r1ContainerRect = r1MatchesContainer.getBoundingClientRect();
+        const r1Top = r1ContainerRect.top;
+        const masterHeight = Math.max(r1MatchesContainer.scrollHeight, Math.round(r1ContainerRect.height / zoom));
+
+        // Store centers for each round: centersByRound[roundIndex][matchNumber] = centerY (in unscaled px relative to r1MatchesContainer top)
+        const centersByRound = [];
+
+        // Round 1 centers
+        const r1Centers = {};
+        r1Wrappers.forEach((w, idx) => {
+            const card = w.querySelector('.tennis-match') || w;
+            const cRect = card.getBoundingClientRect();
+            const num = parseInt(w.getAttribute('data-match-number') || (idx + 1), 10);
+            const cy = ((cRect.top + cRect.height / 2) - r1Top) / zoom;
+            r1Centers[num] = cy;
+        });
+        centersByRound.push(r1Centers);
+
+        // Position subsequent rounds: Round 2, Round 3, Round 4...
+        for (let rIdx = 1; rIdx < allRounds.length; rIdx++) {
+            const roundEl = allRounds[rIdx];
+            const matchesContainer = roundEl.querySelector('.round-matches');
+            if (!matchesContainer) continue;
+
+            matchesContainer.style.position = 'relative';
+            matchesContainer.style.height = masterHeight + 'px';
+            matchesContainer.style.minHeight = masterHeight + 'px';
+
+            const wrappers = Array.from(matchesContainer.querySelectorAll('.match-card-wrapper'));
+            const prevCenters = centersByRound[rIdx - 1];
+            const currCenters = {};
+
+            wrappers.forEach((w, idx) => {
+                const card = w.querySelector('.tennis-match') || w;
+                const matchNum = parseInt(w.getAttribute('data-match-number') || (idx + 1), 10);
+                const expectedTopNum = matchNum * 2 - 1;
+                const expectedBotNum = matchNum * 2;
+
+                const hasTop = (expectedTopNum in prevCenters);
+                const hasBot = (expectedBotNum in prevCenters);
+
+                let targetCenterY;
+                if (hasTop && hasBot) {
+                    targetCenterY = (prevCenters[expectedTopNum] + prevCenters[expectedBotNum]) / 2;
+                } else if (hasTop) {
+                    targetCenterY = prevCenters[expectedTopNum];
+                } else if (hasBot) {
+                    targetCenterY = prevCenters[expectedBotNum];
+                } else {
+                    // Fallback to binary tree slot allocation
+                    const totalSlots = Math.pow(2, allRounds.length - rIdx);
+                    targetCenterY = (masterHeight / totalSlots) * (idx + 0.5);
+                }
+
+                currCenters[matchNum] = targetCenterY;
+
+                const cardH = (card.offsetHeight && card.offsetHeight > 30) ? card.offsetHeight : 104;
+                w.style.position = 'absolute';
+                w.style.width = '100%';
+                w.style.left = '0';
+                w.style.right = '0';
+                w.style.top = Math.round(targetCenterY - cardH / 2) + 'px';
+            });
+
+            centersByRound.push(currCenters);
+        }
+    });
+}
+window.layoutBracketTree = layoutBracketTree;
+
+// Universal SVG Bracket Connectors (Canonical tournament format: ──┐ followed by ├── )
+// Guaranteed alignment and seamless spacing for all draw lengths (16, 32, 64, 128)
 function renderBracketConnectors() {
     const brackets = document.querySelectorAll('.bracket');
     if (!brackets.length) return;
+
+    // Apply exact binary tree vertical spacing before calculating connector paths
+    layoutBracketTree();
 
     brackets.forEach(bracket => {
         let svg = bracket.querySelector('.bracket-svg-connectors');
@@ -2093,8 +2197,8 @@ function renderBracketConnectors() {
                 const nextCard = nextW.querySelector('.tennis-match') || nextW;
                 const nextRect = nextCard.getBoundingClientRect();
 
-                const targetX = (nextRect.left - bracketRect.left + scrollLeft * zoom) / zoom;
-                const targetY = (nextRect.top + nextRect.height / 2 - bracketRect.top + scrollTop * zoom) / zoom;
+                const targetX = Math.round((nextRect.left - bracketRect.left + scrollLeft * zoom) / zoom);
+                const targetY = Math.round((nextRect.top + nextRect.height / 2 - bracketRect.top + scrollTop * zoom) / zoom);
 
                 const nextP1Id = nextCard.getAttribute('data-p1-id') || '';
                 const nextP2Id = nextCard.getAttribute('data-p2-id') || '';
@@ -2129,32 +2233,54 @@ function renderBracketConnectors() {
                     const topRect = topCard.getBoundingClientRect();
                     const botRect = botCard.getBoundingClientRect();
 
-                    const topX = (topRect.right - bracketRect.left + scrollLeft * zoom) / zoom;
-                    const topY = (topRect.top + topRect.height / 2 - bracketRect.top + scrollTop * zoom) / zoom;
+                    const topX = Math.round((topRect.right - bracketRect.left + scrollLeft * zoom) / zoom);
+                    const topY = Math.round((topRect.top + topRect.height / 2 - bracketRect.top + scrollTop * zoom) / zoom);
 
-                    const botX = (botRect.right - bracketRect.left + scrollLeft * zoom) / zoom;
-                    const botY = (botRect.top + botRect.height / 2 - bracketRect.top + scrollTop * zoom) / zoom;
+                    const botX = Math.round((botRect.right - bracketRect.left + scrollLeft * zoom) / zoom);
+                    const botY = Math.round((botRect.top + botRect.height / 2 - bracketRect.top + scrollTop * zoom) / zoom);
 
                     const topP1Id = topCard.getAttribute('data-p1-id') || '';
                     const topP2Id = topCard.getAttribute('data-p2-id') || '';
                     const botP1Id = botCard.getAttribute('data-p1-id') || '';
                     const botP2Id = botCard.getAttribute('data-p2-id') || '';
 
-                    // Midpoint horizontal guide for bezier curvature
-                    const cpX = Math.round(topX + Math.max(16, (targetX - topX) * 0.5));
+                    const startX = Math.max(topX, botX);
+                    const trunkX = Math.round(startX + Math.max(16, (targetX - startX) * 0.5));
 
-                    // Top match branch (Smooth Cubic Bezier curve)
+                    // Standard tournament bracket fillet radius
+                    const rTop = Math.max(4, Math.min(8, Math.abs(targetY - topY) / 2, (trunkX - startX) / 2));
+                    const rBot = Math.max(4, Math.min(8, Math.abs(botY - targetY) / 2, (trunkX - startX) / 2));
+
+                    // Top match branch (Canonical tournament bracket path: ──┐ followed by ├── )
+                    let dTop;
+                    if (Math.abs(targetY - topY) <= 3) {
+                        dTop = `M ${topX} ${topY} H ${targetX}`;
+                    } else if (topY < targetY) {
+                        dTop = `M ${topX} ${topY} H ${trunkX - rTop} A ${rTop} ${rTop} 0 0 1 ${trunkX} ${topY + rTop} V ${targetY - rTop} A ${rTop} ${rTop} 0 0 0 ${trunkX + rTop} ${targetY} H ${targetX}`;
+                    } else {
+                        dTop = `M ${topX} ${topY} H ${trunkX - rTop} A ${rTop} ${rTop} 0 0 0 ${trunkX} ${topY - rTop} V ${targetY + rTop} A ${rTop} ${rTop} 0 0 1 ${trunkX + rTop} ${targetY} H ${targetX}`;
+                    }
+
                     const pTop = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                    pTop.setAttribute('d', `M ${topX} ${topY} C ${cpX} ${topY}, ${cpX} ${targetY}, ${targetX} ${targetY}`);
+                    pTop.setAttribute('d', dTop);
                     pTop.setAttribute('class', 'bracket-connector-path');
                     pTop.setAttribute('data-from-match', topW.getAttribute('data-match-id') || '');
                     pTop.setAttribute('data-to-match', nextMatchId);
                     pTop.setAttribute('data-player-ids', `${topP1Id},${topP2Id}`);
                     svg.appendChild(pTop);
 
-                    // Bottom match branch (Smooth Cubic Bezier curve)
+                    // Bottom match branch (Canonical tournament bracket path: ──┘ followed by ├── )
+                    let dBot;
+                    if (Math.abs(targetY - botY) <= 3) {
+                        dBot = `M ${botX} ${botY} H ${targetX}`;
+                    } else if (botY > targetY) {
+                        dBot = `M ${botX} ${botY} H ${trunkX - rBot} A ${rBot} ${rBot} 0 0 0 ${trunkX} ${botY - rBot} V ${targetY + rBot} A ${rBot} ${rBot} 0 0 1 ${trunkX + rBot} ${targetY} H ${targetX}`;
+                    } else {
+                        dBot = `M ${botX} ${botY} H ${trunkX - rBot} A ${rBot} ${rBot} 0 0 1 ${trunkX} ${botY + rBot} V ${targetY - rBot} A ${rBot} ${rBot} 0 0 0 ${trunkX + rBot} ${targetY} H ${targetX}`;
+                    }
+
                     const pBot = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                    pBot.setAttribute('d', `M ${botX} ${botY} C ${cpX} ${botY}, ${cpX} ${targetY}, ${targetX} ${targetY}`);
+                    pBot.setAttribute('d', dBot);
                     pBot.setAttribute('class', 'bracket-connector-path');
                     pBot.setAttribute('data-from-match', botW.getAttribute('data-match-id') || '');
                     pBot.setAttribute('data-to-match', nextMatchId);
@@ -2165,14 +2291,26 @@ function renderBracketConnectors() {
                     const singleW = topW || botW;
                     const srcCard = singleW.querySelector('.tennis-match') || singleW;
                     const srcRect = srcCard.getBoundingClientRect();
-                    const srcX = (srcRect.right - bracketRect.left + scrollLeft * zoom) / zoom;
-                    const srcY = (srcRect.top + srcRect.height / 2 - bracketRect.top + scrollTop * zoom) / zoom;
-                    const cpX = Math.round(srcX + Math.max(16, (targetX - srcX) * 0.5));
+                    const srcX = Math.round((srcRect.right - bracketRect.left + scrollLeft * zoom) / zoom);
+                    const srcY = Math.round((srcRect.top + srcRect.height / 2 - bracketRect.top + scrollTop * zoom) / zoom);
+                    const trunkX = Math.round(srcX + Math.max(16, (targetX - srcX) * 0.5));
                     const srcP1Id = srcCard.getAttribute('data-p1-id') || '';
                     const srcP2Id = srcCard.getAttribute('data-p2-id') || '';
 
+                    let dDirect;
+                    if (Math.abs(targetY - srcY) <= 3) {
+                        dDirect = `M ${srcX} ${srcY} H ${targetX}`;
+                    } else {
+                        const rS = Math.max(4, Math.min(8, Math.abs(targetY - srcY) / 2, (trunkX - srcX) / 2));
+                        if (srcY < targetY) {
+                            dDirect = `M ${srcX} ${srcY} H ${trunkX - rS} A ${rS} ${rS} 0 0 1 ${trunkX} ${srcY + rS} V ${targetY - rS} A ${rS} ${rS} 0 0 0 ${trunkX + rS} ${targetY} H ${targetX}`;
+                        } else {
+                            dDirect = `M ${srcX} ${srcY} H ${trunkX - rS} A ${rS} ${rS} 0 0 0 ${trunkX} ${srcY - rS} V ${targetY + rS} A ${rS} ${rS} 0 0 1 ${trunkX + rS} ${targetY} H ${targetX}`;
+                        }
+                    }
+
                     const pDirect = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                    pDirect.setAttribute('d', `M ${srcX} ${srcY} C ${cpX} ${srcY}, ${cpX} ${targetY}, ${targetX} ${targetY}`);
+                    pDirect.setAttribute('d', dDirect);
                     pDirect.setAttribute('class', 'bracket-connector-path');
                     pDirect.setAttribute('data-from-match', singleW.getAttribute('data-match-id') || '');
                     pDirect.setAttribute('data-to-match', nextMatchId);

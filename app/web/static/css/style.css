@@ -1366,6 +1366,50 @@ select option {
     z-index: 2;
 }
 
+/* Bracket Tree Precise Alignment & Dynamic Spacing */
+.bracket.bracket-tree-positioned {
+    align-items: flex-start !important;
+}
+
+.bracket.bracket-tree-positioned .bracket-round {
+    height: auto !important;
+}
+
+.bracket.bracket-tree-positioned .bracket-round:first-of-type .round-matches {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 20px !important;
+    height: auto !important;
+    min-height: auto !important;
+}
+
+.bracket.bracket-tree-positioned .bracket-round:first-of-type .match-card-wrapper {
+    position: relative !important;
+    flex: 0 0 auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.bracket.bracket-tree-positioned .bracket-round:not(:first-of-type) .round-matches {
+    position: relative !important;
+    display: block !important;
+    box-sizing: border-box !important;
+}
+
+.bracket.bracket-tree-positioned .bracket-round:not(:first-of-type) .match-card-wrapper {
+    position: absolute !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    box-sizing: border-box !important;
+}
+
+
 /* Tennis Scoreboard Card */
 .tennis-match {
     background: var(--bg-card);
