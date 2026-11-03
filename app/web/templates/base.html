@@ -343,6 +343,7 @@
                 if (drawer) drawer.classList.add('open');
                 if (backdrop) backdrop.classList.add('open');
                 if (menuBtn) menuBtn.setAttribute('aria-expanded', 'true');
+                document.body.classList.add('mobile-nav-open');
                 document.body.style.overflow = 'hidden';
             }
 
@@ -350,6 +351,7 @@
                 if (drawer) drawer.classList.remove('open');
                 if (backdrop) backdrop.classList.remove('open');
                 if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
+                document.body.classList.remove('mobile-nav-open');
                 document.body.style.overflow = '';
             }
 

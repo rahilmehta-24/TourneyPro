@@ -399,7 +399,7 @@
                 {% for match in round_matches %}
                 {% set p1_name = match.participant1.name if match.participant1 else '' %}
                 {% set p2_name = match.participant2.name if match.participant2 else '' %}
-                <div class="match-card-wrapper {% if not has_vertical %}no-vertical-connector{% endif %} {% if loop.index % 2 == 1 %}match-pair-top{% else %}match-pair-bottom{% endif %}" data-match-id="{{ match.id }}" data-round="{{ round_num }}" data-match-idx="{{ loop.index0 }}" data-p1="{{ p1_name|lower }}" data-p2="{{ p2_name|lower }}">
+                <div class="match-card-wrapper {% if not has_vertical %}no-vertical-connector{% endif %} {% if loop.index % 2 == 1 %}match-pair-top{% else %}match-pair-bottom{% endif %}" data-match-id="{{ match.id }}" data-round="{{ round_num }}" data-match-idx="{{ loop.index0 }}" data-match-number="{{ match.match_number }}" data-p1="{{ p1_name|lower }}" data-p2="{{ p2_name|lower }}">
                     <div class="tennis-match {% if match.status == 'completed' %}tennis-match-completed{% endif %} {% if match.participant1 and match.participant2 %}clickable-match{% endif %}" id="match-card-{{ match.id }}" data-match-id="{{ match.id }}" data-p1-id="{{ match.participant1_id or '' }}" data-p2-id="{{ match.participant2_id or '' }}" onmouseenter="highlightPlayerPath(this)" onmouseleave="clearPlayerPath(this)" {% if match.participant1 and match.participant2 %}onclick="openMatchModal({{ match.id }}, '{{ match.status }}', '{{ match.scheduled_time.strftime('%Y-%m-%dT%H:%M') if match.scheduled_time else '' }}', '{{ match.participant1.name|escape if match.participant1 else '' }}', {{ match.participant1_id or 'null' }}, '{{ match.participant2.name|escape if match.participant2 else '' }}', {{ match.participant2_id or 'null' }}, {{ 'true' if current_user and current_user.role in ['admin', 'superadmin'] else 'false' }}, '{{ match.score1 or '' }}', '{{ match.score2 or '' }}', '{{ match.scoring_format or '' }}', '{{ match.num_sets or '' }}', '{{ match.games_per_set or '' }}', '{{ match.points_to_win or '' }}', {{ match.winner_id or 'null' }}, {{ match.match_number or 'null' }})" title="Click to view details"{% endif %}>
                         <div class="tennis-match-header" style="display: flex; align-items: center; justify-content: space-between;">
                             <span>Match #{{ match.match_number }}</span>
@@ -2040,6 +2040,7 @@ function bracketCanvasFitToScreen() {
 }
 
 // Universal SVG Bracket Connectors (Connects across all rounds: R1 -> R2 -> R3 -> R4 -> Final, plus Double Elimination)
+// Guaranteed alignment and seamless cubic bezier curves for large draws (16, 32, 64, 128)
 function renderBracketConnectors() {
     const brackets = document.querySelectorAll('.bracket');
     if (!brackets.length) return;
@@ -2098,100 +2099,86 @@ function renderBracketConnectors() {
                 const nextP1Id = nextCard.getAttribute('data-p1-id') || '';
                 const nextP2Id = nextCard.getAttribute('data-p2-id') || '';
                 const nextMatchId = nextW.getAttribute('data-match-id') || '';
+                const nextMatchNum = parseInt(nextW.getAttribute('data-match-number') || '', 10);
 
-                if (isPairProgression) {
-                    const topW = currWrappers[nextIdx * 2];
-                    const botW = currWrappers[nextIdx * 2 + 1];
+                let topW = null;
+                let botW = null;
 
-                    if (topW && botW) {
-                        const topCard = topW.querySelector('.tennis-match') || topW;
-                        const botCard = botW.querySelector('.tennis-match') || botW;
+                // Deterministic Binary Tree Match Pairing (32 / 64 / 128 draw support)
+                if (!isNaN(nextMatchNum) && nextMatchNum > 0) {
+                    const expectedTopNum = nextMatchNum * 2 - 1;
+                    const expectedBotNum = nextMatchNum * 2;
+                    topW = currRound.querySelector(`.match-card-wrapper[data-match-number="${expectedTopNum}"]`);
+                    botW = currRound.querySelector(`.match-card-wrapper[data-match-number="${expectedBotNum}"]`);
+                }
 
-                        const topRect = topCard.getBoundingClientRect();
-                        const botRect = botCard.getBoundingClientRect();
-
-                        const topX = (topRect.right - bracketRect.left + scrollLeft * zoom) / zoom;
-                        const topY = (topRect.top + topRect.height / 2 - bracketRect.top + scrollTop * zoom) / zoom;
-
-                        const botX = (botRect.right - bracketRect.left + scrollLeft * zoom) / zoom;
-                        const botY = (botRect.top + botRect.height / 2 - bracketRect.top + scrollTop * zoom) / zoom;
-
-                        const maxX = Math.max(topX, botX);
-                        const midX = Math.round((maxX + targetX) / 2);
-
-                        const topP1Id = topCard.getAttribute('data-p1-id') || '';
-                        const topP2Id = topCard.getAttribute('data-p2-id') || '';
-                        const botP1Id = botCard.getAttribute('data-p1-id') || '';
-                        const botP2Id = botCard.getAttribute('data-p2-id') || '';
-
-                        // Top match branch
-                        const pTop = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                        pTop.setAttribute('d', `M ${topX} ${topY} H ${midX} V ${targetY}`);
-                        pTop.setAttribute('class', 'bracket-connector-path');
-                        pTop.setAttribute('data-from-match', topW.getAttribute('data-match-id') || '');
-                        pTop.setAttribute('data-to-match', nextMatchId);
-                        pTop.setAttribute('data-player-ids', `${topP1Id},${topP2Id}`);
-                        svg.appendChild(pTop);
-
-                        // Bottom match branch
-                        const pBot = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                        pBot.setAttribute('d', `M ${botX} ${botY} H ${midX} V ${targetY}`);
-                        pBot.setAttribute('class', 'bracket-connector-path');
-                        pBot.setAttribute('data-from-match', botW.getAttribute('data-match-id') || '');
-                        pBot.setAttribute('data-to-match', nextMatchId);
-                        pBot.setAttribute('data-player-ids', `${botP1Id},${botP2Id}`);
-                        svg.appendChild(pBot);
-
-                        // Trunk to target card
-                        const pTrunk = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                        pTrunk.setAttribute('d', `M ${midX} ${targetY} H ${targetX}`);
-                        pTrunk.setAttribute('class', 'bracket-connector-path');
-                        pTrunk.setAttribute('data-to-match', nextMatchId);
-                        pTrunk.setAttribute('data-player-ids', `${nextP1Id},${nextP2Id}`);
-                        svg.appendChild(pTrunk);
-                        pathsCount += 3;
-                    } else if (topW || botW) {
-                        const singleW = topW || botW;
-                        const srcCard = singleW.querySelector('.tennis-match') || singleW;
-                        const srcRect = srcCard.getBoundingClientRect();
-                        const srcX = (srcRect.right - bracketRect.left + scrollLeft * zoom) / zoom;
-                        const srcY = (srcRect.top + srcRect.height / 2 - bracketRect.top + scrollTop * zoom) / zoom;
-                        const midX = Math.round((srcX + targetX) / 2);
-                        const srcP1Id = srcCard.getAttribute('data-p1-id') || '';
-                        const srcP2Id = srcCard.getAttribute('data-p2-id') || '';
-
-                        const pDirect = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                        pDirect.setAttribute('d', `M ${srcX} ${srcY} H ${midX} V ${targetY} H ${targetX}`);
-                        pDirect.setAttribute('class', 'bracket-connector-path');
-                        pDirect.setAttribute('data-from-match', singleW.getAttribute('data-match-id') || '');
-                        pDirect.setAttribute('data-to-match', nextMatchId);
-                        pDirect.setAttribute('data-player-ids', `${srcP1Id},${srcP2Id}`);
-                        svg.appendChild(pDirect);
-                        pathsCount++;
+                // Fallback to array indices if data-match-number is missing
+                if (!topW && !botW) {
+                    if (isPairProgression) {
+                        topW = currWrappers[nextIdx * 2] || null;
+                        botW = currWrappers[nextIdx * 2 + 1] || null;
+                    } else {
+                        topW = currWrappers[nextIdx] || null;
                     }
-                } else {
-                    // 1-to-1 round (e.g. Losers bracket minor round)
-                    const srcW = currWrappers[nextIdx];
-                    if (srcW) {
-                        const srcCard = srcW.querySelector('.tennis-match') || srcW;
-                        const srcRect = srcCard.getBoundingClientRect();
+                }
 
-                        const srcX = (srcRect.right - bracketRect.left + scrollLeft * zoom) / zoom;
-                        const srcY = (srcRect.top + srcRect.height / 2 - bracketRect.top + scrollTop * zoom) / zoom;
-                        const midX = Math.round((srcX + targetX) / 2);
+                if (topW && botW) {
+                    const topCard = topW.querySelector('.tennis-match') || topW;
+                    const botCard = botW.querySelector('.tennis-match') || botW;
 
-                        const srcP1Id = srcCard.getAttribute('data-p1-id') || '';
-                        const srcP2Id = srcCard.getAttribute('data-p2-id') || '';
+                    const topRect = topCard.getBoundingClientRect();
+                    const botRect = botCard.getBoundingClientRect();
 
-                        const pDirect = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                        pDirect.setAttribute('d', `M ${srcX} ${srcY} H ${midX} V ${targetY} H ${targetX}`);
-                        pDirect.setAttribute('class', 'bracket-connector-path');
-                        pDirect.setAttribute('data-from-match', srcW.getAttribute('data-match-id') || '');
-                        pDirect.setAttribute('data-to-match', nextMatchId);
-                        pDirect.setAttribute('data-player-ids', `${srcP1Id},${srcP2Id}`);
-                        svg.appendChild(pDirect);
-                        pathsCount++;
-                    }
+                    const topX = (topRect.right - bracketRect.left + scrollLeft * zoom) / zoom;
+                    const topY = (topRect.top + topRect.height / 2 - bracketRect.top + scrollTop * zoom) / zoom;
+
+                    const botX = (botRect.right - bracketRect.left + scrollLeft * zoom) / zoom;
+                    const botY = (botRect.top + botRect.height / 2 - bracketRect.top + scrollTop * zoom) / zoom;
+
+                    const topP1Id = topCard.getAttribute('data-p1-id') || '';
+                    const topP2Id = topCard.getAttribute('data-p2-id') || '';
+                    const botP1Id = botCard.getAttribute('data-p1-id') || '';
+                    const botP2Id = botCard.getAttribute('data-p2-id') || '';
+
+                    // Midpoint horizontal guide for bezier curvature
+                    const cpX = Math.round(topX + Math.max(16, (targetX - topX) * 0.5));
+
+                    // Top match branch (Smooth Cubic Bezier curve)
+                    const pTop = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    pTop.setAttribute('d', `M ${topX} ${topY} C ${cpX} ${topY}, ${cpX} ${targetY}, ${targetX} ${targetY}`);
+                    pTop.setAttribute('class', 'bracket-connector-path');
+                    pTop.setAttribute('data-from-match', topW.getAttribute('data-match-id') || '');
+                    pTop.setAttribute('data-to-match', nextMatchId);
+                    pTop.setAttribute('data-player-ids', `${topP1Id},${topP2Id}`);
+                    svg.appendChild(pTop);
+
+                    // Bottom match branch (Smooth Cubic Bezier curve)
+                    const pBot = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    pBot.setAttribute('d', `M ${botX} ${botY} C ${cpX} ${botY}, ${cpX} ${targetY}, ${targetX} ${targetY}`);
+                    pBot.setAttribute('class', 'bracket-connector-path');
+                    pBot.setAttribute('data-from-match', botW.getAttribute('data-match-id') || '');
+                    pBot.setAttribute('data-to-match', nextMatchId);
+                    pBot.setAttribute('data-player-ids', `${botP1Id},${botP2Id}`);
+                    svg.appendChild(pBot);
+                    pathsCount += 2;
+                } else if (topW || botW) {
+                    const singleW = topW || botW;
+                    const srcCard = singleW.querySelector('.tennis-match') || singleW;
+                    const srcRect = srcCard.getBoundingClientRect();
+                    const srcX = (srcRect.right - bracketRect.left + scrollLeft * zoom) / zoom;
+                    const srcY = (srcRect.top + srcRect.height / 2 - bracketRect.top + scrollTop * zoom) / zoom;
+                    const cpX = Math.round(srcX + Math.max(16, (targetX - srcX) * 0.5));
+                    const srcP1Id = srcCard.getAttribute('data-p1-id') || '';
+                    const srcP2Id = srcCard.getAttribute('data-p2-id') || '';
+
+                    const pDirect = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    pDirect.setAttribute('d', `M ${srcX} ${srcY} C ${cpX} ${srcY}, ${cpX} ${targetY}, ${targetX} ${targetY}`);
+                    pDirect.setAttribute('class', 'bracket-connector-path');
+                    pDirect.setAttribute('data-from-match', singleW.getAttribute('data-match-id') || '');
+                    pDirect.setAttribute('data-to-match', nextMatchId);
+                    pDirect.setAttribute('data-player-ids', `${srcP1Id},${srcP2Id}`);
+                    svg.appendChild(pDirect);
+                    pathsCount++;
                 }
             });
         }
@@ -2526,6 +2513,19 @@ if (window.IntersectionObserver) {
     }, { rootMargin: '300px' });
     const vp = document.getElementById('bracketViewport');
     if (vp) bracketViewObs.observe(vp);
+}
+
+// Automatically update connectors if bracket or canvas layout changes (fonts, compact toggle, 32/64/128 draw expansion)
+if (window.ResizeObserver) {
+    const bracketTree = document.getElementById('bracketMainTree') || document.querySelector('.bracket');
+    if (bracketTree) {
+        let roTimer = null;
+        const bracketResizeObs = new ResizeObserver(() => {
+            clearTimeout(roTimer);
+            roTimer = setTimeout(renderBracketConnectors, 40);
+        });
+        bracketResizeObs.observe(bracketTree);
+    }
 }
 
 function handleCategorySectionNav(sectionId, event) {

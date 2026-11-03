@@ -1879,6 +1879,13 @@ select option {
 /* ===== MOBILE MENU & RESPONSIVE LAYOUTS ===== */
 @media (max-width: 900px) {
     /* Navbar adjustments */
+    .navbar {
+        position: sticky;
+        top: 0;
+        z-index: 1050 !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
     .navbar .container {
         flex-wrap: nowrap;
         align-items: center;
@@ -1906,14 +1913,18 @@ select option {
         border-color: var(--accent-primary);
     }
 
+    body.mobile-nav-open .navbar {
+        z-index: 1050 !important;
+    }
+
     /* Mobile Drawer Backdrop */
     .mobile-nav-backdrop {
         display: block;
         position: fixed;
         inset: 0;
-        background: rgba(0, 0, 0, 0.65);
-        backdrop-filter: blur(4px);
-        -webkit-backdrop-filter: blur(4px);
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
         z-index: 1040;
         opacity: 0;
         pointer-events: none;
@@ -1934,10 +1945,13 @@ select option {
         width: 320px;
         max-width: 86vw;
         height: 100dvh;
-        background: var(--bg-card);
+        background-color: var(--bg-card) !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        filter: none !important;
         border-left: 1px solid var(--border-color);
-        box-shadow: -8px 0 32px rgba(0, 0, 0, 0.5);
-        z-index: 1050;
+        box-shadow: -8px 0 32px rgba(0, 0, 0, 0.6);
+        z-index: 1055;
         transform: translateX(100%);
         transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
         overflow-y: auto;
@@ -1999,9 +2013,9 @@ select option {
         align-items: center;
         padding: 0.85rem 1rem;
         border-radius: var(--radius-md);
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--text-secondary);
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--text-primary);
         min-height: 48px;
         transition: all 0.15s ease;
     }
@@ -2727,6 +2741,15 @@ body.pdf-export-mode h3 {
     padding: 0.8rem 1rem !important;
 }
 
+select.form-input,
+select {
+    padding: 0.45rem 0.85rem !important;
+    line-height: 1.4 !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    box-sizing: border-box !important;
+}
+
 .btn {
     padding: 0.75rem 1.5rem !important;
 }
@@ -3213,5 +3236,25 @@ html, body {
         box-shadow: 2px 0 6px rgba(0, 0, 0, 0.2);
     }
 }
+
+/* 6. Mobile Filter Controls & Select Inputs */
+@media (max-width: 640px) {
+    .filters form {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 0.85rem !important;
+        align-items: stretch !important;
+    }
+    .filters .form-group {
+        width: 100% !important;
+        min-width: 100% !important;
+        margin-bottom: 0 !important;
+    }
+    .filters .btn {
+        width: 100% !important;
+        margin-top: 0.25rem !important;
+    }
+}
+
 
 
