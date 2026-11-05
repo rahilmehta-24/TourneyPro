@@ -98,6 +98,8 @@
                         {{ pending_registrations|length }}
                     </span>
                     {% endif %}
+                <button type="button" id="tabBtnStaff" onclick="switchDashboardTab('staff')" style="padding: 0.5rem 1.1rem; font-size: 0.85rem; font-weight: 600; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-secondary); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 0.35rem;">
+                    🛡️ Staff &amp; Umpires ({{ staff_members|length if staff_members else 0 }})
                 </button>
                 <button type="button" id="tabBtnSettings" onclick="switchDashboardTab('settings')" style="padding: 0.5rem 1.1rem; font-size: 0.85rem; font-weight: 600; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-secondary); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 0.35rem;">
                     ⚙️ Settings &amp; Info
@@ -461,7 +463,153 @@
                 </div>
             </div>
 
-            <!-- TAB 4: SETTINGS & DANGER ZONE -->
+            <!-- TAB 4: STAFF & UMPIRES (RBAC) -->
+            <div id="tabContentStaff" style="display: none;">
+                <div style="display: grid; gap: 1.25rem;">
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.25rem;">
+                        <!-- Appoint Staff Member Card -->
+                        <div class="card" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem;">
+                            <h3 style="margin: 0 0 0.5rem; font-size: 1.05rem; color: var(--text-primary); font-weight: 700;">
+                                👤 Appoint Staff Member
+                            </h3>
+                            <p style="margin: 0 0 1rem; color: var(--text-secondary); font-size: 0.8rem;">
+                                Grant tournament management or scoring privileges to a registered user.
+                            </p>
+                            <form method="POST" action="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}">
+                                <input type="hidden" name="action" value="add_staff">
+                                <div class="form-group" style="margin-bottom: 0.85rem;">
+                                    <label class="form-label" style="font-size: 0.8rem;">User Email or Username</label>
+                                    <input type="text" name="staff_identifier" class="form-input" placeholder="e.g. umpire_rahul or rahul@gmail.com" required style="width: 100%; font-size: 0.85rem;">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0.85rem;">
+                                    <label class="form-label" style="font-size: 0.8rem;">Staff Role</label>
+                                    <select name="role" class="form-input" style="width: 100%; font-size: 0.85rem;">
+                                        <option value="official">Official / Umpire (Score matches & court view)</option>
+                                        <option value="scorer">Scorer (Enter scores only)</option>
+                                        <option value="manager">Manager (Edit brackets, courts & schedules)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 1rem;">
+                                    <label class="form-label" style="font-size: 0.8rem;">Assigned Court (Optional)</label>
+                                    <input type="text" name="assigned_court" class="form-input" placeholder="e.g. Court 1 (Leave blank for all courts)" style="width: 100%; font-size: 0.85rem;">
+                                </div>
+                                <button type="submit" class="btn btn-primary" style="padding: 0.45rem 1rem; font-size: 0.85rem; font-weight: 600; width: 100%;">
+                                    ➕ Appoint Staff Member
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Generate Court PIN Card -->
+                        <div class="card" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem;">
+                            <h3 style="margin: 0 0 0.5rem; font-size: 1.05rem; color: var(--text-primary); font-weight: 700;">
+                                ⚡ Generate Court Access PIN
+                            </h3>
+                            <p style="margin: 0 0 1rem; color: var(--text-secondary); font-size: 0.8rem;">
+                                Quick login code for tablet or mobile umpires without creating an account.
+                            </p>
+                            <form method="POST" action="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}">
+                                <input type="hidden" name="action" value="generate_court_pin">
+                                <div class="form-group" style="margin-bottom: 0.85rem;">
+                                    <label class="form-label" style="font-size: 0.8rem;">Assigned Court</label>
+                                    <input type="text" name="assigned_court" class="form-input" placeholder="e.g. Court 1 or Center Court" style="width: 100%; font-size: 0.85rem;">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0.85rem;">
+                                    <label class="form-label" style="font-size: 0.8rem;">Role</label>
+                                    <select name="role" class="form-input" style="width: 100%; font-size: 0.85rem;">
+                                        <option value="official">Official / Umpire</option>
+                                        <option value="scorer">Scorer</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 1rem;">
+                                    <label class="form-label" style="font-size: 0.8rem;">Valid Duration</label>
+                                    <select name="hours_valid" class="form-input" style="width: 100%; font-size: 0.85rem;">
+                                        <option value="12">12 Hours</option>
+                                        <option value="24" selected>24 Hours (1 Day)</option>
+                                        <option value="72">72 Hours (3 Days)</option>
+                                        <option value="168">7 Days (1 Week)</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-secondary" style="padding: 0.45rem 1rem; font-size: 0.85rem; font-weight: 600; width: 100%; border-color: var(--accent-primary); color: var(--accent-primary);">
+                                    ⚡ Generate 6-Digit PIN
+                                </button>
+                            </form>
+                            <div style="margin-top: 0.85rem; font-size: 0.75rem; color: var(--text-muted); background: var(--bg-secondary); padding: 0.5rem; border-radius: var(--radius-sm);">
+                                📲 Umpires enter PIN at: <a href="{{ url_for('auth.court_score_login', slug=tournament.url_slug) }}" target="_blank" style="color: var(--accent-primary); font-family: monospace;">/t/{{ tournament.url_slug }}/score-login</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Active Staff & PINs List -->
+                    <div class="card" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem;">
+                        <h3 style="margin: 0 0 1rem; font-size: 1.1rem; color: var(--text-primary); font-weight: 700; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+                            🛡️ Active Tournament Staff &amp; Court PINs ({{ staff_members|length if staff_members else 0 }})
+                        </h3>
+                        {% if staff_members %}
+                        <div style="overflow-x: auto;">
+                            <table class="table" style="width: 100%; font-size: 0.85rem; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="border-bottom: 1px solid var(--border-color); text-align: left; color: var(--text-muted); font-size: 0.78rem;">
+                                        <th style="padding: 0.5rem;">Type / User</th>
+                                        <th style="padding: 0.5rem;">Role</th>
+                                        <th style="padding: 0.5rem;">Assigned Court</th>
+                                        <th style="padding: 0.5rem;">PIN / Expiry</th>
+                                        <th style="padding: 0.5rem; text-align: right;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for staff in staff_members %}
+                                    <tr style="border-bottom: 1px solid var(--border-color);">
+                                        <td style="padding: 0.65rem 0.5rem;">
+                                            {% if staff.user %}
+                                            <strong>{{ staff.user.username }}</strong>
+                                            <div style="font-size: 0.75rem; color: var(--text-muted);">{{ staff.user.email }}</div>
+                                            {% else %}
+                                            <span style="font-weight: 600; color: var(--accent-primary);">📱 Court PIN Umpire</span>
+                                            {% endif %}
+                                        </td>
+                                        <td style="padding: 0.65rem 0.5rem;">
+                                            <span class="badge" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.75rem; text-transform: uppercase;">
+                                                {{ staff.role }}
+                                            </span>
+                                        </td>
+                                        <td style="padding: 0.65rem 0.5rem;">
+                                            {{ staff.assigned_court or 'All Courts' }}
+                                        </td>
+                                        <td style="padding: 0.65rem 0.5rem; font-family: monospace;">
+                                            {% if staff.access_pin %}
+                                            <strong style="color: #10b981; font-size: 1rem; letter-spacing: 0.1em;">{{ staff.access_pin }}</strong>
+                                            {% if staff.pin_expires_at %}
+                                            <div style="font-size: 0.72rem; color: var(--text-muted);">Exp: {{ staff.pin_expires_at.strftime('%b %d, %H:%M') }}</div>
+                                            {% endif %}
+                                            {% else %}
+                                            <span style="color: var(--text-muted);">Account login</span>
+                                            {% endif %}
+                                        </td>
+                                        <td style="padding: 0.65rem 0.5rem; text-align: right;">
+                                            <form method="POST" action="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}" style="display: inline;" onsubmit="return confirm('Revoke this staff member / PIN access?');">
+                                                <input type="hidden" name="action" value="remove_staff">
+                                                <input type="hidden" name="staff_id" value="{{ staff.id }}">
+                                                <button type="submit" class="btn btn-sm" style="color: #ef4444; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 0.25rem 0.6rem; border-radius: 4px; font-size: 0.78rem;">
+                                                    Revoke
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div style="text-align: center; padding: 1.5rem; color: var(--text-muted); font-size: 0.85rem;">
+                            No staff or court umpires appointed yet. Use the forms above to add officials or generate court PINs.
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: SETTINGS & DANGER ZONE -->
             <div id="tabContentSettings" style="display: none;">
                 <div style="display: grid; gap: 1.25rem;">
                     
@@ -950,7 +1098,7 @@ function copyShareLink(url, btn) {
 })();
 
 function switchDashboardTab(tabName) {
-    const tabs = ['categories', 'schedule', 'players', 'settings'];
+    const tabs = ['categories', 'schedule', 'players', 'staff', 'settings'];
     tabs.forEach(t => {
         const cap = t.charAt(0).toUpperCase() + t.slice(1);
         const content = document.getElementById('tabContent' + cap);
@@ -979,7 +1127,7 @@ function switchDashboardTab(tabName) {
 
 window.addEventListener('hashchange', function() {
     const hash = window.location.hash.replace('#', '');
-    if (['categories', 'schedule', 'players', 'settings'].includes(hash)) {
+    if (['categories', 'schedule', 'players', 'staff', 'settings'].includes(hash)) {
         switchDashboardTab(hash);
     }
 });

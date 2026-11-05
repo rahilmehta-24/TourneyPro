@@ -23,6 +23,11 @@
 | **Global Player Registry** | ✅ Production | `app/web/controllers/player.py` | `Player`, `PlayerTournamentRecord` |
 | **Academy Portals** | ✅ Production | `app/web/controllers/academy.py` | `Academy`, `AcademyMember`, `AcademyAnnouncement` |
 | **Vector PDF Export Suite** | ✅ Production | `app/services/pdf/` | `DrawExportAdapter`, `DrawPdfService` |
+| **Role-Based Access Control (RBAC)** | ✅ Production | `app/web/controllers/auth.py` | `User`, `TournamentStaff`, `Match` |
+| **Tournament Staff & Court PIN Mode** | ✅ Production | `app/web/controllers/tournament.py`, `auth.py` | `TournamentStaff`, `Tournament` |
+| **Draw Publication State Machine** | ✅ Production | `app/web/controllers/category.py`, `export.py` | `Category` |
+| **Anti-Conflict Scoring Guard** | ✅ Production | `app/web/controllers/auth.py`, `api/matches.py` | `Match`, `Player`, `User` |
+| **Optimistic Concurrency Control** | ✅ Production | `app/web/controllers/category.py`, `tournament.py` | `Match` (`lock_version`) |
 | **Live Score Polling Feed** | ✅ Production | `app/api/live.py` | `Match`, `Tournament` |
 | **Mobile Web App & Touch Engine** | ✅ Production | `app/web/static/css/style.css`, `base.html` | All Views / Presentation |
 | **WebSocket Score Push** | ⚡ Phase 2 Active | `app/services/live_stream/` | `Match` |

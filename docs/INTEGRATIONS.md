@@ -3,7 +3,7 @@
 **Document Status:** Approved  
 **Source of Truth:** Inherits from [`MCP.md`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/MCP.md), [`ARCHITECTURE.md`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/ARCHITECTURE.md), and [`FEATURES.md`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/FEATURES.md)  
 **Infrastructure Target:** Cloud Native (Vercel Serverless + Supabase Managed PostgreSQL)  
-**Last Updated:** October 2026  
+**Last Updated:** November 2026  
 
 ---
 
@@ -126,6 +126,18 @@ def make_pdf_response(pdf_bytes: bytes, filename: str, etag: Optional[str] = Non
     response.headers["Cache-Control"] = "private, max-age=120, must-revalidate"
     return response
 ```
+
+### 4.3 Headless Chrome Document Pipeline
+For multi-page illustrated documents such as [`TourneyPro_User_Manual.pdf`](TourneyPro_User_Manual.pdf), TourneyPro uses a high-fidelity Chrome Headless compilation pipeline (`scripts/generate_user_manual.py`):
+```bash
+/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
+  --headless=new \
+  --disable-gpu \
+  --no-pdf-header-footer \
+  --print-to-pdf="docs/TourneyPro_User_Manual.pdf" \
+  "docs/USER_MANUAL.html"
+```
+This renders modern CSS3 flexbox, glassmorphic badges, page-break rules (`page-break-after: always`), and base64 embedded UI screenshots with print perfection.
 
 ---
 

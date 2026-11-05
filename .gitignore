@@ -67,4 +67,6 @@ Thumbs.db
 *.md
 !docs/
 !docs/*.md
+!docs/images/
+!docs/images/*.png
 .spikes/

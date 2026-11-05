@@ -34,8 +34,8 @@
             <button onclick="copyShareLink('{{ url_for('tournament.view_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">🔗 Share Link</button>
             {% endif %}
             <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug) }}" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;" id="btnOrderOfPlayTop" data-turbo="false">📋 Order of Play</a>
-            {% if current_user and current_user.role in ['admin', 'superadmin'] and tournament.categories %}
-            <a href="{{ url_for('export.export_participants_pdf', slug=tournament.url_slug) }}" class="btn btn-secondary" data-turbo="false" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;" id="btnExportTournament" title="Export Participants Roster PDF">🖨️ Export PDF</a>
+            {% if current_user and (current_user.role == 'superadmin' or tournament.user_id == current_user.id) and tournament.categories %}
+            <a href="{{ url_for('export.export_participants_pdf', slug=tournament.url_slug) }}" class="btn btn-secondary" data-turbo="false" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;" id="btnExportTournament" title="Export Participants Roster PDF (Organizer Desk Copy)">🖨️ Desk Roster PDF</a>
             {% endif %}
         </div>
     </div>

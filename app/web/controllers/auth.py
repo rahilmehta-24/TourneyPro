@@ -1,7 +1,8 @@
 import os
+from datetime import datetime, timedelta
 from functools import wraps
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, g, abort
-from app.domain.models import db, User
+from app.domain.models import db, User, Tournament, TournamentStaff, AcademyMember, Player, Participant, AuditLog
 from app.services.utils.validation import (
     validate_name, validate_username, validate_email, validate_password,
     validate_dob, validate_mobile
@@ -42,6 +43,148 @@ def check_tournament_ownership(tournament):
         abort(401)
     if user.role != 'superadmin' and tournament.user_id != user.id:
         abort(403)
+
+def check_tournament_access(tournament, min_role="scorer"):
+    """
+    Verifies if the current user or active PIN session has permission to access/score
+    matches in the tournament.
+    Role hierarchy:
+      - 'manager': Superadmin, Tournament Owner, or TournamentStaff(manager)
+      - 'official': Superadmin, Tournament Owner, TournamentStaff(manager/official), or valid court PIN
+      - 'scorer': Superadmin, Tournament Owner, TournamentStaff(manager/official/scorer), or valid court PIN
+    """
+    user = get_current_user()
+
+    # 1. Superadmin has universal access
+    if user and user.role == "superadmin":
+        return True
+
+    # 2. Tournament Owner has full tournament access
+    if user and tournament.user_id == user.id:
+        return True
+
+    role_weights = {"manager": 3, "official": 2, "scorer": 1}
+    min_weight = role_weights.get(min_role, 1)
+
+    # 3. Check TournamentStaff table for logged-in user
+    if user:
+        staff = TournamentStaff.query.filter_by(
+            tournament_id=tournament.id,
+            user_id=user.id
+        ).first()
+        if staff:
+            staff_weight = role_weights.get(staff.role, 0)
+            if staff_weight >= min_weight:
+                return True
+
+    # 4. Check temporary Court PIN session
+    pin_session_key = f"court_pin_staff_{tournament.id}"
+    if pin_session_key in session:
+        pin_data = session[pin_session_key]
+        staff = TournamentStaff.query.get(pin_data.get("staff_id"))
+        if staff and staff.tournament_id == tournament.id:
+            if not staff.pin_expires_at or staff.pin_expires_at > datetime.utcnow():
+                staff_weight = role_weights.get(staff.role, 0)
+                if staff_weight >= min_weight:
+                    return True
+            else:
+                session.pop(pin_session_key, None)
+
+    # Deny access
+    if not user and pin_session_key not in session:
+        abort(401)
+    abort(403)
+
+def check_scoring_conflict_of_interest(match, user):
+    """
+    Verify that the user recording scores does not have an active conflict of interest
+    (i.e. is not a playing participant in this match or child rubber).
+    """
+    if not user:
+        return  # Court PIN session umpire is not a player
+
+    player_user_ids = set()
+
+    def add_participant_user_ids(part):
+        if not part:
+            return
+        if getattr(part, 'player', None) and part.player.user_id:
+            player_user_ids.add(part.player.user_id)
+        if getattr(part, 'player2', None) and part.player2.user_id:
+            player_user_ids.add(part.player2.user_id)
+        if hasattr(part, 'team_members') and part.team_members:
+            for tm in part.team_members:
+                if getattr(tm, 'player', None) and tm.player.user_id:
+                    player_user_ids.add(tm.player.user_id)
+
+    add_participant_user_ids(match.participant1)
+    add_participant_user_ids(match.participant2)
+
+    for pid_attr in ('p1_player1_id', 'p1_player2_id', 'p2_player1_id', 'p2_player2_id'):
+        pid = getattr(match, pid_attr, None)
+        if pid:
+            p = Player.query.get(pid)
+            if p and p.user_id:
+                player_user_ids.add(p.user_id)
+
+    if user.id in player_user_ids:
+        raise PermissionError(
+            "Conflict of interest: You are an active participant in this match. "
+            "Scores must be entered by an impartial official, court umpire, or tournament organizer."
+        )
+
+def check_academy_access(academy, require_admin=False):
+    """Enforces multi-tenant authorization isolation for Academy resources."""
+    user = get_current_user()
+    if not user:
+        abort(401)
+    if user.role == "superadmin":
+        return True
+    if academy.owner_id == user.id:
+        return True
+
+    membership = AcademyMember.query.filter_by(academy_id=academy.id, user_id=user.id).first()
+    if not membership:
+        abort(403)
+    if require_admin and membership.role not in ("admin", "coach"):
+        abort(403)
+    return True
+
+def check_fixture_lineup_access(fixture, user):
+    """
+    Verifies if user is authorized to submit or alter a fixture lineup.
+    - Superadmin, Tournament Owner, or Manager/Official: always permitted.
+    - Team Captain: permitted for their own team only, subject to 15-min lock window.
+    """
+    if not user:
+        abort(401)
+    if user.role == "superadmin" or fixture.tournament.user_id == user.id:
+        return True
+
+    staff = TournamentStaff.query.filter_by(tournament_id=fixture.tournament_id, user_id=user.id).first()
+    if staff and staff.role in ("manager", "official"):
+        return True
+
+    def is_team_captain(team, u):
+        if not team or not hasattr(team, 'team_members'):
+            return False
+        for m in team.team_members:
+            if m.player and m.player.user_id == u.id and m.role in ('captain', 'vice_captain'):
+                return True
+        return False
+
+    is_cap1 = is_team_captain(fixture.participant1, user)
+    is_cap2 = is_team_captain(fixture.participant2, user)
+
+    if not (is_cap1 or is_cap2):
+        abort(403)
+
+    if fixture.scheduled_time:
+        cutoff_time = fixture.scheduled_time - timedelta(minutes=15)
+        if datetime.utcnow() > cutoff_time:
+            raise PermissionError("Lineup nominations are locked within 15 minutes of match scheduled start time.")
+
+    return True
 
 def check_player_ownership(player):
     user = get_current_user()
@@ -337,3 +480,50 @@ def view_audit_logs():
     # Paginate descending so newest are first
     pagination = AuditLog.query.order_by(AuditLog.created_at.desc()).paginate(page=page, per_page=50, error_out=False)
     return render_template('auth/audit_logs.html', pagination=pagination)
+
+
+@auth_bp.route('/t/<slug>/score-login', methods=['GET', 'POST'])
+@auth_bp.route('/tournaments/<slug>/score-login', methods=['GET', 'POST'])
+def court_score_login(slug):
+    """Allow court umpires/officials to sign in using a 6-digit court access PIN."""
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+
+    if request.method == 'POST':
+        pin = request.form.get('pin', '').strip()
+        if not pin or len(pin) != 6 or not pin.isdigit():
+            flash('Please enter a valid 6-digit PIN.', 'error')
+            return render_template('auth/score_login.html', tournament=tournament)
+
+        staff = TournamentStaff.query.filter_by(
+            tournament_id=tournament.id,
+            access_pin=pin
+        ).first()
+
+        if not staff:
+            flash('Invalid access PIN for this tournament.', 'error')
+            return render_template('auth/score_login.html', tournament=tournament)
+
+        if staff.pin_expires_at and staff.pin_expires_at < datetime.utcnow():
+            flash('This court access PIN has expired. Please request a new PIN from the tournament organizer.', 'error')
+            return render_template('auth/score_login.html', tournament=tournament)
+
+        session[f"court_pin_staff_{tournament.id}"] = {
+            "staff_id": staff.id,
+            "court": staff.assigned_court,
+            "role": staff.role
+        }
+        court_label = f" for {staff.assigned_court}" if staff.assigned_court else ""
+        flash(f'Court Scoring Mode activated{court_label}.', 'success')
+        return redirect(url_for('tournament.order_of_play', slug=tournament.url_slug))
+
+    return render_template('auth/score_login.html', tournament=tournament)
+
+
+@auth_bp.route('/t/<slug>/score-logout')
+@auth_bp.route('/tournaments/<slug>/score-logout')
+def court_score_logout(slug):
+    """End court scoring session."""
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    session.pop(f"court_pin_staff_{tournament.id}", None)
+    flash('Exited Court Scoring Mode.', 'info')
+    return redirect(url_for('tournament.view_tournament', slug=tournament.url_slug))

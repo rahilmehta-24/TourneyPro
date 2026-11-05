@@ -120,7 +120,7 @@ ruff check . --fix
 ```
 
 ### 6.2 Running Automated Test Suites
-Run the 72-test test suite to verify system integrity:
+Run the 82-test test suite to verify system integrity:
 ```bash
 python -m unittest discover tests -v
 ```

@@ -4,7 +4,7 @@
 [![Framework](https://img.shields.io/badge/Framework-Flask%203.1-black.svg)](https://flask.palletsprojects.com/)
 [![ORM](https://img.shields.io/badge/ORM-SQLAlchemy%202.0-red.svg)](https://www.sqlalchemy.org/)
 [![Database](https://img.shields.io/badge/Database-SQLite%20%7C%20PostgreSQL-green.svg)](https://supabase.com/)
-[![Tests](https://img.shields.io/badge/Tests-72%20Passing-brightgreen.svg)](../tests/)
+[![Tests](https://img.shields.io/badge/Tests-82%20Passing-brightgreen.svg)](../tests/)
 [![Code Style](https://img.shields.io/badge/Code%20Style-Ruff-purple.svg)](https://docs.astral.sh/ruff/)
 
 **TourneyPro** is an enterprise-grade, full-lifecycle tournament management web platform engineered for racquet sports (Lawn Tennis, Pickleball, Badminton, Padel, Table Tennis) and competitive esports. It replaces paper draw sheets, complex spreadsheets, and manual WhatsApp group coordination with an automated, mathematical tournament operating system.
@@ -20,8 +20,9 @@ TourneyPro features an exhaustive, interconnected documentation suite. Every doc
 | **[`PRD.md`](PRD.md)** | **Product Requirements Document:** Target personas, tournament formats, scoring modes, court scheduling constraints, and operational goals. |
 | **[`DESIGN.md`](DESIGN.md)** | **System & UX/UI Design:** Visual design system, dark-mode tokens, interactive SVG bracket connectors, and component specifications. |
 | **[`ARCHITECTURE.md`](ARCHITECTURE.md)** | **Technical Architecture:** Application factory pattern, blueprint layout, service layer, and data flow sequence diagrams. |
-| **[`DATABASE.md`](DATABASE.md)** | **Database Schema & Relational Models:** Comprehensive breakdown of all 17 tables, columns, foreign keys, and migration rules. |
+| **[`DATABASE.md`](DATABASE.md)** | **Database Schema & Relational Models:** Comprehensive breakdown of all 18 tables, columns, foreign keys, and migration rules. |
 | **[`API.md`](API.md)** | **RESTful API Specification:** JSON contracts, JWT bearer token authentication, request/response models, and live score polling. |
+| **[`USER_MANUAL.md`](USER_MANUAL.md)** | **End-User Operational Manual:** Non-technical web guide with visual screenshots for Organizers, Umpires, Captains, and Players. Available as [PDF Download](TourneyPro_User_Manual.pdf). |
 | **[`AGENTS.md`](AGENTS.md)** | **AI & Developer Agent Operating Manual:** Rules of engagement, coding guidelines, security guardrails, and automated checks for AI agents. |
 | **[`PLAN.md`](PLAN.md)** | **Phased Delivery Roadmap:** Milestones, completed Phase 1 capabilities, active Phase 2 items, and upcoming Phase 3 features. |
 | **[`SETUP.md`](SETUP.md)** | **Installation & Environment Guide:** Local macOS/Linux/Windows setup, virtual environments, environment variables, and initial database bootstrapping. |
@@ -29,7 +30,7 @@ TourneyPro features an exhaustive, interconnected documentation suite. Every doc
 | **[`AUTH.md`](AUTH.md)** | **Authentication & Security Architecture:** Session cookies, CSRF defense, JWT API tokens, RBAC roles, and BOLA/IDOR protection. |
 | **[`MCP.md`](MCP.md)** | **Model Context Protocol Specification:** MCP tools, resources, and server integration for AI developer agents. |
 | **[`INTEGRATIONS.md`](INTEGRATIONS.md)** | **External Services & Infrastructure:** Supabase PostgreSQL, Vercel serverless, xhtml2pdf vector generation, and future Stripe/Twilio integrations. |
-| **[`TESTING.md`](TESTING.md)** | **Quality Assurance & Testing Strategy:** 72-test automated suite inventory, SQLite test fixtures, and GitHub Actions CI gates. |
+| **[`TESTING.md`](TESTING.md)** | **Quality Assurance & Testing Strategy:** 82-test automated suite inventory, SQLite test fixtures, and GitHub Actions CI gates. |
 | **[`DEBUGGING.md`](DEBUGGING.md)** | **Troubleshooting & Diagnostics Playbook:** Runbooks for database connection pooling, Alembic batch desync, and court scheduling conflicts. |
 
 ---
@@ -63,6 +64,14 @@ TourneyPro features an exhaustive, interconnected documentation suite. Every doc
 * **1-Tap Mobile UPI Intent:** Direct `upi://pay` deep linking into installed UPI apps (Google Pay, PhonePe, Paytm) and 1-tap clipboard copying for frictionless on-device registrations.
 * **Thumb Navigation & Safe Areas:** Off-canvas slide-out navigation drawer with backdrop blur, sticky bottom navigation quick bar, and safe-area notch compensation (`viewport-fit=cover`).
 
+### 6. Enterprise RBAC & Delegated Tournament Operations
+* **Role-Based Access Control (RBAC):** Hierarchical permission model distinguishing Platform Superadmins, Tournament Owners, Tournament Desk Managers, Match Officials / Umpires, Quick Court Scorekeepers, and Team Captains.
+* **Staff Delegation:** Tournament organizers can appoint registered users as staff (`owner`, `tournament_admin`, `desk`, `umpire`) with granular permissions across courts, check-ins, and match scoring.
+* **Court PIN Fast-Entry Mode:** Dedicated court PIN tablets allow on-court scorers to record live match games instantly without requiring personal user accounts.
+* **Conflict of Interest Guard:** Active tournament competitors are strictly blocked from officiating or submitting scores for their own matches.
+* **Optimistic Concurrency Control:** Enforces `lock_version` validation on match score submissions, preventing concurrent referee update overwrites with HTTP 409 Conflict handling.
+* **Draft vs. Published Draw Control:** Organizers can generate, preview, and seed brackets in draft mode; brackets remain hidden from public viewers and PDF downloads until explicitly published.
+
 ---
 
 ## 🛠️ Technology Stack
@@ -75,7 +84,7 @@ TourneyPro features an exhaustive, interconnected documentation suite. Every doc
 * **API & Security:** Flask-JWT-Extended 4.7.4, Flask-WTF 1.3.0, WTForms 3.2.2
 * **Frontend:** Vanilla HTML5, CSS3 (Design Tokens & Glassmorphism), Vanilla JavaScript
 * **PDF Engine:** xhtml2pdf 0.2.17, ReportLab 4.5.1
-* **Linter & Tests:** Ruff 0.15+, Python `unittest` (72 automated tests)
+* **Linter & Tests:** Ruff 0.15+, Python `unittest` (82 automated tests)
 
 ---
 
@@ -146,7 +155,7 @@ TourneyPro/
 ├── instance/                    # Local SQLite database files
 ├── migrations/                  # Alembic database migration revisions
 ├── scripts/                     # Operational scripts (sync_db_schema.py, init_uat_db.py)
-├── tests/                       # 72 automated unit and integration tests
+├── tests/                       # 82 automated unit and integration tests
 ├── config.py                    # Application configuration and connection pooling
 ├── requirements.txt             # Python dependencies
 ├── ruff.toml                    # Ruff linter rules and formatting configuration
