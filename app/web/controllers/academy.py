@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
+from flask import Blueprint, render_template, redirect, url_for, flash, request
 import csv
 from app import db
 from app.domain.models import Academy, AcademyMember, AcademyAnnouncement, Tournament, User

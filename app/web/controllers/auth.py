@@ -2,7 +2,7 @@ import os
 from datetime import datetime, timedelta
 from functools import wraps
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, g, abort
-from app.domain.models import db, User, Tournament, TournamentStaff, AcademyMember, Player, Participant, AuditLog
+from app.domain.models import db, User, Tournament, TournamentStaff, AcademyMember, Player, AuditLog
 from app.services.utils.validation import (
     validate_name, validate_username, validate_email, validate_password,
     validate_dob, validate_mobile
