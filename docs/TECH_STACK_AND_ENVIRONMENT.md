@@ -1,7 +1,7 @@
 # TourneyPro — Technology Stack, Coding Environment & Branch Audit
 
-**Document Version:** 1.0
-**Generated:** October 2026
+**Document Version:** 1.1
+**Generated:** November 2026
 **Repository:** `TourneyPro`
 **Active Python Runtime:** Python 3.12.8
 
@@ -23,12 +23,12 @@ This document details the current **technology stack**, the **local and CI/CD co
 * **Core Framework:** [Flask](https://flask.palletsprojects.com/) (v3.1.3) built with [Werkzeug](https://werkzeug.palletsprojects.com/) (v3.1.8).
 * **Pattern:** Application Factory Pattern (`create_app` in [`app/__init__.py`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/app/__init__.py)) with modular Flask Blueprints:
   * `main_bp` ([`app/web/controllers/main.py`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/app/web/controllers/main.py)): Homepage and public entry points.
-  * `tournament_bp` ([`app/web/controllers/tournament.py`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/app/web/controllers/tournament.py)): Tournament creation, settings, court scheduling, and order of play.
-  * `category_bp` ([`app/web/controllers/category.py`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/app/web/controllers/category.py)): Event formats, bracket generation, team drafts, rubber scoring, and match coordination.
+  * `tournament_bp` ([`app/web/controllers/tournament.py`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/app/web/controllers/tournament.py)): Tournament creation, settings, court scheduling, staff delegation (`/staff`), court PIN scoring, and order of play.
+  * `category_bp` ([`app/web/controllers/category.py`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/app/web/controllers/category.py)): Event formats, bracket generation, draw publication state (`/toggle-publish`), team drafts, rubber scoring, and match coordination.
   * `player_bp` ([`app/web/controllers/player.py`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/app/web/controllers/player.py)): Global player registry, player profiles, and career statistics.
   * `leaderboard_bp` ([`app/web/controllers/leaderboard.py`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/app/web/controllers/leaderboard.py)): Real-time tournament and overall standings.
   * `academy_bp` ([`app/web/controllers/academy.py`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/app/web/controllers/academy.py)): Club and academy management workflows.
-  * `auth_bp` ([`app/web/controllers/auth.py`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/app/web/controllers/auth.py)): User authentication, session management, RBAC, audit logs, and superadmin bootstrapping.
+  * `auth_bp` ([`app/web/controllers/auth.py`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/app/web/controllers/auth.py)): User authentication, session management, RBAC enforcement (`check_tournament_access`), audit logs, and superadmin bootstrapping.
   * `export_bp` ([`app/web/controllers/export.py`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/app/web/controllers/export.py)): PDF bracket and Excel roster exports.
   * `api_bp` ([`app/api/__init__.py`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/app/api/__init__.py)): RESTful JSON API (`/api/v1/`) with JWT authentication.
 
@@ -45,14 +45,20 @@ This document details the current **technology stack**, the **local and CI/CD co
 * **Database Migration & Synchronization Engine:**
   * **Flask-Migrate** (v4.1.0) & **Alembic** (v1.20.0): Track schema revisions in [`migrations/versions/`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/migrations/versions/).
   * **Automated Schema Verifier & Sync Engine** ([`scripts/sync_db_schema.py`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/scripts/sync_db_schema.py)): Inspects target database tables and columns directly against SQLAlchemy models, automatically applying non-destructive additions (`CREATE TABLE`, `ALTER TABLE ... ADD COLUMN`) during automated deployments.
+  * Synchronized relational tables: 18 tables including `tournament_staff` (`id`, `tournament_id`, `user_id`, `role`, `created_at`), `categories.draw_published`, and `matches.lock_version`.
 
 ### 2.3 Authentication, Authorization & Security
 
 * **Session & CSRF Protection:** [Flask-WTF](https://flask-wtf.readthedocs.io/) (v1.3.0) & [WTForms](https://wtforms.readthedocs.io/) (v3.2.2) enforcing `CSRFProtect` across all HTML forms and state-mutating requests, with explicit exemptions for `/api/v1/`.
 * **API Authentication:** [Flask-JWT-Extended](https://flask-jwt-extended.readthedocs.io/) (v4.7.4) & [PyJWT](https://pyjwt.readthedocs.io/) (v2.13.0) for bearer token authentication.
-* **Access Control (RBAC):**
-  * Roles: `superadmin`, `admin` (tournament organizer), `player`/`user`, and unauthenticated public viewers.
-  * Broken Object Level Authorization (BOLA/IDOR) guards: Enforced at both web controller and API levels, preventing organizers from modifying other organizers' tournaments or fixtures.
+* **Hierarchical Role-Based Access Control (RBAC):**
+  * Roles: `superadmin`, `owner` / `tournament_admin`, `desk`, `umpire`, `court_pin`, `captain`, and `spectator`/`user`.
+  * **Staff Appointment Delegation:** Tournament owners delegate duties to registered users with role-scoped authority recorded in `tournament_staff`.
+  * **Court PIN Fast Entry:** Dedicated court scoring tablets authenticate with a 4-digit PIN stored in `tournament.court_pin`.
+  * **Anti-Conflict of Interest Guard:** Enforced via `check_scoring_conflict_of_interest()`, preventing active competitors from scoring their own matches.
+  * **Optimistic Concurrency Control:** Enforced via `lock_version` increments on `Match` mutations, blocking concurrent overwrite collisions with HTTP 409 Conflict.
+  * **Draw Publication State Machine:** Managed via `categories.draw_published`, keeping bracket drafts hidden from public eyes until verified and published.
+  * **BOLA/IDOR Defense:** Centralized in `check_tournament_access()`.
 * **Superadmin Bootstrapping:** [`bootstrap_superadmin()`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/app/web/controllers/auth.py) executes automatically on boot to create or synchronize administrative credentials from environment variables.
 
 ### 2.4 Serialization & Validation
@@ -138,13 +144,16 @@ Configured in [`.env`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/.e
 * **Framework:** Python standard library `unittest` (compatible with `pytest`).
 * **Test Isolation:** Each test suite provisions an isolated temporary SQLite database fixture and runs Alembic migrations/tables cleanly.
 * **Key Test Suites:**
-  * [`tests/test_team_league.py`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/tests/test_team_league.py): 1,154 lines covering group stage creation, player tier allocations, team draft workflows, 3-rubber match scoring, tiebreakers, and match progression locks.
-  * [`tests/test_security_remediation.py`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/tests/test_security_remediation.py): BOLA/IDOR protection, API bearer token auth, and cross-tournament ownership barriers.
-  * [`tests/test_migrations.py`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/tests/test_migrations.py): Migration upgrade paths, SQLite batch mode verification, and schema column presence.
+  * [`tests/test_team_league.py`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/tests/test_team_league.py): 1,154 lines covering group stage creation, player tier allocations, team draft workflows, 3-rubber match scoring, tiebreakers, and match progression locks (18 tests).
+  * [`tests/test_rbac.py`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/tests/test_rbac.py): Enterprise RBAC hierarchy, staff delegation, court PIN mode, anti-conflict guard, optimistic concurrency control, and draft draw publication (10 tests).
+  * [`tests/test_security_remediation.py`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/tests/test_security_remediation.py): BOLA/IDOR protection, API bearer token auth, and cross-tournament ownership barriers (4 tests).
+  * [`tests/test_migrations.py`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/tests/test_migrations.py): Migration upgrade paths, SQLite batch mode verification, and schema column presence (6 tests).
+  * Vector PDF Export Suites: [`tests/test_draw_pdf_export.py`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/tests/test_draw_pdf_export.py), [`tests/test_order_of_play_pdf_export.py`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/tests/test_order_of_play_pdf_export.py), [`tests/test_participants_pdf_export.py`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/tests/test_participants_pdf_export.py) (32 tests).
+  * [`tests/test_admin_approval_box.py`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/tests/test_admin_approval_box.py): Registration approval box & payment verification (12 tests).
 * **Test Execution:**
   ```bash
   python -m unittest discover tests -v
-  # 22 tests passing
+  # 82 tests passing (100% pass rate)
   ```
 
 ### 3.5 CI/CD Workflows (GitHub Actions)
@@ -153,7 +162,7 @@ Located in [`.github/workflows/`](file:///Users/rahilmehta24/VS_Code/Projects/To
 
 1. **CI & Quality Gate ([`ci.yml`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/.github/workflows/ci.yml)):**
    * Triggers: Pushes and Pull Requests targeting `main` and `uat`.
-   * Actions: Sets up Python 3.12, installs dependencies, executes `ruff check .`, and runs the 69-test automated test suite.
+   * Actions: Sets up Python 3.12, installs dependencies, executes `ruff check .`, and runs the 82-test automated test suite.
 2. **Production Database Migration & Sync ([`deploy-production.yml`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/.github/workflows/deploy-production.yml)):**
    * Triggers: Pushes to `main`, manual `workflow_dispatch`.
    * Actions: Connects to Supabase Production using `secrets.DATABASE_URL`, applies pending Alembic migrations (`flask db upgrade`), and runs `scripts/sync_db_schema.py` to reconcile tables and columns.

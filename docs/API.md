@@ -5,7 +5,7 @@
 **API Version:** `v1`  
 **Base URL:** `/api/v1`  
 **Authentication Scheme:** HTTP Bearer Authentication (JSON Web Tokens - JWT)  
-**Last Updated:** October 2026  
+**Last Updated:** November 2026  
 
 ---
 
@@ -41,13 +41,14 @@ Responses adhere to a standardized JSON structure:
 * `201 Created`: Entity successfully created.
 * `400 Bad Request`: Missing required payload fields or invalid format/rules.
 * `401 Unauthorized`: Missing, expired, or malformed JWT Bearer token.
-* `403 Forbidden`: Authenticated user lacks permission (RBAC role inadequate or BOLA ownership failure).
+* `403 Forbidden`: Authenticated user lacks permission (insufficient RBAC role, BOLA ownership failure, or active participant conflict of interest).
 * `404 Not Found`: Target tournament, category, or match does not exist.
+* `409 Conflict`: Concurrency collision (submitted `lock_version` does not match database version).
 * `500 Internal Server Error`: Unhandled server exception (automatically rolled back in DB).
 
 ---
 
-## 2. Authentication & Authorization
+## 2. Authentication, RBAC & Concurrency Control
 
 API authentication is powered by `Flask-JWT-Extended`. All mutating operations require a valid JWT token passed in the `Authorization` HTTP header:
 
@@ -56,7 +57,9 @@ Authorization: Bearer <eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...>
 ```
 
 * **CSRF Exemption:** The API Blueprint (`/api/v1/*`) is explicitly exempted from CSRF cookie requirements, relying strictly on stateless token authorization.
-* **Broken Object Level Authorization (BOLA/IDOR) Protection:** When mutating tournament matches or configurations, the API verifies that `current_user.id == tournament.user_id` (unless `current_user.role == 'superadmin'`). Unauthorized attempts are rejected with `HTTP 403 Forbidden`.
+* **Hierarchical RBAC & Delegated Staff:** Operations evaluate the caller's role via `check_tournament_access()`. Mutating match scores is permitted for `superadmin`, tournament `owner`, or appointed `TournamentStaff` with role `tournament_admin`, `desk`, or `umpire`.
+* **Anti-Conflict of Interest Protection:** If the authenticated user is an active participant in the target match (or captain of a competing team in team leagues), score reporting is blocked with `HTTP 403 Forbidden`. Active competitors cannot officiate or score their own matches.
+* **Optimistic Concurrency Control:** When reporting scores, clients should supply the known `lock_version` integer. If the match has been concurrently modified by another desk official or umpire, the API returns `HTTP 409 Conflict`. Successful updates increment `lock_version`.
 
 ---
 
@@ -208,7 +211,7 @@ Defined in [`app/domain/schemas.py`](file:///Users/rahilmehta24/VS_Code/Projects
 
 #### 4.3.2 Report Match Score & Progression
 * **Endpoint:** `POST /api/v1/matches/<int:match_id>/report`
-* **Access:** Authenticated (`admin` or `superadmin` role with tournament ownership)
+* **Access:** Authenticated (`owner`, `tournament_admin`, `desk`, `umpire`, or `superadmin`)
 * **Headers:** `Authorization: Bearer <token>`
 * **Action Types:**
   1. `complete_match`: Records final score, marks match completed, and advances winner to downstream fixture.
@@ -220,11 +223,26 @@ Defined in [`app/domain/schemas.py`](file:///Users/rahilmehta24/VS_Code/Projects
     "action_type": "complete_match",
     "winner_id": 42,
     "score1": "6-4, 7-6(5)",
-    "score2": ""
+    "score2": "",
+    "lock_version": 1
   }
   ```
 * **Validation & Security Enforcements:**
-  * **BOLA Verification:** Checks `match.tournament.user_id == current_user.id`.
+  * **RBAC & Staff Authorization:** Evaluates `check_tournament_access(tournament, min_role="umpire")`. Verified against tournament owner or `TournamentStaff` entry.
+  * **Conflict of Interest Guard:** Calls `check_scoring_conflict_of_interest(match, current_user)`. If the user is an active participant or competing team captain, returns `HTTP 403 Forbidden`:
+    ```json
+    {
+      "success": false,
+      "message": "Conflict of interest: Active participants cannot officiate or score their own matches."
+    }
+    ```
+  * **Optimistic Concurrency Control:** Verifies that `submitted_lock_version == match.lock_version`. If a concurrent update occurred, returns `HTTP 409 Conflict`:
+    ```json
+    {
+      "success": false,
+      "message": "Conflict: Match was updated by another official. Please refresh and try again."
+    }
+    ```
   * **Progression Guard:** Calls `check_match_progression_allowed(match)`. If feeder matches are incomplete, returns `HTTP 400 Bad Request`.
   * **Automatic Bracket Progression:** Winner is advanced to parent/downstream fixture via `fmt.advance_match()`.
   * **Group Standings Sync:** If format is `group_stage` or `round_robin`, triggers `recalculate_all_group_stats()`.
@@ -232,7 +250,8 @@ Defined in [`app/domain/schemas.py`](file:///Users/rahilmehta24/VS_Code/Projects
   ```json
   {
     "success": true,
-    "message": "Match completed"
+    "message": "Match completed",
+    "lock_version": 2
   }
   ```
 

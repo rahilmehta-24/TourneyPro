@@ -20,14 +20,34 @@ def get_matches(category_id):
 def report_match(match_id):
     current_user_id = get_jwt_identity()
     user = User.query.get(current_user_id)
-    
-    if not user or user.role not in ['admin', 'superadmin']:
+
+    if not user:
         return jsonify({"success": False, "message": "Unauthorized"}), 403
 
     match = Match.query.get_or_404(match_id)
-    if user.role != 'superadmin' and match.tournament.user_id != user.id:
+
+    from app.domain.models import TournamentStaff
+    from app.web.controllers.auth import check_scoring_conflict_of_interest
+
+    is_staff = False
+    staff = TournamentStaff.query.filter_by(tournament_id=match.tournament_id, user_id=user.id).first()
+    if staff and staff.role in ('manager', 'official', 'scorer'):
+        is_staff = True
+
+    if user.role != 'superadmin' and match.tournament.user_id != user.id and not is_staff:
         return jsonify({"success": False, "message": "Forbidden: You do not own this tournament"}), 403
-    data = request.get_json()
+
+    try:
+        check_scoring_conflict_of_interest(match, user)
+    except PermissionError as pe:
+        return jsonify({"success": False, "message": str(pe)}), 403
+
+    data = request.get_json() or {}
+    client_lock_version = data.get('lock_version')
+    if client_lock_version and match.lock_version and match.lock_version != client_lock_version:
+        return jsonify({"success": False, "message": "Conflict: Match was updated by another official. Please refresh."}), 409
+
+    match.lock_version = (match.lock_version or 1) + 1
 
     # Determine action type (pending, live_score, complete_match)
     action_type = data.get('action_type', 'complete_match')

@@ -57,6 +57,39 @@ This phase modernizes the bracket view with real-time capabilities and automated
 - **Bottom-Sheet Match Scoring:** Transforms modal dialogs on `≤ 640px` into ergonomic bottom sheets with sticky action buttons and `inputmode="numeric" pattern="[0-9]*"`.
 - **1-Tap Mobile UPI Intent:** Direct `upi://pay?pa=...` deep linking into installed payment apps (GPay, PhonePe, Paytm) and 1-tap clipboard copy button, resolving the mobile on-screen QR scanning impossibility.
 
+### 4. Enterprise RBAC & Staff Delegation (✅ Implemented)
+- **Database Schema**: Introduced `tournament_staff` relational mapping table (`tournament_id`, `user_id`, `role`, `created_at`).
+- **Granular Roles**:
+  - `owner` / `tournament_admin`: Complete tournament authority.
+  - `desk`: Operational logistics, check-ins, seed allocations, and court assignment.
+  - `umpire`: Court-side score reporting and rubber completion.
+- **Staff Appointment Portal**: `/tournaments/<slug>/staff` allows organizers to appoint registered users, modify permissions, or revoke staff access with 1 click.
+
+### 5. Quick Court PIN Scorekeeping Mode (✅ Implemented)
+- **Database**: Added `court_pin` (4-digit numeric code) to `Tournament` model.
+- **Workflow**:
+  1. Organizer defines a court PIN in tournament settings.
+  2. Court scorers navigate to `/tournaments/<slug>/court-pin` on on-court tablets.
+  3. Scorers authenticate using the PIN without needing personal user accounts.
+  4. Scorer session grants direct score reporting permissions for all matches on that court.
+
+### 6. Draw Publication State Machine (✅ Implemented)
+- **Database**: Added `draw_published` boolean column to `Category` model.
+- **Privacy Controls**:
+  - Generated brackets default to Draft mode (`draw_published = False`).
+  - Spectators and players visiting draft draws receive a friendly banner notice: *"Draws for this event are being finalized by the tournament committee"*.
+  - Organizers preview, adjust seeds, and inspect bracket balance in draft mode before publishing via 1-click `/categories/<id>/toggle-publish`.
+  - Draw PDF export is locked until published.
+
+### 7. Match Integrity & Optimistic Concurrency Control (✅ Implemented)
+- **Anti-Conflict of Interest Guard**: Active participants (or competing team captains in team leagues) are strictly blocked from officiating or scoring their own matches (`HTTP 403 Forbidden`).
+- **Optimistic Concurrency Control (`lock_version`)**: Matches track a monotonic version counter. Score updates submit `lock_version`; mismatched versions reject with `HTTP 409 Conflict`, preventing concurrent umpire score overwrites.
+
+### 8. End-User Manual Suite & Vector PDF Guide (✅ Implemented)
+- Created clean, non-technical web operational manual [`docs/USER_MANUAL.md`](USER_MANUAL.md) for non-technical organizers, umpires, captains, and players.
+- Built interactive HTML version with base64 embedded screenshots [`docs/USER_MANUAL.html`](USER_MANUAL.html).
+- Compiled publication-ready 6-page PDF manual [`docs/TourneyPro_User_Manual.pdf`](TourneyPro_User_Manual.pdf) via Chrome headless engine.
+
 ---
 
 ## Phase 3: Communication & Engagement

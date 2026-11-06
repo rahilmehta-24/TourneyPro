@@ -16,10 +16,13 @@ TourneyPro manages 17 relational entities structured around the tournament execu
 ```mermaid
 erDiagram
     USERS ||--o{ TOURNAMENTS : "creates/owns"
+    USERS ||--o{ TOURNAMENT_STAFF : "appointed_as"
     USERS ||--o{ ACADEMIES : "owns"
     USERS ||--o{ ACADEMY_MEMBERS : "joins"
     USERS ||--o{ AUDIT_LOGS : "triggers"
     USERS ||--o{ REGISTRATIONS : "submits"
+    
+    TOURNAMENTS ||--o{ TOURNAMENT_STAFF : "employs"
     
     ACADEMIES ||--o{ TOURNAMENTS : "hosts"
     ACADEMIES ||--o{ ACADEMY_MEMBERS : "contains"
@@ -135,6 +138,7 @@ Sub-events within a tournament (e.g., Men's Singles, Under-14, Team League).
 | `avg_match_duration` | `INTEGER` | Nullable | `60` | Estimated match duration (minutes). |
 | `preferred_start_day` | `INTEGER` | Nullable | `1` | Staggered start offset (Day 1, Day 2). |
 | `pin_finals_to_last_day`| `BOOLEAN`| Nullable | `TRUE` | Keeps championship match on closing day. |
+| `draw_published` | `BOOLEAN` | NOT NULL | `FALSE` | Controls public visibility of draw PDF; restricted to organizer/superadmin when FALSE. |
 
 ---
 
@@ -220,6 +224,7 @@ Fixtures, matches, sets, rubbers, and court scheduling slots.
 | `p1_player2_id` | `INTEGER` | FK (`players.id`), Nullable | NULL | Rubber lineup: Team 1 Doubles Partner. |
 | `p2_player1_id` | `INTEGER` | FK (`players.id`), Nullable | NULL | Rubber lineup: Team 2 Primary Player. |
 | `p2_player2_id` | `INTEGER` | FK (`players.id`), Nullable | NULL | Rubber lineup: Team 2 Doubles Partner. |
+| `lock_version` | `INTEGER` | NOT NULL | `1` | Optimistic concurrency lock version counter preventing simultaneous score overwrite conflicts. |
 
 ---
 
@@ -428,6 +433,25 @@ Internal club bulletins and tournament notices.
 | `title` | `VARCHAR(200)` | NOT NULL | - | Announcement title. |
 | `content` | `TEXT` | NOT NULL | - | Bulletin message body. |
 | `created_at` | `DATETIME` | Nullable | `utcnow` | Publishing timestamp. |
+
+---
+
+### 2.18 `tournament_staff`
+Tournament staff appointments, referee delegations, and temporary 6-digit court access PINs.
+
+| Column | Type | Constraints | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `id` | `INTEGER` | Primary Key | Auto | Staff entry identifier. |
+| `tournament_id` | `INTEGER` | FK (`tournaments.id`), NOT NULL | - | Associated tournament. |
+| `user_id` | `INTEGER` | FK (`users.id`), Nullable | NULL | Registered user account (for appointed staff). |
+| `role` | `VARCHAR(20)` | NOT NULL | `'scorer'` | Operational role: `'manager'`, `'official'`, `'scorer'`. |
+| `court_pin` | `VARCHAR(6)` | Nullable | NULL | 6-digit access PIN for temporary court umpires without an account. |
+| `pin_expires_at` | `DATETIME` | Nullable | NULL | Expiration timestamp for temporary court PIN. |
+| `assigned_court` | `VARCHAR(100)` | Nullable | NULL | Optional court binding (e.g., `'Court 1'`). |
+| `created_at` | `DATETIME` | Nullable | `utcnow` | Appointment timestamp. |
+
+*Table Constraints:*
+- Unique constraint on `(tournament_id, user_id)` preventing duplicate user appointments in the same tournament.
 
 ---
 

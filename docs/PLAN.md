@@ -2,8 +2,8 @@
 
 **Document Status:** Approved  
 **Source of Truth:** Inherits from [`README.md`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/README.md), [`PRD.md`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/PRD.md), and [`ARCHITECTURE.md`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/ARCHITECTURE.md)  
-**Current Milestone:** Phase 1 Completed / Phase 2 In Progress  
-**Last Updated:** October 2026  
+**Current Milestone:** Phase 1 & Phase 2 Core RBAC Completed / Real-Time Operations In Progress  
+**Last Updated:** November 2026  
 
 ---
 
@@ -20,7 +20,9 @@ gantt
     Group Stage Team League Engine    :done, 2026-07, 2026-08
     Court Scheduling & Progression    :done, 2026-08, 2026-09
     PDF Export Suite & Schema Sync    :done, 2026-09, 2026-10
+    Mobile App Web Architecture       :done, 2026-10, 2026-11
     section Phase 2 (In Progress)
+    Enterprise RBAC & Staff PIN Mode  :done, 2026-10, 2026-11
     WebSocket Live Score Streaming    :active, 2026-11, 2026-12
     Dynamic Court Slot Optimization   :2026-12, 2027-01
     Venue TV / Large Scoreboard Mode  :2027-01, 2027-02
@@ -71,6 +73,17 @@ Phase 1 established the stable operational foundation of TourneyPro, replacing l
 Phase 2 focuses on modernizing tournament venues with real-time score feeds and automated court slot assignment.
 
 ### 3.1 Work Packages
+
+#### WP 2.0: Enterprise RBAC, Staff Delegation & Court PIN Mode (✅ COMPLETED)
+* **Objective:** Secure tournament administration, enable operational delegation, and provide on-court tablet scorekeeping.
+* **Delivered Capabilities:**
+  * **Relational Staff Delegation:** Created `tournament_staff` table linking tournaments, users, and roles (`owner`, `tournament_admin`, `desk`, `umpire`). Appoint, edit, and revoke staff via `/tournaments/<slug>/staff`.
+  * **Court PIN Fast Entry:** Added `court_pin` to `Tournament`. Dedicated tablet scoring at `/tournaments/<slug>/court-pin` without individual user accounts.
+  * **Draft Draw State Machine:** Added `draw_published` to `Category`. Brackets remain hidden from public viewers until organizers review and publish.
+  * **Sporting Integrity & Anti-Conflict Guard:** Blocked active participants from scoring or officiating their own matches (`HTTP 403 Forbidden`).
+  * **Optimistic Concurrency Control:** Added `lock_version` to `Match` records to eliminate simultaneous referee score overwrites (`HTTP 409 Conflict`).
+  * **Automated Verification:** Added 10 automated test scenarios in `tests/test_rbac.py` bringing test suite to 82/82 passing tests.
+  * **End-User Manual Suite:** Generated non-technical web manual [`docs/USER_MANUAL.md`](USER_MANUAL.md) and 6-page vector PDF guide [`docs/TourneyPro_User_Manual.pdf`](TourneyPro_User_Manual.pdf).
 
 #### WP 2.1: Real-Time Score Updates via WebSockets
 * **Objective:** Replace current 5-second HTTP polling (`/api/v1/live/<slug>/scores`) with instantaneous WebSocket push events.

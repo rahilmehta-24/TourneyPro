@@ -3,7 +3,7 @@
 **Document Status:** Approved  
 **Source of Truth:** Inherits from [`TESTING.md`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/TESTING.md), [`SETUP.md`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/SETUP.md), [`DATABASE.md`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/DATABASE.md), and [`ARCHITECTURE.md`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/ARCHITECTURE.md)  
 **Primary Audience:** Site Reliability Engineers (SRE), Backend Engineers & Technical Support Admins  
-**Last Updated:** October 2026  
+**Last Updated:** November 2026  
 
 ---
 
@@ -16,7 +16,10 @@ Encountered an Issue?
 ├── Missing Column / SQLite Schema Error? ─────────► Section 2.2 (Schema Sync Tool)
 ├── Match Progression Lock Rejection (400)? ───────► Section 3.1 (Feeder Match Checks)
 ├── Rubber Summation Score Error ($T=7$)? ─────────► Section 3.2 (Summation & Walkovers)
-├── BOLA / IDOR Ownership Forbidden (403)? ────────► Section 4.1 (User ID Matching)
+├── Bracket Missing / "Draws Being Finalized"? ────► Section 3.4 (Draft Draw Publication State)
+├── BOLA / IDOR Ownership Forbidden (403)? ────────► Section 4.1 (User ID Matching & Staff Roles)
+├── Conflict of Interest Forbidden (403)? ─────────► Section 4.3 (Participant Officiating Guard)
+├── 409 Conflict: Match Concurrently Updated? ────► Section 4.4 (Optimistic Lock Version Collision)
 ├── CSRF Failure on Web Form? ─────────────────────► Section 4.2 (CSRF vs API Header)
 └── Vercel Serverless Cold Start Timeout? ─────────► Section 5.1 (Cold-Start Guard)
 ```
@@ -83,14 +86,21 @@ Encountered an Issue?
 * **Root Cause:** An athlete competing in multiple categories (e.g. Singles and Doubles) has matches scheduled closer than `min_rest_minutes` (default: 30 minutes).
 * **Resolution:** In the Order of Play dashboard, drag or adjust the start time of the second match to provide at least 30 minutes after the estimated finish time (`scheduled_end_time`) of the first match.
 
+### 3.4 Spectators Cannot View Bracket / "Draws for this event are being finalized"
+* **Symptom:** Public spectators or players see a banner message instead of the tournament draw tree.
+* **Root Cause:** The category is in Draft mode (`draw_published = False`). Organizers must review and publish the draw before it becomes public.
+* **Resolution:** Log in as the tournament organizer or desk staff, navigate to the category dashboard, and click the **"Publish Draw"** button (or toggle via `/categories/<id>/toggle-publish`). Once published, the bracket and vector PDF export become immediately accessible.
+
 ---
 
 ## 4. Security & Access Control Diagnostics
 
 ### 4.1 `403 Forbidden: You do not own this tournament`
-* **Symptom:** Organizers receive an HTTP 403 when saving settings or reporting scores.
-* **Root Cause:** Broken Object Level Authorization (BOLA) guard detected that `current_user.id != tournament.user_id`.
-* **Resolution:** Verify which account created the tournament. Log in as that organizer account or sign in as `superadmin` (who has global override authority).
+* **Symptom:** Users receive an HTTP 403 when saving settings or accessing management dashboards.
+* **Root Cause:** Centralized authorization check `check_tournament_access()` failed to match tournament ownership, superadmin role, or active `TournamentStaff` record.
+* **Resolution:**
+  * Ensure the user was appointed as staff via `/tournaments/<slug>/staff` with adequate role (`owner`, `tournament_admin`, `desk`, or `umpire`).
+  * If operating on-court tablets, verify that the 4-digit court PIN was entered at `/tournaments/<slug>/court-pin`.
 
 ### 4.2 `CSRF session token missing or invalid`
 * **Symptom:** Submitting a web form returns `400 Bad Request: The CSRF session token is missing`.
@@ -98,6 +108,16 @@ Encountered an Issue?
 * **Resolution:**
   * For Web Forms: Verify `<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>` is present.
   * For REST API: Ensure the request targets `/api/v1/` with header `Authorization: Bearer <token>`. The API blueprint is explicitly exempted from CSRF.
+
+### 4.3 `403 Forbidden: Conflict of interest`
+* **Symptom:** Official receives HTTP 403: `"Conflict of interest: Active participants cannot officiate or score their own matches"`.
+* **Root Cause:** Sporting integrity guard `check_scoring_conflict_of_interest()` detected that the logged-in user is an active player (or captain of a competing team) in that specific fixture.
+* **Resolution:** Hand over match officiating to a neutral chair umpire, desk manager, or tournament director. Active players are prohibited from scoring their own matches.
+
+### 4.4 `409 Conflict: Match was updated by another official`
+* **Symptom:** Submitting a match score returns HTTP 409 Conflict with prompt to refresh.
+* **Root Cause:** Optimistic concurrency control detected that `submitted_lock_version != match.lock_version`, indicating that another desk official or umpire modified the match score simultaneously.
+* **Resolution:** Refresh the page to load the latest score state, verify the current scoreline, and re-submit the updated score.
 
 ---
 
@@ -121,8 +141,9 @@ Encountered an Issue?
 | Task | Command |
 | :--- | :--- |
 | **Run Linter Checks** | `ruff check .` |
-| **Run Entire Test Suite (72 tests)** | `python -m unittest discover tests -v` |
-| **Run Single Test Case** | `python -m unittest tests.test_team_league.TeamLeagueTestCase.test_01_rubber_scoring_default_t7` |
+| **Run Entire Test Suite (82 tests)** | `python -m unittest discover tests -v` |
+| **Run RBAC & Concurrency Tests** | `python -m unittest tests/test_rbac.py -v` |
+| **Run Team League Tests** | `python -m unittest tests/test_team_league.py -v` |
 | **Reconcile Database Schema** | `python scripts/sync_db_schema.py` |
 | **Initialize / Verify UAT Database** | `python scripts/init_uat_db.py` |
 | **Generate Sample Tournament Data** | `python scripts/create_sample_tournament.py` |

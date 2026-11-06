@@ -17,8 +17,8 @@ from flask import (
 )
 from slugify import slugify
 
-from app.domain.models import db, Tournament, Category, Match, Group, Participant, Registration
-from app.web.controllers.auth import login_required, role_required, check_tournament_ownership
+from app.domain.models import db, Tournament, Category, Match, Group, Participant, Registration, TournamentStaff
+from app.web.controllers.auth import login_required, role_required, check_tournament_ownership, get_current_user
 from app.services.pdf.draw_adapter import DrawExportAdapter
 from app.services.pdf.order_of_play_adapter import OrderOfPlayExportAdapter
 from app.services.pdf.participants_adapter import ParticipantsExportAdapter
@@ -27,6 +27,31 @@ from app.services.pdf.pdf_generator import DrawPdfService
 logger = logging.getLogger(__name__)
 
 export_bp = Blueprint("export", __name__)
+
+
+def can_export_draw(category, user) -> bool:
+    """
+    Verify whether the requesting user is permitted to export the category draw PDF.
+    - Superadmin or Tournament Owner: Always permitted.
+    - Tournament Staff (Manager/Official): Permitted.
+    - Public Viewer / Player / Spectator: Permitted ONLY if category.draw_published is True
+      and category.status is 'in_progress' or 'completed' (i.e. draw is generated and released).
+    """
+    if user and (user.role == "superadmin" or category.tournament.user_id == user.id):
+        return True
+
+    if user:
+        staff = TournamentStaff.query.filter_by(
+            tournament_id=category.tournament_id,
+            user_id=user.id
+        ).first()
+        if staff and staff.role in ("manager", "official"):
+            return True
+
+    if category.draw_published and category.status in ("in_progress", "completed"):
+        return True
+
+    return False
 
 
 def make_pdf_response(pdf_bytes: bytes, filename: str, etag: Optional[str] = None) -> Response:
@@ -94,13 +119,12 @@ def get_category_winners(category):
 @export_bp.route("/tournaments/<slug>/categories/<int:category_id>/export_draw_pdf")
 @export_bp.route("/t/<slug>/categories/<int:category_id>/export_pdf")
 @export_bp.route("/t/<slug>/categories/<int:category_id>/export_draw_pdf")
-@login_required
-@role_required("admin", "superadmin")
 def export_category_pdf(slug, category_id):
     """
     Retrieve the existing saved Single Elimination draw, populate the template,
     and return a downloadable PDF.
     Read-only: Never regenerates, reseeds, advances, or mutates database state.
+    Publicly accessible when category.draw_published is True. Restricted to owner/superadmin/staff when unpublished.
     """
     slug = slug.strip()
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
@@ -110,8 +134,16 @@ def export_category_pdf(slug, category_id):
     if category.tournament_id != tournament.id:
         abort(404)
 
-    # Enforce strict authorization and tournament ownership
-    check_tournament_ownership(tournament)
+    # Enforce authorization: public if published; owner/superadmin/staff if unpublished
+    current_user = get_current_user()
+    if not can_export_draw(category, current_user):
+        if not current_user:
+            flash(
+                "The tournament draw is currently in draft mode and has not been published yet.",
+                "warning",
+            )
+            return redirect(url_for("category.view_category", slug=slug, category_id=category_id))
+        abort(403)
 
     # Verify that a saved draw exists in the database
     matches = Match.query.filter(

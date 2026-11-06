@@ -1,3 +1,4 @@
+import enum
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 
@@ -91,6 +92,7 @@ class Category(db.Model):
     avg_match_duration = db.Column(db.Integer, default=60)             # minutes
     preferred_start_day = db.Column(db.Integer, default=1)             # Day 1, Day 2, etc.
     pin_finals_to_last_day = db.Column(db.Boolean, default=True)       # Keep final match on the concluding tournament day
+    draw_published = db.Column(db.Boolean, default=False, nullable=False)
 
     # Relationships
     participants = db.relationship('Participant', backref='category', lazy=True, cascade='all, delete-orphan')
@@ -167,6 +169,7 @@ class Match(db.Model):
     is_not_before = db.Column(db.Boolean, default=False)       # True if match is 'Not Before (Followed By)'
     court_name = db.Column(db.String(100))                     # e.g. "Court 1", assigned by scheduler
     completed_at = db.Column(db.DateTime)
+    lock_version = db.Column(db.Integer, default=1, nullable=False)
     
     # Match-specific scoring overrides (only for knockout)
     scoring_format = db.Column(db.String(20)) # 'games', 'points', or None to inherit
@@ -463,4 +466,30 @@ class AcademyAnnouncement(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     author = db.relationship('User', backref='academy_announcements')
+
+
+class TournamentStaffRole(enum.Enum):
+    MANAGER = "manager"      # Can edit schedule, categories, matches
+    OFFICIAL = "official"    # Can score matches & manage courts
+    SCORER = "scorer"        # Can only enter scores for assigned matches
+
+
+class TournamentStaff(db.Model):
+    __tablename__ = 'tournament_staff'
+
+    id = db.Column(db.Integer, primary_key=True)
+    tournament_id = db.Column(db.Integer, db.ForeignKey('tournaments.id', ondelete='CASCADE'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=True)
+    role = db.Column(db.String(20), default='official', nullable=False)
+    assigned_court = db.Column(db.String(50), nullable=True)
+    access_pin = db.Column(db.String(6), nullable=True)
+    pin_expires_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    tournament = db.relationship('Tournament', backref=db.backref('staff_members', cascade='all, delete-orphan'))
+    user = db.relationship('User', backref=db.backref('staff_assignments', cascade='all, delete-orphan'))
+
+    __table_args__ = (
+        db.UniqueConstraint('tournament_id', 'user_id', name='uq_tournament_user_staff'),
+    )
 

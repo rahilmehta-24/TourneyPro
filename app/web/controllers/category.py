@@ -2,7 +2,15 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from app.domain.models import db, Tournament, Category, Participant, Match, Group, Player, PlayerCategoryTier, TeamMember, determine_age_category, estimate_dob_from_age
 from app.core.constants import TOURNAMENT_FORMATS
 from app.services.format_engine import get_format
-from app.web.controllers.auth import login_required, role_required, check_tournament_ownership
+from app.web.controllers.auth import (
+    login_required,
+    role_required,
+    check_tournament_ownership,
+    check_tournament_access,
+    check_scoring_conflict_of_interest,
+    check_fixture_lineup_access,
+    get_current_user,
+)
 from app.services.tennis_logic import validate_and_format_score
 from datetime import datetime
 from app.services.utils.validation import (
@@ -443,8 +451,28 @@ def view_category(slug, category_id):
                          rankings=rankings,
                          team_rosters_map=team_rosters_map,
                          total_group_matches=total_group_matches,
-                         pending_group_count=pending_group_count,
                          formats=TOURNAMENT_FORMATS)
+
+
+@category_bp.route('/t/<slug>/categories/<int:category_id>/toggle-publish', methods=['POST'])
+@category_bp.route('/tournaments/<slug>/categories/<int:category_id>/toggle-publish', methods=['POST'])
+@login_required
+@role_required('admin', 'superadmin')
+def toggle_publish_draw(slug, category_id):
+    """Toggle public visibility for the category draw (draft vs published)."""
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
+    category = Category.query.get_or_404(category_id)
+    if category.tournament_id != tournament.id:
+        abort(404)
+
+    category.draw_published = not bool(category.draw_published)
+    db.session.commit()
+
+    status_label = "published and is now visible to the public" if category.draw_published else "unpublished (saved as draft)"
+    flash(f"Category draw has been {status_label}.", "success")
+    return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
+
 
 @category_bp.route('/t/<slug>/categories/<int:category_id>/manage', methods=['GET', 'POST'])
 @category_bp.route('/tournaments/<slug>/categories/<int:category_id>/manage', methods=['GET', 'POST'])
@@ -1063,15 +1091,30 @@ def delete_category(slug, category_id):
         
     return redirect(request.referrer or url_for('tournament.view_tournament', slug=slug))
 
+@category_bp.route('/t/<slug>/categories/<int:category_id>/match/<int:match_id>/report', methods=['POST'])
 @category_bp.route('/tournaments/<slug>/categories/<int:category_id>/match/<int:match_id>/report', methods=['POST'])
-@login_required
-@role_required('admin', 'superadmin')
 def report_category_match_result(slug, category_id, match_id):
-    """Report match result for category"""
+    """Report match result for category with RBAC and conflict checking."""
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
-    check_tournament_ownership(tournament)
+    check_tournament_access(tournament, min_role="scorer")
     category = Category.query.get_or_404(category_id)
     match = Match.query.get_or_404(match_id)
+
+    # 1. Anti-Conflict of Interest Check
+    current_u = get_current_user()
+    try:
+        check_scoring_conflict_of_interest(match, current_u)
+    except PermissionError as pe:
+        flash(str(pe), "error")
+        return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
+
+    # 2. Optimistic Concurrency Locking Check
+    client_lock_version = request.form.get('lock_version', type=int)
+    if client_lock_version and match.lock_version and match.lock_version != client_lock_version:
+        flash("Conflict detected: This match was recently updated by another official. Please review the updated score.", "warning")
+        return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
+
+    match.lock_version = (match.lock_version or 1) + 1
 
     if category.status == 'upcoming':
         category.status = 'in_progress'
@@ -1301,22 +1344,47 @@ def report_category_match_result(slug, category_id, match_id):
 @category_bp.route('/t/<slug>/categories/<int:category_id>/fixtures/<int:fixture_id>/lineup', methods=['POST'])
 @category_bp.route('/tournaments/<slug>/categories/<int:category_id>/fixtures/<int:fixture_id>/lineup', methods=['POST'])
 @login_required
-@role_required('admin', 'superadmin')
 def allot_fixture_lineup(slug, category_id, fixture_id):
     """
     Allot official team match lineup based on captains' submitted nomination slips.
     - Rubber 1: Singles (Team 1 Player vs Team 2 Player)
     - Rubber 2: Doubles 1 (Team 1 Pair vs Team 2 Pair)
     - Rubber 3: Doubles 2 (Team 1 Pair vs Team 2 Pair)
+    Accessible by Tournament Organizer, Superadmin, Staff, or Team Captains.
     """
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
-    check_tournament_ownership(tournament)
     category = Category.query.get_or_404(category_id)
     fixture = Match.query.get_or_404(fixture_id)
 
     if fixture.tournament_id != tournament.id or fixture.category_id != category.id:
         flash("Invalid fixture or category.", "error")
         return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
+
+    user = get_current_user()
+    try:
+        check_fixture_lineup_access(fixture, user)
+    except PermissionError as pe:
+        flash(str(pe), "error")
+        return redirect(url_for('category.view_category', slug=slug, category_id=category_id) + f"#fixture-{fixture.id}")
+
+    # Determine which team the user can edit
+    is_admin = (user.role == 'superadmin' or tournament.user_id == user.id)
+    if not is_admin:
+        from app.domain.models import TournamentStaff
+        staff = TournamentStaff.query.filter_by(tournament_id=tournament.id, user_id=user.id).first()
+        if staff and staff.role in ('manager', 'official'):
+            is_admin = True
+
+    def is_team_captain(team, u):
+        if not team or not hasattr(team, 'team_members'):
+            return False
+        for m in team.team_members:
+            if m.player and m.player.user_id == u.id and m.role in ('captain', 'vice_captain'):
+                return True
+        return False
+
+    can_edit_p1 = is_admin or is_team_captain(fixture.participant1, user)
+    can_edit_p2 = is_admin or is_team_captain(fixture.participant2, user)
 
     # Read rubber submissions
     r1_p1 = request.form.get('r1_p1_player1', type=int)
@@ -1338,18 +1406,24 @@ def allot_fixture_lineup(slug, category_id, fixture_id):
     r_doubles_2 = next((r for r in sub_matches if r.rubber_type == 'doubles_2' or r.rubber_number == 3), None)
 
     if r_singles:
-        r_singles.p1_player1_id = r1_p1
-        r_singles.p2_player1_id = r1_p2
+        if can_edit_p1 and r1_p1 is not None:
+            r_singles.p1_player1_id = r1_p1
+        if can_edit_p2 and r1_p2 is not None:
+            r_singles.p2_player1_id = r1_p2
     if r_doubles_1:
-        r_doubles_1.p1_player1_id = r2_p1_1
-        r_doubles_1.p1_player2_id = r2_p1_2
-        r_doubles_1.p2_player1_id = r2_p2_1
-        r_doubles_1.p2_player2_id = r2_p2_2
+        if can_edit_p1 and (r2_p1_1 is not None or r2_p1_2 is not None):
+            r_doubles_1.p1_player1_id = r2_p1_1
+            r_doubles_1.p1_player2_id = r2_p1_2
+        if can_edit_p2 and (r2_p2_1 is not None or r2_p2_2 is not None):
+            r_doubles_1.p2_player1_id = r2_p2_1
+            r_doubles_1.p2_player2_id = r2_p2_2
     if r_doubles_2:
-        r_doubles_2.p1_player1_id = r3_p1_1
-        r_doubles_2.p1_player2_id = r3_p1_2
-        r_doubles_2.p2_player1_id = r3_p2_1
-        r_doubles_2.p2_player2_id = r3_p2_2
+        if can_edit_p1 and (r3_p1_1 is not None or r3_p1_2 is not None):
+            r_doubles_2.p1_player1_id = r3_p1_1
+            r_doubles_2.p1_player2_id = r3_p1_2
+        if can_edit_p2 and (r3_p2_1 is not None or r3_p2_2 is not None):
+            r_doubles_2.p2_player1_id = r3_p2_1
+            r_doubles_2.p2_player2_id = r3_p2_2
 
     try:
         from app.services.utils.audit import log_audit

@@ -1,3 +1,4 @@
+import random
 from app.services.utils.audit import log_audit
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from app.domain.models import (
@@ -10,6 +11,7 @@ from app.domain.models import (
     Category,
     Player,
     User,
+    TournamentStaff,
     determine_age_category,
     estimate_dob_from_age,
     calculate_age_from_dob,
@@ -21,6 +23,8 @@ from app.web.controllers.auth import (
     role_required,
     get_current_user,
     check_tournament_ownership,
+    check_tournament_access,
+    check_scoring_conflict_of_interest,
 )
 from app.services.tennis_logic import validate_and_format_score
 from app.services.utils.validation import (
@@ -1264,6 +1268,75 @@ def manage_tournament(slug):
 
                 flash("Tournament completed! 🏆", "success")
                 return redirect(url_for("tournament.manage_tournament", slug=slug))
+
+            elif action == "add_staff":
+                identifier = request.form.get("staff_identifier", "").strip()
+                role = request.form.get("role", "official").strip()
+                assigned_court = request.form.get("assigned_court", "").strip() or None
+
+                if not identifier:
+                    flash("Please provide an email or username for the staff member.", "error")
+                    return redirect(url_for("tournament.manage_tournament", slug=slug))
+
+                target_user = User.query.filter(
+                    db.or_(User.email.ilike(identifier), User.username.ilike(identifier))
+                ).first()
+
+                if not target_user:
+                    flash(f"User with identifier '{identifier}' not found. Please ask them to register first.", "error")
+                    return redirect(url_for("tournament.manage_tournament", slug=slug))
+
+                existing_staff = TournamentStaff.query.filter_by(
+                    tournament_id=tournament.id, user_id=target_user.id
+                ).first()
+
+                if existing_staff:
+                    existing_staff.role = role
+                    existing_staff.assigned_court = assigned_court
+                    db.session.commit()
+                    flash(f"Updated staff assignment for {target_user.username} to role '{role}'.", "success")
+                else:
+                    staff = TournamentStaff(
+                        tournament_id=tournament.id,
+                        user_id=target_user.id,
+                        role=role,
+                        assigned_court=assigned_court
+                    )
+                    db.session.add(staff)
+                    db.session.commit()
+                    flash(f"Added {target_user.username} as tournament {role}.", "success")
+                return redirect(url_for("tournament.manage_tournament", slug=slug))
+
+            elif action == "generate_court_pin":
+                assigned_court = request.form.get("assigned_court", "").strip() or None
+                role = request.form.get("role", "official").strip()
+                hours_valid = request.form.get("hours_valid", 24, type=int)
+
+                pin = f"{random.randint(100000, 999999)}"
+                expires_at = datetime.utcnow() + timedelta(hours=hours_valid)
+
+                staff_pin = TournamentStaff(
+                    tournament_id=tournament.id,
+                    user_id=None,
+                    role=role,
+                    assigned_court=assigned_court,
+                    access_pin=pin,
+                    pin_expires_at=expires_at
+                )
+                db.session.add(staff_pin)
+                db.session.commit()
+                flash(f"Generated Court Access PIN: {pin} for {assigned_court or 'All Courts'} (valid for {hours_valid}h).", "success")
+                return redirect(url_for("tournament.manage_tournament", slug=slug))
+
+            elif action == "remove_staff":
+                staff_id = request.form.get("staff_id", type=int)
+                if staff_id:
+                    staff = TournamentStaff.query.filter_by(id=staff_id, tournament_id=tournament.id).first()
+                    if staff:
+                        db.session.delete(staff)
+                        db.session.commit()
+                        flash("Staff / PIN access removed successfully.", "info")
+                return redirect(url_for("tournament.manage_tournament", slug=slug))
         except Exception as e:
             db.session.rollback()
             flash(f"Failed to perform action: {str(e)}", "error")
@@ -1290,6 +1363,7 @@ def manage_tournament(slug):
     pending_registrations = Registration.query.filter_by(
         tournament_id=tournament.id, status="pending"
     ).all()
+    staff_members = TournamentStaff.query.filter_by(tournament_id=tournament.id).all()
     return render_template(
         "tournament/manage.html",
         pending_registrations=pending_registrations,
@@ -1297,17 +1371,35 @@ def manage_tournament(slug):
         participants=participants,
         total_players=total_players,
         parsed_daily_hours=parsed_daily_hours,
+        staff_members=staff_members,
         formats=TOURNAMENT_FORMATS,
     )
 
 
 @tournament_bp.route("/tournaments/<slug>/match/<int:match_id>/report", methods=["POST"])
-@login_required
-@role_required("admin", "superadmin")
+@tournament_bp.route("/t/<slug>/match/<int:match_id>/report", methods=["POST"])
 def report_match_result(slug, match_id):
-    """Report match result"""
+    """Report match result with RBAC and anti-conflict check"""
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
-    check_tournament_ownership(tournament)
+    check_tournament_access(tournament, min_role="scorer")
+
+    match = Match.query.get_or_404(match_id)
+
+    # 1. Anti-Conflict of Interest Check
+    current_u = get_current_user()
+    try:
+        check_scoring_conflict_of_interest(match, current_u)
+    except PermissionError as pe:
+        flash(str(pe), "error")
+        return redirect(url_for("tournament.view_tournament", slug=slug))
+
+    # 2. Optimistic Concurrency Locking Check
+    client_lock_version = request.form.get("lock_version", type=int)
+    if client_lock_version and match.lock_version and match.lock_version != client_lock_version:
+        flash("Conflict detected: This match was recently updated by another official. Please review the updated score.", "warning")
+        return redirect(url_for("tournament.view_tournament", slug=slug))
+
+    match.lock_version = (match.lock_version or 1) + 1
 
     match = Match.query.get_or_404(match_id)
 

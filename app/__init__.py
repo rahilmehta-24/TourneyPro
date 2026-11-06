@@ -63,6 +63,16 @@ def create_app(config_class=Config):
                     if 'payment_method' not in part_cols:
                         with db.engine.begin() as conn:
                             conn.execute(text("ALTER TABLE participants ADD COLUMN payment_method VARCHAR(50)"))
+                if 'categories' in tables:
+                    cat_cols = [c['name'] for c in inspector.get_columns('categories')]
+                    if 'draw_published' not in cat_cols:
+                        with db.engine.begin() as conn:
+                            conn.execute(text("ALTER TABLE categories ADD COLUMN draw_published BOOLEAN DEFAULT FALSE"))
+                if 'matches' in tables:
+                    match_cols = [c['name'] for c in inspector.get_columns('matches')]
+                    if 'lock_version' not in match_cols:
+                        with db.engine.begin() as conn:
+                            conn.execute(text("ALTER TABLE matches ADD COLUMN lock_version INTEGER DEFAULT 1"))
 
                 from app.web.controllers.auth import bootstrap_superadmin
                 bootstrap_superadmin()
@@ -155,6 +165,13 @@ def create_app(config_class=Config):
     def participant_players_filter(participant):
         from app.services.utils.scheduler import extract_participant_players
         return extract_participant_players(participant)
+
+    @app.template_filter('nl2br')
+    def nl2br_filter(s):
+        if not s:
+            return ""
+        import markupsafe
+        return markupsafe.Markup(markupsafe.escape(s).replace('\n', '<br>\n'))
 
     # Cache Control Middleware for static assets & Security Headers
     @app.after_request
