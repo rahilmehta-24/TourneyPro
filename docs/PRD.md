@@ -1,10 +1,10 @@
 # TourneyPro — Product Requirements Document (PRD)
 
 **Document Status:** Approved & Baseline Source of Truth  
-**Product Version:** 1.1 (Phase 1 Complete, Phase 2 In-Progress)  
+**Product Version:** 2.0 (Phase 1 & Phase 2 Core RBAC Complete)  
 **Target Domain:** Sports (Lawn Tennis, Pickleball, Badminton, Padel, Table Tennis) & Esports Competitions  
 **Owner:** Product & Engineering Team  
-**Last Updated:** October 2026  
+**Last Updated:** November 2026  
 
 ---
 
@@ -19,17 +19,20 @@ The platform orchestrates the complete tournament lifecycle:
 4. Intelligent multi-court scheduling with rest interval enforcement and match progression locking.
 5. Live digital scorekeeping, tiebreak management, and cumulative ranking calculation.
 6. Public spectator portals, interactive bracket viewers, and high-fidelity vector PDF exports.
+7. Enterprise role-based access control, delegated tournament staff, on-court PIN scorekeeping, and draft draw publication workflows.
 
 ---
 
 ## 2. Target Personas & Use Cases
 
-### 2.1 Tournament Organizer / Director (`admin`)
-* **Goals:** Create multi-event tournaments quickly, seed participants, generate balanced draws, schedule hundreds of matches across finite courts without player clashes, and report live scores without math errors.
-* **Pain Points:** Duplicate matches, players scheduled on two courts simultaneously, calculating complex head-to-head tiebreakers in leagues, dealing with walkovers and mid-match retirements.
+### 2.1 Tournament Organizer / Director (`owner` / `tournament_admin`)
+* **Goals:** Create multi-event tournaments quickly, seed participants, generate balanced draws, schedule hundreds of matches across finite courts without player clashes, appoint tournament desk staff and umpires, publish finalized draws, and report live scores without math errors.
+* **Pain Points:** Duplicate matches, players scheduled on two courts simultaneously, calculating complex head-to-head tiebreakers in leagues, dealing with walkovers and mid-match retirements, delegating desk duties without sharing master admin credentials.
 * **Key Tasks:**
   * Configure tournament parameters, start/end dates, daily operating hours, and court rosters.
   * Manage player check-ins, manual seed assignments, and draft team rosters.
+  * Delegate operational responsibilities to tournament staff via `/tournaments/<slug>/staff`.
+  * Toggle category draw publication state (`Draft` vs `Published`).
   * Record live games, rubber scores, and finalize category champions.
 
 ### 2.2 Academy Director / Club Manager (`academy_admin`)
@@ -37,16 +40,32 @@ The platform orchestrates the complete tournament lifecycle:
 * **Pain Points:** Separate software needed for club announcements vs tournament fixtures.
 * **Key Tasks:** Create an Academy portal (`/academy/<slug>`), manage club rosters, and restrict tournament registration to internal academy members.
 
-### 2.3 Competitive Player / Participant (`player` / `user`)
+### 2.3 Tournament Desk / Operations Manager (`desk` staff)
+* **Goals:** Execute day-to-day court desk logistics without altering tournament financial or staff configuration.
+* **Key Tasks:** Check in arriving participants, assign seeds, schedule matches to available courts, enter match scores, and verify scorecards.
+
+### 2.4 Match Official / Chair Umpire (`umpire` staff)
+* **Goals:** Officiate assigned matches, report live game and rubber scores from court-side smartphones/tablets, and mark matches completed.
+* **Key Tasks:** Open assigned match scoring modals, record game progression, and submit final scorelines. Strictly guarded against scoring matches in which they compete.
+
+### 2.5 Quick Court Scorekeeper (`court_pin` mode)
+* **Goals:** Enable dedicated on-court tablets to enter scores instantly using a 4-digit court PIN without requiring individual umpire user account sign-in.
+* **Key Tasks:** Unlock court scoring interface with tournament PIN, report game scores, and advance live tournament scores.
+
+### 2.6 Team League Captain (`captain`)
+* **Goals:** Manage club/corporate team rosters, submit 3-rubber tie lineups before match cutoffs, and monitor group standings.
+* **Key Tasks:** Submit Singles 1, Doubles, and Singles 2 player nominations via the team lineup modal before match commencement.
+
+### 2.7 Competitive Player / Participant (`player` / `user`)
 * **Goals:** Register for upcoming events, submit entry fees, view bracket assignments, track scheduled match times ("Not Before" notices), inspect opponent statistics, and monitor lifetime rankings.
 * **Pain Points:** Having to create full user accounts just to sign up for a weekend tournament; uncertainty over when their next match starts.
 * **Key Tasks:** Self-register with or without an account ("Smart Guest Registration"), view live bracket progression, download official PDF draw sheets.
 
-### 2.4 Spectator / Fan (Public Viewer)
+### 2.8 Spectator / Fan (Public Viewer)
 * **Goals:** Follow live tournament scores in real-time on mobile or desktop without logging in.
 * **Key Tasks:** Check live tournament standings, view Order of Play court schedules, and view match history.
 
-### 2.5 Platform Super Administrator (`superadmin`)
+### 2.9 Platform Super Administrator (`superadmin`)
 * **Goals:** System-wide governance, global player registry auditing, user role elevation, and infrastructure monitoring.
 
 ---
@@ -198,4 +217,33 @@ TourneyPro delivers publication-ready vector documents:
 * **Touch Target Standards:** All interactive controls (buttons, tabs, inputs) maintain at least 44×44px hit areas.
 * **Input Usability:** Elimination of iOS Safari auto-zoom through strict 16px font-size floors on mobile, plus `inputmode="numeric"` on score/UTR inputs.
 * **Zero Desktop Alteration:** All mobile styling strictly isolated behind responsive breakpoints (`@media (max-width: ...)`), preserving desktop layout without compromise.
+
+---
+
+## 10. Operational Governance & Enterprise RBAC
+
+### 10.1 Staff Delegation Lifecycle
+* Organizers can appoint registered platform users to dedicated tournament staff roles (`owner`, `tournament_admin`, `desk`, `umpire`) via `/tournaments/<slug>/staff`.
+* Appointed staff gain scoped access to tournament controls without gaining access to other tournaments owned by the organizer.
+* Platform Superadmins retain platform-wide administrative authority across all tournaments.
+
+### 10.2 Court PIN Fast Scoring Mode
+* Tournaments configure an optional 4-digit numeric PIN (`tournament.court_pin`).
+* Physical court-side tablets or roving scorekeepers can authenticate at `/tournaments/<slug>/court-pin` by entering the PIN and selecting their court number.
+* Enables rapid, touch-friendly score reporting without requiring scorekeepers to create or log in to personal accounts.
+
+### 10.3 Draw Publication State Machine (Draft vs. Published)
+* Newly created categories and generated brackets start in **Draft** state (`draw_published = False`).
+* During draft mode, tournament organizers and desk staff can view bracket geometry, adjust seedings, test progression, and verify schedules.
+* Public viewers, unauthenticated spectators, and players navigating to the category see a friendly status banner: *"Draws for this event are being finalized by the tournament committee"*.
+* Bracket PDF generation is locked until the organizer explicitly toggles the category to **Published** via `/categories/<id>/toggle-publish`.
+
+### 10.4 Match Integrity & Anti-Conflict of Interest
+* Active competitors (players or doubles pairs) participating in a match are strictly blocked from scoring or officiating that specific fixture.
+* In team leagues, competing team captains are prevented from reporting match results for ties involving their own team.
+* Matches must be officiated by neutral chair umpires, desk managers, or tournament directors.
+
+### 10.5 Optimistic Concurrency Control
+* Match entities maintain a monotonic `lock_version` integer.
+* Score submission requests validate the client's current version against the database record. If another desk official or umpire submitted a score change in the interim, the system rejects the transaction with `HTTP 409 Conflict`, prompting the user to refresh and verify the current score state before reapplying changes.
 

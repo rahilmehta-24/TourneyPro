@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Court Official Sign-In - {{ tournament.name }} - TourneyPro{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 480px; margin: 0 auto; padding: var(--spacing-xl) var(--spacing-md);">
+    <div class="form-section" style="background: var(--bg-card); padding: var(--spacing-xl); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); border: 1px solid var(--border-color); text-align: center;">
+        
+        <div style="width: 64px; height: 64px; background: rgba(59, 130, 246, 0.12); color: #3b82f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 1.25rem;">
+            🎾
+        </div>
+
+        <h2 style="font-size: 1.6rem; font-weight: 700; margin-bottom: 0.35rem; color: var(--text-primary);">Court Scoring Mode</h2>
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">
+            {{ tournament.name }}
+        </p>
+
+        <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.4;">
+            Enter the 6-digit access PIN provided by the tournament director or chief referee to start live court scoring.
+        </p>
+
+        <form method="POST" data-turbo="false" id="pinForm">
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label for="pinInput" class="form-label" style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">
+                    6-Digit Court PIN
+                </label>
+                <input 
+                    type="password" 
+                    id="pinInput" 
+                    name="pin" 
+                    class="form-input" 
+                    inputmode="numeric" 
+                    pattern="[0-9]{6}" 
+                    maxlength="6" 
+                    required 
+                    autofocus 
+                    placeholder="••••••" 
+                    style="font-size: 2rem; letter-spacing: 0.6em; text-align: center; font-weight: 700; padding: 0.75rem 0.5rem; font-family: monospace;"
+                >
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block btn-large" style="margin-bottom: 1rem; font-size: 1rem; font-weight: 600;">
+                <span class="btn-icon">⚡</span> Unlock Court Scoring
+            </button>
+        </form>
+
+        <div style="margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+            <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug) }}" style="color: var(--text-muted); text-decoration: none; font-size: 0.85rem;">
+                ← Back to Tournament
+            </a>
+            <a href="{{ url_for('auth.login') }}" style="color: var(--accent-primary); text-decoration: none; font-size: 0.85rem; font-weight: 500;">
+                Organizer Login →
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -3,8 +3,8 @@
 **Document Status:** Approved  
 **Source of Truth:** Inherits from [`INTEGRATIONS.md`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/INTEGRATIONS.md), [`ARCHITECTURE.md`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/ARCHITECTURE.md), and [`FEATURES.md`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/FEATURES.md)  
 **Test Framework:** Python Standard Library `unittest` (compatible with `pytest`)  
-**Active Test Suite:** 72 Automated Unit & Integration Tests Passing (12.2s execution time)  
-**Last Updated:** October 2026  
+**Active Test Suite:** 82 Automated Unit & Integration Tests Passing (14.5s execution time)  
+**Last Updated:** November 2026  
 
 ---
 
@@ -20,7 +20,7 @@ To guarantee enterprise-grade stability during high-stakes tournament finals, To
 
 ## 2. Test Suite Inventory
 
-The automated test suite spans 7 specialized test modules covering 72 distinct test scenarios:
+The automated test suite spans 8 specialized test modules covering 82 distinct test scenarios:
 
 ```
 tests/
@@ -30,7 +30,8 @@ tests/
 ├── test_draw_pdf_export.py          # 12 tests (23 KB) - Bracket PDF rendering, ETag caching
 ├── test_order_of_play_pdf_export.py # 10 tests (16 KB) - Daily court schedule PDF generation
 ├── test_participants_pdf_export.py  # 10 tests (16.5 KB)- Player rosters & check-in PDF exports
-└── test_admin_approval_box.py       # 12 tests (16 KB) - Registration verification & payment transitions
+├── test_admin_approval_box.py       # 12 tests (16 KB) - Registration verification & payment transitions
+└── test_rbac.py                     # 10 tests (18 KB) - RBAC roles, staff delegation, PIN, anti-conflict, locking
 ```
 
 ### 2.1 Detailed Module Breakdown
@@ -64,6 +65,19 @@ Comprehensive verification of the Group Stage Team League engine:
 #### 2.1.4 `test_draw_pdf_export.py` & PDF Suites
 * Verifies vector PDF byte generation for brackets, orders of play, and rosters.
 * Tests HTTP 304 Not Modified ETag caching responses.
+
+#### 2.1.5 `test_rbac.py` (Enterprise Access & Concurrency Suite)
+Comprehensive verification of multi-tier RBAC, staff delegation, anti-conflict guards, and optimistic concurrency:
+* `test_01_tournament_owner_full_access`: Validates that tournament owners have complete read and write access to all settings, categories, and matches.
+* `test_02_superadmin_full_access`: Validates that platform superadmins can manage any tournament and category across the system.
+* `test_03_unauthorized_user_forbidden`: Asserts that regular users without staff roles are rejected with HTTP 403 when attempting administrative operations.
+* `test_04_staff_desk_access_and_permissions`: Proves that appointed `desk` staff can check in players, update seeds, and enter match scores.
+* `test_05_staff_umpire_score_reporting`: Verifies that appointed `umpire` staff can report and advance match scores.
+* `test_06_court_pin_authentication_and_scoring`: Proves that court PIN authentication grants on-court tablets direct score reporting access.
+* `test_07_court_pin_wrong_pin_rejected`: Asserts that incorrect court PINs are rejected with appropriate error messaging.
+* `test_08_scoring_conflict_of_interest_blocked`: Proves that active competitors are blocked (HTTP 403) from officiating or submitting scores for their own matches.
+* `test_09_optimistic_locking_conflict_409`: Asserts that concurrent score updates with stale `lock_version` receive HTTP 409 Conflict, preventing overwrites.
+* `test_10_draw_publish_status_enforcement`: Verifies that draft draws remain hidden from public viewers until explicitly published by an organizer.
 
 ---
 
@@ -109,7 +123,7 @@ python -m unittest discover tests -v
 ```
 *Expected Output:*
 ```text
-Ran 72 tests in 12.219s
+Ran 82 tests in 14.520s
 OK
 ```
 

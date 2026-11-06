@@ -1,8 +1,8 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
+from flask import Blueprint, render_template, redirect, url_for, flash, request
 import csv
 from app import db
 from app.domain.models import Academy, AcademyMember, AcademyAnnouncement, Tournament, User
-from app.web.controllers.auth import login_required, get_current_user
+from app.web.controllers.auth import login_required, get_current_user, check_academy_access
 from app.services.utils.validation import validate_name
 
 academy_bp = Blueprint('academy', __name__, url_prefix='/academies')
@@ -116,14 +116,9 @@ def join(slug):
 @academy_bp.route('/<slug>/members', methods=['GET', 'POST'])
 @login_required
 def members(slug):
-    """Manage members (Admin only)"""
-    current_user = get_current_user()
+    """Manage members (Academy Admin/Owner or Superadmin)"""
     academy = Academy.query.filter_by(url_slug=slug).first_or_404()
-    
-    membership = AcademyMember.query.filter_by(academy_id=academy.id, user_id=current_user.id).first()
-    if not membership or membership.role != 'admin':
-        flash('You do not have permission to manage members.', 'error')
-        return redirect(url_for('academy.dashboard', slug=slug))
+    check_academy_access(academy, require_admin=True)
         
     if request.method == 'POST':
         action = request.form.get('action')
@@ -177,10 +172,7 @@ def members(slug):
 def post_announcement(slug):
     current_user = get_current_user()
     academy = Academy.query.filter_by(url_slug=slug).first_or_404()
-    
-    membership = AcademyMember.query.filter_by(academy_id=academy.id, user_id=current_user.id).first()
-    if not membership or membership.role != 'admin':
-        abort(403)
+    check_academy_access(academy, require_admin=True)
         
     title = request.form.get('title')
     content = request.form.get('content')
