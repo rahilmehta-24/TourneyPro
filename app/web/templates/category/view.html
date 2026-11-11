@@ -7,13 +7,14 @@
     <style>
         .modern-header {
             align-items: center;
-            border-bottom: 1px solid var(--border-color, #333);
+            border-bottom: 1px solid var(--border-color);
             padding-bottom: 1.5rem;
             margin-bottom: 2rem;
             background: var(--bg-card);
+            border: 1px solid var(--border-color);
             padding: 2rem;
             border-radius: var(--radius-lg);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            box-shadow: var(--shadow-sm);
         }
         .header-content {
             display: flex;
@@ -87,9 +88,9 @@
             animation: fixtureGlowPulse 2s ease-in-out;
         }
         @keyframes fixtureGlowPulse {
-            0% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
-            30% { box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.4); }
-            100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
+            0% { box-shadow: 0 0 0 0 rgba(201, 165, 92, 0); }
+            30% { box-shadow: 0 0 0 4px rgba(201, 165, 92, 0.55); }
+            100% { box-shadow: 0 0 0 0 rgba(201, 165, 92, 0); }
         }
         
         @media (max-width: 768px) {
@@ -140,7 +141,7 @@
         </a>
         {% for cat in tournament.categories %}
         <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=cat.id) }}" class="btn btn-sm {% if cat.id == category.id %}btn-primary{% else %}btn-secondary{% endif %}" style="border-radius: 9999px; white-space: nowrap; padding: 0.35rem 0.85rem; font-size: 0.82rem; font-weight: {% if cat.id == category.id %}600{% else %}500{% endif %};">
-            {{ cat.name }} {% if cat.status == 'in_progress' %}<span style="color: #ef4444; font-size: 0.75rem;">● Live</span>{% elif cat.status == 'completed' %}<span style="color: #10b981; font-size: 0.75rem;">✓</span>{% endif %}
+            {{ cat.name }} {% if cat.status == 'in_progress' %}<span style="color: {% if cat.id == category.id %}#FCD9CE{% else %}var(--accent-tertiary-text){% endif %}; font-size: 0.75rem; font-weight: 700;">● Live</span>{% elif cat.status == 'completed' %}<span style="color: {% if cat.id == category.id %}#D1FAE5{% else %}#065F46{% endif %}; font-size: 0.75rem; font-weight: 700;">✓</span>{% endif %}
         </a>
         {% endfor %}
         <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug) }}" class="btn btn-sm btn-secondary" style="border-radius: 9999px; white-space: nowrap; padding: 0.35rem 0.85rem; font-size: 0.82rem; font-weight: 500;" id="btnOrderOfPlayCategoryTab" data-turbo="false">
@@ -168,7 +169,7 @@
             <div class="action-group primary-actions">
                 {% if current_user and current_user.role in ['admin', 'superadmin'] %}
                 {% if category.format == 'group_stage' or (category.max_players_per_team and category.max_players_per_team > 1) %}
-                <a href="{{ url_for('category.team_draft_view', slug=tournament.url_slug, category_id=category.id) }}" class="btn" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4); font-weight: 700;">
+                <a href="{{ url_for('category.team_draft_view', slug=tournament.url_slug, category_id=category.id) }}" class="btn" style="background: rgba(201, 165, 92, 0.18); color: #7A5F1E; border: 1px solid rgba(122, 95, 30, 0.38); font-weight: 700;">
                     🎪 Team Draft Board
                 </a>
                 {% endif %}
@@ -218,8 +219,8 @@
     {% endif %}
 
     {% if not is_export and (category.format == 'group_stage' or (category.max_players_per_team and category.max_players_per_team > 1)) %}
-    <details id="procedure-guide" class="team-wizard-details" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); margin-bottom: 2rem; box-shadow: 0 4px 16px rgba(0,0,0,0.08); overflow: hidden; scroll-margin-top: 80px;">
-        <summary style="cursor: pointer; padding: 0.9rem 1.35rem; display: flex; justify-content: space-between; align-items: center; user-select: none; list-style: none; background: rgba(255,255,255,0.02); transition: background 0.15s ease;" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='rgba(255,255,255,0.02)'">
+    <details id="procedure-guide" class="team-wizard-details" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); margin-bottom: 2rem; box-shadow: var(--shadow-sm); overflow: hidden; scroll-margin-top: 80px;">
+        <summary style="cursor: pointer; padding: 0.9rem 1.35rem; display: flex; justify-content: space-between; align-items: center; user-select: none; list-style: none; background: var(--bg-secondary); transition: background 0.15s ease;" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='var(--bg-secondary)'">
             <div style="display: flex; align-items: center; gap: 0.75rem;">
                 <span style="font-size: 1.3rem;">📋</span>
                 <div>
@@ -227,7 +228,7 @@
                         <span style="font-weight: 700; font-size: 1rem; color: var(--text-primary);">
                             Tournament Workflow &amp; Procedure Guide
                         </span>
-                        <span style="font-size: 0.72rem; font-weight: 700; color: var(--accent-primary); background: rgba(249, 115, 22, 0.12); border: 1px solid rgba(249, 115, 22, 0.3); padding: 0.15rem 0.55rem; border-radius: 9999px;">
+                        <span style="font-size: 0.72rem; font-weight: 700; color: var(--accent-tertiary-text); background: rgba(181, 89, 58, 0.14); border: 1px solid rgba(181, 89, 58, 0.35); padding: 0.15rem 0.55rem; border-radius: 9999px;">
                             ⚡ 6-Step Fair Play Guide
                         </span>
                     </div>
@@ -251,11 +252,11 @@
     {% endif %}
 
     {% if not is_export %}
-    <!-- 🟢 Live Score Indicator -->
+    <!-- Live Score Indicator -->
     <div id="live-indicator" style="display:none; position:fixed; bottom:1.5rem; right:1.5rem; z-index:9999;
-         background:rgba(16,185,129,0.15); border:1px solid #10b981; border-radius:9999px;
-         padding:0.4rem 1rem; font-size:0.8rem; color:#10b981; font-weight:600; backdrop-filter:blur(8px);">
-      🟢 Live — scores updating
+         background: #B5593A; border: 1px solid #9A482C; border-radius:9999px;
+         padding:0.42rem 1rem; font-size:0.8rem; color:#FFFFFF; font-weight:700; box-shadow: var(--shadow-md);">
+      <span class="live-indicator-dot" style="display:inline-block; vertical-align:middle; margin-right:0.4rem;"></span>Live — scores updating
     </div>
 
 
@@ -536,7 +537,7 @@
                 <button type="button" class="bracket-tool-btn" onclick="bracketCanvasFitToScreen()" title="Fit Entire Bracket on Screen">
                     <span>⛶ Fit</span>
                 </button>
-                <div style="width: 1px; height: 18px; background: rgba(255,255,255,0.15); margin: 0 4px;"></div>
+                <div style="width: 1px; height: 18px; background: var(--border-strong); margin: 0 4px;"></div>
                 <!-- Density Toggle -->
                 <button type="button" class="bracket-tool-btn" id="bracketDensityBtn" onclick="toggleBracketDensity()" title="Toggle Compact / Standard View Density">
                     <span>↔️ <span id="bracketDensityText">Compact View</span></span>
@@ -593,7 +594,7 @@
             <!-- GRAND FINALS -->
             {% if grand_finals %}
             <div style="margin-bottom: 2rem;">
-                <h3 style="margin-bottom: 1rem; color: #fbbf24; font-size: 1.5rem; border-left: 4px solid #fbbf24; padding-left: 10px;">👑 Grand Finals</h3>
+                <h3 style="margin-bottom: 1rem; color: var(--accent-secondary-text); font-family: var(--font-display); font-size: 1.6rem; font-weight: 600; border-left: 4px solid var(--accent-secondary); padding-left: 10px;">👑 Grand Finals</h3>
                 <div class="bracket">
                     <svg class="bracket-svg-connectors"></svg>
                     <div class="bracket-round" style="min-width: 360px;">
@@ -708,7 +709,7 @@
         {% set active_group_param = request.args.get('group', 'all') %}
         <!-- Group Tab Navigation -->
         <div class="group-tab-navigation" style="margin: 1.25rem 0 1.5rem 0;">
-            <div class="group-tab-bar" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; padding: 0.65rem 0.85rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); box-shadow: 0 2px 8px rgba(0,0,0,0.12);">
+            <div class="group-tab-bar" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; padding: 0.65rem 0.85rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
                 <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                     <span style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-right: 0.25rem;">Group:</span>
                     <button type="button" 
@@ -764,7 +765,7 @@
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
                 <h3 style="margin: 0; font-size: 1.3rem;">{{ group_info.group.name }}</h3>
                 {% if group_info.group.start_time or group_info.group.assigned_courts %}
-                <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.85rem; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.25); color: #60a5fa; padding: 0.35rem 0.85rem; border-radius: 9999px; font-weight: 600;">
+                <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.85rem; background: rgba(15, 61, 46, 0.08); border: 1px solid rgba(15, 61, 46, 0.25); color: var(--accent-primary-text); padding: 0.35rem 0.85rem; border-radius: 9999px; font-weight: 600;">
                     {% if group_info.group.start_time %}
                     <span>⏰ Session Starts: {{ group_info.group.start_time }}</span>
                     {% endif %}
@@ -810,7 +811,7 @@
                             {% if members %}
                                 <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center;">
                                     {% for m in members %}
-                                        <span style="background: rgba(255,255,255,0.06); padding: 0.15rem 0.45rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.08);">
+                                        <span style="background: var(--bg-secondary); padding: 0.15rem 0.45rem; border-radius: 4px; border: 1px solid var(--border-color);">
                                             {% if m.role == 'captain' %}👑 <strong>{{ m.player.name }}</strong> (C)
                                             {% elif m.role == 'vice_captain' %}🛡️ {{ m.player.name }} (VC)
                                             {% else %}{{ m.player.name }}
@@ -826,7 +827,7 @@
                         <td>{{ participant.group_losses }}</td>
                         <td><strong>{{ participant.group_points }}</strong></td>
                         <td>{{ participant._games_conceded or 0 }}</td>
-                        <td style="font-weight: 600; color: {% if (participant.group_points - (participant._games_conceded or 0)) > 0 %}#10b981{% elif (participant.group_points - (participant._games_conceded or 0)) < 0 %}#ef4444{% else %}var(--text-muted){% endif %};">
+                        <td style="font-weight: 600; color: {% if (participant.group_points - (participant._games_conceded or 0)) > 0 %}#065F46{% elif (participant.group_points - (participant._games_conceded or 0)) < 0 %}#B91C1C{% else %}var(--text-muted){% endif %};">
                             {% set diff = participant.group_points - (participant._games_conceded or 0) %}
                             {% if diff > 0 %}+{{ diff }}{% else %}{{ diff }}{% endif %}
                         </td>
@@ -880,13 +881,13 @@
             </div>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
                 {% for fixture in group_info.matches %}
-                <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" id="fixture-{{ fixture.id }}">
+                <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; box-shadow: var(--shadow-sm);" id="fixture-{{ fixture.id }}">
                     <!-- Tie Card Header (2 Clean, Non-Wrapping Rows) -->
                     <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 0.85rem; display: flex; flex-direction: column; gap: 0.5rem;">
                         <!-- Header Row 1: Title, Round & Status Badges (Lineup & Match) -->
                         <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;">
                             <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <span style="font-weight: 800; font-size: 0.82rem; color: var(--text-primary); background: rgba(255,255,255,0.06); padding: 0.2rem 0.55rem; border-radius: 6px; letter-spacing: 0.05em; text-transform: uppercase;">
+                                <span style="font-weight: 800; font-size: 0.82rem; color: var(--text-primary); background: var(--bg-tertiary); padding: 0.2rem 0.55rem; border-radius: 6px; letter-spacing: 0.05em; text-transform: uppercase;">
                                     Tie #{{ fixture.match_number }}
                                 </span>
                                 <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">
@@ -903,11 +904,11 @@
                                     {% endif %}
                                 {% endfor %}
                                 {% if ns_lineup.complete and fixture.sub_matches %}
-                                    <span style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); padding: 2px 7px; border-radius: 6px; font-size: 0.72rem; font-weight: 600; white-space: nowrap; flex-shrink: 0;">
+                                    <span style="background: rgba(5, 150, 105, 0.14); color: #065F46; border: 1px solid rgba(5, 150, 105, 0.35); padding: 2px 7px; border-radius: 6px; font-size: 0.72rem; font-weight: 600; white-space: nowrap; flex-shrink: 0;">
                                         ✅ Lineup Allotted
                                     </span>
                                 {% else %}
-                                    <span style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); padding: 2px 7px; border-radius: 6px; font-size: 0.72rem; font-weight: 600; white-space: nowrap; flex-shrink: 0;">
+                                    <span style="background: rgba(201, 165, 92, 0.18); color: #7A5F1E; border: 1px solid rgba(122, 95, 30, 0.35); padding: 2px 7px; border-radius: 6px; font-size: 0.72rem; font-weight: 600; white-space: nowrap; flex-shrink: 0;">
                                         ⏳ Lineup Pending
                                     </span>
                                 {% endif %}
@@ -923,11 +924,11 @@
                             {% set tie_time = fixture.scheduled_time or (fixture.sub_matches[0].scheduled_time if fixture.sub_matches and fixture.sub_matches[0].scheduled_time else none) %}
                             {% set tie_court = fixture.court_name or (fixture.sub_matches[0].court_name if fixture.sub_matches and fixture.sub_matches[0].court_name else none) %}
                             {% if tie_time %}
-                                <span style="background: rgba(59, 130, 246, 0.12); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.25); padding: 3px 9px; border-radius: 6px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; flex-shrink: 0;" title="Scheduled: {{ tie_time | ist('%d %b %Y, %I:%M %p IST') }}{% if tie_court %} • 🏟️ {{ tie_court }}{% endif %}">
+                                <span style="background: rgba(15, 61, 46, 0.08); color: var(--accent-primary-text); border: 1px solid rgba(15, 61, 46, 0.25); padding: 3px 9px; border-radius: 6px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; flex-shrink: 0;" title="Scheduled: {{ tie_time | ist('%d %b %Y, %I:%M %p IST') }}{% if tie_court %} • 🏟️ {{ tie_court }}{% endif %}">
                                     📅 {{ tie_time | ist('%d %b, %I:%M %p') }}{% if tie_court %} • 🏟️ {{ tie_court }}{% endif %}
                                 </span>
                             {% else %}
-                                <span style="background: rgba(255, 255, 255, 0.05); color: var(--text-muted); border: 1px solid var(--border-color); padding: 3px 9px; border-radius: 6px; font-weight: 500; white-space: nowrap; flex-shrink: 0;">
+                                <span style="background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border-color); padding: 3px 9px; border-radius: 6px; font-weight: 500; white-space: nowrap; flex-shrink: 0;">
                                     📅 Schedule Pending
                                 </span>
                             {% endif %}
@@ -996,7 +997,7 @@
                         <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.65rem 0.85rem; display: flex; flex-direction: column; gap: 0.4rem;">
                             <!-- Rubber Header Bar: Type on Left, Schedule on Right -->
                             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border-color);">
-                                <span style="font-weight: 750; color: #f59e0b; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.3rem;">
+                                <span style="font-weight: 750; color: var(--accent-secondary-text); text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.3rem;">
                                     {% if r.rubber_type == 'singles' %}🎾 Singles
                                     {% elif r.rubber_type == 'doubles_1' %}👥 Doubles 1
                                     {% elif r.rubber_type == 'doubles_2' %}👥 Doubles 2
@@ -1005,7 +1006,7 @@
                                 </span>
                                 <div style="display: inline-flex; align-items: center; gap: 0.35rem; color: var(--text-muted); font-size: 0.72rem; white-space: nowrap; flex-shrink: 0;">
                                     {% if r.scheduled_time %}
-                                        <span style="color: #60a5fa; font-weight: 600;">🕒 {{ r.scheduled_time | ist('%I:%M %p') }}</span>
+                                        <span style="color: var(--accent-primary-text); font-weight: 600;">🕒 {{ r.scheduled_time | ist('%I:%M %p') }}</span>
                                     {% endif %}
                                     {% if r.court_name %}
                                         <span>• 🏟️ {{ r.court_name }}</span>
@@ -1028,10 +1029,10 @@
                                                     {{ r.p1_player1.name }}{% if r.p1_player2 %} <span style="color: var(--text-muted); font-weight: 400;">/</span> {{ r.p1_player2.name }}{% endif %}
                                                 </span>
                                             {% else %}
-                                                <span style="color: #f59e0b; font-style: italic; font-size: 0.76rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">⏳ Nomination Pending</span>
+                                                <span style="color: #7A5F1E; font-style: italic; font-size: 0.76rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">⏳ Nomination Pending</span>
                                             {% endif %}
                                         </div>
-                                        <span style="flex-shrink: 0; font-family: monospace; font-size: 0.85rem; font-weight: 750; min-width: 24px; text-align: center; color: {% if r.winner_id and r.participant1_id and r.winner_id == r.participant1_id %}var(--accent-success){% elif r.status == 'completed' %}var(--text-secondary){% else %}var(--text-muted){% endif %}; background: var(--bg-secondary); padding: 1px 6px; border-radius: 4px; border: 1px solid var(--border-color);">
+                                        <span style="flex-shrink: 0; font-family: monospace; font-size: 0.85rem; font-weight: 750; min-width: 24px; text-align: center; color: {% if r.winner_id and r.participant1_id and r.winner_id == r.participant1_id %}var(--accent-success-text){% elif r.status == 'completed' %}var(--text-secondary){% else %}var(--text-muted){% endif %}; background: var(--bg-secondary); padding: 1px 6px; border-radius: 4px; border: 1px solid var(--border-color);">
                                             {{ s1 }}
                                         </span>
                                     </div>
@@ -1047,10 +1048,10 @@
                                                     {{ r.p2_player1.name }}{% if r.p2_player2 %} <span style="color: var(--text-muted); font-weight: 400;">/</span> {{ r.p2_player2.name }}{% endif %}
                                                 </span>
                                             {% else %}
-                                                <span style="color: #f59e0b; font-style: italic; font-size: 0.76rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">⏳ Nomination Pending</span>
+                                                <span style="color: #7A5F1E; font-style: italic; font-size: 0.76rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">⏳ Nomination Pending</span>
                                             {% endif %}
                                         </div>
-                                        <span style="flex-shrink: 0; font-family: monospace; font-size: 0.85rem; font-weight: 750; min-width: 24px; text-align: center; color: {% if r.winner_id and r.participant2_id and r.winner_id == r.participant2_id %}var(--accent-success){% elif r.status == 'completed' %}var(--text-secondary){% else %}var(--text-muted){% endif %}; background: var(--bg-secondary); padding: 1px 6px; border-radius: 4px; border: 1px solid var(--border-color);">
+                                        <span style="flex-shrink: 0; font-family: monospace; font-size: 0.85rem; font-weight: 750; min-width: 24px; text-align: center; color: {% if r.winner_id and r.participant2_id and r.winner_id == r.participant2_id %}var(--accent-success-text){% elif r.status == 'completed' %}var(--text-secondary){% else %}var(--text-muted){% endif %}; background: var(--bg-secondary); padding: 1px 6px; border-radius: 4px; border: 1px solid var(--border-color);">
                                             {{ s2 }}
                                         </span>
                                     </div>
@@ -1092,7 +1093,7 @@
                             <td style="font-weight: 600; text-align: center;">{{ row_p.name }}</td>
                             {% for col_p in group_info.standings %}
                             {% if row_p.id == col_p.id %}
-                                <td class="empty-cell" style="background: rgba(255,255,255,0.05); color: var(--text-muted); font-weight: bold; font-size: 1.2rem;">X</td>
+                                <td class="empty-cell" style="background: var(--bg-tertiary); color: var(--text-muted); font-weight: bold; font-size: 1.2rem;">X</td>
                             {% else %}
                                 {% set ns = namespace(found=false, match=none, is_p1=true) %}
                                 {% for m in group_info.matches %}
@@ -1113,7 +1114,7 @@
                                         <div style="display: flex; justify-content: center; align-items: center;">
                                             <input type="number" name="match_{{ ns.match.id }}_p{% if ns.is_p1 %}1{% else %}2{% endif %}" 
                                                    value="{{ ns.match.score1 if (ns.is_p1 and ns.match.score1 is not none) else (ns.match.score2 if not ns.is_p1 and ns.match.score2 is not none else '') }}" 
-                                                   style="width: 60px; text-align: center; padding: 4px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.3); color: white; border-radius: 4px;" min="0" placeholder="-">
+                                                   style="width: 60px; text-align: center; padding: 4px; border: 1px solid var(--border-strong); background: var(--bg-primary); color: var(--text-primary); border-radius: 4px;" min="0" placeholder="-">
                                         </div>
                                     {% else %}
                                         {% if ns.match.status == 'completed' %}
@@ -1148,7 +1149,7 @@
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                 Save All Grid Scores
             </button>
-            <button type="reset" form="group-matrix-form" class="btn" title="Undo Entries" style="padding: 0.75rem 1.5rem; display: flex; align-items: center; gap: 8px; border-radius: 4px; background: rgba(255,255,255,0.1);">
+            <button type="reset" form="group-matrix-form" class="btn btn-secondary" title="Undo Entries" style="padding: 0.75rem 1.5rem; display: flex; align-items: center; gap: 8px; border-radius: 4px;">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path></svg>
                 Undo Changes
             </button>
@@ -1160,11 +1161,11 @@
         {% if category.status in ['in_progress', 'setup', 'upcoming'] and not knockout_exists %}
         {% if current_user and current_user.role in ['admin', 'superadmin'] %}
             {% if pending_group_count and pending_group_count > 0 %}
-            <div class="group-stage-status-banner" style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: var(--radius-md); padding: 1.25rem; margin-top: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+            <div class="group-stage-status-banner" style="background: rgba(201, 165, 92, 0.14); border: 1px solid rgba(122, 95, 30, 0.35); border-radius: var(--radius-md); padding: 1.25rem; margin-top: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
                 <div style="display: flex; align-items: center; gap: 0.75rem;">
                     <span style="font-size: 1.5rem;">⏳</span>
                     <div>
-                        <div style="font-weight: 700; color: #f59e0b; font-size: 0.95rem;">
+                        <div style="font-weight: 700; color: #7A5F1E; font-size: 0.95rem;">
                             Group Stage in Progress ({{ pending_group_count }} of {{ total_group_matches or pending_group_count }} match{% if pending_group_count != 1 %}es{% endif %} remaining)
                         </div>
                         <div style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 0.2rem;">
@@ -1172,16 +1173,16 @@
                         </div>
                     </div>
                 </div>
-                <button type="button" disabled class="btn btn-secondary" style="opacity: 0.6; cursor: not-allowed; font-weight: 600;" title="Complete remaining group matches first">
+                <button type="button" disabled class="btn btn-secondary" style="opacity: 0.65; cursor: not-allowed; font-weight: 600;" title="Complete remaining group matches first">
                     🔒 Knockout Locked (Group Play Remaining)
                 </button>
             </div>
             {% else %}
-            <div class="group-stage-status-banner" style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: var(--radius-md); padding: 1.25rem; margin-top: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+            <div class="group-stage-status-banner" style="background: rgba(5, 150, 105, 0.10); border: 1px solid rgba(5, 150, 105, 0.35); border-radius: var(--radius-md); padding: 1.25rem; margin-top: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
                 <div style="display: flex; align-items: center; gap: 0.75rem;">
                     <span style="font-size: 1.5rem;">🏆</span>
                     <div>
-                        <div style="font-weight: 700; color: #10b981; font-size: 0.95rem;">
+                        <div style="font-weight: 700; color: #065F46; font-size: 0.95rem;">
                             All Group Stage Matches Completed!
                         </div>
                         <div style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 0.2rem;">
@@ -1190,7 +1191,7 @@
                     </div>
                 </div>
                 <form method="POST" action="{{ url_for('category.start_knockout_stage', slug=tournament.url_slug, category_id=category.id) }}" style="margin: 0;">
-                    <button type="submit" class="btn btn-primary btn-large" style="background: #10b981; border-color: #10b981; font-weight: 700; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);" onclick="return confirm('Generate Knockout Bracket and seed top group qualifiers?');">
+                    <button type="submit" class="btn btn-success btn-large" style="font-weight: 700; box-shadow: 0 4px 14px rgba(4, 120, 87, 0.28);" onclick="return confirm('Generate Knockout Bracket and seed top group qualifiers?');">
                         🚀 Start Knockout Stage ➔
                     </button>
                 </form>
@@ -1289,16 +1290,16 @@
         margin-bottom: 2rem;
     }
     .round-robin-grid th, .round-robin-grid td {
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        border: 1px solid var(--border-color);
         padding: 10px;
         text-align: center;
     }
     .round-robin-grid th {
-        background-color: rgba(255, 255, 255, 0.05);
+        background-color: var(--bg-secondary);
         font-weight: bold;
     }
     .round-robin-grid .empty-cell {
-        background-color: rgba(0, 0, 0, 0.2);
+        background-color: var(--bg-tertiary);
     }
 .clickable-match {
         cursor: pointer;
@@ -1306,8 +1307,8 @@
     }
     .clickable-match:hover {
         transform: translateY(-2px);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-        border-color: rgba(255,255,255,0.2);
+        box-shadow: var(--shadow-lg);
+        border-color: var(--accent-primary);
     }
 </style>
 
@@ -1337,20 +1338,20 @@
         padding: 2rem;
         min-width: 250px;
         border: 1px solid var(--border-color);
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        box-shadow: var(--shadow-sm);
     }
     
     .winner-card {
-        border-top: 4px solid #FFD700;
+        border-top: 4px solid var(--accent-secondary);
         transform: scale(1.05);
     }
     
     .runner-up-card {
-        border-top: 4px solid #C0C0C0;
+        border-top: 4px solid #55695E;
     }
 
     .semi-finalist-card {
-        border-top: 4px solid #CD7F32;
+        border-top: 4px solid var(--accent-tertiary);
         padding: 1rem 1.5rem;
         min-width: 200px;
     }
@@ -1376,8 +1377,9 @@
     }
     
     .winner-card .podium-name {
-        font-size: 1.8rem;
-        color: #FFD700;
+        font-family: var(--font-display);
+        font-size: 1.9rem;
+        color: var(--accent-secondary-text);
     }
 
     .podium-seed {
@@ -1403,8 +1405,8 @@
     }
     .clickable-match:hover {
         transform: translateY(-2px);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-        border-color: rgba(255,255,255,0.2);
+        box-shadow: var(--shadow-lg);
+        border-color: var(--accent-primary);
     }
 
     /* Group Switcher Tabs */
@@ -1421,20 +1423,20 @@
         border-radius: var(--radius-md);
         cursor: pointer;
         transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        box-shadow: var(--shadow-sm);
         user-select: none;
     }
     .group-tab-btn:hover {
         color: var(--text-primary);
-        border-color: rgba(255, 107, 0, 0.4);
-        background: var(--bg-tertiary);
+        border-color: var(--accent-primary);
+        background: var(--bg-hover);
         transform: translateY(-1px);
     }
     .group-tab-btn.active {
-        color: #ffffff !important;
-        background: var(--primary) !important;
-        border-color: var(--primary) !important;
-        box-shadow: 0 4px 12px rgba(255, 107, 0, 0.35);
+        color: #FDFBF6 !important;
+        background: var(--accent-primary) !important;
+        border-color: var(--accent-primary) !important;
+        box-shadow: 0 4px 12px rgba(15, 61, 46, 0.28);
         transform: translateY(-1px);
     }
     .group-tab-badge {
@@ -1442,14 +1444,14 @@
         font-weight: 700;
         padding: 0.15rem 0.45rem;
         border-radius: 9999px;
-        background: rgba(0, 0, 0, 0.2);
+        background: var(--bg-secondary);
         color: inherit;
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        border: 1px solid var(--border-color);
     }
     .group-tab-btn.active .group-tab-badge {
-        background: rgba(255, 255, 255, 0.25);
-        color: #ffffff;
-        border-color: rgba(255, 255, 255, 0.45);
+        background: rgba(253, 251, 246, 0.22);
+        color: #FDFBF6;
+        border-color: rgba(253, 251, 246, 0.42);
     }
     .group-view-pane {
         animation: groupPaneFadeIn 0.22s ease-out;
@@ -1629,10 +1631,10 @@ async function toggleMatchStatus(matchId, checkbox) {
 {% include "components/match_modal.html" %}
 
 <!-- CAPTAINS' MATCH LINEUP NOMINATION MODAL -->
-<div id="captainsLineupModal" class="glass-modal-overlay modal" style="display: none; position: fixed; z-index: 9999; inset: 0; width: 100%; height: 100%; overflow-y: auto; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(6px); align-items: center; justify-content: center; padding: 1.5rem 1rem;">
-    <div class="glass-modal" style="background: var(--bg-card); padding: 1.75rem; border: 1px solid var(--border-color); border-radius: var(--radius-lg); width: 95%; max-width: 780px; box-shadow: var(--shadow-xl); position: relative; max-height: 90vh; overflow-y: auto; margin: auto;">
+<div id="captainsLineupModal" class="glass-modal-overlay modal" role="dialog" aria-modal="true" style="display: none; position: fixed; z-index: 9999; inset: 0; width: 100%; height: 100%; overflow-y: auto; background-color: rgba(11, 43, 32, 0.52); backdrop-filter: blur(6px); align-items: center; justify-content: center; padding: 1.5rem 1rem;">
+    <div class="glass-modal" style="background: var(--bg-card); padding: 1.75rem; border: 1px solid var(--border-strong); border-radius: var(--radius-lg); width: 95%; max-width: 780px; box-shadow: var(--shadow-lg); position: relative; max-height: 90vh; overflow-y: auto; margin: auto;">
         <!-- Header -->
-        <div class="glass-modal-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding: 0 0 0.75rem 0; background: transparent;">
+        <div class="glass-modal-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; border-bottom: 2px solid var(--accent-secondary); padding: 0 0 0.75rem 0; background: transparent; color: var(--text-primary);">
             <div>
                 <h3 style="margin: 0; font-size: 1.25rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 0.45rem;">
                     📋 Allot Captains' Match Lineup
@@ -1645,15 +1647,15 @@ async function toggleMatchStatus(matchId, checkbox) {
         </div>
 
         <!-- Fair Play Notice -->
-        <div style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: var(--radius-md); padding: 0.75rem 1rem; margin-bottom: 1.25rem; font-size: 0.82rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.6rem;">
+        <div style="background: rgba(15, 61, 46, 0.08); border: 1px solid rgba(15, 61, 46, 0.25); border-radius: var(--radius-md); padding: 0.75rem 1rem; margin-bottom: 1.25rem; font-size: 0.82rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.6rem;">
             <span style="font-size: 1.3rem;">⚖️</span>
             <div>
-                <strong style="color: var(--accent-primary);">Fair Play Safeguard:</strong>
+                <strong style="color: var(--accent-primary-text);">Fair Play Safeguard:</strong>
                 Captains decide player nominations beforehand for 1 Singles and 2 Doubles. The organizer allots the matches based on captains' submitted slips to ensure fairness without rigging.
             </div>
         </div>
 
-        <div id="lineupWarningBox" style="display: none; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: var(--radius-md); padding: 0.65rem 0.95rem; margin-bottom: 1rem; font-size: 0.8rem; color: #fbbf24;">
+        <div id="lineupWarningBox" style="display: none; background: rgba(201, 165, 92, 0.16); border: 1px solid rgba(122, 95, 30, 0.35); border-radius: var(--radius-md); padding: 0.65rem 0.95rem; margin-bottom: 1rem; font-size: 0.8rem; color: #7A5F1E;">
             <!-- Injected via JS when duplicate players detected -->
         </div>
 
@@ -1663,8 +1665,8 @@ async function toggleMatchStatus(matchId, checkbox) {
                 
                 <!-- Rubber 1: Singles -->
                 <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.4rem;">
-                        <span style="font-weight: 700; color: #f59e0b; font-size: 0.85rem; text-transform: uppercase; display: flex; align-items: center; gap: 0.35rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.4rem;">
+                        <span style="font-weight: 700; color: var(--accent-secondary-text); font-size: 0.85rem; text-transform: uppercase; display: flex; align-items: center; gap: 0.35rem;">
                             🎾 Rubber 1: Singles
                         </span>
                         <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">1 Player vs 1 Player</span>
@@ -1687,8 +1689,8 @@ async function toggleMatchStatus(matchId, checkbox) {
 
                 <!-- Rubber 2: Doubles 1 -->
                 <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.4rem;">
-                        <span style="font-weight: 700; color: #3b82f6; font-size: 0.85rem; text-transform: uppercase; display: flex; align-items: center; gap: 0.35rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.4rem;">
+                        <span style="font-weight: 700; color: var(--accent-primary-text); font-size: 0.85rem; text-transform: uppercase; display: flex; align-items: center; gap: 0.35rem;">
                             👥 Rubber 2: Doubles 1
                         </span>
                         <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">2 Players vs 2 Players</span>
@@ -1721,8 +1723,8 @@ async function toggleMatchStatus(matchId, checkbox) {
 
                 <!-- Rubber 3: Doubles 2 -->
                 <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.4rem;">
-                        <span style="font-weight: 700; color: #10b981; font-size: 0.85rem; text-transform: uppercase; display: flex; align-items: center; gap: 0.35rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.4rem;">
+                        <span style="font-weight: 700; color: #065F46; font-size: 0.85rem; text-transform: uppercase; display: flex; align-items: center; gap: 0.35rem;">
                             👥 Rubber 3: Doubles 2
                         </span>
                         <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">2 Players vs 2 Players</span>
@@ -1973,8 +1975,8 @@ function handleTargetMatchHighlight() {
         if (matchCard) {
             setTimeout(() => {
                 matchCard.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-                matchCard.style.outline = '3px solid var(--accent-primary, #f97316)';
-                matchCard.style.boxShadow = '0 0 25px rgba(249, 115, 22, 0.75)';
+                matchCard.style.outline = '3px solid var(--accent-secondary, #C9A55C)';
+                matchCard.style.boxShadow = '0 0 22px rgba(201, 165, 92, 0.55)';
                 matchCard.style.borderRadius = '8px';
                 matchCard.style.transition = 'all 0.3s ease';
                 
@@ -2463,7 +2465,6 @@ document.addEventListener('DOMContentLoaded', initBracketView);
 document.addEventListener('turbo:load', initBracketView);
 window.addEventListener('load', () => setTimeout(renderBracketConnectors, 100));
 window.addEventListener('resize', () => requestAnimationFrame(renderBracketConnectors));
-window.addEventListener('tourneypro:themechange', () => requestAnimationFrame(renderBracketConnectors));
 
 // Re-render when bracket scrolls into viewport or viewport is dragged/scrolled
 if (window.IntersectionObserver) {

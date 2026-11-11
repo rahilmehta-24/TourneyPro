@@ -62,8 +62,19 @@ Thumbs.db
 # Exported documents and media files
 *.pdf
 *.png
+!app/web/static/brand/*.png
 *.webp
 *.gif
 *.md
 !docs/
 !docs/*.md
+
+# Deployment
+dist/*
+*.egg-info/
+build/
+*.pyc
+
+baseline-society-logo-files
+*.svg
+*.png

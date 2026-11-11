@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Player Dashboard - TourneyPro{% endblock %}
+{% block title %}Player Dashboard - The Baseline Society{% endblock %}
 
 {% block content %}
 
@@ -66,7 +66,7 @@
                             {{ player.name[:2]|upper }}
                         </div>
                         <div>
-                            <h2 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">{{ player.name }} <span class="badge" style="background-color: var(--accent-success, #22c55e); color: white; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.85rem; font-weight: 600;">Status: {{ player.current_status or 'Active' }}</span></h2>
+                            <h2 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">{{ player.name }} <span class="badge" style="background-color: var(--accent-success); color: #FFFFFF; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.85rem; font-weight: 600;">Status: {{ player.current_status or 'Active' }}</span></h2>
                             <p style="margin: 0; color: var(--text-muted); font-size: 0.9rem;">Reg No: <strong style="color: var(--accent-primary);">{{ player.registration_no or 'Pending' }}</strong></p>
                         </div>
                     </div>
@@ -88,28 +88,28 @@
                         <input type="hidden" name="player_id" value="{{ player.id }}">
                         
                         <!-- System Generated Fields (Read-Only) -->
-                        <div style="background: rgba(255,255,255,0.02); padding: 1rem; border-radius: var(--radius-sm); margin-bottom: 1.5rem; border: 1px solid rgba(255,255,255,0.05);">
+                        <div style="background: var(--bg-secondary); padding: 1rem; border-radius: var(--radius-sm); margin-bottom: 1.5rem; border: 1px solid var(--border-color);">
                             <h4 style="margin-top: 0; margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">System Generated Details</h4>
                             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
                                 <div>
                                     <label class="form-label">Registration No.</label>
-                                    <input type="text" class="form-input" value="{{ player.registration_no or 'N/A' }}" disabled style="color: var(--text-primary, #ffffff); background-color: rgba(255,255,255,0.1); cursor: not-allowed;">
+                                    <input type="text" class="form-input" value="{{ player.registration_no or 'N/A' }}" disabled style="color: var(--text-secondary); background-color: var(--bg-tertiary); cursor: not-allowed;">
                                 </div>
                                 <div>
                                     <label class="form-label">Date of Registration</label>
-                                    <input type="date" class="form-input" value="{{ player.registration_date.strftime('%Y-%m-%d') if player.registration_date else '' }}" disabled style="color: var(--text-primary, #ffffff); background-color: rgba(255,255,255,0.1); cursor: not-allowed;">
+                                    <input type="date" class="form-input" value="{{ player.registration_date.strftime('%Y-%m-%d') if player.registration_date else '' }}" disabled style="color: var(--text-secondary); background-color: var(--bg-tertiary); cursor: not-allowed;">
                                 </div>
                                 <div>
                                     <label class="form-label">Registration Validity</label>
-                                    <input type="date" class="form-input" value="{{ player.registration_validity.strftime('%Y-%m-%d') if player.registration_validity else '' }}" disabled style="color: var(--text-primary, #ffffff); background-color: rgba(255,255,255,0.1); cursor: not-allowed;">
+                                    <input type="date" class="form-input" value="{{ player.registration_validity.strftime('%Y-%m-%d') if player.registration_validity else '' }}" disabled style="color: var(--text-secondary); background-color: var(--bg-tertiary); cursor: not-allowed;">
                                 </div>
                                 <div>
                                     <label class="form-label">Current Status</label>
-                                    <input type="text" class="form-input" value="{{ player.current_status or 'Active' }}" disabled style="color: var(--text-primary, #ffffff); background-color: rgba(255,255,255,0.1); cursor: not-allowed;">
+                                    <input type="text" class="form-input" value="{{ player.current_status or 'Active' }}" disabled style="color: var(--text-secondary); background-color: var(--bg-tertiary); cursor: not-allowed;">
                                 </div>
                                 <div>
                                     <label class="form-label">Age Category</label>
-                                    <input type="text" class="form-input" value="{{ player.age_category }}" disabled style="color: var(--text-primary, #ffffff); background-color: rgba(255,255,255,0.1); cursor: not-allowed;">
+                                    <input type="text" class="form-input" value="{{ player.age_category }}" disabled style="color: var(--text-secondary); background-color: var(--bg-tertiary); cursor: not-allowed;">
                                 </div>
                             </div>
                         </div>
@@ -227,23 +227,23 @@
                 </div>
                 
                 <!-- Player Analytics & Matches Section -->
-                <div style="padding: 1.5rem; border-top: 1px solid var(--border-color); background: rgba(0,0,0,0.02);">
+                <div style="padding: 1.5rem; border-top: 1px solid var(--border-color); background: var(--bg-secondary);">
                     <!-- Analytics Summary -->
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
-                        <div class="stat-card" style="background: var(--bg-card); padding: 1rem; border-radius: var(--radius-md); text-align: center; border: 1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
-                            <div style="font-size: 2rem; font-weight: bold; color: var(--accent-primary);">{{ data.stats.matches_played }}</div>
+                        <div class="stat-card" style="background: var(--bg-card); padding: 1rem; border-radius: var(--radius-md); text-align: center; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+                            <div style="font-size: 2rem; font-weight: bold; color: var(--accent-primary-text);">{{ data.stats.matches_played }}</div>
                             <div style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Matches Played</div>
                         </div>
-                        <div class="stat-card" style="background: var(--bg-card); padding: 1rem; border-radius: var(--radius-md); text-align: center; border: 1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                        <div class="stat-card" style="background: var(--bg-card); padding: 1rem; border-radius: var(--radius-md); text-align: center; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
                             <div style="font-size: 2rem; font-weight: bold; color: var(--accent-success);">{{ data.stats.wins }}</div>
                             <div style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Wins</div>
                         </div>
-                        <div class="stat-card" style="background: var(--bg-card); padding: 1rem; border-radius: var(--radius-md); text-align: center; border: 1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                        <div class="stat-card" style="background: var(--bg-card); padding: 1rem; border-radius: var(--radius-md); text-align: center; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
                             <div style="font-size: 2rem; font-weight: bold; color: var(--error);">{{ data.stats.losses }}</div>
                             <div style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Losses</div>
                         </div>
-                        <div class="stat-card" style="background: var(--bg-card); padding: 1rem; border-radius: var(--radius-md); text-align: center; border: 1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
-                            <div style="font-size: 2rem; font-weight: bold; color: var(--accent-secondary);">{{ data.stats.win_rate }}%</div>
+                        <div class="stat-card" style="background: var(--bg-card); padding: 1rem; border-radius: var(--radius-md); text-align: center; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+                            <div style="font-size: 2rem; font-weight: bold; color: var(--accent-secondary-text);">{{ data.stats.win_rate }}%</div>
                             <div style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Win Rate</div>
                         </div>
                     </div>
@@ -251,7 +251,7 @@
                     <!-- Assigned Squads (Team League) -->
                     {% if data.assigned_teams %}
                     <div style="margin-bottom: 2rem;">
-                        <h4 style="margin-top: 0; margin-bottom: 1rem; color: var(--text-primary); border-bottom: 2px solid #f59e0b; padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <h4 style="margin-top: 0; margin-bottom: 1rem; color: var(--text-primary); border-bottom: 2px solid var(--accent-secondary); padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
                             <span>🛡️</span> My Assigned Teams & Squads
                         </h4>
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
@@ -264,24 +264,24 @@
                                             {{ item.tournament.name if item.tournament else '' }} &bull; {{ item.category.name if item.category else '' }}
                                         </div>
                                     </div>
-                                    <span style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700;">
+                                    <span style="background: rgba(201, 165, 92, 0.18); color: #7A5F1E; border: 1px solid rgba(122, 95, 30, 0.35); padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700;">
                                         {{ item.role }}
                                     </span>
                                 </div>
                                 {% if item.group %}
-                                <div style="display: inline-block; font-size: 0.8rem; background: rgba(37, 99, 235, 0.15); color: #60a5fa; padding: 0.2rem 0.5rem; border-radius: 4px; margin-bottom: 0.75rem;">
+                                <div style="display: inline-block; font-size: 0.8rem; background: rgba(15, 61, 46, 0.10); color: var(--accent-primary-text); border: 1px solid rgba(15, 61, 46, 0.25); padding: 0.2rem 0.5rem; border-radius: 4px; margin-bottom: 0.75rem; font-weight: 600;">
                                     📊 Assigned to {{ item.group.name }}
                                 </div>
                                 {% endif %}
                                 <div style="font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.4rem;">Squad Teammates:</div>
                                 <div style="display: flex; flex-direction: column; gap: 0.35rem;">
                                     {% for member in item.teammates %}
-                                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 0.3rem 0.5rem; border-radius: 4px; font-size: 0.82rem;">
-                                        <span {% if member.player_id == data.player.id %}style="font-weight: 700; color: var(--accent-primary);"{% endif %}>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-secondary); padding: 0.3rem 0.5rem; border-radius: 4px; font-size: 0.82rem;">
+                                        <span {% if member.player_id == data.player.id %}style="font-weight: 700; color: var(--accent-primary-text);"{% endif %}>
                                             {{ member.player.name if member.player else 'Player' }}
                                             {% if member.player_id == data.player.id %} (You){% endif %}
                                         </span>
-                                        <span style="font-size: 0.72rem; color: var(--text-muted); background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 3px;">
+                                        <span style="font-size: 0.72rem; color: var(--text-secondary); background: var(--bg-tertiary); padding: 1px 6px; border-radius: 3px;">
                                             Tier {{ member.tier or 'Member' }}
                                         </span>
                                     </div>
@@ -306,16 +306,16 @@
                                     <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
                                         <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted);">
                                             <span>{{ match.tournament.name if match.tournament else 'Tournament' }}</span>
-                                            <span style="color: var(--accent-secondary);">Round {{ match.round }}</span>
+                                            <span style="color: var(--accent-secondary-text); font-weight: 600;">Round {{ match.round }}</span>
                                         </div>
                                         <div style="display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 1.1rem;">
-                                            <span style="{% if match.participant1_id in data.participant_ids %}color: var(--accent-primary);{% endif %}">{{ match.participant1.name if match.participant1 else 'TBD' }}</span>
+                                            <span style="{% if match.participant1_id in data.participant_ids %}color: var(--accent-primary-text);{% endif %}">{{ match.participant1.name if match.participant1 else 'TBD' }}</span>
                                             <span style="color: var(--text-muted); font-size: 0.9rem;">VS</span>
-                                            <span style="{% if match.participant2_id in data.participant_ids %}color: var(--accent-primary);{% endif %}">{{ match.participant2.name if match.participant2 else 'TBD' }}</span>
+                                            <span style="{% if match.participant2_id in data.participant_ids %}color: var(--accent-primary-text);{% endif %}">{{ match.participant2.name if match.participant2 else 'TBD' }}</span>
                                         </div>
                                         <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-top: 0.5rem;">
-                                            <span style="background: rgba(255,255,255,0.1); padding: 0.2rem 0.5rem; border-radius: 4px;">📅 {{ match.scheduled_time|ist('%b %d, %I:%M %p IST') if match.scheduled_time else 'TBD' }}</span>
-                                            <span style="background: rgba(255,255,255,0.1); padding: 0.2rem 0.5rem; border-radius: 4px;">🏟️ {{ match.court_name or 'TBD' }}</span>
+                                            <span style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 0.2rem 0.5rem; border-radius: 4px;">📅 {{ match.scheduled_time|ist('%b %d, %I:%M %p IST') if match.scheduled_time else 'TBD' }}</span>
+                                            <span style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 0.2rem 0.5rem; border-radius: 4px;">🏟️ {{ match.court_name or 'TBD' }}</span>
                                         </div>
                                     </div>
                                 {% endfor %}
@@ -343,7 +343,7 @@
                                                 {{ match.participant1.name if match.participant1 else 'TBD' }}
                                                 {% if match.winner_id == match.participant1_id %}🏆{% endif %}
                                             </span>
-                                            <span style="background: rgba(255,255,255,0.05); padding: 0.2rem 0.5rem; border-radius: 4px; font-family: monospace;">{{ match.score1 or '-' }} : {{ match.score2 or '-' }}</span>
+                                            <span style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 0.2rem 0.5rem; border-radius: 4px; font-family: monospace;">{{ match.score1 or '-' }} : {{ match.score2 or '-' }}</span>
                                             <span style="{% if match.winner_id == match.participant2_id %}color: var(--accent-success);{% elif match.participant2_id in data.participant_ids %}color: var(--error);{% endif %}">
                                                 {% if match.winner_id == match.participant2_id %}🏆{% endif %}
                                                 {{ match.participant2.name if match.participant2 else 'TBD' }}
@@ -374,9 +374,9 @@
         {% endif %}
 
         <!-- Danger Zone -->
-        <div class="card" style="margin-top: 2rem; border: 1px solid #ef4444; background-color: rgba(239, 68, 68, 0.05);">
-            <div class="card-header" style="border-bottom: 1px solid rgba(239, 68, 68, 0.2); padding-bottom: 1rem; margin-bottom: 1.5rem;">
-                <h3 class="card-title" style="color: #ef4444; font-weight: 700;">Danger Zone</h3>
+        <div class="card" style="margin-top: 2rem; border: 1px solid var(--accent-danger); background-color: rgba(220, 38, 38, 0.05);">
+            <div class="card-header" style="border-bottom: 1px solid rgba(220, 38, 38, 0.2); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                <h3 class="card-title" style="color: #B91C1C; font-weight: 700;">Danger Zone</h3>
             </div>
             <div class="card-body">
                 <h4 style="color: var(--text-primary); margin-bottom: 0.5rem;">Delete Account</h4>
@@ -384,7 +384,7 @@
                     Deleting your account is permanent. You will immediately lose access to your dashboard, and you will not be able to log back in. Your match history and tournament records will remain in the database for historical maintenance, marked as 'Deleted'.
                 </p>
                 <form action="{{ url_for('player.delete_account') }}" method="POST" onsubmit="return confirm('Are you absolutely sure you want to delete your account? This action cannot be undone.');">
-                    <button type="submit" class="btn btn-danger" style="background-color: #ef4444; color: white;">Permanently Delete Account</button>
+                    <button type="submit" class="btn btn-danger">Permanently Delete Account</button>
                 </form>
             </div>
         </div>

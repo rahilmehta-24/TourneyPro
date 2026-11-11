@@ -1,23 +1,34 @@
-<div id="global-loader" class="loader-overlay" style="display: none;">
-    <div class="loader-content glass-panel" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; max-width: 400px; text-align: center;">
-        <div class="tennis-animation" style="position: relative; width: 120px; height: 120px; margin-bottom: 20px;">
+<div id="global-loader" class="loader-overlay" role="status" aria-live="polite" style="display: none;">
+    <div class="loader-content">
+        <div class="loader-tennis-scene" aria-hidden="true">
             <!-- Tennis Player Silhouette -->
-            <svg viewBox="0 0 64 64" width="80" height="80" style="position: absolute; bottom: 0; left: 10px;">
-                <path d="M 32 4 C 29.8 4 28 5.8 28 8 C 28 10.2 29.8 12 32 12 C 34.2 12 36 10.2 36 8 C 36 5.8 34.2 4 32 4 Z M 32 14 C 28 14 26 16 24 20 L 20 30 L 24 32 L 27 24 L 29 36 L 22 52 L 26 54 L 32 42 L 38 54 L 42 52 L 35 36 L 37 24 L 46 16 L 44 12 C 40 16 36 14 32 14 Z" fill="var(--primary)" />
+            <svg viewBox="0 0 64 64" width="80" height="80" class="loader-player-svg">
+                <path d="M 32 4 C 29.8 4 28 5.8 28 8 C 28 10.2 29.8 12 32 12 C 34.2 12 36 10.2 36 8 C 36 5.8 34.2 4 32 4 Z M 32 14 C 28 14 26 16 24 20 L 20 30 L 24 32 L 27 24 L 29 36 L 22 52 L 26 54 L 32 42 L 38 54 L 42 52 L 35 36 L 37 24 L 46 16 L 44 12 C 40 16 36 14 32 14 Z" fill="var(--accent-primary)" />
                 <!-- Racquet -->
-                <path d="M 46 16 L 54 8 M 54 8 C 52 4 58 -2 62 2 C 66 6 60 12 54 8 Z" stroke="var(--accent-blue)" stroke-width="2" fill="none" />
-                <line x1="56" y1="6" x2="60" y2="4" stroke="var(--accent-blue)" stroke-width="0.5" />
-                <line x1="57" y1="8" x2="61" y2="6" stroke="var(--accent-blue)" stroke-width="0.5" />
-                <line x1="58" y1="10" x2="62" y2="8" stroke="var(--accent-blue)" stroke-width="0.5" />
+                <path d="M 46 16 L 54 8 M 54 8 C 52 4 58 -2 62 2 C 66 6 60 12 54 8 Z" stroke="var(--accent-secondary)" stroke-width="2" fill="none" />
+                <line x1="56" y1="6" x2="60" y2="4" stroke="var(--accent-secondary)" stroke-width="0.6" />
+                <line x1="57" y1="8" x2="61" y2="6" stroke="var(--accent-secondary)" stroke-width="0.6" />
+                <line x1="58" y1="10" x2="62" y2="8" stroke="var(--accent-secondary)" stroke-width="0.6" />
             </svg>
             <!-- Animated Ball -->
-            <div class="tennis-ball-anim" style="position: absolute; width: 12px; height: 12px; background: #ccff00; border-radius: 50%; box-shadow: 0 0 5px rgba(204,255,0,0.8);"></div>
+            <div class="tennis-ball-anim"></div>
         </div>
-        <h3 class="loader-title" style="margin-bottom: 10px; font-weight: 700; letter-spacing: 1px;">Loading...</h3>
-        <p id="sports-fact" class="loader-fact" style="font-size: 0.9rem; color: var(--text-muted); font-style: italic; line-height: 1.4;"></p>
+        <h3 class="loader-title">Preparing Court...</h3>
+        <p id="sports-fact" class="loader-fact"></p>
     </div>
 </div>
 <style>
+.loader-tennis-scene {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    margin-bottom: 1.25rem;
+}
+.loader-player-svg {
+    position: absolute;
+    bottom: 0;
+    left: 10px;
+}
 @keyframes ball-hit {
     0% { transform: translate(-50px, -20px); opacity: 0; }
     20% { transform: translate(-20px, 40px); opacity: 1; }
@@ -27,7 +38,21 @@
     100% { transform: translate(150px, 60px); opacity: 0; }
 }
 .tennis-ball-anim {
+    position: absolute;
+    width: 13px;
+    height: 13px;
+    background: var(--accent-secondary, #C9A55C);
+    border: 1.5px solid var(--accent-primary, #0F3D2E);
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(201, 165, 92, 0.72);
     animation: ball-hit 1.5s infinite linear;
+}
+@media (prefers-reduced-motion: reduce) {
+    .tennis-ball-anim {
+        animation: none;
+        transform: translate(56px, 24px);
+        opacity: 1;
+    }
 }
 </style>
 

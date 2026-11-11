@@ -1,59 +1,62 @@
 <!-- Shared Match Management & Score Reporting Modal Component -->
 <style>
 #matchManagementModal .glass-modal {
-    background: #18181b !important;
-    border: 1px solid rgba(255, 255, 255, 0.16) !important;
-    color: #f8fafc !important;
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-strong) !important;
+    color: var(--text-primary) !important;
+}
+#matchManagementModal .glass-modal-header {
+    background: var(--gradient-court) !important;
+    border-bottom: 2px solid var(--accent-secondary) !important;
 }
 #matchManagementModal .glass-modal-header h3 {
-    color: #ffffff !important;
+    color: #FDFBF6 !important;
 }
 #matchManagementModal .glass-modal-form-group label,
-#matchManagementModal .form-label,
-#matchManagementModal span,
-#matchManagementModal div {
-    color: #f8fafc;
+#matchManagementModal .form-label {
+    color: var(--text-primary);
 }
 #matchManagementModal .glass-modal-close {
-    color: #94a3b8 !important;
+    color: rgba(253, 251, 246, 0.85) !important;
 }
 #matchManagementModal .glass-modal-close:hover {
-    color: #ffffff !important;
+    color: #FDFBF6 !important;
 }
 #matchManagementModal .form-input,
 #matchManagementModal input[type="number"],
 #matchManagementModal select,
 #matchManagementModal input[type="datetime-local"] {
-    background: #27272a !important;
-    color: #ffffff !important;
-    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    background: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-strong) !important;
 }
 #matchManagementModal #set1_p1,
 #matchManagementModal #set1_p2 {
-    color: #f97316 !important;
+    color: var(--accent-primary-text) !important;
     font-size: 1.8rem !important;
-    background: #202024 !important;
+    background: var(--bg-primary) !important;
+    border: 1.5px solid var(--border-strong) !important;
 }
 #matchManagementModal #tb1_p1,
 #matchManagementModal #tb1_p2 {
-    color: #ffb74d !important;
-    background: #202024 !important;
-    border-color: #ffb74d !important;
+    color: var(--accent-secondary-text) !important;
+    background: var(--bg-primary) !important;
+    border-color: var(--accent-secondary) !important;
 }
 #matchManagementModal .winner-option {
-    background: #27272a !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    color: #f8fafc !important;
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-strong) !important;
+    color: var(--text-primary) !important;
 }
 #matchManagementModal .winner-option span {
-    color: #f8fafc !important;
+    color: var(--text-primary) !important;
 }
 #matchManagementModal .winner-option:hover {
-    border-color: #f97316 !important;
-    background: #323238 !important;
+    border-color: var(--accent-primary) !important;
+    background: var(--bg-secondary) !important;
 }
 #matchManagementModal .winner-option input[type="radio"]:checked + span {
-    color: #fb923c !important;
+    color: var(--accent-primary-text) !important;
     font-weight: 700 !important;
 }
 </style>
@@ -72,7 +75,7 @@
                     <option value="in_progress">In Progress</option>
                     <option value="completed">Completed</option>
                 </select>
-                <div id="modalMatchStatusText" style="display: none; padding: 0.75rem; background: rgba(0,0,0,0.2); border-radius: var(--radius-md); font-weight: 500; font-size: 1.05rem; color: var(--text-primary); border: 1px solid rgba(255,255,255,0.05);"></div>
+                <div id="modalMatchStatusText" style="display: none; padding: 0.75rem; background: var(--bg-secondary); border-radius: var(--radius-md); font-weight: 500; font-size: 1.05rem; color: var(--text-primary); border: 1px solid var(--border-color);"></div>
             </div>
             
             <div class="glass-modal-form-group" style="display: flex; gap: 8px; align-items: flex-end;">
@@ -83,9 +86,9 @@
                 <button type="button" id="saveTimeBtn" class="glass-btn-primary" onclick="saveDateTimeOnly()" style="padding: 0.75rem; height: 42px; display: flex; align-items: center; justify-content: center; margin-bottom: 2px;" title="Save Date & Time" aria-label="Save Date & Time">✔️</button>
             </div>
             
-            <form id="reportForm" style="display: none; margin-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1.5rem;">
+            <form id="reportForm" style="display: none; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
                 <!-- Format selector (hidden when using standard games) -->
-                <div id="modalScoringFormatOverride" class="glass-modal-form-group" style="display: none; margin-bottom: 1.25rem; background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: var(--radius-md);">
+                <div id="modalScoringFormatOverride" class="glass-modal-form-group" style="display: none; margin-bottom: 1.25rem; background: var(--bg-secondary); padding: 0.75rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                         <div>
                             <label class="form-label" style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.2rem; display: block;">Format</label>
@@ -105,98 +108,98 @@
 
                 <!-- Winner Selection -->
                 <div class="form-group" style="margin-bottom: 1.25rem;">
-                    <label class="form-label" style="display: block; margin-bottom: 0.75rem; font-weight: 700; font-size: 1.05rem; color: #f8fafc;">
+                    <label class="form-label" style="display: block; margin-bottom: 0.75rem; font-weight: 700; font-size: 1.05rem; color: var(--text-primary);">
                         🏆 Select Winner (If Completed)
                     </label>
                     <div class="winner-options" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
-                        <label class="winner-option" id="winner1Card" style="display: flex; align-items: center; padding: 0.75rem 1rem; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.15); border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s ease;">
+                        <label class="winner-option" id="winner1Card" style="display: flex; align-items: center; padding: 0.75rem 1rem; background: var(--bg-secondary); border: 1px solid var(--border-strong); border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s ease;">
                             <input type="radio" name="winner_id" id="winner1" value="" style="margin-right: 0.65rem; width: 18px; height: 18px;" onchange="highlightWinnerCards()">
-                            <span id="winner1Label" style="font-size: 0.95rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #ffffff;">Participant 1</span>
+                            <span id="winner1Label" style="font-size: 0.95rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-primary);">Participant 1</span>
                         </label>
-                        <label class="winner-option" id="winner2Card" style="display: flex; align-items: center; padding: 0.75rem 1rem; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.15); border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s ease;">
+                        <label class="winner-option" id="winner2Card" style="display: flex; align-items: center; padding: 0.75rem 1rem; background: var(--bg-secondary); border: 1px solid var(--border-strong); border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s ease;">
                             <input type="radio" name="winner_id" id="winner2" value="" style="margin-right: 0.65rem; width: 18px; height: 18px;" onchange="highlightWinnerCards()">
-                            <span id="winner2Label" style="font-size: 0.95rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #ffffff;">Participant 2</span>
+                            <span id="winner2Label" style="font-size: 0.95rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-primary);">Participant 2</span>
                         </label>
                     </div>
                 </div>
 
                 <!-- DIRECT GAMES SCORE (Clean, Single Games Input) -->
-                <div id="modalGamesScoreDirect" style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.15); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1rem;">
-                    <label style="font-weight: 700; font-size: 1rem; margin-bottom: 0.85rem; display: block; color: #f8fafc; text-align: center;">
+                <div id="modalGamesScoreDirect" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1rem;">
+                    <label style="font-weight: 700; font-size: 1rem; margin-bottom: 0.85rem; display: block; color: var(--text-primary); text-align: center;">
                         🎾 Games Won
                     </label>
                     <div style="display: flex; gap: 1.5rem; align-items: center; justify-content: center;">
                         <div style="text-align: center; flex: 1; max-width: 130px;">
-                            <span id="p1GamesHeader" style="display: block; margin-bottom: 0.4rem; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">P1</span>
-                            <input type="number" name="set1_p1" id="set1_p1" min="0" max="25" class="form-input" style="width: 100%; text-align: center; font-size: 1.6rem; font-weight: 800; padding: 0.5rem; color: #f97316; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2);" placeholder="0" oninput="onGamesInputChange()">
+                            <span id="p1GamesHeader" style="display: block; margin-bottom: 0.4rem; font-weight: 600; font-size: 0.85rem; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">P1</span>
+                            <input type="number" name="set1_p1" id="set1_p1" min="0" max="25" class="form-input" style="width: 100%; text-align: center; font-size: 1.6rem; font-weight: 800; padding: 0.5rem; color: var(--accent-primary-text); background: var(--bg-primary); border: 1px solid var(--border-strong);" placeholder="0" oninput="onGamesInputChange()">
                         </div>
-                        <div style="font-size: 1.6rem; font-weight: 800; color: #94a3b8; padding-top: 1.2rem;">&ndash;</div>
+                        <div style="font-size: 1.6rem; font-weight: 800; color: var(--text-muted); padding-top: 1.2rem;">&ndash;</div>
                         <div style="text-align: center; flex: 1; max-width: 130px;">
-                            <span id="p2GamesHeader" style="display: block; margin-bottom: 0.4rem; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">P2</span>
-                            <input type="number" name="set1_p2" id="set1_p2" min="0" max="25" class="form-input" style="width: 100%; text-align: center; font-size: 1.6rem; font-weight: 800; padding: 0.5rem; color: #f97316; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2);" placeholder="0" oninput="onGamesInputChange()">
+                            <span id="p2GamesHeader" style="display: block; margin-bottom: 0.4rem; font-weight: 600; font-size: 0.85rem; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">P2</span>
+                            <input type="number" name="set1_p2" id="set1_p2" min="0" max="25" class="form-input" style="width: 100%; text-align: center; font-size: 1.6rem; font-weight: 800; padding: 0.5rem; color: var(--accent-primary-text); background: var(--bg-primary); border: 1px solid var(--border-strong);" placeholder="0" oninput="onGamesInputChange()">
                         </div>
                     </div>
 
                     <!-- Games Sum Helper / Total Games Rule indicator -->
                     <div id="gamesSumHelper" style="margin-top: 0.85rem; text-align: center; font-size: 0.82rem; color: var(--text-secondary);">
                         <div style="margin-bottom: 0.4rem;">
-                            Total games played: <span id="gamesSumDisplay" style="font-weight: 800; color: #f97316;">0</span> / <span id="gamesTargetDisplay" style="font-weight: 700;">7</span>
+                            Total games played: <span id="gamesSumDisplay" style="font-weight: 800; color: var(--accent-secondary-text);">0</span> / <span id="gamesTargetDisplay" style="font-weight: 700;">7</span>
                         </div>
                         <div id="gamesSumStatus" style="margin-top: 0.35rem; font-size: 0.8rem;">
-                            <span style="display:inline-block; padding: 3px 10px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 9999px; color: var(--text-muted); font-weight: 600;">
+                            <span style="display:inline-block; padding: 3px 10px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 9999px; color: var(--text-muted); font-weight: 600;">
                                 Sum of both players' games must equal <span class="gamesTargetSpan">7</span> to complete match.
                             </span>
                         </div>
-                        <div id="teamLeagueProgressNote" style="margin-top: 0.4rem; font-size: 0.75rem; color: #94a3b8; font-style: italic;">
+                        <div id="teamLeagueProgressNote" style="margin-top: 0.4rem; font-size: 0.75rem; color: var(--text-muted); font-style: italic;">
                             🎾 First team across all 3 rubbers to reach 11 total games wins the tie.
                         </div>
 
                         <!-- Walkover / Retirement Assistant -->
                         <div style="margin-top: 0.65rem;">
-                            <button type="button" class="btn btn-sm btn-secondary" onclick="toggleWalkoverPanel()" style="font-size: 0.75rem; padding: 0.25rem 0.65rem; border-radius: 9999px; border: 1px dashed rgba(255,255,255,0.25);">
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="toggleWalkoverPanel()" style="font-size: 0.75rem; padding: 0.25rem 0.65rem; border-radius: 9999px; border: 1px dashed var(--border-strong);">
                                 🏳️ Walkover / Retired?
                             </button>
                         </div>
-                        <div id="walkoverPanel" style="display: none; margin-top: 0.65rem; background: rgba(255,255,255,0.03); border: 1px dashed rgba(255,255,255,0.2); border-radius: var(--radius-sm); padding: 0.65rem; text-align: center;">
-                            <div style="font-size: 0.74rem; color: #cbd5e1; margin-bottom: 0.4rem;">
+                        <div id="walkoverPanel" style="display: none; margin-top: 0.65rem; background: var(--bg-card); border: 1px dashed var(--border-strong); border-radius: var(--radius-sm); padding: 0.65rem; text-align: center;">
+                            <div style="font-size: 0.74rem; color: var(--text-secondary); margin-bottom: 0.4rem;">
                                 Remaining games to reach 7 are awarded to opponent:
                             </div>
                             <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
-                                <button type="button" class="btn btn-sm" onclick="applyWalkover(1)" style="font-size: 0.74rem; padding: 0.25rem 0.65rem; background: rgba(239, 68, 68, 0.18); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 9999px;">
+                                <button type="button" class="btn btn-sm" onclick="applyWalkover(1)" style="font-size: 0.74rem; padding: 0.25rem 0.65rem; background: rgba(220, 38, 38, 0.12); color: #B91C1C; border: 1px solid rgba(220, 38, 38, 0.35); border-radius: 9999px;">
                                     🏳️ <span id="walkoverP1Name">P1</span> Retired
                                 </button>
-                                <button type="button" class="btn btn-sm" onclick="applyWalkover(2)" style="font-size: 0.74rem; padding: 0.25rem 0.65rem; background: rgba(239, 68, 68, 0.18); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 9999px;">
+                                <button type="button" class="btn btn-sm" onclick="applyWalkover(2)" style="font-size: 0.74rem; padding: 0.25rem 0.65rem; background: rgba(220, 38, 38, 0.12); color: #B91C1C; border: 1px solid rgba(220, 38, 38, 0.35); border-radius: 9999px;">
                                     🏳️ <span id="walkoverP2Name">P2</span> Retired
                                 </button>
                             </div>
                         </div>
 
                         <div id="optionalTbToggle" style="display: none; margin-top: 0.5rem;">
-                            <a href="javascript:void(0)" onclick="toggleOptionalTiebreak()" style="font-size: 0.78rem; color: #ffb74d; text-decoration: underline; cursor: pointer;">
+                            <a href="javascript:void(0)" onclick="toggleOptionalTiebreak()" style="font-size: 0.78rem; color: var(--accent-secondary-text); text-decoration: underline; cursor: pointer; font-weight: 600;">
                                 + Match was tied 3–3? Add tiebreak score
                             </a>
                         </div>
                     </div>
                     
                     <!-- Deciding Tiebreak Points row (if tiebreak occurs) -->
-                    <div id="tbRow1" style="display: none; margin-top: 1rem; border-top: 1px dashed rgba(255,255,255,0.15); padding-top: 0.85rem; text-align: center;">
-                        <div id="tbHelperBadge" style="display: inline-block; background: rgba(255, 183, 77, 0.15); border: 1px solid rgba(255, 183, 77, 0.4); color: #ffb74d; padding: 0.35rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.8rem; margin-bottom: 0.6rem; font-weight: 600;">
+                    <div id="tbRow1" style="display: none; margin-top: 1rem; border-top: 1px dashed var(--border-strong); padding-top: 0.85rem; text-align: center;">
+                        <div id="tbHelperBadge" style="display: inline-block; background: rgba(201, 165, 92, 0.18); border: 1px solid rgba(122, 95, 30, 0.35); color: #7A5F1E; padding: 0.35rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.8rem; margin-bottom: 0.6rem; font-weight: 600;">
                             ⚡ Tiebreak at 3–3: 7-point tiebreak decides final game (winner gets 4–3)
                         </div>
-                        <div style="display: block; font-size: 0.8rem; color: #ffb74d; font-weight: 600; margin-bottom: 0.4rem;">
+                        <div style="display: block; font-size: 0.8rem; color: #7A5F1E; font-weight: 600; margin-bottom: 0.4rem;">
                             Tiebreak Points:
                         </div>
                         <div style="display: inline-flex; gap: 0.75rem; align-items: center;">
-                            <input type="number" name="tb1_p1" id="tb1_p1" min="0" class="form-input" style="width: 75px; text-align: center; border-color: #ffb74d; font-weight: 700; font-size: 1.1rem;" placeholder="TB P1" oninput="onTbInputChange()">
-                            <span style="color: #ffb74d; font-weight: 700; font-size: 1.2rem;">:</span>
-                            <input type="number" name="tb1_p2" id="tb1_p2" min="0" class="form-input" style="width: 75px; text-align: center; border-color: #ffb74d; font-weight: 700; font-size: 1.1rem;" placeholder="TB P2" oninput="onTbInputChange()">
+                            <input type="number" name="tb1_p1" id="tb1_p1" min="0" class="form-input" style="width: 75px; text-align: center; border-color: #C9A55C; font-weight: 700; font-size: 1.1rem;" placeholder="TB P1" oninput="onTbInputChange()">
+                            <span style="color: #7A5F1E; font-weight: 700; font-size: 1.2rem;">:</span>
+                            <input type="number" name="tb1_p2" id="tb1_p2" min="0" class="form-input" style="width: 75px; text-align: center; border-color: #C9A55C; font-weight: 700; font-size: 1.1rem;" placeholder="TB P2" oninput="onTbInputChange()">
                         </div>
-                        <div id="tbWinnerNote" style="margin-top: 0.45rem; font-size: 0.8rem; color: #a5b4fc; font-weight: 600; display: none;"></div>
+                        <div id="tbWinnerNote" style="margin-top: 0.45rem; font-size: 0.8rem; color: var(--accent-primary-text); font-weight: 600; display: none;"></div>
                     </div>
                 </div>
 
                 <!-- Points Score (for points-based matches) -->
-                <div id="modalPointsScore" style="display: none; margin-top: 1rem; background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem;">
+                <div id="modalPointsScore" style="display: none; margin-top: 1rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem;">
                     <label class="form-label" style="font-weight: 700; font-size: 1rem; margin-bottom: 0.75rem; display: block; text-align: center;">Points Score</label>
                     <div style="display: flex; gap: 1rem; align-items: center; justify-content: center;">
                         <div style="text-align: center; flex: 1; max-width: 130px;">
@@ -212,16 +215,16 @@
                 </div>
 
                 <!-- Audit Section (Displayed when modifying an already completed match) -->
-                <div id="matchAuditSection" style="display: none; margin-top: 1.25rem; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: var(--radius-md); padding: 1rem;">
-                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; color: #f87171; font-weight: 700; font-size: 0.95rem;">
+                <div id="matchAuditSection" style="display: none; margin-top: 1.25rem; background: rgba(220, 38, 38, 0.08); border: 1px solid rgba(220, 38, 38, 0.35); border-radius: var(--radius-md); padding: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; color: #B91C1C; font-weight: 700; font-size: 0.95rem;">
                         ⚠️ Modifying Completed Match Result
                     </div>
-                    <p style="font-size: 0.8rem; color: #cbd5e1; margin-bottom: 0.75rem; line-height: 1.4;">
+                    <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem; line-height: 1.4;">
                         This match was previously marked completed. An audit reason and detailed explanation are logged to maintain tournament integrity.
                     </p>
                     <div style="margin-bottom: 0.75rem;">
-                        <label for="matchAuditReason" style="display: block; font-size: 0.82rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.3rem;">Reason for Modification:</label>
-                        <select id="matchAuditReason" name="audit_reason" class="form-input" style="width: 100%; font-size: 0.85rem; background: #27272a; color: #ffffff;">
+                        <label for="matchAuditReason" style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.3rem;">Reason for Modification:</label>
+                        <select id="matchAuditReason" name="audit_reason" class="form-input" style="width: 100%; font-size: 0.85rem;">
                             <option value="Score Entry Mistake" selected>Score Entry Mistake</option>
                             <option value="Match Result Correction">Match Result Correction</option>
                             <option value="Tiebreak Score Correction">Tiebreak Score Correction</option>
@@ -231,8 +234,8 @@
                         </select>
                     </div>
                     <div>
-                        <label for="matchAuditExplanation" style="display: block; font-size: 0.82rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.3rem;">Detailed Explanation (minimum 20 characters):</label>
-                        <textarea id="matchAuditExplanation" name="audit_explanation" class="form-input" style="width: 100%; min-height: 55px; font-size: 0.85rem; background: #27272a; color: #ffffff;" placeholder="e.g. Correcting score entry error for tiebreak..."></textarea>
+                        <label for="matchAuditExplanation" style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.3rem;">Detailed Explanation (minimum 20 characters):</label>
+                        <textarea id="matchAuditExplanation" name="audit_explanation" class="form-input" style="width: 100%; min-height: 55px; font-size: 0.85rem;" placeholder="e.g. Correcting score entry error for tiebreak..."></textarea>
                     </div>
                 </div>
             </form>
@@ -297,11 +300,11 @@ function onGamesInputChange() {
         if (sumDisplay) sumDisplay.innerText = sum;
 
         if (sum === T) {
-            if (sumStatus) sumStatus.innerHTML = `<span style="display:inline-block; padding: 4px 12px; background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.45); border-radius: 9999px; color: #34d399; font-weight: 700; font-size: 0.85rem;">✅ Valid 7-Game Total (${sum}/${T} games)</span>`;
+            if (sumStatus) sumStatus.innerHTML = `<span style="display:inline-block; padding: 4px 12px; background: rgba(5, 150, 105, 0.14); border: 1px solid rgba(5, 150, 105, 0.4); border-radius: 9999px; color: #065F46; font-weight: 700; font-size: 0.85rem;">✅ Valid ${T}-Game Total (${sum}/${T} games)</span>`;
         } else if (sum < T) {
-            if (sumStatus) sumStatus.innerHTML = `<span style="display:inline-block; padding: 4px 12px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 9999px; color: #fbbf24; font-weight: 600; font-size: 0.85rem;">⏳ In-progress (${sum}/${T} games played)</span>`;
+            if (sumStatus) sumStatus.innerHTML = `<span style="display:inline-block; padding: 4px 12px; background: rgba(201, 165, 92, 0.18); border: 1px solid rgba(122, 95, 30, 0.35); border-radius: 9999px; color: #7A5F1E; font-weight: 600; font-size: 0.85rem;">⏳ In-progress (${sum}/${T} games played)</span>`;
         } else {
-            if (sumStatus) sumStatus.innerHTML = `<span style="display:inline-block; padding: 4px 12px; background: rgba(239, 68, 68, 0.18); border: 1px solid rgba(239, 68, 68, 0.45); border-radius: 9999px; color: #f87171; font-weight: 700; font-size: 0.85rem;">⚠️ Exceeds total games target (${sum}/${T})</span>`;
+            if (sumStatus) sumStatus.innerHTML = `<span style="display:inline-block; padding: 4px 12px; background: rgba(220, 38, 38, 0.12); border: 1px solid rgba(220, 38, 38, 0.4); border-radius: 9999px; color: #B91C1C; font-weight: 700; font-size: 0.85rem;">⚠️ Exceeds total games target (${sum}/${T})</span>`;
         }
 
         // Auto-select winner based on higher games count
@@ -457,12 +460,12 @@ function highlightWinnerCards() {
     const c2 = document.getElementById('winner2Card');
 
     if (c1) {
-        c1.style.borderColor = (w1 && w1.checked) ? 'var(--primary)' : 'var(--border-color)';
-        c1.style.background = (w1 && w1.checked) ? 'rgba(99, 102, 241, 0.2)' : 'rgba(0,0,0,0.25)';
+        c1.style.borderColor = (w1 && w1.checked) ? 'var(--accent-primary)' : 'var(--border-strong)';
+        c1.style.background = (w1 && w1.checked) ? 'rgba(15, 61, 46, 0.10)' : 'var(--bg-secondary)';
     }
     if (c2) {
-        c2.style.borderColor = (w2 && w2.checked) ? 'var(--primary)' : 'var(--border-color)';
-        c2.style.background = (w2 && w2.checked) ? 'rgba(99, 102, 241, 0.2)' : 'rgba(0,0,0,0.25)';
+        c2.style.borderColor = (w2 && w2.checked) ? 'var(--accent-primary)' : 'var(--border-strong)';
+        c2.style.background = (w2 && w2.checked) ? 'rgba(15, 61, 46, 0.10)' : 'var(--bg-secondary)';
     }
 }
 
