@@ -356,39 +356,57 @@
         const legacyScoringFields = document.getElementById('legacy-scoring-fields');
         const pointsToWinFields = document.getElementById('points-to-win-fields');
         const totalGamesFields = document.getElementById('total-games-fields');
+        const totalGamesInput = document.getElementById('total_games');
+        const pointsToWinInput = document.getElementById('points_to_win');
+        const numSetsInput = document.getElementById('num_sets');
+        const gamesPerSetInput = document.getElementById('games_per_set');
 
-        // When format is group_stage, sets/games_per_set are NOT used!
+        // When format is group_stage, sets/games_per_set and points_to_win are NOT used!
         if (format === 'group_stage') {
             if (legacyScoringFields) legacyScoringFields.style.display = 'none';
             if (pointsToWinFields) pointsToWinFields.style.display = 'none';
             if (totalGamesFields) {
                 totalGamesFields.style.display = 'block';
-                document.getElementById('total_games').required = true;
+                if (totalGamesInput) {
+                    totalGamesInput.disabled = false;
+                    totalGamesInput.required = true;
+                }
             }
-            document.getElementById('num_sets').required = false;
-            document.getElementById('games_per_set').required = false;
-            document.getElementById('points_to_win').required = false;
+            if (numSetsInput) { numSetsInput.required = false; numSetsInput.disabled = true; }
+            if (gamesPerSetInput) { gamesPerSetInput.required = false; gamesPerSetInput.disabled = true; }
+            if (pointsToWinInput) { pointsToWinInput.required = false; pointsToWinInput.disabled = true; }
             return;
+        }
+
+        if (totalGamesInput) {
+            totalGamesInput.required = false;
+            totalGamesInput.disabled = true;
         }
 
         if (scoringFormat === 'points') {
             if (legacyScoringFields) legacyScoringFields.style.display = 'none';
             if (pointsToWinFields) {
                 pointsToWinFields.style.display = 'block';
-                document.getElementById('points_to_win').required = true;
+                if (pointsToWinInput) {
+                    pointsToWinInput.disabled = false;
+                    pointsToWinInput.required = true;
+                }
             }
             if (totalGamesFields) totalGamesFields.style.display = 'none';
-            document.getElementById('num_sets').required = false;
-            document.getElementById('games_per_set').required = false;
+            if (numSetsInput) { numSetsInput.required = false; numSetsInput.disabled = true; }
+            if (gamesPerSetInput) { gamesPerSetInput.required = false; gamesPerSetInput.disabled = true; }
         } else {
             if (legacyScoringFields) legacyScoringFields.style.display = 'block';
             if (pointsToWinFields) {
                 pointsToWinFields.style.display = 'none';
-                document.getElementById('points_to_win').required = false;
+                if (pointsToWinInput) {
+                    pointsToWinInput.required = false;
+                    pointsToWinInput.disabled = true;
+                }
             }
             if (totalGamesFields) totalGamesFields.style.display = 'none';
-            document.getElementById('num_sets').required = true;
-            document.getElementById('games_per_set').required = true;
+            if (numSetsInput) { numSetsInput.disabled = false; numSetsInput.required = true; }
+            if (gamesPerSetInput) { gamesPerSetInput.disabled = false; gamesPerSetInput.required = true; }
         }
     }
 
@@ -396,13 +414,13 @@
         const format = document.getElementById('format').value;
         const groupFields = document.getElementById('group-stage-fields');
         const totalGamesFields = document.getElementById('total-games-fields');
-        const scoringFormatGroup = document.getElementById('scoring_format').closest('.form-group');
+        const scoringFormatSelect = document.getElementById('scoring_format');
+        const scoringFormatGroup = scoringFormatSelect ? scoringFormatSelect.closest('.form-group') : null;
         const legacyScoringFields = document.getElementById('legacy-scoring-fields');
         const teamsPerGroupContainer = document.getElementById('teams-per-group-container');
         
-        // Reset global fields
         const maxPlayersField = document.getElementById('max_players_per_team');
-        if (maxPlayersField) maxPlayersField.closest('.form-group').style.display = 'block';
+        const maxPlayersGroup = maxPlayersField ? maxPlayersField.closest('.form-group') : null;
 
         const rrKnockoutContainer = document.getElementById('rr-knockout-container');
         if (rrKnockoutContainer) rrKnockoutContainer.style.display = 'none';
@@ -415,12 +433,15 @@
         if (format === 'group_stage') {
             // Hide scoring format dropdown and legacy sets/games fields
             if (scoringFormatGroup) scoringFormatGroup.style.display = 'none';
+            if (scoringFormatSelect) scoringFormatSelect.disabled = true;
             if (legacyScoringFields) legacyScoringFields.style.display = 'none';
             const pointsToWinFields = document.getElementById('points-to-win-fields');
             if (pointsToWinFields) pointsToWinFields.style.display = 'none';
-            document.getElementById('num_sets').required = false;
-            document.getElementById('games_per_set').required = false;
-            document.getElementById('points_to_win').required = false;
+            if (maxPlayersGroup) maxPlayersGroup.style.display = 'block';
+            if (maxPlayersField) {
+                maxPlayersField.disabled = false;
+                if (!maxPlayersField.value) maxPlayersField.value = 5;
+            }
 
             if (groupFields) {
                 groupFields.style.display = 'block';
@@ -430,9 +451,6 @@
                 // Teams per group is dynamically calculated from N / G once players register, so hide it here!
                 if (teamsPerGroupContainer) teamsPerGroupContainer.style.display = 'none';
                 document.getElementById('teams_per_group').required = false;
-
-                // Max players per team defaults to 5
-                if (maxPlayersField && !maxPlayersField.value) maxPlayersField.value = 5;
 
                 // Number of Groups defaults to 2
                 const numGroupsInput = document.getElementById('num_groups');
@@ -449,13 +467,15 @@
             }
             if (totalGamesFields) {
                 totalGamesFields.style.display = 'block';
-                document.getElementById('total_games').required = true;
-                if (!document.getElementById('total_games').value) {
-                    document.getElementById('total_games').value = 7;
-                }
+                const tgInput = document.getElementById('total_games');
+                if (tgInput && !tgInput.value) tgInput.value = 7;
             }
+            toggleScoringFields();
         } else if (format === 'round_robin') {
             if (scoringFormatGroup) scoringFormatGroup.style.display = 'block';
+            if (scoringFormatSelect) scoringFormatSelect.disabled = false;
+            if (maxPlayersGroup) maxPlayersGroup.style.display = 'none';
+            if (maxPlayersField) maxPlayersField.disabled = true;
             if (groupFields) {
                 groupFields.style.display = 'block';
                 document.querySelector('#group-stage-fields h3').innerText = 'Round Robin Configuration';
@@ -471,29 +491,23 @@
                 document.getElementById('num_groups').closest('.form-group').style.display = 'block';
                 document.getElementById('num_groups').required = false;
                 
-                // Hide max players per team
-                if (maxPlayersField) maxPlayersField.closest('.form-group').style.display = 'none';
-                
                 if (rrKnockoutContainer) rrKnockoutContainer.style.display = 'block';
                 
                 toggleRRKnockout(); // Initial check for RR knockout
             }
-            if (totalGamesFields) {
-                totalGamesFields.style.display = 'none';
-                document.getElementById('total_games').required = false;
-            }
-            toggleScoringFields();
-        } else if (format) {
-            if (scoringFormatGroup) scoringFormatGroup.style.display = 'block';
-            if (groupFields) groupFields.style.display = 'none';
-            if (totalGamesFields) {
-                totalGamesFields.style.display = 'none';
-                document.getElementById('total_games').required = false;
-            }
+            if (totalGamesFields) totalGamesFields.style.display = 'none';
             toggleScoringFields();
         } else {
+            // Single Elimination or unselected format
             if (scoringFormatGroup) scoringFormatGroup.style.display = 'block';
+            if (scoringFormatSelect) scoringFormatSelect.disabled = false;
+            if (maxPlayersGroup) maxPlayersGroup.style.display = 'none';
+            if (maxPlayersField) maxPlayersField.disabled = true;
             if (groupFields) groupFields.style.display = 'none';
+            const teamsPerGroupInput = document.getElementById('teams_per_group');
+            const qualifiersInput = document.getElementById('qualifiers_per_group');
+            if (teamsPerGroupInput) teamsPerGroupInput.required = false;
+            if (qualifiersInput) qualifiersInput.required = false;
             if (totalGamesFields) totalGamesFields.style.display = 'none';
             toggleScoringFields();
         }

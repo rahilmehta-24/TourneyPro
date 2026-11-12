@@ -83,3 +83,6 @@ baseline-society-logo-files
 !docs/images/*.png
 !app/web/static/brand/*.svg
 !app/web/static/brand/*.png
+
+.agents/*
+.tokenshield/*

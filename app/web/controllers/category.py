@@ -99,6 +99,44 @@ def start_single_category(category, tournament):
         pass
 
 
+def _extract_category_scoring_config(format_type, form):
+    """Extract format-isolated scoring configuration for a category."""
+    if format_type == 'group_stage':
+        raw_total = form.get('total_games', type=int)
+        return {
+            'scoring_format': 'games',
+            'num_sets': None,
+            'games_per_set': None,
+            'total_games': raw_total if raw_total is not None else 7,
+            'points_to_win': None,
+            'max_players_per_team': form.get('max_players_per_team', type=int),
+        }
+
+    scoring_format = form.get('scoring_format') or 'games'
+    if scoring_format not in ('games', 'points'):
+        scoring_format = 'games'
+
+    if scoring_format == 'points':
+        raw_points = form.get('points_to_win', type=int)
+        return {
+            'scoring_format': 'points',
+            'num_sets': None,
+            'games_per_set': None,
+            'total_games': None,
+            'points_to_win': raw_points if raw_points is not None else 11,
+            'max_players_per_team': None,
+        }
+
+    return {
+        'scoring_format': 'games',
+        'num_sets': form.get('num_sets', type=int) or 3,
+        'games_per_set': form.get('games_per_set', type=int) or 6,
+        'total_games': None,
+        'points_to_win': None,
+        'max_players_per_team': None,
+    }
+
+
 @category_bp.route('/t/<slug>/categories/new', methods=['GET', 'POST'])
 @category_bp.route('/tournaments/<slug>/categories/new', methods=['GET', 'POST'])
 @login_required
@@ -123,12 +161,14 @@ def create_category(slug):
         gender = request.form.get('gender', 'Unspecified')
         age_category = request.form.get('age_category', 'Unspecified')
 
-        # Tennis settings
-        scoring_format = request.form.get('scoring_format', 'games')
-        num_sets = request.form.get('num_sets', type=int)
-        games_per_set = request.form.get('games_per_set', type=int)
-        total_games = request.form.get('total_games', type=int)
-        points_to_win = request.form.get('points_to_win', type=int)
+        # Format-isolated scoring settings
+        scoring_cfg = _extract_category_scoring_config(format_type, request.form)
+        scoring_format = scoring_cfg['scoring_format']
+        num_sets = scoring_cfg['num_sets']
+        games_per_set = scoring_cfg['games_per_set']
+        total_games = scoring_cfg['total_games']
+        points_to_win = scoring_cfg['points_to_win']
+        max_players_per_team = scoring_cfg['max_players_per_team']
 
         # Advanced settings for group stage
         has_group_stage = (format_type in ['group_stage', 'round_robin', 'doubles_round_robin'])
@@ -140,7 +180,7 @@ def create_category(slug):
         if format_type == 'group_stage':
             qualifiers_per_group = request.form.get('qualifiers_per_group', type=int, default=2)
             allow_lucky_losers = request.form.get('allow_lucky_losers') == 'on'
-        elif format_type == 'round_robin':
+        elif format_type in ['round_robin', 'doubles_round_robin']:
             has_knockout = request.form.get('has_knockout_stage') == 'on'
             if has_knockout:
                 qualifiers_per_group = request.form.get('qualifiers_per_group', type=int, default=2)
@@ -151,7 +191,6 @@ def create_category(slug):
         else:
             qualifiers_per_group = None
             allow_lucky_losers = False
-        max_players_per_team = request.form.get('max_players_per_team', type=int)
 
         # Scheduling fields inherited globally from tournament or overridden by category
         import json
@@ -684,27 +723,6 @@ def manage_category(slug, category_id):
             elif action == 'update_settings':
                 name = request.form.get('name')
                 max_participants = request.form.get('max_participants', type=int)
-                total_games = request.form.get('total_games', type=int)
-                points_to_win = request.form.get('points_to_win', type=int)
-                scoring_format = request.form.get('scoring_format', 'games')
-                max_players_per_team = request.form.get('max_players_per_team', type=int)
-                
-                # Group stage settings
-                if category.format == 'group_stage':
-                    category.num_groups = request.form.get('num_groups', type=int)
-                    category.teams_per_group = request.form.get('teams_per_group', type=int)
-                    category.matches_per_team_pair = request.form.get('matches_per_team_pair', type=int, default=1)
-                    category.qualifiers_per_group = request.form.get('qualifiers_per_group', type=int, default=2)
-                    category.allow_lucky_losers = request.form.get('allow_lucky_losers') == 'on'
-                elif category.format in ['round_robin', 'doubles_round_robin']:
-                    category.teams_per_group = request.form.get('teams_per_group', type=int)
-                    has_knockout = request.form.get('has_knockout_stage') == 'on'
-                    if has_knockout:
-                        category.qualifiers_per_group = request.form.get('qualifiers_per_group', type=int, default=2)
-                        category.allow_lucky_losers = request.form.get('allow_lucky_losers') == 'on'
-                    else:
-                        category.qualifiers_per_group = 0
-                        category.allow_lucky_losers = False
 
                 if not name:
                     flash('Category name cannot be empty.', 'error')
@@ -712,10 +730,6 @@ def manage_category(slug, category_id):
 
                 category.name = name
                 category.max_participants = max_participants
-                category.total_games = total_games
-                category.scoring_format = scoring_format
-                category.points_to_win = points_to_win
-                category.max_players_per_team = max_players_per_team
                 category.entry_fee = request.form.get('entry_fee', type=float, default=0.0)
 
                 # Date and daily operating times for Category
@@ -784,7 +798,7 @@ def manage_category(slug, category_id):
 
                 # Settings only editable in setup status
                 if category.status == 'setup':
-                    format_type = request.form.get('format')
+                    format_type = request.form.get('format') or category.format
                     if format_type == 'single_elimination':
                         sub_format = request.form.get('sub_format')
                         if sub_format == 'doubles':
@@ -793,12 +807,15 @@ def manage_category(slug, category_id):
                         sub_format = request.form.get('sub_format')
                         if sub_format == 'doubles':
                             format_type = 'doubles_round_robin'
-                    num_sets = request.form.get('num_sets', type=int, default=1)
-                    games_per_set = request.form.get('games_per_set', type=int, default=6)
 
+                    scoring_cfg = _extract_category_scoring_config(format_type, request.form)
                     category.format = format_type
-                    category.num_sets = num_sets
-                    category.games_per_set = games_per_set
+                    category.scoring_format = scoring_cfg['scoring_format']
+                    category.num_sets = scoring_cfg['num_sets']
+                    category.games_per_set = scoring_cfg['games_per_set']
+                    category.total_games = scoring_cfg['total_games']
+                    category.points_to_win = scoring_cfg['points_to_win']
+                    category.max_players_per_team = scoring_cfg['max_players_per_team']
 
                     category.has_group_stage = (format_type in ['group_stage', 'round_robin', 'doubles_round_robin'])
                     if category.has_group_stage:
@@ -806,12 +823,12 @@ def manage_category(slug, category_id):
                         category.teams_per_group = request.form.get('teams_per_group', type=int)
                         category.matches_per_team_pair = request.form.get('matches_per_team_pair', type=int, default=1)
                         if format_type == 'group_stage':
-                            category.qualifiers_per_group = request.form.get('qualifiers_per_group', type=int)
+                            category.qualifiers_per_group = request.form.get('qualifiers_per_group', type=int, default=2)
                             category.allow_lucky_losers = request.form.get('allow_lucky_losers') == 'on'
-                        elif format_type == 'round_robin':
+                        elif format_type in ['round_robin', 'doubles_round_robin']:
                             has_knockout = request.form.get('has_knockout_stage') == 'on'
                             if has_knockout:
-                                category.qualifiers_per_group = request.form.get('qualifiers_per_group', type=int)
+                                category.qualifiers_per_group = request.form.get('qualifiers_per_group', type=int, default=2)
                                 category.allow_lucky_losers = request.form.get('allow_lucky_losers') == 'on'
                             else:
                                 category.qualifiers_per_group = 0
@@ -819,6 +836,7 @@ def manage_category(slug, category_id):
                     else:
                         category.num_groups = None
                         category.teams_per_group = None
+                        category.matches_per_team_pair = None
                         category.qualifiers_per_group = None
                         category.allow_lucky_losers = False
 

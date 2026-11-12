@@ -1481,7 +1481,11 @@ def report_match_result(slug, match_id):
                 category.scoring_format if category else "games"
             )
 
-            if category and category.format == "group_stage":
+            if (
+                match.parent_match_id
+                or getattr(match, "rubber_type", None)
+                or (category and category.format == "group_stage" and category.total_games and scoring_format == "games")
+            ):
                 from app.services.tennis_logic import validate_team_rubber_score
 
                 p1_tb = form_data.get("tb1_p1") or request.form.get("tb1_p1")
@@ -1505,7 +1509,7 @@ def report_match_result(slug, match_id):
                 match.score2 = score2
 
             elif scoring_format == "points" or (
-                category and category.format in ["round_robin", "doubles_round_robin"]
+                category and category.format in ["round_robin", "doubles_round_robin"] and scoring_format != "games"
             ):
                 points_to_win = match.points_to_win or (category.points_to_win if category else 11)
                 if scoring_format == "points":

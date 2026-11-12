@@ -312,7 +312,7 @@
                     <select id="format" name="format" class="form-input" required style="width: 100%;" onchange="toggleGroupStageFields()">
                         <option value="single_elimination" {% if category.format in ['single_elimination', 'doubles_elimination'] %}selected{% endif %}>🏆 Knockout (Single Elimination)</option>
                         <option value="group_stage" {% if category.format == 'group_stage' %}selected{% endif %}>🎪 Group Stage + Knockout</option>
-                        <option value="round_robin" {% if category.format == 'round_robin' %}selected{% endif %}>🔄 Round Robin (League)</option>
+                        <option value="round_robin" {% if category.format in ['round_robin', 'doubles_round_robin'] %}selected{% endif %}>🔄 Round Robin (League)</option>
                     </select>
                 </div>
 
@@ -343,12 +343,12 @@
                 <div id="total-games-fields" style="display: {% if category.format == 'group_stage' %}block{% else %}none{% endif %};">
                     <div class="form-group" style="margin: 0;">
                         <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Total Games Per Rubber (T) *</label>
-                        <input type="number" id="total_games" name="total_games" class="form-input" min="3" max="21" step="2" value="{{ category.total_games or 7 }}" style="width: 100%;">
+                        <input type="number" id="total_games" name="total_games" class="form-input" min="3" max="21" step="2" value="{{ category.total_games or (7 if category.format == 'group_stage' else '') }}" style="width: 100%;">
                         <small style="display: block; margin-top: 0.25rem; color: var(--text-muted); font-size: 0.78rem;">Total games per rubber (Default: 7). Tiebreak at 3–3, rubber decided at 4–3. Team tie clinched by first to 11 of 21 games.</small>
                     </div>
                 </div>
 
-                <div id="points-to-win-fields" style="display: {% if category.format == 'round_robin' and category.scoring_format == 'points' %}block{% else %}none{% endif %};">
+                <div id="points-to-win-fields" style="display: {% if category.format != 'group_stage' and category.scoring_format == 'points' %}block{% else %}none{% endif %};">
                     <div class="form-group" style="margin: 0;">
                         <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Points to Win *</label>
                         <input type="number" id="points_to_win" name="points_to_win" class="form-input" min="1" max="100" value="{{ category.points_to_win or 11 }}" style="width: 100%;">
@@ -359,17 +359,17 @@
                 <div id="legacy-scoring-fields" style="display: {% if category.format != 'group_stage' and category.scoring_format != 'points' %}grid{% else %}none{% endif %}; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <div class="form-group" style="margin: 0;">
                         <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Number of Sets</label>
-                        <input type="number" name="num_sets" class="form-input" min="1" max="5" value="{{ category.num_sets or 3 }}" style="width: 100%;">
+                        <input type="number" id="num_sets" name="num_sets" class="form-input" min="1" max="5" value="{{ category.num_sets or 3 }}" style="width: 100%;">
                     </div>
                     <div class="form-group" style="margin: 0;">
                         <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Games Per Set</label>
-                        <input type="number" name="games_per_set" class="form-input" min="1" max="10" value="{{ category.games_per_set or 6 }}" style="width: 100%;">
+                        <input type="number" id="games_per_set" name="games_per_set" class="form-input" min="1" max="10" value="{{ category.games_per_set or 6 }}" style="width: 100%;">
                     </div>
                 </div>
 
-                <div class="form-group" style="margin: 0;">
+                <div class="form-group" id="max-players-per-team-container" style="margin: 0; display: {% if category.format == 'group_stage' %}block{% else %}none{% endif %};">
                     <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Max Players Per Team</label>
-                    <input type="number" id="max_players_per_team" name="max_players_per_team" class="form-input" min="1" value="{{ category.max_players_per_team or 5 }}" placeholder="5 for Team League" style="width: 100%;">
+                    <input type="number" id="max_players_per_team" name="max_players_per_team" class="form-input" min="1" value="{{ category.max_players_per_team or (5 if category.format == 'group_stage' else '') }}" placeholder="5 for Team League" style="width: 100%;">
                 </div>
 
                 <div id="group-stage-fields" style="display: {% if category.format in ['group_stage', 'round_robin', 'doubles_round_robin'] %}flex{% else %}none{% endif %}; flex-direction: column; gap: 0.85rem; background: var(--bg-secondary); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
@@ -601,32 +601,39 @@
         const legacyScoringFields = document.getElementById('legacy-scoring-fields');
         const pointsToWinFields = document.getElementById('points-to-win-fields');
         const totalGamesFields = document.getElementById('total-games-fields');
+        const tg = document.getElementById('total_games');
+        const ptw = document.getElementById('points_to_win');
+        const numSets = document.getElementById('num_sets');
+        const gamesPerSet = document.getElementById('games_per_set');
 
-        // When format is group_stage, sets/games_per_set are NOT used!
+        // When format is group_stage, sets/games_per_set and points_to_win are NOT used!
         if (format === 'group_stage') {
             if (legacyScoringFields) legacyScoringFields.style.display = 'none';
             if (pointsToWinFields) pointsToWinFields.style.display = 'none';
             if (totalGamesFields) totalGamesFields.style.display = 'block';
+            if (tg) { tg.disabled = false; tg.required = true; if (!tg.value) tg.value = 7; }
+            if (ptw) { ptw.required = false; ptw.disabled = true; }
+            if (numSets) { numSets.required = false; numSets.disabled = true; }
+            if (gamesPerSet) { gamesPerSet.required = false; gamesPerSet.disabled = true; }
             return;
         }
 
+        if (tg) { tg.required = false; tg.disabled = true; }
         if (!scoringFormat) return;
         const val = scoringFormat.value;
 
         if (val === 'points') {
             if (legacyScoringFields) legacyScoringFields.style.display = 'none';
-            if (pointsToWinFields) {
-                pointsToWinFields.style.display = 'block';
-                const ptw = document.getElementById('points_to_win');
-                if (ptw) ptw.required = true;
-            }
+            if (pointsToWinFields) pointsToWinFields.style.display = 'block';
+            if (ptw) { ptw.disabled = false; ptw.required = true; if (!ptw.value) ptw.value = 11; }
+            if (numSets) { numSets.required = false; numSets.disabled = true; }
+            if (gamesPerSet) { gamesPerSet.required = false; gamesPerSet.disabled = true; }
         } else {
             if (legacyScoringFields) legacyScoringFields.style.display = 'grid';
-            if (pointsToWinFields) {
-                pointsToWinFields.style.display = 'none';
-                const ptw = document.getElementById('points_to_win');
-                if (ptw) ptw.required = false;
-            }
+            if (pointsToWinFields) pointsToWinFields.style.display = 'none';
+            if (ptw) { ptw.required = false; ptw.disabled = true; }
+            if (numSets) { numSets.disabled = false; numSets.required = true; if (!numSets.value) numSets.value = 3; }
+            if (gamesPerSet) { gamesPerSet.disabled = false; gamesPerSet.required = true; if (!gamesPerSet.value) gamesPerSet.value = 6; }
         }
     }
 
@@ -635,10 +642,15 @@
         const format = formatSelect ? formatSelect.value : '{{ category.format }}';
         const groupFields = document.getElementById('group-stage-fields');
         const totalGamesFields = document.getElementById('total-games-fields');
-        const legacyScoringFields = document.getElementById('legacy-scoring-fields');
+        const scoringFormat = document.getElementById('scoring_format');
         const scoringFormatContainer = document.getElementById('scoring-format-container');
         const teamsPerGroupContainer = document.getElementById('manage-teams-per-group-container');
         const knockoutSubformatFields = document.getElementById('knockout-subformat-fields');
+        const maxPlayersContainer = document.getElementById('max-players-per-team-container');
+        const maxPlayersInput = document.getElementById('max_players_per_team');
+        const numGroups = document.getElementById('num_groups');
+        const teamsPerGroup = document.getElementById('teams_per_group');
+        const qualifiersInput = document.getElementById('qualifiers_per_group');
         
         if (knockoutSubformatFields) {
             knockoutSubformatFields.style.display = (format === 'single_elimination' || format === 'round_robin') ? 'block' : 'none';
@@ -646,40 +658,41 @@
 
         if (format === 'group_stage') {
             if (scoringFormatContainer) scoringFormatContainer.style.display = 'none';
-            if (legacyScoringFields) legacyScoringFields.style.display = 'none';
+            if (scoringFormat) scoringFormat.disabled = true;
+            if (maxPlayersContainer) maxPlayersContainer.style.display = 'block';
+            if (maxPlayersInput) {
+                maxPlayersInput.disabled = false;
+                if (!maxPlayersInput.value) maxPlayersInput.value = 5;
+            }
             if (teamsPerGroupContainer) teamsPerGroupContainer.style.display = 'none';
-            if (groupFields) {
-                groupFields.style.display = 'flex';
-                const numGroups = document.getElementById('num_groups');
-                if (numGroups) numGroups.required = true;
-            }
-            if (totalGamesFields) {
-                totalGamesFields.style.display = 'block';
-                const tg = document.getElementById('total_games');
-                if (tg) tg.required = true;
-            }
+            if (teamsPerGroup) teamsPerGroup.required = false;
+            if (groupFields) groupFields.style.display = 'flex';
+            if (numGroups) numGroups.required = true;
+            if (qualifiersInput) qualifiersInput.required = true;
+            if (totalGamesFields) totalGamesFields.style.display = 'block';
+            toggleScoringFields();
         } else if (format === 'round_robin') {
             if (scoringFormatContainer) scoringFormatContainer.style.display = 'block';
+            if (scoringFormat) scoringFormat.disabled = false;
+            if (maxPlayersContainer) maxPlayersContainer.style.display = 'none';
+            if (maxPlayersInput) maxPlayersInput.disabled = true;
             if (teamsPerGroupContainer) teamsPerGroupContainer.style.display = 'block';
-            if (groupFields) {
-                groupFields.style.display = 'flex';
-                const numGroups = document.getElementById('num_groups');
-                if (numGroups) numGroups.required = false;
-            }
-            if (totalGamesFields) {
-                totalGamesFields.style.display = 'none';
-                const tg = document.getElementById('total_games');
-                if (tg) tg.required = false;
-            }
+            if (teamsPerGroup) teamsPerGroup.required = true;
+            if (groupFields) groupFields.style.display = 'flex';
+            if (numGroups) numGroups.required = false;
+            if (qualifiersInput) qualifiersInput.required = false;
+            if (totalGamesFields) totalGamesFields.style.display = 'none';
             toggleScoringFields();
         } else {
             if (scoringFormatContainer) scoringFormatContainer.style.display = 'block';
+            if (scoringFormat) scoringFormat.disabled = false;
+            if (maxPlayersContainer) maxPlayersContainer.style.display = 'none';
+            if (maxPlayersInput) maxPlayersInput.disabled = true;
             if (groupFields) groupFields.style.display = 'none';
-            if (totalGamesFields) {
-                totalGamesFields.style.display = 'none';
-                const tg = document.getElementById('total_games');
-                if (tg) tg.required = false;
-            }
+            if (numGroups) numGroups.required = false;
+            if (teamsPerGroup) teamsPerGroup.required = false;
+            if (qualifiersInput) qualifiersInput.required = false;
+            if (totalGamesFields) totalGamesFields.style.display = 'none';
             toggleScoringFields();
         }
     }
