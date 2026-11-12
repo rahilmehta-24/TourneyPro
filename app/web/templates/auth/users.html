@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}User Management - TourneyPro Tennis{% endblock %}
+{% block title %}User Management - The Baseline Society{% endblock %}
 
 {% block content %}
 <div class="container">
@@ -15,7 +15,7 @@
         <div class="table-container" style="overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%;">
             <table class="standings-table" style="width: 100%; border-collapse: collapse; text-align: left; min-width: 600px;">
                 <thead>
-                    <tr style="border-bottom: 2px solid rgba(255, 255, 255, 0.1);">
+                    <tr style="border-bottom: 2px solid var(--border-color);">
                         <th style="padding: var(--spacing-sm); color: var(--text-secondary);">Username</th>
                         <th style="padding: var(--spacing-sm); color: var(--text-secondary);">Email</th>
                         <th style="padding: var(--spacing-sm); color: var(--text-secondary);">Role</th>
@@ -25,7 +25,7 @@
                 </thead>
                 <tbody>
                     {% for user in users %}
-                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); transition: background 0.2s;">
+                    <tr style="border-bottom: 1px solid var(--border-subtle); transition: background 0.2s;">
                         <td style="padding: var(--spacing-sm); font-weight: 600;">{{ user.username }}</td>
                         <td style="padding: var(--spacing-sm); color: var(--text-secondary);">{{ user.email }}</td>
                         <td style="padding: var(--spacing-sm);">
@@ -35,11 +35,11 @@
                                 font-size: 0.8rem;
                                 font-weight: 600;
                                 {% if user.role == 'superadmin' %}
-                                    background: rgba(239, 68, 68, 0.2); color: var(--accent-danger);
+                                    background: rgba(220, 38, 38, 0.14); color: #B91C1C;
                                 {% elif user.role == 'admin' %}
-                                    background: rgba(59, 130, 246, 0.2); color: var(--accent-info);
+                                    background: rgba(15, 61, 46, 0.12); color: #0F3D2E;
                                 {% else %}
-                                    background: rgba(107, 113, 153, 0.2); color: var(--text-muted);
+                                    background: var(--bg-tertiary); color: var(--text-secondary);
                                 {% endif %}
                             ">
                                 {{ user.role.upper() }}

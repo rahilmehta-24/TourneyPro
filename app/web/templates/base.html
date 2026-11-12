@@ -5,15 +5,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{% block title %}Tournament Platform{% endblock %}</title>
+    <title>{% block title %}The Baseline Society{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='brand/app-icon.svg') }}">
+    <link rel="alternate icon" type="image/png" href="{{ url_for('static', filename='brand/app-icon.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='brand/app-icon.png') }}">
     <script>
-        // Check for saved theme preference, otherwise use system preference
-        const savedTheme = localStorage.getItem('tourneypro-theme');
-        if (savedTheme === 'light') {
-            document.documentElement.setAttribute('data-theme', 'light');
-        } else if (!savedTheme && window.matchMedia('(prefers-color-scheme: light)').matches) {
-            document.documentElement.setAttribute('data-theme', 'light');
-        }
+        // Single Heritage Tennis Club theme cleanup for any legacy cached preference
+        try {
+            localStorage.removeItem('tourneypro-theme');
+        } catch (e) {}
+        document.documentElement.removeAttribute('data-theme');
 
         // Automatic CSRF token injector for Turbo, fetch, and native forms
         document.addEventListener('turbo:before-fetch-request', function(event) {
@@ -62,26 +63,26 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet" media="print" onload="this.media='all'">
     <noscript>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     </noscript>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2.3">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=4.0">
     <!-- Turbo.js for instant page navigation -->
     <script type="module" src="https://unpkg.com/@hotwired/turbo@8.0.4/dist/turbo.es2017-umd.js"></script>
     {% block extra_css %}{% endblock %}
     <style>
         @keyframes flashMatchUpdate {
             0% {
-                box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.7), 0 0 16px rgba(34, 197, 94, 0.5);
-                background-color: rgba(34, 197, 94, 0.18) !important;
+                box-shadow: 0 0 0 3px rgba(201, 165, 92, 0.72), 0 0 16px rgba(201, 165, 92, 0.48);
+                background-color: rgba(201, 165, 92, 0.18) !important;
                 transform: scale(1.01);
             }
             70% {
-                box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3);
-                background-color: rgba(34, 197, 94, 0.08);
+                box-shadow: 0 0 0 2px rgba(201, 165, 92, 0.32);
+                background-color: rgba(201, 165, 92, 0.08);
                 transform: scale(1.0);
             }
             100% {
@@ -95,9 +96,9 @@
             transition: all 0.3s ease;
         }
         @keyframes livePulse {
-            0% { transform: scale(0.95); opacity: 0.7; }
+            0% { transform: scale(0.95); opacity: 0.75; }
             50% { transform: scale(1.2); opacity: 1; }
-            100% { transform: scale(0.95); opacity: 0.7; }
+            100% { transform: scale(0.95); opacity: 0.75; }
         }
         @keyframes btnSpin {
             0% { transform: rotate(0deg); }
@@ -119,12 +120,12 @@
             align-items: center;
             gap: 0.35rem;
             font-size: 0.72rem;
-            font-weight: 600;
-            padding: 0.2rem 0.55rem;
+            font-weight: 700;
+            padding: 0.22rem 0.65rem;
             border-radius: 9999px;
-            background: rgba(34, 197, 94, 0.12);
-            color: #22c55e;
-            border: 1px solid rgba(34, 197, 94, 0.25);
+            background: #B5593A;
+            color: #FFFFFF;
+            border: 1px solid #9A482C;
             letter-spacing: 0.5px;
             text-transform: uppercase;
         }
@@ -132,15 +133,21 @@
             width: 6px;
             height: 6px;
             border-radius: 50%;
-            background-color: #22c55e;
-            box-shadow: 0 0 6px #22c55e;
+            background-color: #FDFBF6;
+            box-shadow: 0 0 6px rgba(253, 251, 246, 0.75);
             animation: livePulse 1.8s infinite ease-in-out;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .live-updated,
+            .live-indicator-dot {
+                animation: none;
+            }
         }
     </style>
 </head>
     <body>
     <!-- SECURITY WATERMARK: Do not remove. Modifying this constitutes a violation of copyright. -->
-    <div id="tourneypro-sys-sig" style="opacity: 0.001; pointer-events: none; position: absolute; z-index: -9999; top: -9999px; left: -9999px; width: 1px; height: 1px; overflow: hidden;" aria-hidden="true" data-copyright="Built for Tennis by Rahil Mehta" data-platform="TourneyPro">
+    <div id="tourneypro-sys-sig" style="opacity: 0.001; pointer-events: none; position: absolute; z-index: -9999; top: -9999px; left: -9999px; width: 1px; height: 1px; overflow: hidden;" aria-hidden="true" data-copyright="Built for Tennis by Rahil Mehta" data-platform="The Baseline Society">
         <h1>Built for Tennis by Rahil Mehta</h1>
         <p>Proprietary software structure. Unauthorized cloning is strictly prohibited.</p>
     </div>
@@ -152,8 +159,11 @@
         <div class="container navbar-container">
             <!-- Logo (Left) -->
             <a href="{{ url_for('main.index') }}" class="logo">
-                <span class="logo-icon">🏆</span>
-                <span class="logo-text">TourneyPro</span>
+                <img src="{{ url_for('static', filename='brand/monogram-on-dark.svg') }}" alt="" class="logo-mark" width="38" height="40">
+                <span class="logo-wordmark">
+                    <span class="logo-wordmark-eyebrow">The</span>
+                    <span class="logo-wordmark-main">Baseline Society</span>
+                </span>
             </a>
 
             <!-- Mobile Toggle -->
@@ -165,18 +175,18 @@
             <div class="navbar-collapse-wrapper" id="navbarCollapseWrapper">
                 <div class="mobile-drawer-header">
                     <div class="mobile-drawer-brand">
-                        <span class="logo-icon">🏆</span>
-                        <span class="logo-text">TourneyPro</span>
+                        <img src="{{ url_for('static', filename='brand/monogram-on-light.svg') }}" alt="" width="28" height="28">
+                        <span class="logo-text">Baseline Society</span>
                     </div>
                     <button type="button" class="mobile-drawer-close" id="mobileDrawerCloseBtn" aria-label="Close menu">&times;</button>
                 </div>
 
                 <!-- Main Links (Center) -->
                 <div class="nav-links-main" id="navLinksMain">
-                    <a href="{{ url_for('main.index') }}" class="nav-link">Home</a>
-                    <a href="{{ url_for('academy.index') }}" class="nav-link">Academies</a>
-                    <a href="{{ url_for('leaderboard.view_leaderboard') }}" class="nav-link">Leaderboard</a>
-                    <a href="{{ url_for('main.tournament_list') }}" class="nav-link">Tournaments</a>
+                    <a href="{{ url_for('main.index') }}" class="nav-link"{% if request.endpoint == 'main.index' %} aria-current="page"{% endif %}>Home</a>
+                    <a href="{{ url_for('academy.index') }}" class="nav-link"{% if request.endpoint and request.endpoint.startswith('academy.') %} aria-current="page"{% endif %}>Academies</a>
+                    <a href="{{ url_for('leaderboard.view_leaderboard') }}" class="nav-link"{% if request.endpoint and request.endpoint.startswith('leaderboard.') %} aria-current="page"{% endif %}>Leaderboard</a>
+                    <a href="{{ url_for('main.tournament_list') }}" class="nav-link"{% if request.endpoint and (request.endpoint == 'main.tournament_list' or request.endpoint.startswith('tournament.') or request.endpoint.startswith('category.')) %} aria-current="page"{% endif %}>Tournaments</a>
                 </div>
 
                 <!-- User Actions (Right) -->
@@ -280,7 +290,7 @@
 
     <footer class="footer">
         <div class="container">
-            <p>&copy; 2026 TourneyPro. Built for Tennis by Rahil Mehta</p>
+            <p>&copy; 2026 The Baseline Society &mdash; Every draw, every court, every champion. &bull; Built for Tennis by Rahil Mehta</p>
         </div>
     </footer>
 
@@ -385,8 +395,8 @@
     </script>
     
     <!-- Global Audit Validation Modal -->
-    <div id="globalAuditModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
-        <div style="background: var(--bg-card); padding: 2rem; border-radius: var(--radius-lg); width: 90%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+    <div id="globalAuditModal" role="dialog" aria-modal="true" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(11, 43, 32, 0.52); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+        <div style="background: var(--bg-card); padding: 2rem; border-radius: var(--radius-lg); border: 1px solid var(--border-color); border-top: 4px solid var(--accent-secondary); width: 90%; max-width: 500px; box-shadow: var(--shadow-lg);">
             <h3 style="margin-top: 0; color: var(--accent-danger); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1.5rem;">⚠️ Security Check Required</h3>
             <p style="margin-bottom: 1.5rem; color: var(--text-secondary); font-size: 0.95rem;">
                 You are about to perform a sensitive action: <strong id="auditModalActionName" style="color: var(--text-primary);">Modify Data</strong>. 
@@ -433,62 +443,17 @@
             // --- SECURITY WATERMARK LOG ---
             console.log("%cSTOP!", "color: red; font-family: sans-serif; font-size: 4em; font-weight: bolder; text-shadow: #000 1px 1px;");
             console.log("%cThis is a browser feature intended for developers. If someone told you to copy-paste something here, it is a scam and will give them access to your account.", "font-family: sans-serif; font-size: 1.2em; font-weight: bold;");
-            console.log("%c© Built for Tennis by Rahil Mehta. All rights reserved.", "color: #f97316; font-family: monospace; font-size: 1.1em; font-weight: bold; margin-top: 10px;");
+            console.log("%c© The Baseline Society — Built for Tennis by Rahil Mehta. All rights reserved.", "color: #C9A55C; font-family: monospace; font-size: 1.1em; font-weight: bold; margin-top: 10px;");
             // ------------------------------
 
             document.addEventListener('turbo:load', () => {
-                setupThemeToggle();
                 setupProfileDropdown();
                 setupAutoRefresh();
             });
             document.addEventListener('DOMContentLoaded', () => {
-                setupThemeToggle();
                 setupProfileDropdown();
                 setupAutoRefresh();
             });
-            
-            function setupThemeToggle() {
-                const updateThemeDisplay = (theme) => {
-                    const isLight = theme === 'light';
-                    document.querySelectorAll('#themeIcon, #profilePageThemeIcon').forEach(icon => {
-                        icon.textContent = isLight ? '🌙' : '☀️';
-                    });
-                    const themeBadge = document.getElementById('themeBadge');
-                    if (themeBadge) {
-                        themeBadge.textContent = isLight ? 'Light' : 'Dark';
-                    }
-                    const profilePageThemeText = document.getElementById('profilePageThemeText');
-                    if (profilePageThemeText) {
-                        profilePageThemeText.textContent = isLight ? 'Switch to Dark Mode' : 'Switch to Light Mode';
-                    }
-                };
-
-                const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-                updateThemeDisplay(currentTheme);
-
-                const toggleTheme = () => {
-                    const activeTheme = document.documentElement.getAttribute('data-theme');
-                    const newTheme = activeTheme === 'light' ? 'dark' : 'light';
-                    
-                    document.documentElement.setAttribute('data-theme', newTheme);
-                    localStorage.setItem('tourneypro-theme', newTheme);
-                    updateThemeDisplay(newTheme);
-                    window.dispatchEvent(new CustomEvent('tourneypro:themechange', { detail: { theme: newTheme } }));
-                    if (typeof renderBracketConnectors === 'function') {
-                        requestAnimationFrame(renderBracketConnectors);
-                    }
-                };
-
-                const themeButtons = document.querySelectorAll('#themeToggleBtn, #profilePageThemeBtn');
-                themeButtons.forEach(btn => {
-                    if (btn.dataset.listenerAttached) return;
-                    btn.dataset.listenerAttached = 'true';
-                    btn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        toggleTheme();
-                    });
-                });
-            }
 
             function setupProfileDropdown() {
                 const container = document.getElementById('profileDropdownContainer');

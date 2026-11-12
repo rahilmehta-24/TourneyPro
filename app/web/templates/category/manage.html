@@ -97,7 +97,7 @@
             ⚙️ Category Rules &amp; Format
         </button>
         {% if category.format == 'group_stage' or (category.max_players_per_team and category.max_players_per_team > 1) %}
-        <a href="{{ url_for('category.team_draft_view', slug=tournament.url_slug, category_id=category.id) }}" style="padding: 0.55rem 1.25rem; font-size: 0.9rem; font-weight: 700; border: 1px solid rgba(245, 158, 11, 0.5); background: rgba(245, 158, 11, 0.15); color: #f59e0b; border-radius: var(--radius-md); text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; transition: all 0.15s;">
+        <a href="{{ url_for('category.team_draft_view', slug=tournament.url_slug, category_id=category.id) }}" style="padding: 0.55rem 1.25rem; font-size: 0.9rem; font-weight: 700; border: 1px solid rgba(122, 95, 30, 0.4); background: rgba(201, 165, 92, 0.18); color: #7A5F1E; border-radius: var(--radius-md); text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; transition: all 0.15s;">
             🎪 Team Draft &amp; Tiers Board
         </a>
         {% endif %}
@@ -119,12 +119,12 @@
                         {% endif %}
                     </h3>
                     {% if category.status != 'setup' %}
-                    <span style="font-size: 0.75rem; background: rgba(245, 158, 11, 0.15); color: var(--accent-warning); padding: 0.2rem 0.5rem; border-radius: 9999px; font-weight: 600;">Late Entry</span>
+                    <span style="font-size: 0.75rem; background: rgba(201, 165, 92, 0.18); color: #7A5F1E; padding: 0.2rem 0.5rem; border-radius: 9999px; font-weight: 600;">Late Entry</span>
                     {% endif %}
                 </div>
 
                 {% if category.status != 'setup' %}
-                <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.85rem; background: rgba(59, 130, 246, 0.08); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid rgba(59, 130, 246, 0.2);">
+                <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.85rem; background: rgba(15, 61, 46, 0.08); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid rgba(15, 61, 46, 0.22);">
                     💡 <strong>Late Addition:</strong> Player profile will be auto-created and enrolled into this category roster. To re-seed or regenerate bracket with this player, use "Reset Category" below.
                 </div>
                 {% endif %}
@@ -224,13 +224,13 @@
                         </thead>
                         <tbody>
                             {% for participant in participants %}
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                            <tr style="border-bottom: 1px solid var(--border-subtle);">
                                 <td style="padding: 0.65rem 0.75rem; font-weight: bold;">
                                     {% if category.status == 'setup' %}
                                     <input type="number" name="seed_{{ participant.id }}" form="inlineSeedingForm" class="form-input seed-input" value="{{ participant.manual_seed or '' }}" min="1" max="{{ participants|length }}" placeholder="-" style="width: 60px; text-align: center; padding: 0.25rem 0.35rem; font-size: 0.85rem; font-weight: 600;">
                                     {% else %}
                                         {% if participant.manual_seed or participant.seed %}
-                                        <span style="background: var(--bg-secondary); color: var(--accent-secondary); padding: 0.15rem 0.45rem; border-radius: var(--radius-sm); font-size: 0.8rem; border: 1px solid rgba(139, 92, 246, 0.25);">
+                                        <span style="background: rgba(15, 61, 46, 0.08); color: var(--accent-primary-text); padding: 0.15rem 0.45rem; border-radius: var(--radius-sm); font-size: 0.8rem; border: 1px solid rgba(15, 61, 46, 0.25);">
                                             #{{ participant.manual_seed or participant.seed }}
                                         </span>
                                         {% else %}
@@ -484,8 +484,8 @@
 </div>
 
 <!-- RENAME CATEGORY MODAL -->
-<div id="renameCategoryModal" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 1rem;">
-    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); width: 100%; max-width: 440px; padding: 1.5rem; box-shadow: var(--shadow-md);">
+<div id="renameCategoryModal" role="dialog" aria-modal="true" style="display: none; position: fixed; inset: 0; background: rgba(11, 43, 32, 0.52); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 1rem;">
+    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-top: 4px solid var(--accent-secondary); border-radius: var(--radius-lg); width: 100%; max-width: 440px; padding: 1.5rem; box-shadow: var(--shadow-md);">
         <h3 style="margin: 0 0 0.5rem; font-size: 1.2rem; color: var(--text-primary); font-weight: 700;">
             ✏️ Rename Category
         </h3>

@@ -31,7 +31,7 @@
     {% endif %}
 {% endif %}
 
-<div class="team-wizard-container" {% if not hide_wizard_outer %}style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 16px rgba(0,0,0,0.15);"{% endif %}>
+<div class="team-wizard-container" {% if not hide_wizard_outer %}style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; margin-bottom: 2rem; box-shadow: var(--shadow-md);"{% endif %}>
     {% if not hide_wizard_header %}
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
         <div style="display: flex; align-items: center; gap: 0.6rem;">
@@ -46,7 +46,7 @@
             </div>
         </div>
         <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <span style="font-size: 0.78rem; font-weight: 700; color: var(--accent-primary); background: rgba(249, 115, 22, 0.12); border: 1px solid rgba(249, 115, 22, 0.3); padding: 0.25rem 0.65rem; border-radius: 9999px;">
+            <span style="font-size: 0.78rem; font-weight: 700; color: var(--accent-primary-text); background: rgba(15, 61, 46, 0.10); border: 1px solid rgba(15, 61, 46, 0.28); padding: 0.25rem 0.65rem; border-radius: 9999px;">
                 Current Stage: Step {{ current_step }} of 6
             </span>
         </div>
@@ -68,11 +68,11 @@
             <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
                 <div style="display: flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.75rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 700; transition: all 0.2s;
                     {% if s_num < current_step or (has_teams and s_num <= 3) %}
-                        background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4);
+                        background: rgba(5, 150, 105, 0.14); color: #065F46; border: 1px solid rgba(5, 150, 105, 0.35);
                     {% elif s_num == current_step %}
-                        background: rgba(249, 115, 22, 0.2); color: #f97316; border: 2px solid #f97316; box-shadow: 0 0 10px rgba(249, 115, 22, 0.3);
+                        background: rgba(181, 89, 58, 0.14); color: #9A482C; border: 2px solid #B5593A; box-shadow: 0 0 10px rgba(181, 89, 58, 0.22);
                     {% else %}
-                        background: var(--bg-secondary); color: var(--text-muted); border: 1px solid var(--border-color); opacity: 0.65;
+                        background: var(--bg-secondary); color: var(--text-muted); border: 1px solid var(--border-color); opacity: 0.75;
                     {% endif %}">
                     <span>
                         {% if s_num < current_step or (has_teams and s_num <= 3) %}✓{% else %}{{ s_num }}{% endif %}
@@ -92,18 +92,18 @@
         <!-- STEP 1: PLAYER REGISTRATION -->
         {% set s1_done = (has_teams or players_count >= 5) %}
         {% set s1_active = (current_step == 1) %}
-        <div style="background: var(--bg-secondary); border: {% if s1_active %}2px solid #3b82f6{% elif s1_done %}1px solid rgba(16, 185, 129, 0.3){% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between; {% if has_teams %}opacity: 0.85;{% endif %}">
+        <div style="background: var(--bg-secondary); border: {% if s1_active %}2px solid var(--accent-primary){% elif s1_done %}1px solid rgba(5, 150, 105, 0.35){% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between; {% if has_teams %}opacity: 0.9;{% endif %}">
             <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: {% if s1_done %}#10b981{% else %}#3b82f6{% endif %}; letter-spacing: 0.05em;">
+                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: {% if s1_done %}#065F46{% else %}var(--accent-primary-text){% endif %}; letter-spacing: 0.05em;">
                         Step 1
                     </span>
                     {% if has_teams %}
-                        <span style="font-size: 0.72rem; background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">✓ Locked</span>
+                        <span style="font-size: 0.72rem; background: rgba(5, 150, 105, 0.14); color: #065F46; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">✓ Locked</span>
                     {% elif s1_active %}
-                        <span style="font-size: 0.72rem; background: rgba(59, 130, 246, 0.2); color: #60a5fa; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">⚡ Current</span>
+                        <span style="font-size: 0.72rem; background: rgba(15, 61, 46, 0.14); color: #0F3D2E; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">⚡ Current</span>
                     {% else %}
-                        <span style="font-size: 0.72rem; background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 2px 7px; border-radius: 9999px; font-weight: 600;">✓ Done</span>
+                        <span style="font-size: 0.72rem; background: rgba(5, 150, 105, 0.14); color: #065F46; padding: 2px 7px; border-radius: 9999px; font-weight: 600;">✓ Done</span>
                     {% endif %}
                 </div>
                 <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.35rem;">
@@ -118,7 +118,7 @@
                     Pool: <strong style="color: var(--text-primary);">{{ players_count }} players</strong>
                 </div>
                 {% if has_teams %}
-                    <div style="padding: 0.4rem; text-align: center; font-size: 0.75rem; font-weight: 600; color: #10b981; background: rgba(16, 185, 129, 0.08); border-radius: var(--radius-sm);">
+                    <div style="padding: 0.4rem; text-align: center; font-size: 0.75rem; font-weight: 600; color: #065F46; background: rgba(5, 150, 105, 0.10); border-radius: var(--radius-sm);">
                         ✓ Squads Allotted &amp; Locked
                     </div>
                 {% elif s1_active %}
@@ -136,20 +136,20 @@
         <!-- STEP 2: ASSIGN SKILL TIERS -->
         {% set s2_done = (has_teams or current_step > 2) %}
         {% set s2_active = (current_step == 2) %}
-        <div style="background: var(--bg-secondary); border: {% if s2_active %}2px solid #8b5cf6{% elif s2_done %}1px solid rgba(16, 185, 129, 0.3){% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between; {% if has_teams %}opacity: 0.85;{% endif %}">
+        <div style="background: var(--bg-secondary); border: {% if s2_active %}2px solid #6D28D9{% elif s2_done %}1px solid rgba(15, 138, 95, 0.35){% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between; {% if has_teams %}opacity: 0.9;{% endif %}">
             <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: {% if s2_done %}#10b981{% else %}#8b5cf6{% endif %}; letter-spacing: 0.05em;">
+                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: {% if s2_done %}#065F46{% else %}#6D28D9{% endif %}; letter-spacing: 0.05em;">
                         Step 2
                     </span>
                     {% if has_teams %}
-                        <span style="font-size: 0.72rem; background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">✓ Locked</span>
+                        <span style="font-size: 0.72rem; background: rgba(15, 138, 95, 0.14); color: #065F46; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">✓ Locked</span>
                     {% elif s2_active %}
-                        <span style="font-size: 0.72rem; background: rgba(139, 92, 246, 0.2); color: #a78bfa; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">⚡ Current</span>
+                        <span style="font-size: 0.72rem; background: rgba(109, 40, 217, 0.14); color: #5B21B6; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">⚡ Current</span>
                     {% elif s2_done %}
-                        <span style="font-size: 0.72rem; background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 2px 7px; border-radius: 9999px; font-weight: 600;">✓ Done</span>
+                        <span style="font-size: 0.72rem; background: rgba(15, 138, 95, 0.14); color: #065F46; padding: 2px 7px; border-radius: 9999px; font-weight: 600;">✓ Done</span>
                     {% else %}
-                        <span style="font-size: 0.72rem; background: rgba(255, 255, 255, 0.05); color: var(--text-muted); padding: 2px 7px; border-radius: 9999px;">Step 2</span>
+                        <span style="font-size: 0.72rem; background: var(--bg-tertiary); color: var(--text-muted); padding: 2px 7px; border-radius: 9999px;">Step 2</span>
                     {% endif %}
                 </div>
                 <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.35rem;">
@@ -161,7 +161,7 @@
             </div>
             <div>
                 {% if has_teams %}
-                    <div style="padding: 0.4rem; text-align: center; font-size: 0.75rem; font-weight: 600; color: #10b981; background: rgba(16, 185, 129, 0.08); border-radius: var(--radius-sm);">
+                    <div style="padding: 0.4rem; text-align: center; font-size: 0.75rem; font-weight: 600; color: #065F46; background: rgba(15, 138, 95, 0.1); border-radius: var(--radius-sm);">
                         ✓ Tiers Allotted &amp; Locked
                     </div>
                 {% elif s2_active %}
@@ -183,18 +183,18 @@
         <!-- STEP 3: TEAM FORMATION -->
         {% set s3_done = has_teams %}
         {% set s3_active = (current_step == 3) %}
-        <div style="background: var(--bg-secondary); border: {% if s3_active %}2px solid #f59e0b{% elif s3_done %}1px solid rgba(16, 185, 129, 0.3){% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between; {% if has_teams %}opacity: 0.9;{% endif %}">
+        <div style="background: var(--bg-secondary); border: {% if s3_active %}2px solid #C9A55C{% elif s3_done %}1px solid rgba(5, 150, 105, 0.35){% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between; {% if has_teams %}opacity: 0.92;{% endif %}">
             <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: {% if s3_done %}#10b981{% else %}#f59e0b{% endif %}; letter-spacing: 0.05em;">
+                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: {% if s3_done %}#065F46{% else %}#7A5F1E{% endif %}; letter-spacing: 0.05em;">
                         Step 3
                     </span>
                     {% if s3_done %}
-                        <span style="font-size: 0.72rem; background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">✓ Formed &amp; Locked</span>
+                        <span style="font-size: 0.72rem; background: rgba(5, 150, 105, 0.14); color: #065F46; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">✓ Formed &amp; Locked</span>
                     {% elif s3_active %}
-                        <span style="font-size: 0.72rem; background: rgba(245, 158, 11, 0.2); color: #fbbf24; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">⚡ Current</span>
+                        <span style="font-size: 0.72rem; background: rgba(201, 165, 92, 0.18); color: #7A5F1E; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">⚡ Current</span>
                     {% else %}
-                        <span style="font-size: 0.72rem; background: rgba(255, 255, 255, 0.05); color: var(--text-muted); padding: 2px 7px; border-radius: 9999px;">Step 3</span>
+                        <span style="font-size: 0.72rem; background: var(--bg-tertiary); color: var(--text-muted); padding: 2px 7px; border-radius: 9999px;">Step 3</span>
                     {% endif %}
                 </div>
                 <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.35rem;">
@@ -206,7 +206,7 @@
             </div>
             <div>
                 {% if s3_done %}
-                    <div style="padding: 0.4rem; text-align: center; font-size: 0.75rem; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.1); border-radius: var(--radius-sm); border: 1px solid rgba(16, 185, 129, 0.2);">
+                    <div style="padding: 0.4rem; text-align: center; font-size: 0.75rem; font-weight: 700; color: #065F46; background: rgba(15, 138, 95, 0.1); border-radius: var(--radius-sm); border: 1px solid rgba(15, 138, 95, 0.25);">
                         ✓ {{ teams_count }} Teams Created (Locked)
                     </div>
                 {% elif s3_active %}
@@ -224,16 +224,16 @@
         <!-- STEP 4: GROUP ALLOCATION & TIMINGS -->
         {% set s4_done = is_started %}
         {% set s4_active = (current_step == 4) %}
-        <div style="background: var(--bg-secondary); border: {% if s4_active %}2px solid #10b981{% elif s4_done %}1px solid rgba(16, 185, 129, 0.3){% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between;">
+        <div style="background: var(--bg-secondary); border: {% if s4_active %}2px solid #047857{% elif s4_done %}1px solid rgba(5, 150, 105, 0.35){% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between;">
             <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #10b981; letter-spacing: 0.05em;">Step 4</span>
+                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #065F46; letter-spacing: 0.05em;">Step 4</span>
                     {% if s4_done %}
-                        <span style="font-size: 0.72rem; background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 2px 7px; border-radius: 9999px; font-weight: 600;">✓ Scheduled</span>
+                        <span style="font-size: 0.72rem; background: rgba(5, 150, 105, 0.14); color: #065F46; padding: 2px 7px; border-radius: 9999px; font-weight: 600;">✓ Scheduled</span>
                     {% elif s4_active %}
-                        <span style="font-size: 0.72rem; background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">⚡ Next Action</span>
+                        <span style="font-size: 0.72rem; background: rgba(5, 150, 105, 0.18); color: #065F46; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">⚡ Next Action</span>
                     {% else %}
-                        <span style="font-size: 0.72rem; background: rgba(255, 255, 255, 0.05); color: var(--text-muted); padding: 2px 7px; border-radius: 9999px;">Step 4</span>
+                        <span style="font-size: 0.72rem; background: var(--bg-tertiary); color: var(--text-muted); padding: 2px 7px; border-radius: 9999px;">Step 4</span>
                     {% endif %}
                 </div>
                 <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.35rem;">
@@ -249,7 +249,7 @@
                         ⚙️ Set Times &amp; Launch ➔
                     </a>
                 {% elif s4_done %}
-                    <div style="padding: 0.35rem; text-align: center; font-size: 0.75rem; color: #10b981; font-weight: 600;">
+                    <div style="padding: 0.35rem; text-align: center; font-size: 0.75rem; color: #065F46; font-weight: 600;">
                         ✓ Fixtures Generated
                     </div>
                 {% else %}
@@ -263,16 +263,16 @@
         <!-- STEP 5: CAPTAINS' LINEUP ALLOTMENT -->
         {% set s5_done = (current_step > 5) %}
         {% set s5_active = (current_step == 5) %}
-        <div style="background: var(--bg-secondary); border: {% if s5_active %}2px solid #ec4899{% elif s5_done %}1px solid rgba(16, 185, 129, 0.3){% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between;">
+        <div style="background: var(--bg-secondary); border: {% if s5_active %}2px solid #9D174D{% elif s5_done %}1px solid rgba(5, 150, 105, 0.35){% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between;">
             <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #ec4899; letter-spacing: 0.05em;">Step 5</span>
+                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #9D174D; letter-spacing: 0.05em;">Step 5</span>
                     {% if s5_done %}
-                        <span style="font-size: 0.72rem; background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 2px 7px; border-radius: 9999px; font-weight: 600;">✓ Done</span>
+                        <span style="font-size: 0.72rem; background: rgba(5, 150, 105, 0.14); color: #065F46; padding: 2px 7px; border-radius: 9999px; font-weight: 600;">✓ Done</span>
                     {% elif s5_active %}
-                        <span style="font-size: 0.72rem; background: rgba(236, 72, 153, 0.2); color: #f472b6; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">⚡ Current</span>
+                        <span style="font-size: 0.72rem; background: rgba(157, 23, 77, 0.14); color: #9D174D; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">⚡ Current</span>
                     {% else %}
-                        <span style="font-size: 0.72rem; background: rgba(255, 255, 255, 0.05); color: var(--text-muted); padding: 2px 7px; border-radius: 9999px;">Step 5</span>
+                        <span style="font-size: 0.72rem; background: var(--bg-tertiary); color: var(--text-muted); padding: 2px 7px; border-radius: 9999px;">Step 5</span>
                     {% endif %}
                 </div>
                 <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.35rem;">
@@ -288,7 +288,7 @@
                         📋 Allot Slips ➔
                     </a>
                 {% elif s5_done %}
-                    <div style="padding: 0.35rem; text-align: center; font-size: 0.75rem; color: #10b981; font-weight: 600;">
+                    <div style="padding: 0.35rem; text-align: center; font-size: 0.75rem; color: #065F46; font-weight: 600;">
                         ✓ Lineups Allotted
                     </div>
                 {% else %}
@@ -301,14 +301,14 @@
 
         <!-- STEP 6: MATCH PLAY & GAMES SCORING -->
         {% set s6_active = (current_step == 6) %}
-        <div style="background: var(--bg-secondary); border: {% if s6_active %}2px solid #f97316{% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between;">
+        <div style="background: var(--bg-secondary); border: {% if s6_active %}2px solid #B5593A{% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between;">
             <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #f97316; letter-spacing: 0.05em;">Step 6</span>
+                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--accent-tertiary-text); letter-spacing: 0.05em;">Step 6</span>
                     {% if s6_active %}
-                        <span style="font-size: 0.72rem; background: rgba(249, 115, 22, 0.2); color: #fb923c; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">🎾 Match Day</span>
+                        <span style="font-size: 0.72rem; background: rgba(181, 89, 58, 0.14); color: #9A482C; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">🎾 Match Day</span>
                     {% else %}
-                        <span style="font-size: 0.72rem; background: rgba(255, 255, 255, 0.05); color: var(--text-muted); padding: 2px 7px; border-radius: 9999px;">Step 6</span>
+                        <span style="font-size: 0.72rem; background: var(--bg-tertiary); color: var(--text-muted); padding: 2px 7px; border-radius: 9999px;">Step 6</span>
                     {% endif %}
                 </div>
                 <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.35rem;">

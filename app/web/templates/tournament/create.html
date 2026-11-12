@@ -106,7 +106,7 @@
                 </div>
 
                 <!-- Quick Duration Presets / Tabs -->
-                <div style="margin-bottom: 0.85rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.06);">
+                <div style="margin-bottom: 0.85rem; padding-top: 0.5rem; border-top: 1px solid var(--border-subtle);">
                     <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.45rem;">
                         <span id="quickDurationHeading" style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Quick Duration Selection:</span>
                     </div>
@@ -121,7 +121,7 @@
                 </div>
 
                 <!-- Active Duration Summary -->
-                <div id="durationSummaryBadge" style="background: rgba(249, 115, 22, 0.12); border: 1px solid rgba(249, 115, 22, 0.3); border-radius: var(--radius-sm); padding: 0.55rem 0.85rem; display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-primary);">
+                <div id="durationSummaryBadge" style="background: rgba(201, 165, 92, 0.16); border: 1px solid rgba(122, 95, 30, 0.35); border-radius: var(--radius-sm); padding: 0.55rem 0.85rem; display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-primary);">
                     <span style="font-size: 1.1rem;">🗓️</span>
                     <span id="durationSummaryText"><strong>2 Days Duration:</strong> Loading dates...</span>
                 </div>
@@ -151,7 +151,7 @@
 
             <!-- Dynamic Timings For Each Day (Prevent Order of Play Chaos) -->
             <div id="dynamicDailyScheduleBox" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; margin-top: 0.5rem;">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 0.65rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.65rem;">
                     <div>
                         <h4 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 0.35rem;">
                             ⏰ Operating Timings for Each Day (Order of Play Schedule Protection)
@@ -251,10 +251,10 @@ function initCreateTournamentPage() {
                 pill.classList.add('active');
                 pill.setAttribute('aria-selected', 'true');
                 pill.style.background = 'var(--accent-primary)';
-                pill.style.color = '#ffffff';
+                pill.style.color = '#FDFBF6';
                 pill.style.borderColor = 'var(--accent-primary)';
                 pill.style.fontWeight = '700';
-                pill.style.boxShadow = '0 0 0 2px rgba(59, 130, 246, 0.35)';
+                pill.style.boxShadow = '0 0 0 2px rgba(15, 61, 46, 0.25)';
             } else {
                 pill.classList.remove('active');
                 pill.setAttribute('aria-selected', 'false');
@@ -343,7 +343,7 @@ function initCreateTournamentPage() {
             card.setAttribute('data-date-key', dateKey);
             card.style.cssText = 'background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.75rem 0.85rem; box-shadow: var(--shadow-sm);';
             card.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.35rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.35rem;">
                     <span style="font-weight: 700; font-size: 0.85rem; color: var(--accent-primary);">Day ${dayIndex}</span>
                     <span style="font-size: 0.75rem; color: var(--text-muted);">${dateDisplay}</span>
                 </div>
