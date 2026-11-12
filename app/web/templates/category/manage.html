@@ -373,11 +373,16 @@
                 </div>
 
                 <div id="group-stage-fields" style="display: {% if category.format in ['group_stage', 'round_robin', 'doubles_round_robin'] %}flex{% else %}none{% endif %}; flex-direction: column; gap: 0.85rem; background: var(--bg-secondary); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+                    {% if category.format == 'group_stage' and structure_options %}
+                    {% set structure_team_count = structure_options[0].group_sizes|sum %}
+                    {% set structure_next_target = 'manage' %}
+                    {% include "components/group_structure_recommender.html" %}
+                    {% endif %}
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                         <div class="form-group" style="margin: 0;">
                             <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Number of Groups *</label>
-                            <input type="number" id="num_groups" name="num_groups" class="form-input" min="2" value="{{ category.num_groups or 2 }}" placeholder="e.g. 2, 4" style="width: 100%;">
-                            <small style="display: block; margin-top: 0.25rem; color: var(--text-muted); font-size: 0.78rem;">Default: 2 Groups. Teams per group are calculated dynamically (N ÷ G).</small>
+                            <input type="number" id="num_groups" name="num_groups" class="form-input" min="2" max="16" value="{{ category.num_groups or 2 }}" placeholder="e.g. 2, 3, 4" style="width: 100%;">
+                            <small style="display: block; margin-top: 0.25rem; color: var(--text-muted); font-size: 0.78rem;">Teams per group are balanced dynamically (N ÷ G). Use Structure Options above after registration to split with or without Lucky Losers.</small>
                         </div>
                         <div class="form-group" id="manage-teams-per-group-container" style="margin: 0; display: {% if category.format == 'group_stage' %}none{% else %}block{% endif %};">
                             <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Teams Per Group *</label>
@@ -391,14 +396,15 @@
                         </div>
                         <div class="form-group" style="margin: 0;">
                             <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Qualifiers Per Group *</label>
-                            <input type="number" id="qualifiers_per_group" name="qualifiers_per_group" class="form-input" min="1" value="{{ category.qualifiers_per_group or '' }}" placeholder="e.g. 2" style="width: 100%;">
+                            <input type="number" id="qualifiers_per_group" name="qualifiers_per_group" class="form-input" min="1" value="{{ category.qualifiers_per_group or 2 }}" placeholder="e.g. 2" style="width: 100%;">
                         </div>
                     </div>
                     <div class="form-group" style="margin: 0;">
                         <label style="display: flex; align-items: center; gap: 8px;">
                             <input type="checkbox" name="allow_lucky_losers" id="allow_lucky_losers" style="width: 16px; height: 16px; accent-color: var(--primary);" {% if category.allow_lucky_losers %}checked{% endif %}>
-                            <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">Enable Lucky Losers</span>
+                            <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600;">Enable Lucky Losers (Fill Next Power-of-2 Knockout Bracket)</span>
                         </label>
+                        <small style="display: block; margin-left: 24px; color: var(--text-muted); font-size: 0.78rem;">When direct qualifiers aren't a power of 2 (e.g., 3 groups × Top 2 = 6), fills vacant spots up to 4 / 8 / 16 via manual chit draw or normalized group standings.</small>
                     </div>
                 </div>
                 {% endif %}

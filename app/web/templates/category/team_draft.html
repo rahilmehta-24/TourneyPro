@@ -53,7 +53,13 @@
             <div style="font-size: 1.6rem; font-weight: 800; color: var(--accent-secondary-text); margin-top: 0.25rem;">
                 {{ calculated_teams }}
             </div>
-            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem;">Formula: Total ÷ {{ players_per_team }}</div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                {% if leftover_players > 0 %}
+                    {{ full_teams }} full + {{ leftover_players }} leftover ({{ players_needed_for_next }} needed)
+                {% else %}
+                    Exact fit ({{ total_players }} ÷ {{ players_per_team }})
+                {% endif %}
+            </div>
         </div>
 
         <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1rem; box-shadow: var(--shadow-sm);">
@@ -61,7 +67,9 @@
             <div style="font-size: 1.6rem; font-weight: 800; color: #6D28D9; margin-top: 0.25rem;">
                 {{ num_groups }} Groups
             </div>
-            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem;">{{ teams_per_group }} teams/group</div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                ~{{ teams_per_group }} teams/group • {{ 'Lucky Losers ON' if category.allow_lucky_losers else 'Lucky Losers OFF' }}
+            </div>
         </div>
 
         <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1rem; box-shadow: var(--shadow-sm);">
@@ -72,6 +80,96 @@
             <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem;">Tiebreak at {{ ((category.total_games or 7) - 1) // 2 }}–{{ ((category.total_games or 7) - 1) // 2 }} all</div>
         </div>
     </div>
+
+    {% if leftover_players > 0 or dummy_players %}
+    <!-- Leftover Players / Late Entry / Dummy Slot Handler -->
+    <div style="background: rgba(201, 165, 92, 0.14); border: 1px solid rgba(122, 95, 30, 0.45); border-left: 5px solid #B45309; border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; margin-bottom: 1.5rem;">
+        {% if leftover_players > 0 %}
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem;">
+            <div>
+                <h3 style="margin: 0; font-size: 1.08rem; font-weight: 800; color: #78350F; display: flex; align-items: center; gap: 0.45rem;">
+                    <span>⚠️ {{ players_needed_for_next }} More Player(s) Required for Team {{ full_teams + 1 }}</span>
+                </h3>
+                <p style="margin: 0.3rem 0 0 0; font-size: 0.86rem; color: var(--text-secondary); line-height: 1.45;">
+                    You currently have <strong>{{ total_players }} players</strong> ({{ full_teams }} full teams of {{ players_per_team }} + <strong>{{ leftover_players }} leftover</strong>). Before locking your final groups, add <strong>{{ players_needed_for_next }} late-entry player(s)</strong>, fill the remaining slot(s) with <strong>TBD / Dummy</strong> placeholders, or continue with <strong>{{ full_teams }} teams</strong>.
+                </p>
+                {% if next_team_options %}
+                <div style="margin-top: 0.45rem; font-size: 0.8rem; color: #78350F;">
+                    If completed to <strong>{{ full_teams + 1 }} teams</strong>:
+                    {% for opt in next_team_options[:2] %}
+                        <span style="display: inline-block; background: var(--bg-card); border: 1px solid rgba(122, 95, 30, 0.3); padding: 0.12rem 0.5rem; border-radius: 4px; margin-right: 0.35rem;">{{ opt.title }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <form method="POST" action="{{ url_for('category.add_dummy_players', slug=tournament.url_slug, category_id=category.id) }}" style="margin: 0;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="count" value="{{ players_needed_for_next }}">
+                    <button type="submit" class="btn btn-secondary" style="font-size: 0.84rem; font-weight: 700; border-color: #B45309; color: #78350F;">
+                        🤖 Fill {{ players_needed_for_next }} Dummy / TBD Slot{{ 's' if players_needed_for_next > 1 else '' }}
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if dummy_players %}
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.75rem 1rem; margin-bottom: 0.9rem; font-size: 0.84rem;">
+            <strong style="color: #78350F;">Active Dummy / TBD Placeholder(s):</strong>
+            {% for dp in dummy_players %}
+                <span style="display: inline-block; background: rgba(201, 165, 92, 0.22); color: #78350F; padding: 0.15rem 0.5rem; border-radius: 9999px; font-weight: 700; font-size: 0.78rem; margin: 0.15rem 0.25rem;">{{ dp.name }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Quick Late Entry / Replace Dummy Form -->
+        <form method="POST" action="{{ url_for('category.quick_late_entry_player', slug=tournament.url_slug, category_id=category.id) }}" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.85rem 1rem;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div style="font-weight: 700; font-size: 0.84rem; color: var(--text-primary); margin-bottom: 0.55rem;">
+                ➕ Quick Late Entry Player {% if dummy_players %}(or Replace a Dummy Slot){% endif %}
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.6rem; align-items: end;">
+                <div>
+                    <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 0.2rem;">Player Name *</label>
+                    <input type="text" name="player_name" required placeholder="Full Name" class="form-input" style="width: 100%; padding: 0.4rem 0.6rem; font-size: 0.84rem;">
+                </div>
+                <div>
+                    <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 0.2rem;">Mobile (Optional)</label>
+                    <input type="text" name="player_mobile" placeholder="10-digit number" class="form-input" style="width: 100%; padding: 0.4rem 0.6rem; font-size: 0.84rem;">
+                </div>
+                <div>
+                    <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 0.2rem;">Gender</label>
+                    <select name="player_gender" class="form-input" style="width: 100%; padding: 0.4rem 0.6rem; font-size: 0.84rem;">
+                        <option value="Male" {% if category.gender in ['Male', 'Boys'] %}selected{% endif %}>Male</option>
+                        <option value="Female" {% if category.gender in ['Female', 'Girls'] %}selected{% endif %}>Female</option>
+                    </select>
+                </div>
+                {% if dummy_players %}
+                <div>
+                    <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 0.2rem;">Action / Target</label>
+                    <select name="replace_dummy_id" class="form-input" style="width: 100%; padding: 0.4rem 0.6rem; font-size: 0.84rem;">
+                        <option value="">Add as New Player</option>
+                        {% for dp in dummy_players %}
+                        <option value="{{ dp.id }}">Replace: {{ dp.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+                <div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.45rem 0.85rem; font-size: 0.84rem; font-weight: 700;">
+                        ➕ Save Late Entry
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- Group & Knockout Structure Recommender -->
+    {% set structure_team_count = teams|length if teams|length >= 2 else calculated_teams %}
+    {% set structure_next_target = 'draft' %}
+    {% include "components/group_structure_recommender.html" %}
 
     <!-- Navigation Tabs Between Stages -->
     <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 2px solid var(--border-color); padding-bottom: 0.5rem;">
@@ -441,13 +539,16 @@
             </div>
         </div>
 
-        <!-- Current Formed Teams Preview -->
+        <!-- Current Formed Teams Preview (Grouped by Group A / B / C...) -->
         {% if teams %}
         <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1.5rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h4 style="margin: 0; font-size: 1.15rem; color: var(--text-primary);">
-                    🛡️ Formed Teams ({{ teams|length }} Teams)
-                </h4>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;">
+                <div>
+                    <h4 style="margin: 0; font-size: 1.15rem; color: var(--text-primary);">
+                        🛡️ Formed Teams &amp; Group Allocation ({{ teams|length }} Teams across {{ groups|length }} Groups)
+                    </h4>
+                    <small style="color: var(--text-muted);">Teams are balanced automatically using snake seeding. Use the group selector on any team card to manually swap groups before starting.</small>
+                </div>
                 <form method="POST" action="{{ url_for('category.reset_teams', slug=tournament.url_slug, category_id=category.id) }}" onsubmit="return confirm('Reset all teams? This will clear team allocations.');">
                     <button type="submit" class="btn btn-secondary" style="font-size: 0.8rem; color: var(--accent-danger);">
                         ✕ Reset Teams
@@ -455,26 +556,74 @@
                 </form>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
-                {% for team in teams %}
-                <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem;">
-                    <div style="font-weight: 800; font-size: 1.05rem; color: var(--text-primary); margin-bottom: 0.5rem; display: flex; justify-content: space-between;">
-                        <span>{{ team.name }}</span>
-                        <span style="font-size: 0.75rem; color: var(--text-muted);">5 Players</span>
-                    </div>
-                    <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.85rem;">
-                        {% for m in team.team_members|sort(attribute='roster_order') %}
-                        <li style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); padding: 0.3rem 0.6rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
-                            <span style="color: var(--text-primary); font-weight: 500;">{{ m.player.name }}</span>
-                            <span style="font-size: 0.7rem; font-weight: 700; color: {% if m.role == 'captain' %}#7A5F1E{% elif m.role == 'vice_captain' %}#065F46{% else %}var(--text-muted){% endif %};">
-                                {{ m.role|upper|replace('_', ' ') }}
-                            </span>
-                        </li>
-                        {% endfor %}
-                    </ul>
+            {% for g in groups %}
+            {% set grp_teams = teams_by_group.get(g.id, []) %}
+            <div style="margin-bottom: 1.25rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.45rem;">
+                    <span style="font-weight: 800; font-size: 1rem; color: var(--text-primary);">🎪 {{ g.name }}</span>
+                    <span style="font-size: 0.78rem; font-weight: 700; padding: 0.18rem 0.55rem; border-radius: 9999px; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-secondary);">
+                        {{ grp_teams|length }} Team{{ 's' if grp_teams|length != 1 else '' }}
+                    </span>
                 </div>
-                {% endfor %}
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0.85rem;">
+                    {% for team in grp_teams %}
+                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.9rem;">
+                        <div style="font-weight: 800; font-size: 1rem; color: var(--text-primary); margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;">
+                            <span>{{ team.name }}</span>
+                            {% if category.status == 'setup' and groups|length > 1 %}
+                            <form method="POST" action="{{ url_for('category.assign_team_group', slug=tournament.url_slug, category_id=category.id) }}" style="margin: 0;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="participant_id" value="{{ team.id }}">
+                                <select name="group_id" onchange="this.form.submit()" class="form-input" style="padding: 0.15rem 0.4rem; font-size: 0.75rem; width: auto;" title="Move team to group">
+                                    {% for target_g in groups %}
+                                    <option value="{{ target_g.id }}" {% if target_g.id == team.group_id %}selected{% endif %}>{{ target_g.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </form>
+                            {% else %}
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">{{ team.team_members|length }} Players</span>
+                            {% endif %}
+                        </div>
+                        <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.82rem;">
+                            {% for m in team.team_members|sort(attribute='roster_order') %}
+                            <li style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-secondary); padding: 0.28rem 0.55rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                                <span style="color: var(--text-primary); font-weight: 500;">{{ m.player.name }}</span>
+                                <span style="font-size: 0.68rem; font-weight: 700; color: {% if m.role == 'captain' %}#7A5F1E{% elif m.role == 'vice_captain' %}#065F46{% else %}var(--text-muted){% endif %};">
+                                    {{ m.role|upper|replace('_', ' ') }}
+                                </span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
+            {% endfor %}
+
+            {% if unassigned_teams %}
+            <div style="margin-top: 1rem; padding: 1rem; border: 1px dashed var(--border-strong); border-radius: var(--radius-md);">
+                <strong style="display: block; margin-bottom: 0.5rem;">Unassigned Teams</strong>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0.85rem;">
+                    {% for team in unassigned_teams %}
+                    <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.9rem;">
+                        <div style="font-weight: 800; font-size: 1rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between;">
+                            <span>{{ team.name }}</span>
+                            <form method="POST" action="{{ url_for('category.assign_team_group', slug=tournament.url_slug, category_id=category.id) }}" style="margin: 0;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="participant_id" value="{{ team.id }}">
+                                <select name="group_id" onchange="this.form.submit()" class="form-input" style="padding: 0.15rem 0.4rem; font-size: 0.75rem; width: auto;">
+                                    <option value="">Assign Group...</option>
+                                    {% for target_g in groups %}
+                                    <option value="{{ target_g.id }}">{{ target_g.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
         </div>
         {% endif %}
     </div>

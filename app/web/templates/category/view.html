@@ -737,12 +737,18 @@
         {% endif %}
     </div>
     {% endif %}
+    {% if not is_export and category.status == 'setup' and structure_options and current_user and current_user.role in ['admin', 'superadmin'] %}
+    {% set structure_team_count = participants|length %}
+    {% set structure_next_target = 'view' %}
+    {% include "components/group_structure_recommender.html" %}
+    {% endif %}
+
     {% if groups_data %}
     <!-- GROUP STAGE VIEW -->
     <div id="groups-section" class="groups-section">
         <div id="standings" style="scroll-margin-top: 80px;"></div>
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h2>Group Stage</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+            <h2 style="margin: 0;">Group Stage</h2>
             {% if not (category.max_players_per_team and category.max_players_per_team > 1) and current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] %}
             <div style="display: flex; gap: 8px;">
                 <button type="submit" form="group-matrix-form" class="btn btn-primary" title="Save Entries" style="padding: 0.5rem 1rem; display: flex; align-items: center; gap: 8px; border-radius: 4px;">
@@ -752,6 +758,24 @@
             </div>
             {% endif %}
         </div>
+
+        {% if knockout_preview and knockout_preview.direct_qualifiers %}
+        <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-left: 4px solid var(--primary); border-radius: var(--radius-md); padding: 0.75rem 1rem; margin-top: 0.85rem; margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+                <strong style="color: var(--text-primary);">🏆 Knockout Qualification Formula:</strong>
+                Top <strong>{{ knockout_preview.qualifiers_per_group }}</strong> per group (<strong>{{ knockout_preview.direct_qualifiers|length }}</strong> direct)
+                {% if knockout_preview.slots_to_fill > 0 %}
+                    + <strong style="color: #5B21B6;">{{ knockout_preview.slots_to_fill }} Lucky Loser{{ 's' if knockout_preview.slots_to_fill > 1 else '' }}</strong> (selected via organizer chit draw / standings)
+                {% elif knockout_preview.byes_count > 0 %}
+                    + <strong>{{ knockout_preview.byes_count }} Round-1 Bye{{ 's' if knockout_preview.byes_count > 1 else '' }}</strong>
+                {% endif %}
+                → <strong>{{ knockout_preview.target_bracket }}-Team Knockout</strong>
+                {% if knockout_preview.is_uneven_groups %}
+                    <span style="color: var(--text-muted); font-size: 0.8rem;">(Uneven group sizes [{{ knockout_preview.group_sizes|join('+') }}] — cross-group comparison normalized per tie played)</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
         
         {% if not (category.max_players_per_team and category.max_players_per_team > 1) and current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] %}
         <form id="group-matrix-form" method="POST" action="{{ url_for('category.update_grid_scores', slug=tournament.url_slug, category_id=category.id) }}">
@@ -851,9 +875,20 @@
                 </thead>
                 <tbody>
                     {% if group_info.standings %}
+                    {% set q_limit = category.qualifiers_per_group or 2 %}
+                    {% set ll_ids = knockout_preview.recommended_ll_ids if knockout_preview else [] %}
                     {% for participant in group_info.standings %}
-                    <tr>
-                        <td>{{ loop.index }}</td>
+                    {% set is_direct_q = loop.index <= q_limit %}
+                    {% set is_ll_contender = (not is_direct_q) and (participant.id in ll_ids) %}
+                    <tr style="{% if is_direct_q %}background: rgba(5, 150, 105, 0.06);{% elif is_ll_contender %}background: rgba(109, 40, 217, 0.06);{% endif %}">
+                        <td>
+                            <span>{{ loop.index }}</span>
+                            {% if is_direct_q %}
+                                <span title="Direct Qualifier" style="margin-left: 4px; font-size: 0.68rem; font-weight: 800; padding: 1px 5px; border-radius: 4px; background: rgba(5, 150, 105, 0.16); color: #065F46;">Q</span>
+                            {% elif is_ll_contender %}
+                                <span title="Currently in Lucky Loser Spot" style="margin-left: 4px; font-size: 0.68rem; font-weight: 800; padding: 1px 5px; border-radius: 4px; background: rgba(109, 40, 217, 0.16); color: #5B21B6;">LL</span>
+                            {% endif %}
+                        </td>
                         {% if category.max_players_per_team and category.max_players_per_team > 1 %}
                         <td style="font-weight: 700; color: var(--text-primary);">
                             🛡️ {{ participant.name }}
@@ -1242,12 +1277,144 @@
                         </div>
                     </div>
                 </div>
+                {% if knockout_preview and knockout_preview.slots_to_fill > 0 %}
+                <button type="button" onclick="openLuckyLoserModal()" class="btn btn-success btn-large" style="font-weight: 700; box-shadow: 0 4px 14px rgba(4, 120, 87, 0.28);">
+                    🎲 Select {{ knockout_preview.slots_to_fill }} Lucky Loser{{ 's' if knockout_preview.slots_to_fill > 1 else '' }} &amp; Start Knockout ➔
+                </button>
+                {% else %}
                 <form method="POST" action="{{ url_for('category.start_knockout_stage', slug=tournament.url_slug, category_id=category.id) }}" style="margin: 0;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-success btn-large" style="font-weight: 700; box-shadow: 0 4px 14px rgba(4, 120, 87, 0.28);" onclick="return confirm('Generate Knockout Bracket and seed top group qualifiers?');">
                         🚀 Start Knockout Stage ➔
                     </button>
                 </form>
+                {% endif %}
             </div>
+
+            {% if knockout_preview and knockout_preview.slots_to_fill > 0 %}
+            <!-- Lucky Loser Manual Chit Draw & Selection Modal -->
+            <div id="luckyLoserDrawModal" role="dialog" aria-modal="true" style="display: none; position: fixed; inset: 0; background: rgba(11, 43, 32, 0.56); backdrop-filter: blur(4px); z-index: 9999; justify-content: center; align-items: center; padding: 1rem;">
+                <div style="background: var(--bg-card); border: 1px solid var(--border-strong); border-top: 4px solid #5B21B6; border-radius: var(--radius-lg); padding: 1.5rem; max-width: 720px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-lg);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                        <h3 style="margin: 0; font-size: 1.25rem; font-weight: 800; color: var(--text-primary);">
+                            🎲 Lucky Loser Chit Draw &amp; Knockout Seeding
+                        </h3>
+                        <button type="button" onclick="closeLuckyLoserModal()" class="btn btn-secondary btn-small">✕</button>
+                    </div>
+                    <p style="font-size: 0.88rem; color: var(--text-secondary); margin: 0 0 1rem 0; line-height: 1.45;">
+                        <strong>{{ knockout_preview.direct_qualifiers|length }} direct qualifiers</strong> advance automatically (Top {{ knockout_preview.qualifiers_per_group }} per group). Select exactly <strong id="llRequiredCount">{{ knockout_preview.slots_to_fill }}</strong> Lucky Loser{{ 's' if knockout_preview.slots_to_fill > 1 else '' }} from your manual chit draw or standings below to form the <strong>{{ knockout_preview.target_bracket }}-Team Knockout</strong> bracket.
+                    </p>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
+                        <span id="llSelectionCounter" style="font-size: 0.84rem; font-weight: 700; color: #5B21B6;">
+                            Selected: {{ knockout_preview.recommended_ll_ids|length }} / {{ knockout_preview.slots_to_fill }}
+                        </span>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button type="button" onclick="autoSelectRecommendedLuckyLosers()" class="btn btn-secondary btn-small" style="font-weight: 700;">
+                                ⭐ Auto-Pick Top Normalized
+                            </button>
+                            <button type="button" onclick="clearLuckyLoserSelection()" class="btn btn-secondary btn-small">
+                                Clear All
+                            </button>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('category.start_knockout_stage', slug=tournament.url_slug, category_id=category.id) }}" id="luckyLoserForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: 1.25rem;">
+                            <table class="standings-table" style="margin: 0; font-size: 0.85rem;">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 44px; text-align: center;">Pick</th>
+                                        <th>Team / Player</th>
+                                        <th>Group</th>
+                                        <th>Pos</th>
+                                        <th>Ties</th>
+                                        <th>Win %</th>
+                                        <th>Avg Diff/Tie</th>
+                                        <th>Games</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for cand in knockout_preview.lucky_loser_candidates %}
+                                    {% set is_rec = cand.id in knockout_preview.recommended_ll_ids %}
+                                    <tr style="{% if is_rec %}background: rgba(109, 40, 217, 0.06);{% endif %}">
+                                        <td style="text-align: center;">
+                                            <input type="checkbox"
+                                                   name="lucky_loser_ids"
+                                                   value="{{ cand.id }}"
+                                                   class="ll-candidate-checkbox"
+                                                   data-recommended="{{ '1' if is_rec else '0' }}"
+                                                   {% if is_rec %}checked{% endif %}
+                                                   onchange="updateLuckyLoserCount()"
+                                                   style="width: 17px; height: 17px; accent-color: #5B21B6;">
+                                        </td>
+                                        <td style="font-weight: 700; color: var(--text-primary);">
+                                            {{ cand.name }}
+                                            {% if is_rec %}
+                                            <span style="margin-left: 4px; font-size: 0.68rem; font-weight: 800; padding: 1px 5px; border-radius: 4px; background: rgba(109, 40, 217, 0.16); color: #5B21B6;">TOP STATS</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ cand._group_name or ('Group ' ~ cand.group_id) }}</td>
+                                        <td>#{{ cand._group_rank or '-' }}</td>
+                                        <td>{{ cand._matches_played or 0 }}</td>
+                                        <td>{{ ((cand._win_rate or 0) * 100)|round|int }}%</td>
+                                        <td style="font-weight: 600;">{{ '+' if (cand._avg_diff or 0) > 0 else '' }}{{ cand._avg_diff or 0 }}</td>
+                                        <td>{{ cand.group_points or 0 }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                            <button type="button" onclick="closeLuckyLoserModal()" class="btn btn-secondary">Cancel</button>
+                            <button type="submit" id="btnConfirmLuckyLosers" class="btn btn-success" style="font-weight: 700;">
+                                🚀 Confirm {{ knockout_preview.slots_to_fill }} Lucky Loser{{ 's' if knockout_preview.slots_to_fill > 1 else '' }} &amp; Generate Bracket ➔
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <script>
+            function openLuckyLoserModal() {
+                const modal = document.getElementById('luckyLoserDrawModal');
+                if (modal) {
+                    modal.style.display = 'flex';
+                    updateLuckyLoserCount();
+                }
+            }
+            function closeLuckyLoserModal() {
+                const modal = document.getElementById('luckyLoserDrawModal');
+                if (modal) modal.style.display = 'none';
+            }
+            function updateLuckyLoserCount() {
+                const req = parseInt(document.getElementById('llRequiredCount')?.textContent || '0', 10);
+                const checked = document.querySelectorAll('.ll-candidate-checkbox:checked').length;
+                const counter = document.getElementById('llSelectionCounter');
+                const btn = document.getElementById('btnConfirmLuckyLosers');
+                if (counter) {
+                    counter.textContent = `Selected: ${checked} / ${req}`;
+                    counter.style.color = checked === req ? '#065F46' : '#B45309';
+                }
+                if (btn) {
+                    btn.disabled = checked !== req;
+                }
+            }
+            function autoSelectRecommendedLuckyLosers() {
+                document.querySelectorAll('.ll-candidate-checkbox').forEach(cb => {
+                    cb.checked = cb.dataset.recommended === '1';
+                });
+                updateLuckyLoserCount();
+            }
+            function clearLuckyLoserSelection() {
+                document.querySelectorAll('.ll-candidate-checkbox').forEach(cb => {
+                    cb.checked = false;
+                });
+                updateLuckyLoserCount();
+            }
+            </script>
+            {% endif %}
             {% endif %}
         {% endif %}
         {% endif %}

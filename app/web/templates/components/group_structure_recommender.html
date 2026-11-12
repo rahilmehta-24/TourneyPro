@@ -1,0 +1,70 @@
+{% if structure_options %}
+<div style="background: var(--bg-card); border: 1px solid var(--border-strong); border-top: 4px solid var(--primary); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; box-shadow: var(--shadow-sm);">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <span style="font-size: 1.25rem;">🧩</span>
+                <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text-primary);">
+                    Group &amp; Knockout Structure Options ({{ structure_team_count }} Teams / Entries, Top {{ category.qualifiers_per_group or 2 }}/Group)
+                </h3>
+            </div>
+            <p style="margin: 0.25rem 0 0 0; font-size: 0.86rem; color: var(--text-muted);">
+                Choose whether to keep fewer uneven groups with direct knockout spots, or split into more balanced groups using Lucky Losers to fill the power-of-2 bracket.
+            </p>
+        </div>
+        <div style="font-size: 0.8rem; font-weight: 700; padding: 0.3rem 0.75rem; border-radius: 9999px; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary);">
+            Active: {{ category.num_groups or 2 }} Groups • {{ 'Lucky Losers ON' if category.allow_lucky_losers else 'Lucky Losers OFF' }}
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(265px, 1fr)); gap: 1rem;">
+        {% for opt in structure_options %}
+        {% set is_active = (category.num_groups or 2) == opt.num_groups and ((category.allow_lucky_losers or false) == opt.allow_lucky_losers) %}
+        <div style="background: {% if is_active %}rgba(15, 138, 95, 0.08){% else %}var(--bg-secondary){% endif %}; border: 2px solid {% if is_active %}#047857{% elif opt.is_recommended %}rgba(201, 165, 92, 0.7){% else %}var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between; gap: 0.75rem;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; margin-bottom: 0.45rem; flex-wrap: wrap;">
+                    <span style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.2rem 0.55rem; border-radius: 9999px; background: {% if opt.allow_lucky_losers %}rgba(109, 40, 217, 0.14){% elif not opt.is_uneven %}rgba(5, 150, 105, 0.14){% else %}rgba(201, 165, 92, 0.22){% endif %}; color: {% if opt.allow_lucky_losers %}#5B21B6{% elif not opt.is_uneven %}#065F46{% else %}#7A5F1E{% endif %};">
+                        {{ opt.badge }}
+                    </span>
+                    {% if is_active %}
+                    <span style="font-size: 0.72rem; font-weight: 800; color: #065F46; background: rgba(5, 150, 105, 0.18); padding: 0.18rem 0.5rem; border-radius: 9999px;">
+                        ✓ Selected
+                    </span>
+                    {% endif %}
+                </div>
+
+                <div style="font-weight: 800; font-size: 1rem; color: var(--text-primary);">
+                    {{ opt.title }}
+                </div>
+                <div style="font-size: 0.84rem; color: var(--text-secondary); margin-top: 0.25rem; line-height: 1.4;">
+                    {{ opt.summary }}
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; font-size: 0.76rem; color: var(--text-muted);">
+                    <span style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 0.15rem 0.45rem; border-radius: 4px;">
+                        Sizes: <strong>[{{ opt.sizes_label }}]</strong>
+                    </span>
+                    <span style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 0.15rem 0.45rem; border-radius: 4px;">
+                        Group Ties: <strong>{{ opt.group_ties }}</strong>
+                    </span>
+                    <span style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 0.15rem 0.45rem; border-radius: 4px;">
+                        Bracket: <strong>{{ opt.target_bracket }} ({{ opt.knockout_label }})</strong>
+                    </span>
+                </div>
+            </div>
+
+            <form method="POST" action="{{ url_for('category.configure_group_structure', slug=tournament.url_slug, category_id=category.id) }}" style="margin: 0;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="num_groups" value="{{ opt.num_groups }}">
+                <input type="hidden" name="allow_lucky_losers" value="{{ 'true' if opt.allow_lucky_losers else 'false' }}">
+                <input type="hidden" name="qualifiers_per_group" value="{{ opt.qualifiers_per_group }}">
+                <input type="hidden" name="next_target" value="{{ structure_next_target or 'draft' }}">
+                <button type="submit" class="btn {% if is_active %}btn-secondary{% else %}btn-primary{% endif %}" style="width: 100%; font-size: 0.84rem; font-weight: 700;" {% if is_active %}disabled{% endif %}>
+                    {% if is_active %}✓ Currently Active{% else %}Apply This Structure{% endif %}
+                </button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}

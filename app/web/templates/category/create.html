@@ -246,11 +246,31 @@
         <div id="group-stage-fields" style="display: none;">
             <h3>Group Stage Configuration</h3>
 
+            <div class="form-group" id="group-structure-mode-container">
+                <label>Group Splitting &amp; Allocation Mode</label>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem; margin-top: 0.35rem;">
+                    <label style="display: flex; align-items: flex-start; gap: 0.5rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.75rem; cursor: pointer;">
+                        <input type="radio" name="group_structure_mode" value="auto" checked onchange="toggleGroupStructureMode()" style="margin-top: 3px; accent-color: var(--primary);">
+                        <div>
+                            <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary);">Recommend After Registration</div>
+                            <small style="color: var(--text-muted); display: block; margin-top: 0.15rem;">Calculates N teams from final registered players (e.g., 55 ÷ 5 = 11) and asks you to pick uneven groups (6+5) vs split + Lucky Losers (4+4+3 + 2 LL).</small>
+                        </div>
+                    </label>
+                    <label style="display: flex; align-items: flex-start; gap: 0.5rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.75rem; cursor: pointer;">
+                        <input type="radio" name="group_structure_mode" value="manual" onchange="toggleGroupStructureMode()" style="margin-top: 3px; accent-color: var(--primary);">
+                        <div>
+                            <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary);">Fixed Number of Groups</div>
+                            <small style="color: var(--text-muted); display: block; margin-top: 0.15rem;">Set an explicit starting group count right now (you can still adjust before starting the draw).</small>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
             <div class="form-group" id="num-groups-container">
-                <label for="num_groups">Number of Groups</label>
+                <label for="num_groups">Starting Number of Groups</label>
                 <input type="number" id="num_groups" name="num_groups" class="form-input" min="2" max="16" value="2"
-                    placeholder="2">
-                <small style="color: var(--text-muted);">Default: 2 Groups (Group A &amp; Group B). Teams per group will be calculated dynamically once players register (N ÷ G).</small>
+                    placeholder="2" oninput="updateCreateStructurePreview()">
+                <small style="color: var(--text-muted);">Teams per group are balanced automatically once players register (N ÷ G). In Auto mode, final split options appear at Draft / Draw.</small>
             </div>
 
             <div class="form-group" id="teams-per-group-container">
@@ -269,16 +289,30 @@
             <div class="form-group">
                 <label for="qualifiers_per_group">Qualifiers Per Group *</label>
                 <input type="number" id="qualifiers_per_group" name="qualifiers_per_group" class="form-input" min="1"
-                    value="2" placeholder="2">
-                <small>How many teams advance to knockout from each group (Default: Top 2)</small>
+                    value="2" placeholder="2" oninput="updateCreateStructurePreview()">
+                <small>How many teams advance directly from each group (Default: Top 2)</small>
             </div>
 
             <div class="form-group" style="margin-top: 1rem;">
                 <label style="display: flex; align-items: center; gap: 8px;">
-                    <input type="checkbox" name="allow_lucky_losers" id="allow_lucky_losers" style="width: 18px; height: 18px; accent-color: var(--primary);">
-                    <span>Enable Lucky Losers</span>
+                    <input type="checkbox" name="allow_lucky_losers" id="allow_lucky_losers" onchange="updateCreateStructurePreview()" style="width: 18px; height: 18px; accent-color: var(--primary);">
+                    <span>Enable Lucky Losers (Fill Next Power-of-2 Knockout Bracket)</span>
                 </label>
-                <small style="display: block; margin-left: 26px;">If qualified teams < 8, fills the remaining spots with best non-qualifiers.</small>
+                <small style="display: block; margin-left: 26px; color: var(--text-muted);">When direct qualifiers aren't a power of 2 (e.g., 3 groups × Top 2 = 6 qualifiers), fills remaining Quarter/Semi-Final spots (e.g., 2 Lucky Losers → 8-Team Bracket) selected by organizer chit draw / normalized group standings.</small>
+            </div>
+
+            <!-- Interactive What-If Structure Calculator Preview -->
+            <div id="create-structure-preview-box" style="margin-top: 1rem; background: var(--bg-secondary); border: 1px dashed var(--border-strong); border-radius: var(--radius-md); padding: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.65rem;">
+                    <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary);">
+                        🧮 Live Structure Simulator (Optional What-If Check)
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <label for="sim_expected_players" style="font-size: 0.8rem; color: var(--text-secondary); margin: 0;">Est. Players:</label>
+                        <input type="number" id="sim_expected_players" class="form-input" min="4" value="55" oninput="updateCreateStructurePreview()" style="width: 88px; padding: 0.25rem 0.5rem; font-size: 0.85rem;">
+                    </div>
+                </div>
+                <div id="create-structure-preview-output" style="font-size: 0.83rem; color: var(--text-secondary); line-height: 1.5;"></div>
             </div>
 
             <div class="form-group" style="margin-top: 1rem; display: none;" id="rr-knockout-container">
@@ -464,6 +498,9 @@
                 if (!qualifiersInput.value) qualifiersInput.value = 2;
 
                 document.getElementById('allow_lucky_losers').closest('.form-group').style.display = 'block';
+                const structModeBox = document.getElementById('group-structure-mode-container');
+                if (structModeBox) structModeBox.style.display = 'block';
+                toggleGroupStructureMode();
             }
             if (totalGamesFields) {
                 totalGamesFields.style.display = 'block';
@@ -478,6 +515,10 @@
             if (maxPlayersField) maxPlayersField.disabled = true;
             if (groupFields) {
                 groupFields.style.display = 'block';
+                const structModeBox = document.getElementById('group-structure-mode-container');
+                if (structModeBox) structModeBox.style.display = 'none';
+                const previewBox = document.getElementById('create-structure-preview-box');
+                if (previewBox) previewBox.style.display = 'none';
                 document.querySelector('#group-stage-fields h3').innerText = 'Round Robin Configuration';
                 const subFormat = document.querySelector('input[name="sub_format"]:checked');
                 document.querySelector('label[for="teams_per_group"]').innerText = (subFormat && subFormat.value === 'doubles') ? 'Teams Per Group *' : 'Players Per Group *';
@@ -621,9 +662,70 @@
         document.querySelectorAll('.daily-end-time').forEach(el => el.value = defaultEnd);
     }
 
+    function toggleGroupStructureMode() {
+        const mode = document.querySelector('input[name="group_structure_mode"]:checked')?.value || 'auto';
+        const numGroupsContainer = document.getElementById('num-groups-container');
+        const format = document.getElementById('format')?.value;
+        if (numGroupsContainer && format === 'group_stage') {
+            numGroupsContainer.style.display = mode === 'manual' ? 'block' : 'none';
+        }
+        updateCreateStructurePreview();
+    }
+
+    function updateCreateStructurePreview() {
+        const out = document.getElementById('create-structure-preview-output');
+        const box = document.getElementById('create-structure-preview-box');
+        const format = document.getElementById('format')?.value;
+        if (!out || !box) return;
+        if (format !== 'group_stage') {
+            box.style.display = 'none';
+            return;
+        }
+        box.style.display = 'block';
+
+        const estPlayers = parseInt(document.getElementById('sim_expected_players')?.value, 10) || 0;
+        const k = Math.max(1, parseInt(document.getElementById('max_players_per_team')?.value, 10) || 5);
+        const q = Math.max(1, parseInt(document.getElementById('qualifiers_per_group')?.value, 10) || 2);
+        const allowLL = document.getElementById('allow_lucky_losers')?.checked || false;
+
+        if (estPlayers < k * 2) {
+            out.innerHTML = `<span style="color: var(--text-muted);">Need at least ${k * 2} players to form 2 teams of ${k}.</span>`;
+            return;
+        }
+
+        const nTeams = Math.floor(estPlayers / k);
+        const leftover = estPlayers % k;
+        const maxG = Math.min(16, Math.max(2, Math.floor(nTeams / q)));
+        let lines = [];
+
+        for (let g = 2; g <= maxG; g++) {
+            const base = Math.floor(nTeams / g);
+            const rem = nTeams % g;
+            const sizes = Array.from({ length: g }, (_, i) => base + (i < rem ? 1 : 0));
+            const minSize = Math.min(...sizes);
+            if (minSize <= q) continue;
+            const direct = g * q;
+            const target = direct <= 1 ? 2 : Math.pow(2, Math.ceil(Math.log2(direct)));
+            const extra = target - direct;
+            const ties = sizes.reduce((acc, s) => acc + (s * (s - 1)) / 2, 0);
+            if (extra === 0) {
+                lines.push(`• <strong>${g} Groups (${sizes.join(' + ')})</strong>: ${direct} direct qualifiers → <strong>${target}-Team Bracket</strong> (0 Lucky Losers, ${ties} group ties)`);
+            } else {
+                lines.push(`• <strong>${g} Groups (${sizes.join(' + ')}) + ${extra} Lucky Loser${extra > 1 ? 's' : ''}</strong>: ${direct} direct + ${extra} LL → <strong>${target}-Team Bracket</strong> (${ties} group ties)${allowLL ? '' : ' — enable Lucky Losers to fill without byes'}`);
+            }
+        }
+
+        let header = `<strong>${estPlayers} Players ÷ ${k}/Team = ${nTeams} Teams</strong>`;
+        if (leftover > 0) {
+            header += ` <span style="color: #9A482C;">(${leftover} leftover — needs ${k - leftover} more late-entry/dummy player(s) for Team ${nTeams + 1})</span>`;
+        }
+        out.innerHTML = `<div style="margin-bottom: 0.35rem;">${header}</div>` + (lines.length ? lines.join('<br>') : '<span style="color: var(--text-muted);">Too few teams for multiple groups; consider adding more players or 1-group Round Robin.</span>');
+    }
+
     // Call once on load
     toggleScoringFields();
     toggleGroupStageFields();
+    toggleGroupStructureMode();
     toggleAgeCategory(document.getElementById('gender'), 'age_category');
     onCategoryDateChange();
 </script>

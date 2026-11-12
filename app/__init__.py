@@ -68,6 +68,9 @@ def create_app(config_class=Config):
                     if 'draw_published' not in cat_cols:
                         with db.engine.begin() as conn:
                             conn.execute(text("ALTER TABLE categories ADD COLUMN draw_published BOOLEAN DEFAULT FALSE"))
+                    if 'group_structure_mode' not in cat_cols:
+                        with db.engine.begin() as conn:
+                            conn.execute(text("ALTER TABLE categories ADD COLUMN group_structure_mode VARCHAR(20) DEFAULT 'auto'"))
                 if 'matches' in tables:
                     match_cols = [c['name'] for c in inspector.get_columns('matches')]
                     if 'lock_version' not in match_cols:
