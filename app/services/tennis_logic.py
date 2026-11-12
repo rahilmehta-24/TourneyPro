@@ -19,23 +19,49 @@ def _validate_7pt_tiebreak(set_num, tb_pts_p1, tb_pts_p2):
         raise ValueError(f"Set {set_num} tie-break score {tb_pts_p1}-{tb_pts_p2} is invalid. Must reach at least {tb_target} points.")
 
 
-def validate_and_format_score(winner_id, p1_id, p2_id, num_sets, games_per_set, form_data, is_live_update=False):
+def _resolve_walkover_retirement_winner(outcome, winner_id, p1_id, p2_id, retiring_player):
+    """Resolve and verify the winning participant ID for walkover/retirement outcomes."""
+    if retiring_player == 1:
+        actual_winner_id = p2_id
+    elif retiring_player == 2:
+        actual_winner_id = p1_id
+    else:
+        actual_winner_id = winner_id
+
+    if actual_winner_id not in (p1_id, p2_id):
+        label = "walkover" if outcome == 'walkover' else "retirement"
+        raise ValueError(f"Please select which player withdrew/retired for this {label}.")
+    if winner_id and winner_id != actual_winner_id:
+        raise ValueError("The selected winner conflicts with the withdrawing/retiring player.")
+    return actual_winner_id
+
+
+def validate_and_format_score(
+    winner_id,
+    p1_id,
+    p2_id,
+    num_sets,
+    games_per_set,
+    form_data,
+    is_live_update=False,
+    outcome_type='normal',
+    retiring_player=None,
+):
     """
     Validate set-by-set tennis scores against standard Lawn Tennis rules and return
-    formatted score strings for both players.
-    
-    Args:
-        winner_id: ID of the declared winner (can be None for live updates)
-        p1_id: ID of participant 1
-        p2_id: ID of participant 2
-        num_sets: Total sets in match format (3 or 5)
-        games_per_set: Games needed to win a set (4, 6, or 8)
-        form_data: Dictionary containing form fields
-        is_live_update: Boolean flag to bypass strict completion validations
-            
-    Returns:
-        tuple: (score1_str, score2_str) of formatted scorelines.
+    formatted score strings for both players. Supports walkovers and mid-match retirements.
     """
+    outcome = (outcome_type or 'normal').strip().lower()
+    if outcome == 'walkover' and not is_live_update:
+        actual_winner_id = _resolve_walkover_retirement_winner(outcome, winner_id, p1_id, p2_id, retiring_player)
+        return ("W/O", "") if actual_winner_id == p1_id else ("", "W/O")
+
+    is_retired = (outcome == 'retired' and not is_live_update)
+    retired_winner_id = (
+        _resolve_walkover_retirement_winner(outcome, winner_id, p1_id, p2_id, retiring_player)
+        if is_retired else None
+    )
+
     W = games_per_set
     target_wins = (num_sets // 2) + 1
 
@@ -51,11 +77,11 @@ def validate_and_format_score(winner_id, p1_id, p2_id, num_sets, games_per_set, 
 
         # Check if set was played
         if g1_val is None or g2_val is None or g1_val == '' or g2_val == '':
-            if not is_live_update:
+            if not is_live_update and not is_retired:
                 # If we haven't reached target wins, this set was required
                 if sets_won_p1 < target_wins and sets_won_p2 < target_wins:
                     raise ValueError(f"Set {s} score is incomplete. The match is not yet decided.")
-            # If the match was already decided, or it's a live update, subsequent sets must not have scores
+            # If the match was already decided, retired, or live update, subsequent sets are optional
             continue
 
         try:
@@ -84,7 +110,7 @@ def validate_and_format_score(winner_id, p1_id, p2_id, num_sets, games_per_set, 
             except ValueError:
                 raise ValueError(f"Set {s} tie-break points must be integers.")
 
-        if not is_live_update:
+        if not is_live_update and not is_retired:
             # Tennis set scoring rules:
             if W == 1:
                 if gw != 1 or gl != 0:
@@ -151,7 +177,12 @@ def validate_and_format_score(winner_id, p1_id, p2_id, num_sets, games_per_set, 
                 set_results_p1.append(f"{g1}-{g2}")
                 set_results_p2.append(f"{g2}-{g1}")
 
-    if not is_live_update:
+    if is_retired:
+        if retired_winner_id == p1_id:
+            set_results_p2.append("RET")
+        else:
+            set_results_p1.append("RET")
+    elif not is_live_update:
         # Validate match outcome
         if sets_won_p1 == target_wins and sets_won_p2 == target_wins:
             raise ValueError("Invalid match outcome. Both players cannot reach the winning set target.")
@@ -404,4 +435,82 @@ def calculate_team_fixture_status(rubbers, total_games=7):
         'summary_score1': str(g1_total),
         'summary_score2': str(g2_total)
     }
+
+
+def validate_points_score(
+    winner_id,
+    p1_id,
+    p2_id,
+    p1_score_raw,
+    p2_score_raw,
+    points_to_win=11,
+    is_live_update=False,
+    outcome_type='normal',
+    retiring_player=None,
+):
+    """Validate and format points-based match scores, including walkovers and retirements."""
+    outcome = (outcome_type or 'normal').strip().lower()
+    if outcome == 'walkover' and not is_live_update:
+        actual_winner_id = _resolve_walkover_retirement_winner(outcome, winner_id, p1_id, p2_id, retiring_player)
+        return ("W/O", "", actual_winner_id) if actual_winner_id == p1_id else ("", "W/O", actual_winner_id)
+
+    def _parse_int(val):
+        if val is None or str(val).strip() == '':
+            return None
+        try:
+            return int(val)
+        except (TypeError, ValueError):
+            raise ValueError("Scores must be integers.")
+
+    p1_score = _parse_int(p1_score_raw)
+    p2_score = _parse_int(p2_score_raw)
+
+    if outcome == 'retired' and not is_live_update:
+        actual_winner_id = _resolve_walkover_retirement_winner(outcome, winner_id, p1_id, p2_id, retiring_player)
+        s1 = p1_score or 0
+        s2 = p2_score or 0
+        if s1 < 0 or s2 < 0:
+            raise ValueError("Scores cannot be negative.")
+        if actual_winner_id == p1_id:
+            return (str(s1), f"{s2} RET" if (s1 or s2) else "RET", actual_winner_id)
+        return (f"{s1} RET" if (s1 or s2) else "RET", str(s2), actual_winner_id)
+
+    if p1_score is None or p2_score is None:
+        if is_live_update:
+            p1_score = p1_score or 0
+            p2_score = p2_score or 0
+        else:
+            raise ValueError("Scores for both players are required.")
+
+    if p1_score < 0 or p2_score < 0:
+        raise ValueError("Scores cannot be negative.")
+
+    if not is_live_update:
+        if winner_id == p1_id and p1_score <= p2_score:
+            raise ValueError("Winner must have a higher score.")
+        if winner_id == p2_id and p2_score <= p1_score:
+            raise ValueError("Winner must have a higher score.")
+
+        winning_score = max(p1_score, p2_score)
+        losing_score = min(p1_score, p2_score)
+
+        if winning_score < points_to_win:
+            raise ValueError(f"One player must reach {points_to_win} points to win.")
+
+        diff = winning_score - losing_score
+        if diff < 2:
+            raise ValueError("A player must win by a difference of at least 2 points.")
+
+        if winning_score > points_to_win and diff > 2:
+            raise ValueError(
+                f"Invalid score. When extending past {points_to_win} points, the match ends as soon as a 2-point difference is reached."
+            )
+
+        actual_winner_id = p1_id if p1_score > p2_score else p2_id
+        if winner_id and winner_id != actual_winner_id:
+            raise ValueError("Selected winner does not match the scores.")
+        winner_id = actual_winner_id
+
+    return str(p1_score), str(p2_score), winner_id
+
 

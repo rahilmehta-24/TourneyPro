@@ -1474,6 +1474,9 @@ def report_match_result(slug, match_id):
         if points_to_win_override:
             match.points_to_win = points_to_win_override
 
+        outcome_type = request.form.get("outcome_type", "normal")
+        retiring_player = request.form.get("retiring_player", type=int)
+
         if match.category_id:
             category = Category.query.get(match.category_id)
 
@@ -1497,6 +1500,9 @@ def report_match_result(slug, match_id):
                     p2_tb_pts=p2_tb,
                     total_games=category.total_games or 7,
                     is_live_update=is_live_update,
+                    is_walkover=(outcome_type == "walkover"),
+                    is_retired=(outcome_type == "retired"),
+                    retiring_player=retiring_player,
                 )
                 if not is_live_update and winner_ind:
                     actual_winner = (
@@ -1511,6 +1517,8 @@ def report_match_result(slug, match_id):
             elif scoring_format == "points" or (
                 category and category.format in ["round_robin", "doubles_round_robin"] and scoring_format != "games"
             ):
+                from app.services.tennis_logic import validate_points_score
+
                 points_to_win = match.points_to_win or (category.points_to_win if category else 11)
                 if scoring_format == "points":
                     g1_val = request.form.get("points_p1")
@@ -1519,40 +1527,19 @@ def report_match_result(slug, match_id):
                     g1_val = form_data.get("set1_p1")
                     g2_val = form_data.get("set1_p2")
 
-                if not g1_val or not g2_val:
-                    raise ValueError("Score is required.")
-
-                try:
-                    g1 = int(g1_val)
-                    g2 = int(g2_val)
-                except ValueError:
-                    raise ValueError("Score must be integers.")
-
-                if g1 < 0 or g2 < 0:
-                    raise ValueError("Scores cannot be negative.")
-
-                if not is_live_update:
-                    winning_score = max(g1, g2)
-                    losing_score = min(g1, g2)
-
-                    if winning_score < points_to_win:
-                        raise ValueError(f"One player must reach {points_to_win} points to win.")
-
-                    diff = winning_score - losing_score
-                    if diff < 2:
-                        raise ValueError("A player must win by a difference of at least 2 points.")
-
-                    if winning_score > points_to_win and diff > 2:
-                        raise ValueError(
-                            f"Invalid score. When extending past {points_to_win} points, the match ends as soon as a 2-point difference is reached."
-                        )
-
-                    actual_winner = match.participant1_id if g1 > g2 else match.participant2_id
-                    if winner_id != actual_winner:
-                        raise ValueError("Selected winner does not match the scores.")
-
-                match.score1 = str(g1)
-                match.score2 = str(g2)
+                score1, score2, winner_id = validate_points_score(
+                    winner_id=winner_id,
+                    p1_id=match.participant1_id,
+                    p2_id=match.participant2_id,
+                    p1_score_raw=g1_val,
+                    p2_score_raw=g2_val,
+                    points_to_win=points_to_win,
+                    is_live_update=is_live_update,
+                    outcome_type=outcome_type,
+                    retiring_player=retiring_player,
+                )
+                match.score1 = score1
+                match.score2 = score2
 
             else:
                 # Legacy set scoring
@@ -1566,6 +1553,8 @@ def report_match_result(slug, match_id):
                     if category and category.games_per_set
                     else (tournament.games_per_set or 6)
                 )
+                if not is_live_update and outcome_type in ("walkover", "retired") and not winner_id and retiring_player in (1, 2):
+                    winner_id = match.participant2_id if retiring_player == 1 else match.participant1_id
 
                 score1, score2 = validate_and_format_score(
                     winner_id,
@@ -1575,6 +1564,8 @@ def report_match_result(slug, match_id):
                     games_per_set,
                     form_data,
                     is_live_update=is_live_update,
+                    outcome_type=outcome_type,
+                    retiring_player=retiring_player,
                 )
 
                 match.score1 = score1
@@ -1583,6 +1574,8 @@ def report_match_result(slug, match_id):
             # Fallback for tournaments without categories
             num_sets = tournament.num_sets or 3
             games_per_set = tournament.games_per_set or 6
+            if not is_live_update and outcome_type in ("walkover", "retired") and not winner_id and retiring_player in (1, 2):
+                winner_id = match.participant2_id if retiring_player == 1 else match.participant1_id
 
             score1, score2 = validate_and_format_score(
                 winner_id,
@@ -1592,6 +1585,8 @@ def report_match_result(slug, match_id):
                 games_per_set,
                 form_data,
                 is_live_update=is_live_update,
+                outcome_type=outcome_type,
+                retiring_player=retiring_player,
             )
 
             match.score1 = score1

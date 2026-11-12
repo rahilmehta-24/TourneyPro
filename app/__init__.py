@@ -152,11 +152,17 @@ def create_app(config_class=Config):
         if not s1_str and not s2_str:
             return ""
 
+        if s1_str == "W/O" or s2_str == "W/O":
+            return "W/O"
+
         import re
         if s1_str and s2_str and '-' not in s1_str and '-' not in s2_str:
             return f"{s1_str} \u2013 {s2_str}"
         elif s1_str and '-' in s1_str:
-            return re.sub(r'\((\d+)\)', r'<sup>\1</sup>', s1_str)
+            formatted = re.sub(r'\((\d+)\)', r'<sup>\1</sup>', s1_str)
+            if ('RET' in s1_str or 'RET' in s2_str) and 'RET' not in formatted:
+                formatted = f"{formatted}, RET"
+            return formatted
         elif s1_str and s2_str:
             return f"{s1_str} \u2013 {s2_str}"
         return s1_str or s2_str

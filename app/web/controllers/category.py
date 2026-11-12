@@ -1219,6 +1219,9 @@ def report_category_match_result(slug, category_id, match_id):
             'tb5_p2': request.form.get('tb5_p2', ''),
         }
 
+        outcome_type = request.form.get('outcome_type', 'normal')
+        retiring_player = request.form.get('retiring_player', type=int)
+
         # Validate and format score
         if match.parent_match_id or getattr(match, 'rubber_type', None) or (category and category.format == 'group_stage' and category.total_games and scoring_format == 'games'):
             from app.services.tennis_logic import validate_team_rubber_score
@@ -1243,7 +1246,10 @@ def report_category_match_result(slug, category_id, match_id):
                 p1_tb_pts=p1_tb,
                 p2_tb_pts=p2_tb,
                 total_games=category.total_games or 7,
-                is_live_update=is_live_update
+                is_live_update=is_live_update,
+                is_walkover=(outcome_type == 'walkover'),
+                is_retired=(outcome_type == 'retired'),
+                retiring_player=retiring_player,
             )
             if not is_live_update and winner_ind:
                 actual_winner_id = match.participant1_id if winner_ind == 1 else match.participant2_id
@@ -1251,49 +1257,38 @@ def report_category_match_result(slug, category_id, match_id):
                     raise ValueError("The selected winner does not match the rubber scores.")
                 winner_id = actual_winner_id
         elif scoring_format == 'points' or (category and category.format in ['round_robin', 'doubles_round_robin'] and scoring_format != 'games'):
+            from app.services.tennis_logic import validate_points_score
             if scoring_format == 'points':
-                p1_score = request.form.get('points_p1', type=int)
-                p2_score = request.form.get('points_p2', type=int)
+                p1_raw = request.form.get('points_p1')
+                p2_raw = request.form.get('points_p2')
             else:
-                p1_score = request.form.get('set1_p1', type=int)
-                p2_score = request.form.get('set1_p2', type=int)
-            
-            if p1_score is None or p2_score is None:
-                if is_live_update:
-                    p1_score = p1_score or 0
-                    p2_score = p2_score or 0
-                else:
-                    raise ValueError("Scores for both players are required.")
+                p1_raw = request.form.get('set1_p1')
+                p2_raw = request.form.get('set1_p2')
 
-            if p1_score < 0 or p2_score < 0:
-                raise ValueError("Scores cannot be negative.")
-
-            if not is_live_update:
-                if winner_id == match.participant1_id and p1_score <= p2_score:
-                    raise ValueError("Winner must have a higher score.")
-                if winner_id == match.participant2_id and p2_score <= p1_score:
-                    raise ValueError("Winner must have a higher score.")
-                    
-                winning_score = max(p1_score, p2_score)
-                losing_score = min(p1_score, p2_score)
-                
-                if winning_score < points_to_win:
-                    raise ValueError(f"One player must reach {points_to_win} points to win.")
-                    
-                diff = winning_score - losing_score
-                if diff < 2:
-                    raise ValueError("A player must win by a difference of at least 2 points.")
-                
-                # If extending past points_to_win (e.g. 12-10 in an 11-point game), diff must be exactly 2
-                if winning_score > points_to_win and diff > 2:
-                    raise ValueError(f"Invalid score. When extending past {points_to_win} points, the match ends as soon as a 2-point difference is reached.")
-                
-            score1 = str(p1_score)
-            score2 = str(p2_score)
+            score1, score2, winner_id = validate_points_score(
+                winner_id=winner_id,
+                p1_id=match.participant1_id,
+                p2_id=match.participant2_id,
+                p1_score_raw=p1_raw,
+                p2_score_raw=p2_raw,
+                points_to_win=points_to_win,
+                is_live_update=is_live_update,
+                outcome_type=outcome_type,
+                retiring_player=retiring_player,
+            )
         else:
+            if not is_live_update and outcome_type in ('walkover', 'retired') and not winner_id and retiring_player in (1, 2):
+                winner_id = match.participant2_id if retiring_player == 1 else match.participant1_id
             score1, score2 = validate_and_format_score(
-                winner_id, match.participant1_id, match.participant2_id,
-                num_sets, games_per_set, form_data, is_live_update=is_live_update
+                winner_id,
+                match.participant1_id,
+                match.participant2_id,
+                num_sets,
+                games_per_set,
+                form_data,
+                is_live_update=is_live_update,
+                outcome_type=outcome_type,
+                retiring_player=retiring_player,
             )
 
         match.score1 = score1

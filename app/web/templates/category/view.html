@@ -373,11 +373,15 @@
                     <span class="tennis-set-box {% if is_set_winner %}set-winner{% endif %}">
                         {{ games }}{% if tb %}<sup style="font-size: 0.7em; opacity: 0.8; margin-left: 1px;">{{ tb }}</sup>{% endif %}
                     </span>
+                {% elif score == 'RET' %}
+                    <span class="tennis-set-box" style="background: rgba(220, 38, 38, 0.12); color: #B91C1C; border-color: rgba(220, 38, 38, 0.35); font-size: 0.7rem; font-weight: 700;">RET</span>
+                {% elif score == 'W/O' %}
+                    <span class="tennis-set-box set-winner" style="font-size: 0.7rem; font-weight: 700;">W/O</span>
                 {% else %}
                     <span class="tennis-set-box set-winner">{{ score }}</span>
                 {% endif %}
             {% endfor %}
-            {% if set_scores|length < (num_sets or 1) %}
+            {% if 'W/O' not in score_str and 'RET' not in score_str and set_scores|length < (num_sets or 1) %}
                 {% for _ in range((num_sets or 1) - set_scores|length) %}
                     <span class="tennis-set-box empty">-</span>
                 {% endfor %}

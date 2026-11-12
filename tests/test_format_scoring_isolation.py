@@ -481,4 +481,155 @@ class FormatScoringIsolationTestCase(unittest.TestCase):
                 form_data={'set1_p1': '6', 'set1_p2': '6'},
             )
 
+    def test_08_walkover_and_retirement_across_formats(self):
+        """Walkover (W/O) and mid-match retirement (RET) work across Games and Points categories."""
+        cat_games = Category(
+            tournament_id=self.tournament_id,
+            name='SE Walkover Tennis',
+            format='single_elimination',
+            scoring_format='games',
+            num_sets=3,
+            games_per_set=6,
+            status='in_progress',
+            draw_published=True,
+        )
+        cat_points = Category(
+            tournament_id=self.tournament_id,
+            name='SE Retired Badminton',
+            format='single_elimination',
+            scoring_format='points',
+            points_to_win=21,
+            status='in_progress',
+            draw_published=True,
+        )
+        db.session.add_all([cat_games, cat_points])
+        db.session.flush()
+
+        p1 = Participant(tournament_id=self.tournament_id, category_id=cat_games.id, name='P1 Tennis')
+        p2 = Participant(tournament_id=self.tournament_id, category_id=cat_games.id, name='P2 Tennis')
+        p3 = Participant(tournament_id=self.tournament_id, category_id=cat_games.id, name='P3 Tennis')
+        p4 = Participant(tournament_id=self.tournament_id, category_id=cat_games.id, name='P4 Tennis')
+        b1 = Participant(tournament_id=self.tournament_id, category_id=cat_points.id, name='P1 Badm')
+        b2 = Participant(tournament_id=self.tournament_id, category_id=cat_points.id, name='P2 Badm')
+        b3 = Participant(tournament_id=self.tournament_id, category_id=cat_points.id, name='P3 Badm')
+        b4 = Participant(tournament_id=self.tournament_id, category_id=cat_points.id, name='P4 Badm')
+        db.session.add_all([p1, p2, p3, p4, b1, b2, b3, b4])
+        db.session.flush()
+
+        m_wo = Match(
+            tournament_id=self.tournament_id, category_id=cat_games.id,
+            participant1_id=p1.id, participant2_id=p2.id,
+            match_type='knockout', round=1, match_number=1, status='pending',
+        )
+        m_ret = Match(
+            tournament_id=self.tournament_id, category_id=cat_games.id,
+            participant1_id=p3.id, participant2_id=p4.id,
+            match_type='knockout', round=1, match_number=2, status='pending',
+        )
+        m_pts_wo = Match(
+            tournament_id=self.tournament_id, category_id=cat_points.id,
+            participant1_id=b1.id, participant2_id=b2.id,
+            match_type='knockout', round=1, match_number=1, status='pending',
+        )
+        m_pts_ret = Match(
+            tournament_id=self.tournament_id, category_id=cat_points.id,
+            participant1_id=b3.id, participant2_id=b4.id,
+            match_type='knockout', round=1, match_number=2, status='pending',
+        )
+        db.session.add_all([m_wo, m_ret, m_pts_wo, m_pts_ret])
+        db.session.commit()
+
+        with self.app.test_client() as client:
+            self._login(client)
+
+            # 1. Games Walkover: P2 withdraws -> P1 wins W/O
+            res = client.post(
+                f'/tournaments/{self.slug}/categories/{cat_games.id}/match/{m_wo.id}/report',
+                data={
+                    'action': 'complete_match',
+                    'scoring_format': 'games',
+                    'outcome_type': 'walkover',
+                    'retiring_player': '2',
+                    'winner_id': str(p1.id),
+                },
+                follow_redirects=True,
+            )
+            self.assertIn(b'Match result reported successfully', res.data)
+            m_wo_db = db.session.get(Match, m_wo.id)
+            self.assertEqual(m_wo_db.status, 'completed')
+            self.assertEqual(m_wo_db.winner_id, p1.id)
+            self.assertEqual(m_wo_db.score1, 'W/O')
+            self.assertEqual(m_wo_db.score2, '')
+
+            # 2. Games Mid-match Retirement: P3 retires at 4-6, 1-2 -> P4 wins RET
+            res = client.post(
+                f'/tournaments/{self.slug}/categories/{cat_games.id}/match/{m_ret.id}/report',
+                data={
+                    'action': 'complete_match',
+                    'scoring_format': 'games',
+                    'outcome_type': 'retired',
+                    'retiring_player': '1',
+                    'set1_p1': '4',
+                    'set1_p2': '6',
+                    'set2_p1': '1',
+                    'set2_p2': '2',
+                    'winner_id': str(p4.id),
+                },
+                follow_redirects=True,
+            )
+            self.assertIn(b'Match result reported successfully', res.data)
+            m_ret_db = db.session.get(Match, m_ret.id)
+            self.assertEqual(m_ret_db.status, 'completed')
+            self.assertEqual(m_ret_db.winner_id, p4.id)
+            self.assertEqual(m_ret_db.score1, '4-6, 1-2, RET')
+            self.assertEqual(m_ret_db.score2, '6-4, 2-1')
+
+            # 3. Points Walkover: B1 withdraws -> B2 wins W/O
+            res = client.post(
+                f'/tournaments/{self.slug}/categories/{cat_points.id}/match/{m_pts_wo.id}/report',
+                data={
+                    'action': 'complete_match',
+                    'scoring_format': 'points',
+                    'outcome_type': 'walkover',
+                    'retiring_player': '1',
+                    'winner_id': str(b2.id),
+                },
+                follow_redirects=True,
+            )
+            self.assertIn(b'Match result reported successfully', res.data)
+            m_pwo_db = db.session.get(Match, m_pts_wo.id)
+            self.assertEqual(m_pwo_db.status, 'completed')
+            self.assertEqual(m_pwo_db.winner_id, b2.id)
+            self.assertEqual(m_pwo_db.score2, 'W/O')
+
+            # 4. Points Mid-match Retirement: B4 retires at 7-5 -> B3 wins RET
+            res = client.post(
+                f'/tournaments/{self.slug}/categories/{cat_points.id}/match/{m_pts_ret.id}/report',
+                data={
+                    'action': 'complete_match',
+                    'scoring_format': 'points',
+                    'outcome_type': 'retired',
+                    'retiring_player': '2',
+                    'points_p1': '7',
+                    'points_p2': '5',
+                    'winner_id': str(b3.id),
+                },
+                follow_redirects=True,
+            )
+            self.assertIn(b'Match result reported successfully', res.data)
+            m_pret_db = db.session.get(Match, m_pts_ret.id)
+            self.assertEqual(m_pret_db.status, 'completed')
+            self.assertEqual(m_pret_db.winner_id, b3.id)
+            self.assertEqual(m_pret_db.score1, '7')
+            self.assertEqual(m_pret_db.score2, '5 RET')
+
+            # 5. Category view renders cleanly with W/O and RET badges
+            view_res = client.get(f'/tournaments/{self.slug}/categories/{cat_games.id}')
+            self.assertEqual(view_res.status_code, 200)
+            html = view_res.get_data(as_text=True)
+            self.assertIn('W/O', html)
+            self.assertIn('RET', html)
+            self.assertIn('modalOutcomeType', html)
+
+
 
