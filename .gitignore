@@ -78,3 +78,5 @@ build/
 baseline-society-logo-files
 *.svg
 *.png
+!app/web/static/brand/*.svg
+!app/web/static/brand/*.png
