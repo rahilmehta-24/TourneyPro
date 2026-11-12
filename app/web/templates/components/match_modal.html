@@ -53,18 +53,31 @@
     padding: 0.4rem !important;
 }
 #matchManagementModal .winner-option {
-    background: var(--bg-card) !important;
-    border: 1px solid var(--border-strong) !important;
-    color: var(--text-primary) !important;
+    background: var(--bg-card);
+    border: 1.5px solid var(--border-strong);
+    color: var(--text-primary);
+}
+#matchManagementModal .winner-option input[type="radio"] {
+    display: inline-block !important;
+    accent-color: var(--accent-primary);
+    cursor: pointer;
+    flex-shrink: 0;
 }
 #matchManagementModal .winner-option span {
-    color: var(--text-primary) !important;
+    color: var(--text-primary);
 }
 #matchManagementModal .winner-option:hover {
-    border-color: var(--accent-primary) !important;
-    background: var(--bg-secondary) !important;
+    border-color: var(--accent-primary);
+    background: var(--bg-secondary);
 }
-#matchManagementModal .winner-option input[type="radio"]:checked + span {
+#matchManagementModal .winner-option.winner-selected,
+#matchManagementModal .winner-option:has(input:checked) {
+    border: 2px solid var(--accent-primary) !important;
+    background: rgba(15, 61, 46, 0.14) !important;
+    box-shadow: 0 0 0 2px rgba(15, 61, 46, 0.16);
+}
+#matchManagementModal .winner-option.winner-selected .winner-name-text,
+#matchManagementModal .winner-option input[type="radio"]:checked + .winner-name-text {
     color: var(--accent-primary-text) !important;
     font-weight: 700 !important;
 }
@@ -132,13 +145,19 @@
                         🏆 Select Winner (If Completed)
                     </label>
                     <div class="winner-options" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
-                        <label class="winner-option" id="winner1Card" style="display: flex; align-items: center; padding: 0.75rem 1rem; background: var(--bg-secondary); border: 1px solid var(--border-strong); border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s ease;">
-                            <input type="radio" name="winner_id" id="winner1" value="" style="margin-right: 0.65rem; width: 18px; height: 18px;" onchange="highlightWinnerCards()">
-                            <span id="winner1Label" style="font-size: 0.95rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-primary);">Participant 1</span>
+                        <label class="winner-option" id="winner1Card" onclick="selectWinnerCard(1)" style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.75rem 1rem; border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s ease;">
+                            <span style="display: flex; align-items: center; min-width: 0; flex: 1;">
+                                <input type="radio" name="winner_id" id="winner1" value="" style="margin-right: 0.65rem; width: 18px; height: 18px;" onchange="highlightWinnerCards()">
+                                <span id="winner1Label" class="winner-name-text" style="font-size: 0.95rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Participant 1</span>
+                            </span>
+                            <span id="winner1Badge" style="display: none; font-size: 0.72rem; font-weight: 700; color: var(--accent-primary-text); background: rgba(15, 61, 46, 0.14); padding: 2px 7px; border-radius: 9999px; flex-shrink: 0;">✓ Winner</span>
                         </label>
-                        <label class="winner-option" id="winner2Card" style="display: flex; align-items: center; padding: 0.75rem 1rem; background: var(--bg-secondary); border: 1px solid var(--border-strong); border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s ease;">
-                            <input type="radio" name="winner_id" id="winner2" value="" style="margin-right: 0.65rem; width: 18px; height: 18px;" onchange="highlightWinnerCards()">
-                            <span id="winner2Label" style="font-size: 0.95rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-primary);">Participant 2</span>
+                        <label class="winner-option" id="winner2Card" onclick="selectWinnerCard(2)" style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.75rem 1rem; border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s ease;">
+                            <span style="display: flex; align-items: center; min-width: 0; flex: 1;">
+                                <input type="radio" name="winner_id" id="winner2" value="" style="margin-right: 0.65rem; width: 18px; height: 18px;" onchange="highlightWinnerCards()">
+                                <span id="winner2Label" class="winner-name-text" style="font-size: 0.95rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Participant 2</span>
+                            </span>
+                            <span id="winner2Badge" style="display: none; font-size: 0.72rem; font-weight: 700; color: var(--accent-primary-text); background: rgba(15, 61, 46, 0.14); padding: 2px 7px; border-radius: 9999px; flex-shrink: 0;">✓ Winner</span>
                         </label>
                     </div>
                 </div>
@@ -173,13 +192,19 @@
                                 </td>
                             </tr>
                             <tr id="tbRow{{ s }}" style="display: none; background: rgba(201, 165, 92, 0.12);">
-                                <td style="padding: 0.45rem; color: #7A5F1E; font-size: 0.78rem; font-weight: 600;">Set {{ s }} Tiebreak:</td>
-                                <td style="padding: 0.45rem; text-align: center;">
-                                    <input type="number" inputmode="numeric" pattern="[0-9]*" name="tb{{ s }}_p1" id="tb{{ s }}_p1" min="0" class="form-input std-tb-input" style="width: 68px; text-align: center; font-weight: 700; padding: 0.3rem;" placeholder="TB">
+                                <td style="padding: 0.45rem; color: #7A5F1E; font-size: 0.78rem; font-weight: 600; vertical-align: top;">
+                                    <div>Set {{ s }} Tiebreak</div>
+                                    <div style="font-size: 0.7rem; font-weight: 500; opacity: 0.85;">7 pts (win by 2 at 6–6)</div>
                                 </td>
                                 <td style="padding: 0.45rem; text-align: center;">
-                                    <input type="number" inputmode="numeric" pattern="[0-9]*" name="tb{{ s }}_p2" id="tb{{ s }}_p2" min="0" class="form-input std-tb-input" style="width: 68px; text-align: center; font-weight: 700; padding: 0.3rem;" placeholder="TB">
+                                    <input type="number" inputmode="numeric" pattern="[0-9]*" name="tb{{ s }}_p1" id="tb{{ s }}_p1" min="0" class="form-input std-tb-input" style="width: 68px; text-align: center; font-weight: 700; padding: 0.3rem;" placeholder="TB" oninput="onStandardTbChange({{ s }})">
                                 </td>
+                                <td style="padding: 0.45rem; text-align: center;">
+                                    <input type="number" inputmode="numeric" pattern="[0-9]*" name="tb{{ s }}_p2" id="tb{{ s }}_p2" min="0" class="form-input std-tb-input" style="width: 68px; text-align: center; font-weight: 700; padding: 0.3rem;" placeholder="TB" oninput="onStandardTbChange({{ s }})">
+                                </td>
+                            </tr>
+                            <tr id="tbNoteRow{{ s }}" style="display: none; background: rgba(201, 165, 92, 0.08);">
+                                <td colspan="3" style="padding: 0.25rem 0.5rem 0.5rem; text-align: center; font-size: 0.76rem; font-weight: 600;" id="tbNote{{ s }}"></td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -416,8 +441,10 @@ function updateVisibleSets(numSetsVal) {
     for (let s = 1; s <= 5; s++) {
         const row = document.getElementById('setRow' + s);
         const tbRow = document.getElementById('tbRow' + s);
+        const tbNoteRow = document.getElementById('tbNoteRow' + s);
         if (row) row.style.display = (s <= numSets) ? 'table-row' : 'none';
         if (tbRow && s > numSets) tbRow.style.display = 'none';
+        if (tbNoteRow && s > numSets) tbNoteRow.style.display = 'none';
     }
     updateStandardRuleBadge();
     syncModalSectionInputsDisabled();
@@ -462,10 +489,36 @@ function toggleModalMatchFormat() {
     syncModalSectionInputsDisabled();
 }
 
+function evaluate7PtTiebreak(t1, t2) {
+    if (isNaN(t1) || isNaN(t2)) return { status: 'incomplete', winner: 0 };
+    if (t1 < 0 || t2 < 0) return { status: 'invalid', winner: 0, message: 'Tiebreak points cannot be negative.' };
+    if (t1 === t2) {
+        if (t1 >= 6) {
+            return { status: 'deuce', winner: 0, message: `Tiebreak tied ${t1}–${t2}: win by 2 points.` };
+        }
+        return { status: 'in_progress', winner: 0, message: `Tiebreak tied ${t1}–${t2}: first to 7 points.` };
+    }
+    const tbw = Math.max(t1, t2);
+    const tbl = Math.min(t1, t2);
+    if (tbw < 7) {
+        return { status: 'in_progress', winner: 0, message: `Tiebreak in progress (${t1}–${t2}): first to 7 points.` };
+    }
+    if (tbw === 7 && tbl > 5) {
+        return { status: 'deuce', winner: 0, message: `Tiebreak ${t1}–${t2}: after 6–6, must win by a difference of 2 points (e.g. 8–6).` };
+    }
+    if (tbw > 7 && tbl !== tbw - 2) {
+        if (tbw - tbl < 2) {
+            return { status: 'deuce', winner: 0, message: `Tiebreak ${t1}–${t2}: must win by a difference of 2 points.` };
+        }
+        return { status: 'invalid', winner: 0, message: `Invalid tiebreak score (${t1}–${t2}): after 6–6, play ends as soon as a 2-point difference is reached.` };
+    }
+    return { status: 'valid', winner: (t1 > t2) ? 1 : 2 };
+}
+
 function isStandardTiebreakScore(v1, v2, W) {
     if (isNaN(v1) || isNaN(v2)) return false;
     if (W === 4) {
-        return (v1 === 4 && v2 === 3) || (v1 === 3 && v2 === 4);
+        return (v1 === 4 && v2 === 3) || (v1 === 3 && v2 === 4) || (v1 === 3 && v2 === 3);
     }
     if (W <= 1) return false;
     return (v1 === W + 1 && v2 === W) || (v1 === W && v2 === W + 1) || (v1 === W && v2 === W);
@@ -475,6 +528,7 @@ function checkStandardSetTiebreak(setNum) {
     const p1Input = document.getElementById('set' + setNum + '_p1');
     const p2Input = document.getElementById('set' + setNum + '_p2');
     const tbRow = document.getElementById('tbRow' + setNum);
+    const tbNoteRow = document.getElementById('tbNoteRow' + setNum);
     const tb1 = document.getElementById('tb' + setNum + '_p1');
     const tb2 = document.getElementById('tb' + setNum + '_p2');
     if (!p1Input || !p2Input || !tbRow) return;
@@ -486,8 +540,10 @@ function checkStandardSetTiebreak(setNum) {
 
     if (isStandardTiebreakScore(v1, v2, W) || hasTbVal) {
         tbRow.style.display = 'table-row';
+        onStandardTbChange(setNum, true);
     } else {
         tbRow.style.display = 'none';
+        if (tbNoteRow) tbNoteRow.style.display = 'none';
     }
 }
 
@@ -497,26 +553,81 @@ function onStandardGamesPerSetChange() {
         checkStandardSetTiebreak(s);
     }
     updateStandardRuleBadge();
+    updateStandardMatchWinnerFromSets();
 }
 
-function onStandardSetChange(setNum) {
-    checkStandardSetTiebreak(setNum);
+function onStandardTbChange(setNum, skipWinnerSync) {
+    const tb1 = document.getElementById('tb' + setNum + '_p1');
+    const tb2 = document.getElementById('tb' + setNum + '_p2');
+    const noteRow = document.getElementById('tbNoteRow' + setNum);
+    const noteCell = document.getElementById('tbNote' + setNum);
+    const g1 = parseInt(document.getElementById('set' + setNum + '_p1')?.value, 10);
+    const g2 = parseInt(document.getElementById('set' + setNum + '_p2')?.value, 10);
+    const W = getStandardGamesPerSet();
+    const winG = (W === 4) ? 4 : W + 1;
+    const loseG = (W === 4) ? 3 : W;
 
-    // Auto-select winner when a player reaches target sets won
+    if (tb1 && tb2 && noteRow && noteCell) {
+        const t1 = parseInt(tb1.value, 10);
+        const t2 = parseInt(tb2.value, 10);
+        const res = evaluate7PtTiebreak(t1, t2);
+        const p1Label = document.getElementById('winner1Label')?.innerText || 'Participant 1';
+        const p2Label = document.getElementById('winner2Label')?.innerText || 'Participant 2';
+
+        if (res.status === 'valid') {
+            const wName = res.winner === 1 ? p1Label : p2Label;
+            const setScoreStr = res.winner === 1 ? `${winG}–${loseG}` : `${loseG}–${winG}`;
+            noteRow.style.display = 'table-row';
+            noteCell.style.color = '#065F46';
+            noteCell.innerText = `🏆 ${wName} wins Set ${setNum} tiebreak (${t1}–${t2}) → Set score: ${setScoreStr}`;
+        } else if (res.status === 'in_progress' || res.status === 'deuce') {
+            noteRow.style.display = 'table-row';
+            noteCell.style.color = '#7A5F1E';
+            noteCell.innerText = `⚡ ${res.message}`;
+        } else if (res.status === 'invalid') {
+            noteRow.style.display = 'table-row';
+            noteCell.style.color = '#B91C1C';
+            noteCell.innerText = `⚠️ ${res.message}`;
+        } else if (!isNaN(g1) && !isNaN(g2) && g1 === loseG && g2 === loseG) {
+            noteRow.style.display = 'table-row';
+            noteCell.style.color = '#7A5F1E';
+            noteCell.innerText = `⚡ Tied ${loseG}–${loseG}: first to 7 points wins (win by 2 at 6–6+).`;
+        } else {
+            noteRow.style.display = 'none';
+        }
+    }
+
+    if (!skipWinnerSync) {
+        updateStandardMatchWinnerFromSets();
+    }
+}
+
+function updateStandardMatchWinnerFromSets() {
     const numSets = getStandardNumSets();
     const W = getStandardGamesPerSet();
     const targetWins = Math.floor(numSets / 2) + 1;
+    const tbTrigger = (W === 4) ? 3 : W;
     let p1Sets = 0;
     let p2Sets = 0;
 
     for (let s = 1; s <= numSets; s++) {
         const g1 = parseInt(document.getElementById('set' + s + '_p1')?.value, 10);
         const g2 = parseInt(document.getElementById('set' + s + '_p2')?.value, 10);
-        if (!isNaN(g1) && !isNaN(g2) && g1 !== g2) {
+        if (isNaN(g1) || isNaN(g2)) continue;
+
+        if (W > 1 && g1 === tbTrigger && g2 === tbTrigger) {
+            const t1 = parseInt(document.getElementById('tb' + s + '_p1')?.value, 10);
+            const t2 = parseInt(document.getElementById('tb' + s + '_p2')?.value, 10);
+            const tbRes = evaluate7PtTiebreak(t1, t2);
+            if (tbRes.status === 'valid') {
+                if (tbRes.winner === 1) p1Sets++;
+                else p2Sets++;
+            }
+        } else if (g1 !== g2) {
             const hi = Math.max(g1, g2);
             const lo = Math.min(g1, g2);
             const isCompleteSet = (W === 1 && hi === 1 && lo === 0) ||
-                (W === 4 && ((hi === 4 && lo <= 3))) ||
+                (W === 4 && hi === 4 && lo <= 3) ||
                 (W > 1 && W !== 4 && ((hi === W && lo <= W - 2) || (hi === W + 1 && lo >= W - 1)));
             if (isCompleteSet) {
                 if (g1 > g2) p1Sets++;
@@ -534,6 +645,11 @@ function onStandardSetChange(setNum) {
         document.getElementById('winner2').checked = true;
         highlightWinnerCards();
     }
+}
+
+function onStandardSetChange(setNum) {
+    checkStandardSetTiebreak(setNum);
+    updateStandardMatchWinnerFromSets();
 }
 
 function onPointsInputChange() {
@@ -732,20 +848,30 @@ function onRubberTbInputChange() {
     }
 }
 
+function selectWinnerCard(playerNum) {
+    if (!currentManageMatchIsAdmin) return;
+    const w1 = document.getElementById('winner1');
+    const w2 = document.getElementById('winner2');
+    if (w1) w1.checked = (playerNum === 1);
+    if (w2) w2.checked = (playerNum === 2);
+    highlightWinnerCards();
+}
+
 function highlightWinnerCards() {
     const w1 = document.getElementById('winner1');
     const w2 = document.getElementById('winner2');
     const c1 = document.getElementById('winner1Card');
     const c2 = document.getElementById('winner2Card');
+    const b1 = document.getElementById('winner1Badge');
+    const b2 = document.getElementById('winner2Badge');
 
-    if (c1) {
-        c1.style.borderColor = (w1 && w1.checked) ? 'var(--accent-primary)' : 'var(--border-strong)';
-        c1.style.background = (w1 && w1.checked) ? 'rgba(15, 61, 46, 0.10)' : 'var(--bg-secondary)';
-    }
-    if (c2) {
-        c2.style.borderColor = (w2 && w2.checked) ? 'var(--accent-primary)' : 'var(--border-strong)';
-        c2.style.background = (w2 && w2.checked) ? 'rgba(15, 61, 46, 0.10)' : 'var(--bg-secondary)';
-    }
+    const is1 = Boolean(w1 && w1.checked);
+    const is2 = Boolean(w2 && w2.checked);
+
+    if (c1) c1.classList.toggle('winner-selected', is1);
+    if (c2) c2.classList.toggle('winner-selected', is2);
+    if (b1) b1.style.display = is1 ? 'inline-block' : 'none';
+    if (b2) b2.style.display = is2 ? 'inline-block' : 'none';
 }
 
 async function saveDateTimeOnly() {
@@ -881,11 +1007,13 @@ function openMatchModal(matchId, currentStatus, currentScheduledTime, p1Name, p1
             const t1 = document.getElementById('tb' + s + '_p1');
             const t2 = document.getElementById('tb' + s + '_p2');
             const tbRow = document.getElementById('tbRow' + s);
+            const tbNoteRow = document.getElementById('tbNoteRow' + s);
             if (s1) s1.value = '';
             if (s2) s2.value = '';
             if (t1) t1.value = '';
             if (t2) t2.value = '';
             if (tbRow) tbRow.style.display = 'none';
+            if (tbNoteRow) tbNoteRow.style.display = 'none';
         }
         const rP1 = document.getElementById('rubber_p1');
         const rP2 = document.getElementById('rubber_p2');
@@ -967,7 +1095,7 @@ function openMatchModal(matchId, currentStatus, currentScheduledTime, p1Name, p1
                                     t2Input.value = tbPts[1] || '';
                                 } else {
                                     const loserPts = parseInt(tbContent, 10);
-                                    const tbTarget = (sNum === numSets) ? 10 : 7;
+                                    const tbTarget = 7;
                                     const winnerPts = Math.max(tbTarget, loserPts + 2);
                                     if (parseInt(g1, 10) > parseInt(g2, 10)) {
                                         t1Input.value = winnerPts;
@@ -980,6 +1108,7 @@ function openMatchModal(matchId, currentStatus, currentScheduledTime, p1Name, p1
                             }
                             const tbRow = document.getElementById('tbRow' + sNum);
                             if (tbRow) tbRow.style.display = 'table-row';
+                            onStandardTbChange(sNum, true);
                         } else {
                             checkStandardSetTiebreak(sNum);
                         }
@@ -1181,6 +1310,40 @@ async function saveMatchAction(actionType) {
                     return;
                 }
             }
+        } else if (!isRubber && isGamesFormat && actionType === 'complete_match') {
+            const numSets = getStandardNumSets();
+            const W = getStandardGamesPerSet();
+            const tbTrigger = (W === 4) ? 3 : W;
+            const winG = (W === 4) ? 4 : W + 1;
+            const loseG = (W === 4) ? 3 : W;
+
+            for (let s = 1; s <= numSets; s++) {
+                const s1Input = document.getElementById('set' + s + '_p1');
+                const s2Input = document.getElementById('set' + s + '_p2');
+                const g1 = parseInt(s1Input?.value, 10);
+                const g2 = parseInt(s2Input?.value, 10);
+                if (isNaN(g1) || isNaN(g2)) continue;
+
+                if (W > 1 && g1 === tbTrigger && g2 === tbTrigger) {
+                    const t1 = parseInt(document.getElementById('tb' + s + '_p1')?.value, 10);
+                    const t2 = parseInt(document.getElementById('tb' + s + '_p2')?.value, 10);
+                    const tbRes = evaluate7PtTiebreak(t1, t2);
+                    if (tbRes.status !== 'valid') {
+                        alert(tbRes.message || `Set ${s} is tied ${tbTrigger}–${tbTrigger}. Enter a valid 7-point tiebreak score (win by 2 at 6–6+).`);
+                        document.getElementById('tb' + s + '_p1')?.focus();
+                        return;
+                    }
+                    // Promote tied games to final tiebreak set score (e.g. 7-6 or 6-7)
+                    if (tbRes.winner === 1) {
+                        s1Input.value = winG;
+                        s2Input.value = loseG;
+                    } else {
+                        s1Input.value = loseG;
+                        s2Input.value = winG;
+                    }
+                }
+            }
+            updateStandardMatchWinnerFromSets();
         } else if (!isGamesFormat && actionType === 'complete_match') {
             const p1 = parseInt(document.getElementById('points_p1')?.value, 10);
             const p2 = parseInt(document.getElementById('points_p2')?.value, 10);

@@ -1,3 +1,24 @@
+def _validate_7pt_tiebreak(set_num, tb_pts_p1, tb_pts_p2):
+    """Validate a standard 7-point tiebreak (first to 7, win by 2 at 6-6+)."""
+    if tb_pts_p1 < 0 or tb_pts_p2 < 0:
+        raise ValueError(f"Set {set_num} tie-break points cannot be negative.")
+    if tb_pts_p1 == tb_pts_p2:
+        raise ValueError(f"Set {set_num} tie-break cannot end in a draw ({tb_pts_p1}-{tb_pts_p2}). Must win by 2 points.")
+
+    tbw = max(tb_pts_p1, tb_pts_p2)
+    tbl = min(tb_pts_p1, tb_pts_p2)
+    tb_target = 7
+
+    if tbw == tb_target:
+        if tbl > tb_target - 2:
+            raise ValueError(f"Set {set_num} tie-break score {tb_pts_p1}-{tb_pts_p2} is invalid. Winner must lead by 2.")
+    elif tbw > tb_target:
+        if tbl != tbw - 2:
+            raise ValueError(f"Set {set_num} tie-break score {tb_pts_p1}-{tb_pts_p2} is invalid. Winner must lead by exactly 2.")
+    else:
+        raise ValueError(f"Set {set_num} tie-break score {tb_pts_p1}-{tb_pts_p2} is invalid. Must reach at least {tb_target} points.")
+
+
 def validate_and_format_score(winner_id, p1_id, p2_id, num_sets, games_per_set, form_data, is_live_update=False):
     """
     Validate set-by-set tennis scores against standard Lawn Tennis rules and return
@@ -72,11 +93,26 @@ def validate_and_format_score(winner_id, p1_id, p2_id, num_sets, games_per_set, 
                 if W == 4:
                     tb_win_games = 4
                     tb_lose_games = 3
+                    tb_trigger_games = 3
                 else:
                     tb_win_games = W + 1
                     tb_lose_games = W
+                    tb_trigger_games = W
 
-                if gw == W and (W != 4 or gl < tb_lose_games):
+                # Support entering tied games at tiebreak trigger (e.g. 6-6 for W=6, or 3-3 for W=4)
+                if g1 == tb_trigger_games and g2 == tb_trigger_games:
+                    if not is_tb_set:
+                        raise ValueError(f"Set {s} reached a tie-break ({g1}-{g2}). Tie-break points are required.")
+                    _validate_7pt_tiebreak(s, tb_pts_p1, tb_pts_p2)
+
+                    # Auto-promote set score to winner (e.g., 7-6 or 6-7)
+                    if tb_pts_p1 > tb_pts_p2:
+                        g1, g2 = tb_win_games, tb_lose_games
+                    else:
+                        g1, g2 = tb_lose_games, tb_win_games
+                    gw, gl = tb_win_games, tb_lose_games
+
+                elif gw == W and (W != 4 or gl < tb_lose_games):
                     if gl > W - 2:
                         raise ValueError(f"Set {s} score of {g1}-{g2} is invalid. Must win by 2 games.")
                 elif gw == W + 1 and gl == W - 1 and W != 4:
@@ -84,26 +120,9 @@ def validate_and_format_score(winner_id, p1_id, p2_id, num_sets, games_per_set, 
                 elif gw == tb_win_games and gl == tb_lose_games:
                     if not is_tb_set:
                         raise ValueError(f"Set {s} reached a tie-break ({g1}-{g2}). Tie-break points are required.")
-
-                    if tb_pts_p1 < 0 or tb_pts_p2 < 0:
-                        raise ValueError(f"Set {s} tie-break points cannot be negative.")
-
-                    tbw = max(tb_pts_p1, tb_pts_p2)
-                    tbl = min(tb_pts_p1, tb_pts_p2)
-
                     if (g1 > g2 and tb_pts_p1 < tb_pts_p2) or (g2 > g1 and tb_pts_p2 < tb_pts_p1):
                         raise ValueError(f"Set {s} winner must win the tie-break.")
-
-                    tb_target = 10 if s == num_sets else 7
-                    
-                    if tbw == tb_target:
-                        if tbl > tb_target - 2:
-                            raise ValueError(f"Set {s} tie-break score {tb_pts_p1}-{tb_pts_p2} is invalid. Winner must lead by 2.")
-                    elif tbw > tb_target:
-                        if tbl != tbw - 2:
-                            raise ValueError(f"Set {s} tie-break score {tb_pts_p1}-{tb_pts_p2} is invalid. Winner must lead by exactly 2.")
-                    else:
-                        raise ValueError(f"Set {s} tie-break score {tb_pts_p1}-{tb_pts_p2} is invalid. Must reach at least {tb_target} points.")
+                    _validate_7pt_tiebreak(s, tb_pts_p1, tb_pts_p2)
                 else:
                     raise ValueError(f"Set {s} score of {g1}-{g2} is invalid.")
         # Register set win (for live updates, we just record whoever has more, or tie)

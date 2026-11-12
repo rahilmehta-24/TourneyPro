@@ -431,3 +431,54 @@ class FormatScoringIsolationTestCase(unittest.TestCase):
             self.assertEqual(m_db.status, 'completed')
             self.assertEqual(m_db.score1, '6-2, 6-4')
 
+    def test_07_standard_6_6_tiebreak_7pt_and_win_by_2(self):
+        """6-6 set score accepts 7-point tiebreak (and extended win-by-2 like 8-6) and rejects invalid tiebreak."""
+        from app.services.tennis_logic import validate_and_format_score
+
+        # 1. 6-6 with 7-5 tiebreak in 1-set match -> promoted to 7-6(5)
+        s1, s2 = validate_and_format_score(
+            winner_id=10,
+            p1_id=10,
+            p2_id=20,
+            num_sets=1,
+            games_per_set=6,
+            form_data={'set1_p1': '6', 'set1_p2': '6', 'tb1_p1': '7', 'tb1_p2': '5'},
+        )
+        self.assertEqual(s1, '7-6(5)')
+        self.assertEqual(s2, '6-7(5)')
+
+        # 2. 6-6 with extended 6-6 -> 8-6 tiebreak -> promoted to 7-6(6)
+        s1, s2 = validate_and_format_score(
+            winner_id=20,
+            p1_id=10,
+            p2_id=20,
+            num_sets=1,
+            games_per_set=6,
+            form_data={'set1_p1': '6', 'set1_p2': '6', 'tb1_p1': '6', 'tb1_p2': '8'},
+        )
+        self.assertEqual(s1, '6-7(6)')
+        self.assertEqual(s2, '7-6(6)')
+
+        # 3. 6-6 with invalid tiebreak 7-6 (must win by 2) -> raises ValueError
+        with self.assertRaises(ValueError):
+            validate_and_format_score(
+                winner_id=10,
+                p1_id=10,
+                p2_id=20,
+                num_sets=1,
+                games_per_set=6,
+                form_data={'set1_p1': '6', 'set1_p2': '6', 'tb1_p1': '7', 'tb1_p2': '6'},
+            )
+
+        # 4. 6-6 without tiebreak points -> raises ValueError
+        with self.assertRaises(ValueError):
+            validate_and_format_score(
+                winner_id=10,
+                p1_id=10,
+                p2_id=20,
+                num_sets=1,
+                games_per_set=6,
+                form_data={'set1_p1': '6', 'set1_p2': '6'},
+            )
+
+
