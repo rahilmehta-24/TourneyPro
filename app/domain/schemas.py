@@ -1,7 +1,10 @@
 from flask_marshmallow import Marshmallow
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
 from marshmallow import fields
-from .models import Tournament, Category, Match, Participant, User, Player
+from .models import (
+    Tournament, Category, Match, Participant, User, Player,
+    Registration, DeviceRegistration, InAppNotification, UserNotificationPreferences
+)
 
 ma = Marshmallow()
 
@@ -58,3 +61,34 @@ matches_schema = MatchSchema(many=True)
 
 participant_schema = ParticipantSchema()
 participants_schema = ParticipantSchema(many=True)
+
+class RegistrationSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        model = Registration
+        include_fk = True
+
+class InAppNotificationSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        model = InAppNotification
+        include_fk = True
+
+class DeviceRegistrationSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        model = DeviceRegistration
+        include_fk = True
+
+class UserNotificationPreferencesSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        model = UserNotificationPreferences
+        include_fk = True
+
+registration_schema = RegistrationSchema()
+registrations_schema = RegistrationSchema(many=True)
+
+notification_schema = InAppNotificationSchema()
+notifications_schema = InAppNotificationSchema(many=True)
+
+device_registration_schema = DeviceRegistrationSchema()
+device_registrations_schema = DeviceRegistrationSchema(many=True)
+
+notification_preferences_schema = UserNotificationPreferencesSchema()

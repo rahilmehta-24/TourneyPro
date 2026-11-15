@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "Baseline Society",
+    "slug": "baseline-society",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#0B2B20"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.baselinesociety.app"
+    },
+    "android": {
+      "package": "com.baselinesociety.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0B2B20"
+      }
+    },
+    "scheme": "baselinesociety"
+  }
+}

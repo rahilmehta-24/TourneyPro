@@ -201,6 +201,10 @@ class Match(db.Model):
     p2_player1 = db.relationship('Player', foreign_keys=[p2_player1_id])
     p2_player2 = db.relationship('Player', foreign_keys=[p2_player2_id])
 
+    __table_args__ = (
+        db.Index('idx_matches_category_round_num', 'category_id', 'round', 'match_number'),
+    )
+
 class TournamentSettings(db.Model):
     __tablename__ = 'tournament_settings'
 
@@ -239,6 +243,9 @@ class User(db.Model):
 
     tournaments = db.relationship('Tournament', backref='owner', lazy=True)
     players = db.relationship('Player', backref='owner', lazy=True)
+    devices = db.relationship('DeviceRegistration', backref='user', lazy=True, cascade='all, delete-orphan')
+    notifications = db.relationship('InAppNotification', backref='user', lazy=True, cascade='all, delete-orphan')
+    notification_preferences = db.relationship('UserNotificationPreferences', backref='user', uselist=False, cascade='all, delete-orphan')
 
     def set_password(self, password):
         from werkzeug.security import generate_password_hash
@@ -405,6 +412,7 @@ class Registration(db.Model):
     __tablename__ = 'registrations'
     __table_args__ = (
         db.UniqueConstraint('tournament_id', 'category_id', 'player_id', name='uq_tournament_category_player'),
+        db.Index('idx_registrations_user_tourn', 'user_id', 'tournament_id'),
     )
 
     id = db.Column(db.Integer, primary_key=True)
@@ -493,4 +501,57 @@ class TournamentStaff(db.Model):
     __table_args__ = (
         db.UniqueConstraint('tournament_id', 'user_id', name='uq_tournament_user_staff'),
     )
+
+
+class DeviceRegistration(db.Model):
+    __tablename__ = 'device_registrations'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    device_token = db.Column(db.String(512), unique=True, nullable=False)
+    platform = db.Column(db.String(20), nullable=False)  # 'android', 'ios'
+    device_name = db.Column(db.String(100), nullable=True)
+    os_version = db.Column(db.String(50), nullable=True)
+    app_version = db.Column(db.String(50), nullable=True)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        db.Index('idx_device_reg_user', 'user_id'),
+        db.Index('idx_device_reg_token', 'device_token'),
+    )
+
+
+class InAppNotification(db.Model):
+    __tablename__ = 'in_app_notifications'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    title = db.Column(db.String(150), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    notification_type = db.Column(db.String(50), nullable=False)  # match_call, draw_published, registration_update, etc.
+    reference_type = db.Column(db.String(50), nullable=True)      # match, tournament, category, academy
+    reference_id = db.Column(db.Integer, nullable=True)
+    is_read = db.Column(db.Boolean, default=False)
+    read_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.Index('idx_notifications_user_unread', 'user_id', 'is_read', 'created_at'),
+    )
+
+
+class UserNotificationPreferences(db.Model):
+    __tablename__ = 'user_notification_preferences'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), unique=True, nullable=False)
+    notify_match_called = db.Column(db.Boolean, default=True)
+    notify_draw_published = db.Column(db.Boolean, default=True)
+    notify_registration_updates = db.Column(db.Boolean, default=True)
+    notify_match_results = db.Column(db.Boolean, default=True)
+    notify_academy_announcements = db.Column(db.Boolean, default=True)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 

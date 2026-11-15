@@ -1,5 +1,5 @@
 from flask import request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from . import api_bp
 from app.domain.models import Match, User, db
 from app.domain.schemas import matches_schema
@@ -19,10 +19,12 @@ def get_matches(category_id):
 @jwt_required()
 def report_match(match_id):
     current_user_id = get_jwt_identity()
-    user = User.query.get(current_user_id)
+    jwt_claims = get_jwt() or {}
+    court_pin_staff_id = jwt_claims.get("court_pin_staff_id")
 
-    if not user:
-        return jsonify({"success": False, "message": "Unauthorized"}), 403
+    user = None
+    if current_user_id and str(current_user_id).isdigit():
+        user = User.query.get(int(current_user_id))
 
     match = Match.query.get_or_404(match_id)
 
@@ -30,12 +32,21 @@ def report_match(match_id):
     from app.web.controllers.auth import check_scoring_conflict_of_interest
 
     is_staff = False
-    staff = TournamentStaff.query.filter_by(tournament_id=match.tournament_id, user_id=user.id).first()
-    if staff and staff.role in ('manager', 'official', 'scorer'):
-        is_staff = True
+    if user:
+        if user.role == 'superadmin' or match.tournament.user_id == user.id:
+            is_staff = True
+        else:
+            staff = TournamentStaff.query.filter_by(tournament_id=match.tournament_id, user_id=user.id).first()
+            if staff and staff.role in ('manager', 'official', 'scorer'):
+                is_staff = True
+    elif court_pin_staff_id:
+        staff = TournamentStaff.query.get(court_pin_staff_id)
+        if staff and staff.tournament_id == match.tournament_id:
+            if not staff.pin_expires_at or staff.pin_expires_at > datetime.utcnow():
+                is_staff = True
 
-    if user.role != 'superadmin' and match.tournament.user_id != user.id and not is_staff:
-        return jsonify({"success": False, "message": "Forbidden: You do not own this tournament"}), 403
+    if not is_staff:
+        return jsonify({"success": False, "message": "Forbidden: You do not have permission to score this tournament"}), 403
 
     try:
         check_scoring_conflict_of_interest(match, user)
