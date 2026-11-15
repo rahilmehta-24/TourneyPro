@@ -83,6 +83,8 @@ baseline-society-logo-files
 !docs/images/*.png
 !app/web/static/brand/*.svg
 !app/web/static/brand/*.png
+!mobile/assets/*
+!mobile/assets/**/*.png
 
 .agents/*
 .tokenshield/*
@@ -92,3 +94,5 @@ node_modules/
 mobile/node_modules/
 mobile/.expo/
 mobile/dist/
+mobile/android/
+mobile/ios/
