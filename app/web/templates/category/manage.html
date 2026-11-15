@@ -97,7 +97,7 @@
             ⚙️ Category Rules &amp; Format
         </button>
         {% if category.format == 'group_stage' or (category.max_players_per_team and category.max_players_per_team > 1) %}
-        <a href="{{ url_for('category.team_draft_view', slug=tournament.url_slug, category_id=category.id) }}" style="padding: 0.55rem 1.25rem; font-size: 0.9rem; font-weight: 700; border: 1px solid rgba(245, 158, 11, 0.5); background: rgba(245, 158, 11, 0.15); color: #f59e0b; border-radius: var(--radius-md); text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; transition: all 0.15s;">
+        <a href="{{ url_for('category.team_draft_view', slug=tournament.url_slug, category_id=category.id) }}" style="padding: 0.55rem 1.25rem; font-size: 0.9rem; font-weight: 700; border: 1px solid rgba(122, 95, 30, 0.4); background: rgba(201, 165, 92, 0.18); color: #7A5F1E; border-radius: var(--radius-md); text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; transition: all 0.15s;">
             🎪 Team Draft &amp; Tiers Board
         </a>
         {% endif %}
@@ -119,12 +119,12 @@
                         {% endif %}
                     </h3>
                     {% if category.status != 'setup' %}
-                    <span style="font-size: 0.75rem; background: rgba(245, 158, 11, 0.15); color: var(--accent-warning); padding: 0.2rem 0.5rem; border-radius: 9999px; font-weight: 600;">Late Entry</span>
+                    <span style="font-size: 0.75rem; background: rgba(201, 165, 92, 0.18); color: #7A5F1E; padding: 0.2rem 0.5rem; border-radius: 9999px; font-weight: 600;">Late Entry</span>
                     {% endif %}
                 </div>
 
                 {% if category.status != 'setup' %}
-                <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.85rem; background: rgba(59, 130, 246, 0.08); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid rgba(59, 130, 246, 0.2);">
+                <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.85rem; background: rgba(15, 61, 46, 0.08); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid rgba(15, 61, 46, 0.22);">
                     💡 <strong>Late Addition:</strong> Player profile will be auto-created and enrolled into this category roster. To re-seed or regenerate bracket with this player, use "Reset Category" below.
                 </div>
                 {% endif %}
@@ -224,13 +224,13 @@
                         </thead>
                         <tbody>
                             {% for participant in participants %}
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                            <tr style="border-bottom: 1px solid var(--border-subtle);">
                                 <td style="padding: 0.65rem 0.75rem; font-weight: bold;">
                                     {% if category.status == 'setup' %}
                                     <input type="number" name="seed_{{ participant.id }}" form="inlineSeedingForm" class="form-input seed-input" value="{{ participant.manual_seed or '' }}" min="1" max="{{ participants|length }}" placeholder="-" style="width: 60px; text-align: center; padding: 0.25rem 0.35rem; font-size: 0.85rem; font-weight: 600;">
                                     {% else %}
                                         {% if participant.manual_seed or participant.seed %}
-                                        <span style="background: var(--bg-secondary); color: var(--accent-secondary); padding: 0.15rem 0.45rem; border-radius: var(--radius-sm); font-size: 0.8rem; border: 1px solid rgba(139, 92, 246, 0.25);">
+                                        <span style="background: rgba(15, 61, 46, 0.08); color: var(--accent-primary-text); padding: 0.15rem 0.45rem; border-radius: var(--radius-sm); font-size: 0.8rem; border: 1px solid rgba(15, 61, 46, 0.25);">
                                             #{{ participant.manual_seed or participant.seed }}
                                         </span>
                                         {% else %}
@@ -312,7 +312,7 @@
                     <select id="format" name="format" class="form-input" required style="width: 100%;" onchange="toggleGroupStageFields()">
                         <option value="single_elimination" {% if category.format in ['single_elimination', 'doubles_elimination'] %}selected{% endif %}>🏆 Knockout (Single Elimination)</option>
                         <option value="group_stage" {% if category.format == 'group_stage' %}selected{% endif %}>🎪 Group Stage + Knockout</option>
-                        <option value="round_robin" {% if category.format == 'round_robin' %}selected{% endif %}>🔄 Round Robin (League)</option>
+                        <option value="round_robin" {% if category.format in ['round_robin', 'doubles_round_robin'] %}selected{% endif %}>🔄 Round Robin (League)</option>
                     </select>
                 </div>
 
@@ -343,12 +343,12 @@
                 <div id="total-games-fields" style="display: {% if category.format == 'group_stage' %}block{% else %}none{% endif %};">
                     <div class="form-group" style="margin: 0;">
                         <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Total Games Per Rubber (T) *</label>
-                        <input type="number" id="total_games" name="total_games" class="form-input" min="3" max="21" step="2" value="{{ category.total_games or 7 }}" style="width: 100%;">
+                        <input type="number" id="total_games" name="total_games" class="form-input" min="3" max="21" step="2" value="{{ category.total_games or (7 if category.format == 'group_stage' else '') }}" style="width: 100%;">
                         <small style="display: block; margin-top: 0.25rem; color: var(--text-muted); font-size: 0.78rem;">Total games per rubber (Default: 7). Tiebreak at 3–3, rubber decided at 4–3. Team tie clinched by first to 11 of 21 games.</small>
                     </div>
                 </div>
 
-                <div id="points-to-win-fields" style="display: {% if category.format == 'round_robin' and category.scoring_format == 'points' %}block{% else %}none{% endif %};">
+                <div id="points-to-win-fields" style="display: {% if category.format != 'group_stage' and category.scoring_format == 'points' %}block{% else %}none{% endif %};">
                     <div class="form-group" style="margin: 0;">
                         <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Points to Win *</label>
                         <input type="number" id="points_to_win" name="points_to_win" class="form-input" min="1" max="100" value="{{ category.points_to_win or 11 }}" style="width: 100%;">
@@ -359,25 +359,30 @@
                 <div id="legacy-scoring-fields" style="display: {% if category.format != 'group_stage' and category.scoring_format != 'points' %}grid{% else %}none{% endif %}; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <div class="form-group" style="margin: 0;">
                         <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Number of Sets</label>
-                        <input type="number" name="num_sets" class="form-input" min="1" max="5" value="{{ category.num_sets or 3 }}" style="width: 100%;">
+                        <input type="number" id="num_sets" name="num_sets" class="form-input" min="1" max="5" value="{{ category.num_sets or 3 }}" style="width: 100%;">
                     </div>
                     <div class="form-group" style="margin: 0;">
                         <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Games Per Set</label>
-                        <input type="number" name="games_per_set" class="form-input" min="1" max="10" value="{{ category.games_per_set or 6 }}" style="width: 100%;">
+                        <input type="number" id="games_per_set" name="games_per_set" class="form-input" min="1" max="10" value="{{ category.games_per_set or 6 }}" style="width: 100%;">
                     </div>
                 </div>
 
-                <div class="form-group" style="margin: 0;">
+                <div class="form-group" id="max-players-per-team-container" style="margin: 0; display: {% if category.format == 'group_stage' %}block{% else %}none{% endif %};">
                     <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Max Players Per Team</label>
-                    <input type="number" id="max_players_per_team" name="max_players_per_team" class="form-input" min="1" value="{{ category.max_players_per_team or 5 }}" placeholder="5 for Team League" style="width: 100%;">
+                    <input type="number" id="max_players_per_team" name="max_players_per_team" class="form-input" min="1" value="{{ category.max_players_per_team or (5 if category.format == 'group_stage' else '') }}" placeholder="5 for Team League" style="width: 100%;">
                 </div>
 
                 <div id="group-stage-fields" style="display: {% if category.format in ['group_stage', 'round_robin', 'doubles_round_robin'] %}flex{% else %}none{% endif %}; flex-direction: column; gap: 0.85rem; background: var(--bg-secondary); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+                    {% if category.format == 'group_stage' and structure_options %}
+                    {% set structure_team_count = structure_options[0].group_sizes|sum %}
+                    {% set structure_next_target = 'manage' %}
+                    {% include "components/group_structure_recommender.html" %}
+                    {% endif %}
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                         <div class="form-group" style="margin: 0;">
                             <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Number of Groups *</label>
-                            <input type="number" id="num_groups" name="num_groups" class="form-input" min="2" value="{{ category.num_groups or 2 }}" placeholder="e.g. 2, 4" style="width: 100%;">
-                            <small style="display: block; margin-top: 0.25rem; color: var(--text-muted); font-size: 0.78rem;">Default: 2 Groups. Teams per group are calculated dynamically (N ÷ G).</small>
+                            <input type="number" id="num_groups" name="num_groups" class="form-input" min="2" max="16" value="{{ category.num_groups or 2 }}" placeholder="e.g. 2, 3, 4" style="width: 100%;">
+                            <small style="display: block; margin-top: 0.25rem; color: var(--text-muted); font-size: 0.78rem;">Teams per group are balanced dynamically (N ÷ G). Use Structure Options above after registration to split with or without Lucky Losers.</small>
                         </div>
                         <div class="form-group" id="manage-teams-per-group-container" style="margin: 0; display: {% if category.format == 'group_stage' %}none{% else %}block{% endif %};">
                             <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Teams Per Group *</label>
@@ -391,14 +396,15 @@
                         </div>
                         <div class="form-group" style="margin: 0;">
                             <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Qualifiers Per Group *</label>
-                            <input type="number" id="qualifiers_per_group" name="qualifiers_per_group" class="form-input" min="1" value="{{ category.qualifiers_per_group or '' }}" placeholder="e.g. 2" style="width: 100%;">
+                            <input type="number" id="qualifiers_per_group" name="qualifiers_per_group" class="form-input" min="1" value="{{ category.qualifiers_per_group or 2 }}" placeholder="e.g. 2" style="width: 100%;">
                         </div>
                     </div>
                     <div class="form-group" style="margin: 0;">
                         <label style="display: flex; align-items: center; gap: 8px;">
                             <input type="checkbox" name="allow_lucky_losers" id="allow_lucky_losers" style="width: 16px; height: 16px; accent-color: var(--primary);" {% if category.allow_lucky_losers %}checked{% endif %}>
-                            <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">Enable Lucky Losers</span>
+                            <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600;">Enable Lucky Losers (Fill Next Power-of-2 Knockout Bracket)</span>
                         </label>
+                        <small style="display: block; margin-left: 24px; color: var(--text-muted); font-size: 0.78rem;">When direct qualifiers aren't a power of 2 (e.g., 3 groups × Top 2 = 6), fills vacant spots up to 4 / 8 / 16 via manual chit draw or normalized group standings.</small>
                     </div>
                 </div>
                 {% endif %}
@@ -484,8 +490,8 @@
 </div>
 
 <!-- RENAME CATEGORY MODAL -->
-<div id="renameCategoryModal" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 1rem;">
-    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); width: 100%; max-width: 440px; padding: 1.5rem; box-shadow: var(--shadow-md);">
+<div id="renameCategoryModal" role="dialog" aria-modal="true" style="display: none; position: fixed; inset: 0; background: rgba(11, 43, 32, 0.52); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 1rem;">
+    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-top: 4px solid var(--accent-secondary); border-radius: var(--radius-lg); width: 100%; max-width: 440px; padding: 1.5rem; box-shadow: var(--shadow-md);">
         <h3 style="margin: 0 0 0.5rem; font-size: 1.2rem; color: var(--text-primary); font-weight: 700;">
             ✏️ Rename Category
         </h3>
@@ -601,32 +607,39 @@
         const legacyScoringFields = document.getElementById('legacy-scoring-fields');
         const pointsToWinFields = document.getElementById('points-to-win-fields');
         const totalGamesFields = document.getElementById('total-games-fields');
+        const tg = document.getElementById('total_games');
+        const ptw = document.getElementById('points_to_win');
+        const numSets = document.getElementById('num_sets');
+        const gamesPerSet = document.getElementById('games_per_set');
 
-        // When format is group_stage, sets/games_per_set are NOT used!
+        // When format is group_stage, sets/games_per_set and points_to_win are NOT used!
         if (format === 'group_stage') {
             if (legacyScoringFields) legacyScoringFields.style.display = 'none';
             if (pointsToWinFields) pointsToWinFields.style.display = 'none';
             if (totalGamesFields) totalGamesFields.style.display = 'block';
+            if (tg) { tg.disabled = false; tg.required = true; if (!tg.value) tg.value = 7; }
+            if (ptw) { ptw.required = false; ptw.disabled = true; }
+            if (numSets) { numSets.required = false; numSets.disabled = true; }
+            if (gamesPerSet) { gamesPerSet.required = false; gamesPerSet.disabled = true; }
             return;
         }
 
+        if (tg) { tg.required = false; tg.disabled = true; }
         if (!scoringFormat) return;
         const val = scoringFormat.value;
 
         if (val === 'points') {
             if (legacyScoringFields) legacyScoringFields.style.display = 'none';
-            if (pointsToWinFields) {
-                pointsToWinFields.style.display = 'block';
-                const ptw = document.getElementById('points_to_win');
-                if (ptw) ptw.required = true;
-            }
+            if (pointsToWinFields) pointsToWinFields.style.display = 'block';
+            if (ptw) { ptw.disabled = false; ptw.required = true; if (!ptw.value) ptw.value = 11; }
+            if (numSets) { numSets.required = false; numSets.disabled = true; }
+            if (gamesPerSet) { gamesPerSet.required = false; gamesPerSet.disabled = true; }
         } else {
             if (legacyScoringFields) legacyScoringFields.style.display = 'grid';
-            if (pointsToWinFields) {
-                pointsToWinFields.style.display = 'none';
-                const ptw = document.getElementById('points_to_win');
-                if (ptw) ptw.required = false;
-            }
+            if (pointsToWinFields) pointsToWinFields.style.display = 'none';
+            if (ptw) { ptw.required = false; ptw.disabled = true; }
+            if (numSets) { numSets.disabled = false; numSets.required = true; if (!numSets.value) numSets.value = 3; }
+            if (gamesPerSet) { gamesPerSet.disabled = false; gamesPerSet.required = true; if (!gamesPerSet.value) gamesPerSet.value = 6; }
         }
     }
 
@@ -635,10 +648,15 @@
         const format = formatSelect ? formatSelect.value : '{{ category.format }}';
         const groupFields = document.getElementById('group-stage-fields');
         const totalGamesFields = document.getElementById('total-games-fields');
-        const legacyScoringFields = document.getElementById('legacy-scoring-fields');
+        const scoringFormat = document.getElementById('scoring_format');
         const scoringFormatContainer = document.getElementById('scoring-format-container');
         const teamsPerGroupContainer = document.getElementById('manage-teams-per-group-container');
         const knockoutSubformatFields = document.getElementById('knockout-subformat-fields');
+        const maxPlayersContainer = document.getElementById('max-players-per-team-container');
+        const maxPlayersInput = document.getElementById('max_players_per_team');
+        const numGroups = document.getElementById('num_groups');
+        const teamsPerGroup = document.getElementById('teams_per_group');
+        const qualifiersInput = document.getElementById('qualifiers_per_group');
         
         if (knockoutSubformatFields) {
             knockoutSubformatFields.style.display = (format === 'single_elimination' || format === 'round_robin') ? 'block' : 'none';
@@ -646,40 +664,41 @@
 
         if (format === 'group_stage') {
             if (scoringFormatContainer) scoringFormatContainer.style.display = 'none';
-            if (legacyScoringFields) legacyScoringFields.style.display = 'none';
+            if (scoringFormat) scoringFormat.disabled = true;
+            if (maxPlayersContainer) maxPlayersContainer.style.display = 'block';
+            if (maxPlayersInput) {
+                maxPlayersInput.disabled = false;
+                if (!maxPlayersInput.value) maxPlayersInput.value = 5;
+            }
             if (teamsPerGroupContainer) teamsPerGroupContainer.style.display = 'none';
-            if (groupFields) {
-                groupFields.style.display = 'flex';
-                const numGroups = document.getElementById('num_groups');
-                if (numGroups) numGroups.required = true;
-            }
-            if (totalGamesFields) {
-                totalGamesFields.style.display = 'block';
-                const tg = document.getElementById('total_games');
-                if (tg) tg.required = true;
-            }
+            if (teamsPerGroup) teamsPerGroup.required = false;
+            if (groupFields) groupFields.style.display = 'flex';
+            if (numGroups) numGroups.required = true;
+            if (qualifiersInput) qualifiersInput.required = true;
+            if (totalGamesFields) totalGamesFields.style.display = 'block';
+            toggleScoringFields();
         } else if (format === 'round_robin') {
             if (scoringFormatContainer) scoringFormatContainer.style.display = 'block';
+            if (scoringFormat) scoringFormat.disabled = false;
+            if (maxPlayersContainer) maxPlayersContainer.style.display = 'none';
+            if (maxPlayersInput) maxPlayersInput.disabled = true;
             if (teamsPerGroupContainer) teamsPerGroupContainer.style.display = 'block';
-            if (groupFields) {
-                groupFields.style.display = 'flex';
-                const numGroups = document.getElementById('num_groups');
-                if (numGroups) numGroups.required = false;
-            }
-            if (totalGamesFields) {
-                totalGamesFields.style.display = 'none';
-                const tg = document.getElementById('total_games');
-                if (tg) tg.required = false;
-            }
+            if (teamsPerGroup) teamsPerGroup.required = true;
+            if (groupFields) groupFields.style.display = 'flex';
+            if (numGroups) numGroups.required = false;
+            if (qualifiersInput) qualifiersInput.required = false;
+            if (totalGamesFields) totalGamesFields.style.display = 'none';
             toggleScoringFields();
         } else {
             if (scoringFormatContainer) scoringFormatContainer.style.display = 'block';
+            if (scoringFormat) scoringFormat.disabled = false;
+            if (maxPlayersContainer) maxPlayersContainer.style.display = 'none';
+            if (maxPlayersInput) maxPlayersInput.disabled = true;
             if (groupFields) groupFields.style.display = 'none';
-            if (totalGamesFields) {
-                totalGamesFields.style.display = 'none';
-                const tg = document.getElementById('total_games');
-                if (tg) tg.required = false;
-            }
+            if (numGroups) numGroups.required = false;
+            if (teamsPerGroup) teamsPerGroup.required = false;
+            if (qualifiersInput) qualifiersInput.required = false;
+            if (totalGamesFields) totalGamesFields.style.display = 'none';
             toggleScoringFields();
         }
     }

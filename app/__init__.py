@@ -68,6 +68,9 @@ def create_app(config_class=Config):
                     if 'draw_published' not in cat_cols:
                         with db.engine.begin() as conn:
                             conn.execute(text("ALTER TABLE categories ADD COLUMN draw_published BOOLEAN DEFAULT FALSE"))
+                    if 'group_structure_mode' not in cat_cols:
+                        with db.engine.begin() as conn:
+                            conn.execute(text("ALTER TABLE categories ADD COLUMN group_structure_mode VARCHAR(20) DEFAULT 'auto'"))
                 if 'matches' in tables:
                     match_cols = [c['name'] for c in inspector.get_columns('matches')]
                     if 'lock_version' not in match_cols:
@@ -152,11 +155,17 @@ def create_app(config_class=Config):
         if not s1_str and not s2_str:
             return ""
 
+        if s1_str == "W/O" or s2_str == "W/O":
+            return "W/O"
+
         import re
         if s1_str and s2_str and '-' not in s1_str and '-' not in s2_str:
             return f"{s1_str} \u2013 {s2_str}"
         elif s1_str and '-' in s1_str:
-            return re.sub(r'\((\d+)\)', r'<sup>\1</sup>', s1_str)
+            formatted = re.sub(r'\((\d+)\)', r'<sup>\1</sup>', s1_str)
+            if ('RET' in s1_str or 'RET' in s2_str) and 'RET' not in formatted:
+                formatted = f"{formatted}, RET"
+            return formatted
         elif s1_str and s2_str:
             return f"{s1_str} \u2013 {s2_str}"
         return s1_str or s2_str
@@ -205,10 +214,10 @@ def create_app(config_class=Config):
         if request.path.startswith('/api/'):
             return {"success": False, "message": "An internal server error occurred."}, 500
         return (
-            "<div style='font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;padding:3rem;text-align:center;color:#18181b;max-width:600px;margin:4rem auto;border-radius:12px;background:#f4f4f5;box-shadow:0 4px 12px rgba(0,0,0,0.05);'>"
-            "<h2 style='margin-bottom:0.75rem;color:#09090b;'>Something went wrong</h2>"
-            "<p style='color:#71717a;line-height:1.6;'>An unexpected server error occurred while processing your request. The issue has been logged securely.</p>"
-            "<a href='/' style='display:inline-block;margin-top:1.5rem;padding:0.65rem 1.4rem;background:#2563eb;color:#ffffff;border-radius:8px;text-decoration:none;font-weight:600;'>Return to Home</a>"
+            "<div style='font-family:Inter,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;padding:3rem;text-align:center;color:#0B2B20;max-width:600px;margin:4rem auto;border-radius:14px;background:#FDFBF6;border:1px solid #DDD4BF;border-top:4px solid #B5593A;box-shadow:0 10px 28px rgba(11,43,32,0.12);'>"
+            "<h2 style='margin-bottom:0.75rem;color:#0B2B20;'>Something went wrong</h2>"
+            "<p style='color:#2F4A3E;line-height:1.6;'>An unexpected server error occurred while processing your request. The issue has been logged securely.</p>"
+            "<a href='/' style='display:inline-block;margin-top:1.5rem;padding:0.65rem 1.4rem;background:#0F3D2E;color:#FDFBF6;border-radius:8px;text-decoration:none;font-weight:600;'>Return to Home</a>"
             "</div>",
             500
         )

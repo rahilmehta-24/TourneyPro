@@ -23,7 +23,7 @@
             {% if pagination.items %}
                 <table class="table" style="width: 100%; text-align: left; border-collapse: collapse;">
                     <thead>
-                        <tr style="border-bottom: 2px solid var(--border-color); background: rgba(0,0,0,0.2);">
+                        <tr style="border-bottom: 2px solid var(--border-color); background: var(--bg-secondary); color: var(--text-secondary);">
                             <th style="padding: 1rem;">Timestamp</th>
                             <th style="padding: 1rem;">User</th>
                             <th style="padding: 1rem;">Action</th>
@@ -41,7 +41,7 @@
                                     <strong>{{ log.user.username }}</strong>
                                 </td>
                                 <td style="padding: 1rem;">
-                                    <span style="background: rgba(249, 115, 22, 0.2); color: #fb923c; padding: 0.2rem 0.5rem; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: bold;">
+                                    <span style="background: rgba(181, 89, 58, 0.14); color: #9A482C; border: 1px solid rgba(181, 89, 58, 0.35); padding: 0.2rem 0.5rem; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: bold;">
                                         {{ log.action_type }}
                                     </span>
                                 </td>
@@ -54,9 +54,9 @@
                                     {% endif %}
                                 </td>
                                 <td style="padding: 1rem;">
-                                    <div style="font-weight: 600; color: var(--accent-primary);">{{ log.reason }}</div>
+                                    <div style="font-weight: 600; color: var(--accent-primary-text);">{{ log.reason }}</div>
                                     {% if log.explanation %}
-                                        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.3rem; background: rgba(255,255,255,0.03); padding: 0.5rem; border-radius: 4px; border-left: 2px solid var(--accent-info);">
+                                        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.3rem; background: var(--bg-secondary); padding: 0.5rem; border-radius: 4px; border-left: 2px solid var(--accent-primary);">
                                             "{{ log.explanation }}"
                                         </div>
                                     {% endif %}

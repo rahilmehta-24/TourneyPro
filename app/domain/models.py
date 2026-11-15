@@ -75,6 +75,7 @@ class Category(db.Model):
     matches_per_team_pair = db.Column(db.Integer, default=1)  # Custom matches between teams in group
     qualifiers_per_group = db.Column(db.Integer)  # How many advance to knockout
     allow_lucky_losers = db.Column(db.Boolean, default=False)
+    group_structure_mode = db.Column(db.String(20), default='auto')  # 'auto' (recommend from N) or 'manual'
     max_players_per_team = db.Column(db.Integer)
     total_games = db.Column(db.Integer)
     scoring_format = db.Column(db.String(20), default='games') # 'games' or 'points'

@@ -15,14 +15,14 @@ class ParticipantsExportAdapter:
     """Adapter to prepare Tournament Participants data for high-density, professional PDF rendering."""
 
     TAG_PALETTES = [
-        {"bg": "#e0f2fe", "text": "#0369a1", "border": "#7dd3fc"},  # Sky Blue
-        {"bg": "#dcfce7", "text": "#15803d", "border": "#86efac"},  # Emerald Green
-        {"bg": "#fef3c7", "text": "#b45309", "border": "#fcd34d"},  # Amber / Orange
-        {"bg": "#f3e8ff", "text": "#7e22ce", "border": "#d8b4fe"},  # Purple
-        {"bg": "#ffe4e6", "text": "#be123c", "border": "#fda4af"},  # Rose / Coral
-        {"bg": "#e0e7ff", "text": "#4338ca", "border": "#a5b4fc"},  # Indigo
+        {"bg": "#EAF2EE", "text": "#0F3D2E", "border": "#4C665A"},  # Court Green
+        {"bg": "#F4EFE3", "text": "#7A5F1E", "border": "#C9A55C"},  # Champion Gold
+        {"bg": "#FCEEE9", "text": "#9A482C", "border": "#B5593A"},  # Heritage Clay
+        {"bg": "#dcfce7", "text": "#065F46", "border": "#059669"},  # Emerald Green
+        {"bg": "#e0f2fe", "text": "#0369A1", "border": "#38bdf8"},  # Azure Blue
+        {"bg": "#f3e8ff", "text": "#6D28D9", "border": "#c084fc"},  # Royal Purple
         {"bg": "#ccfbf1", "text": "#0f766e", "border": "#5eead4"},  # Teal
-        {"bg": "#fae8ff", "text": "#a21caf", "border": "#f0abfc"},  # Fuchsia
+        {"bg": "#E8E0CC", "text": "#0B2B20", "border": "#7C7462"},  # Deep Ink Sand
     ]
 
     FORMAT_DISPLAY_MAP = {
@@ -339,9 +339,9 @@ class ParticipantsExportAdapter:
             {
                 "label": "Total Participants",
                 "value": str(len(unique_player_keys)),
-                "color": "#0f172a",
-                "bg": "#f8fafc",
-                "border": "#cbd5e1",
+                "color": "#0B2B20",
+                "bg": "#F4EFE3",
+                "border": "#C9A55C",
             }
         ]
 

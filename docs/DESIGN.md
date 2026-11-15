@@ -1,184 +1,220 @@
-# TourneyPro — System & UX/UI Design Specification (DESIGN.md)
+# The Baseline Society Design System — Refined Club UI
 
-**Document Status:** Approved  
-**Source of Truth:** Inherits all requirements and domain rules from [`PRD.md`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/PRD.md)  
-**Design Version:** 2.0  
-**Target Platform:** Web (Desktop, Tablet, Mobile Responsive)  
-**Last Updated:** October 2026  
+## 1. Design Philosophy
+The Baseline Society feels like a well-kept private tennis club translated into software: calm, warm, precise. The interface is quiet so tournament data (draws, scores, schedules) is the star. Brand color is used with restraint, and motion is soft and purposeful.
 
----
-
-## 1. Design Philosophy & Principles
-
-TourneyPro's interface is engineered to eliminate operational friction during high-stress tournament environments. The design adheres to four foundational pillars:
-
-1. **Information Density with Zero Clutter:** Tournament organizers need high data density (courts, matches, scores, seeds) without cognitive overload. Layouts use clear visual grouping, card containers, and micro-spacing.
-2. **Dynamic Live Feel:** The interface feels alive and responsive. Bracket paths connect dynamically via SVG vectors; score reporting immediately highlights winning participants; status badges reflect live court occupancy.
-3. **Sleek Aesthetic with Dark-Mode First Engineering:** A modern sports-tech palette featuring deep charcoal backgrounds, neon tennis-ball accents (`#10b981`, `#047857`, emerald and neon accents), glassmorphism cards, and refined typography.
-4. **Zero-Framework Lightweight Speed:** Built entirely with Vanilla CSS3 and minimal vanilla JavaScript. No heavy frontend framework runtimes (React/Vue/Angular), yielding instant page renders, sub-second transitions, and zero client-side bundling lag.
+- **Single light theme.** No theme switcher. `color-scheme: light` everywhere (desktop, mobile, print, PDF).
+- **Natural surfaces.** Warm ivory and stone neutrals, like linen and court-side stone, instead of stark white. Cards are pure white so they lift gently off the canvas.
+- **Brand in moderation.** Court Green is for structure and primary actions. Champion Gold is a highlight, never a background for body text. Clay is a rare warm accent.
+- **Depth through soft shadow, not heavy borders.** Shadows are tinted green-grey, never pure black.
+- **Motion with meaning.** Animation confirms actions, shows progress, and guides the eye. Nothing bounces for its own sake.
+- **Logo unchanged.** The serif "B" monogram in a double gold ring on Court Green stays the brand mark.
 
 ---
 
-## 2. Design System Tokens & Foundations
+## 2. Color Tokens (`app/web/static/css/style.css` `:root`)
 
-The design system is defined centrally in [`app/web/static/css/style.css`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/app/web/static/css/style.css) using CSS Custom Properties (Variables):
+### 2.1 Surfaces & Text
+| Token | Value | Usage |
+|---|---|---|
+| `--bg-primary` | `#FAF8F3` | Page canvas (Ivory) |
+| `--bg-secondary` | `#F2EEE4` | Nested panels, table stripes (Linen) |
+| `--bg-tertiary` | `#E7E1D2` | Hover fills, pill wells, subtle headers (Stone) |
+| `--bg-card` | `#FFFFFF` | Cards, modals, fixtures, inputs |
+| `--bg-overlay` | `rgba(11, 36, 28, 0.45)` | Modal backdrop |
+| `--text-primary` | `#14221C` | Headings and body (15.5:1 on Ivory) |
+| `--text-secondary` | `#3B4F44` | Descriptions, labels (8.3:1) |
+| `--text-muted` | `#5E7066` | Captions, timestamps, placeholders (5.0:1 on Ivory, 4.6:1 on Linen) |
+| `--border-subtle` | `#DDD6C5` | Dividers and card edges (decorative only) |
+| `--border-strong` | `#8C8570` | Input and control borders (3.7:1 on white) |
 
-### 2.1 Color Palette
+### 2.2 Brand
+| Token | Value | Usage |
+|---|---|---|
+| `--accent-primary` | `#0F3D2E` | Navbar, primary buttons, round headers, table headers (Court Green) |
+| `--accent-primary-hover` | `#0B3024` | Hover |
+| `--accent-primary-active` | `#082419` | Pressed |
+| `--accent-primary-tint` | `#E3EDE7` | Selected rows, soft badges, focus wash |
+| `--accent-primary-text` | `#0F3D2E` | Links and small labels on light surfaces (11.5:1) |
+| `--accent-secondary` | `#C9A55C` | Baseline rule, hero CTA fill, active bracket path, large display accents (Champion Gold) |
+| `--accent-secondary-hover` | `#B8934A` | Hover |
+| `--accent-secondary-tint` | `#F4EBD4` | Gold-tinted highlights and badges |
+| `--accent-secondary-text` | `#7A5F1E` | Small gold-toned text on light surfaces (5.7:1) |
+| `--accent-tertiary` | `#B5593A` | Live-match badge fill, warm alerts (Clay) |
+| `--accent-tertiary-hover` | `#9A482C` | Hover |
+| `--accent-tertiary-tint` | `#F6E4DC` | Clay-tinted backgrounds |
+| `--accent-tertiary-text` | `#9A482C` | Small clay-toned text on light surfaces (5.9:1) |
+
+### 2.3 Semantic Status
+Each status has a fill, a tint background, and a text color. Always pair with an icon or label; never rely on color alone, and never reuse Court Green as the success color.
+
+| Status | Fill | Tint | Text on tint |
+|---|---|---|---|
+| Success (win, confirmed) | `#2F7D5A` | `#E1F0E8` | `#1F6A47` (5.6:1) |
+| Warning (pending, delayed) | `#B7791F` | `#F8EBCF` | `#8A5A0B` (5.0:1) |
+| Danger (retired, error) | `#B42318` | `#FBE4E0` | `#B42318` (5.4:1) |
+| Info (scheduled, notice) | `#2B6C8C` | `#DFEDF4` | `#1F5F7E` (5.9:1) |
+
+### 2.4 Gradients & Elevation
+```css
+--gradient-court: linear-gradient(135deg, #0F3D2E 0%, #17533F 100%);
+--shadow-xs: 0 1px 2px rgba(15, 61, 46, 0.06);
+--shadow-sm: 0 2px 6px rgba(15, 61, 46, 0.08);
+--shadow-md: 0 8px 20px rgba(15, 61, 46, 0.10);
+--shadow-lg: 0 20px 44px rgba(15, 61, 46, 0.16);
+```
+
+### 2.5 Contrast Pairing Rules
+Ratios use the WCAG 2.x formula.
+1. **Ivory on Court Green** (`#FAF8F3` on `#0F3D2E`, 11.5:1) for navbars, headers, and primary buttons.
+2. **Gold on Court Green** (`#C9A55C` on `#0F3D2E`, 5.2:1) for accents, icons, and the baseline rule on dark surfaces.
+3. **Ink on Champion Gold** (`#14221C` on `#C9A55C`, 7.1:1) for gold buttons and badges.
+4. **White on Clay** (`#FFFFFF` on `#B5593A`, 4.7:1). Never dark ink on Clay.
+5. **Raw gold and clay are fills only.** For small text on light surfaces use the `-text` tokens.
+6. **Placeholders and captions** use `--text-muted` and must stay above 4.5:1 on their surface.
+
+---
+
+## 3. Typography
+| Role | Font | Weight | Size / Line height |
+|---|---|---|---|
+| Display / wordmark | Cormorant Garamond | 600 | 40–56 / 1.1 |
+| Page title (h1) | Cormorant Garamond | 600 | 32 / 1.15 |
+| Section title (h2) | Cormorant Garamond | 600 | 24 / 1.2 |
+| Body | Inter | 400 | 15 / 1.55 |
+| UI label, button | Inter | 500–600 | 14 / 1.3 |
+| Caption, metadata | Inter | 400–500 | 12–13 / 1.4 |
+| Scores and draw numbers | Inter (tabular numerals) | 600 | 16–28 / 1.1 |
+
+Rules: use `font-variant-numeric: tabular-nums` for all scores, times, and standings so digits never jitter during live updates. Serif is for display only; all interactive UI is Inter. Maximum body line length is 70 characters.
+
+---
+
+## 4. Spacing, Radius & Layout
+- **Spacing scale (4pt):** `4, 8, 12, 16, 20, 24, 32, 40, 56, 80`.
+- **Radius:** `--radius-sm: 6px` (inputs, chips), `--radius-md: 10px` (buttons, small cards), `--radius-lg: 14px` (cards, modals), `--radius-xl: 20px` (hero panels), `--radius-pill: 999px` (badges, pills).
+- **Touch targets:** minimum 44 × 44 px for every interactive element on mobile.
+- **Grid:** 12 columns on desktop (max content width 1200px), 4 on mobile, 24px gutters on desktop and 16px on mobile.
+- **Density:** generous padding (cards 20–24px) so draws and tables breathe; tables use 12px vertical cell padding.
+
+---
+
+## 5. Motion System
+Motion is soft and quick. Elements decelerate into place and accelerate out. Use the tokens below; never hard-code durations.
 
 ```css
 :root {
-  /* Primary & Brand Accents */
-  --color-primary: #10b981;          /* Vibrant Emerald / Tennis Green */
-  --color-primary-hover: #059669;
-  --color-primary-light: rgba(16, 185, 129, 0.12);
-  --color-accent: #6366f1;           /* Indigo Accent */
-  --color-accent-hover: #4f46e5;
-  
-  /* Neutral / Dark Theme Backgrounds */
-  --bg-app: #0f172a;                 /* Slate 900 */
-  --bg-surface: #1e293b;             /* Slate 800 */
-  --bg-surface-elevated: #334155;    /* Slate 700 */
-  --bg-surface-glass: rgba(30, 41, 59, 0.75);
-  
-  /* Text & Typography */
-  --text-primary: #f8fafc;           /* Slate 50 */
-  --text-secondary: #94a3b8;         /* Slate 400 */
-  --text-muted: #64748b;             /* Slate 500 */
-  
-  /* Status Colors */
-  --status-pending: #f59e0b;         /* Amber 500 */
-  --status-in-progress: #3b82f6;     /* Blue 500 */
-  --status-completed: #10b981;       /* Emerald 500 */
-  --status-danger: #ef4444;          /* Red 500 */
-  --status-walkover: #8b5cf6;        /* Purple 500 */
+  /* Durations */
+  --dur-instant: 90ms;    /* press feedback, checkbox */
+  --dur-fast: 160ms;      /* hover, focus, color changes */
+  --dur-base: 260ms;      /* menus, tabs, cards, toasts */
+  --dur-slow: 420ms;      /* modals, page entrances */
+  --dur-draw: 700ms;      /* bracket line drawing */
 
-  /* Borders & Dividers */
-  --border-subtle: rgba(148, 163, 184, 0.15);
-  --border-focus: #10b981;
+  /* Easings */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);      /* default for most movement */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);        /* entrances: fast start, soft landing */
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);            /* exits */
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);  /* tiny overshoot, used sparingly */
 }
 ```
 
-### 2.2 Typography
-* **Primary Font Stack:** `-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif`
-* **Monospace / Score Stack:** `"JetBrains Mono", "SF Mono", Consolas, "Liberation Mono", monospace` (used for score displays, tiebreaks, and court times)
-* **Scale:**
-  * `Display 1` (Hero Titles): 2.5rem (40px), Bold (700)
-  * `Heading 1` (Tournament / Category Headers): 1.875rem (30px), Semi-Bold (600)
-  * `Heading 2` (Card Titles / Round Labels): 1.25rem (20px), Semi-Bold (600)
-  * `Body Regular`: 1rem (16px), Regular (400)
-  * `Body Small / Metadata`: 0.875rem (14px), Regular (400)
-  * `Badge / Micro`: 0.75rem (12px), Medium (500), Uppercase tracking +0.05em
+### 5.1 Interaction Patterns
+| Element | Behavior | Timing |
+|---|---|---|
+| Buttons | Hover: background shift. Press: `scale(0.98)`. | `--dur-fast` / `--dur-instant`, `--ease-standard` |
+| Cards and fixtures | Hover: `translateY(-2px)` and `--shadow-md`. | `--dur-base`, `--ease-out` |
+| Links and nav items | Underline grows from left (`scaleX` 0 to 1). | `--dur-fast`, `--ease-standard` |
+| Tabs | Active indicator slides to the new tab. | `--dur-base`, `--ease-standard` |
+| Inputs | Border color transition and focus ring fade in. | `--dur-fast` |
+| Dropdowns and menus | Fade in with `translateY(-6px)` to 0. | `--dur-base`, `--ease-out` |
+| Modals | Backdrop fades in with 6px blur; panel fades and scales from 0.96 to 1. Exit is 30% faster. | `--dur-slow`, `--ease-out` |
+| Toasts | Slide in from the bottom edge and fade; auto-dismiss fades out. | `--dur-base` |
+| Page and section entrance | Fade up 12px; lists stagger by 40ms per item (max 8 items). | `--dur-slow`, `--ease-out` |
+| Tournament bracket | Connector paths draw in via `stroke-dashoffset`, round by round; the winning path glows in Gold. | `--dur-draw`, `--ease-standard` |
+| Live score change | The changed digit slides up (8px) and fades in; the row briefly tints Gold then settles. | `--dur-base` |
+| Live badge | Soft pulsing ring on the Clay dot. | 1.8s loop, `ease-in-out` |
+| Skeleton loading | Linen to Stone shimmer sweep. | 1.4s loop, linear |
+| Global loader | A tennis ball bounces once per second on a gold baseline with a soft shadow that scales in sync. | 1s loop, `--ease-standard` |
 
-### 2.3 Glassmorphism & Elevation
-* **Card Elevation:** `box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.2);`
-* **Modal Elevation:** `box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4);`
-* **Glass Backdrop:** `backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);`
+### 5.2 Key Keyframes
+```css
+@keyframes fade-up   { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes modal-in  { from { opacity: 0; transform: scale(0.96) translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes draw      { to { stroke-dashoffset: 0; } }
+@keyframes live-ring { 0% { box-shadow: 0 0 0 0 rgba(181, 89, 58, 0.45); } 100% { box-shadow: 0 0 0 10px rgba(181, 89, 58, 0); } }
+@keyframes shimmer   { from { background-position: -200% 0; } to { background-position: 200% 0; } }
+@keyframes score-tick{ from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes ball-hop  { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-28px); } }
 
----
-
-## 3. Information Architecture & Navigation
-
+.bracket-connector-path { stroke-dasharray: var(--path-len); stroke-dashoffset: var(--path-len);
+  animation: draw var(--dur-draw) var(--ease-standard) forwards; animation-delay: calc(var(--round) * 160ms); }
+.skeleton { background: linear-gradient(90deg, #F2EEE4 25%, #E7E1D2 50%, #F2EEE4 75%); background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite; }
 ```
-Global Header / Nav
-├── Brand Logo & Tournament Selector
-├── Main Navigation: Tournaments | Academies | Leaderboards | Players
-└── User Actions: Search | Dark/Light Toggle | User Profile / Sign In
+
+### 5.3 Performance & Accessibility
+- Animate only `transform` and `opacity` (plus `box-shadow` and color on small elements). Never animate `width`, `height`, `top`, or `left`.
+- Add `will-change` only during an active animation.
+- **Respect reduced motion.** Under `prefers-reduced-motion: reduce`, remove movement and keep simple fades:
+```css
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  .bracket-connector-path { stroke-dashoffset: 0; }
+}
 ```
-
-### 3.1 Tournament Navigation Hub (`/t/<slug>`)
-When viewing an active tournament, a persistent contextual secondary sub-nav provides immediate access across:
-1. **Overview / Draws:** Visual bracket trees and group standings.
-2. **Order of Play:** Daily court matrix and hourly match schedule.
-3. **Participants:** Registered players, seeding list, check-in statuses.
-4. **Live Scores:** Real-time scoreboard with 5-second polling updates.
-5. **Manage (Admin Only):** Setup wizard, category creation, team drafts, match reporting.
-6. **Export:** PDF Draw, Order of Play, and Roster downloads.
+- Looping animations (live pulse, shimmer, loader) must stop when reduced motion is on or when the tab is hidden.
 
 ---
 
-## 4. Key Component Specifications
+## 6. Component Patterns
+### 6.1 Navigation & Hero
+- `.navbar`: `--gradient-court` with a `3px solid var(--accent-secondary)` baseline, 64px tall, sticky, with `--shadow-sm` after scrolling.
+- `.hero`: Court Green framing, Cormorant Garamond display headline, one Gold primary CTA and one ghost secondary button.
+- Mobile: bottom tab bar (5 items max), 56px tall, active item marked by a Gold top indicator.
 
-### 4.1 Unified Organizer Wizard
-The organizer workflow is consolidated into a 4-step progressive disclosure wizard:
-* **Step 1: Setup:** Tournament name, game type, multi-day calendar (start/end dates), daily operating hours (`court_operating_start` / `court_operating_end`), court count, and court naming.
-* **Step 2: Categories:** Modular cards to add categories (Men's Singles, Mixed Doubles, Team League). Each card exposes format selection, set/game rules, and entry fees.
-* **Step 3: Registration & Seeding:** Participant roster grid with seed assignment inputs, drag-and-drop or manual seed override, check-in switches, and payment status indicators.
-* **Step 4: Execution & Brackets:** Action bar featuring "Generate Brackets", "Reset Bracket" (safeguarded by confirmation modals), and "Launch Tournament".
+### 6.2 Buttons
+- **Primary** (`.btn-primary`): Court Green fill, Ivory text, `--radius-md`, 44px height, 20px horizontal padding.
+- **Gold** (`.btn-gold`): Champion Gold fill, Ink text. Use at most one per screen, for the single most important action.
+- **Secondary:** white fill, `--border-strong`, Ink text. **Ghost:** transparent, Court Green text, Green-tint hover.
+- **Destructive:** Danger fill with white text, always behind a confirmation.
+- **Disabled:** 45% opacity, no hover, `cursor: not-allowed`. **Loading:** label replaced by a small spinner; width is preserved so the layout does not shift.
 
-### 4.2 Interactive Geometric Bracket Visualizer
-* **Layout Structure:** Multi-column layout where each column represents a Tournament Round (Round of 32, Sweet 16, Quarter-Finals, Semi-Finals, Final).
-* **Match Node Card:**
-  * Displays participant seeds, names (or pair names), and score boxes.
-  * Winner card slot highlighted in `--color-primary` with bold typography.
-  * Loser card slot subtly dimmed (`opacity: 0.65`).
-  * Direct click opens the Admin Score Reporting Modal (for authorized organizers) or opponent comparison popup (for public viewers).
-* **Dynamic SVG Connectors:**
-  * An overlaid `<svg>` canvas calculates the exact $(x, y)$ client coordinates of match outgoing connector pins and next-round incoming connector pins.
-  * Draws smooth cubic Bézier or orthogonal step curves linking winners to subsequent rounds.
-  * Automatically recalculates on browser window resize.
+### 6.3 Forms
+- Inputs are white, 44px tall, `--border-strong` border, `--radius-sm`. Labels sit above in 13px Inter 500.
+- **Focus ring (all interactive elements):** `box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--accent-primary);` with no outline removal without this replacement.
+- Errors: Danger border, Danger-text message with an icon below the field; the field shakes 4px once (`--dur-base`) unless reduced motion is on.
 
-### 4.3 Group Stage Team League Interface
-* **Team Draft Wizard:**
-  * **Mode A (Chit Draw):** Interactive modal allowing organizers to pick players from a live unassigned pool for each team. The UI cross-validates and disables already-picked players to prevent accidental duplicates.
-  * **Mode B (Auto Tier Draft):** Auto-distributes 1 player from each Tier (A, B, C, D, E) per team with a single click, showing instant balance verification.
-* **3-Rubber Fixture Card:**
-  * Parent card represents the Team Tie (Team Alpha vs Team Beta, e.g., Target: 11 of 21 games).
-  * Collapsible sub-cards display the 3 individual Rubbers:
-    * Rubber 1: Tier A Singles
-    * Rubber 2: Doubles (Tier B + Tier C)
-    * Rubber 3: Tier D Singles
-  * Real-time sum indicator showing games won (e.g. `12 - 9`, Winner: Team Alpha).
+### 6.4 Brackets, Draws & Match Cards
+- `.tennis-match`: white card, `--radius-lg`, `--border-subtle`, `--shadow-xs`; the winner row is bold with a Green-tint background and a leading check icon.
+- `.round-title`: Court Green banner with Ivory text, uppercase 12px tracking `0.08em`.
+- `.standings-table`: Court Green header, Linen alternate rows, sticky header, right-aligned tabular numerals, hover row in Stone.
+- `.round-robin-grid`: 1px `--border-subtle` grid, current match cell highlighted with Gold tint.
+- `.bracket-connector-path`: 2px Stone by default; `.path-highlighted` is Gold with a soft glow and draws in with the motion tokens above.
+- **Live match:** Clay pill with a pulsing dot and the word "LIVE"; the card gains a 3px Gold left border.
 
-### 4.4 Order of Play (Court Matrix & Timeline)
-* **Day Selector Tabs:** Horizontal pill tabs representing Tournament Day 1, Day 2, Day 3 with match count badges.
-* **Court Columns:** Responsive horizontal grid with columns for Court 1, Court 2, etc.
-* **Match Blocks:**
-  * Display scheduled start time or "Not Before [Time]" flag.
-  * Display Category pill badge (e.g. `Men's Open Singles`).
-  * Progression Lock Indicator: A lock icon appears on downstream fixtures if feeder matches are still pending, preventing premature court dispatching.
+### 6.5 Modals, Drawers & Loader
+- `.glass-modal`, `#matchModal`, `#tierPickerModal`, `#captainsLineupModal`: white panel, `--radius-lg`, `--shadow-lg`, 24px padding, `--bg-overlay` with 6px backdrop blur. Focus is trapped, Esc closes, and focus returns to the trigger.
+- Mobile: modals become bottom sheets that slide up from the edge with a drag handle.
+- `#global-loader` (`.loader-overlay`): frosted Ivory backdrop with the ball-hop animation (section 5.1).
 
-### 4.5 Score Reporting Modal & Mobile Bottom Sheet
-* Dynamic form adapting to category rules:
-  * If **Total Games:** Two numeric inputs with real-time differential calculation.
-  * If **Tennis Sets:** Multiple set rows with game inputs and tiebreak superscript fields (e.g., Set 1: `7`-`6`, Tiebreak: `5`).
-  * If **Group Stage Rubber ($T=7$):** Validation rule requiring $G_1 + G_2 = 7$ (or 4–3 with tiebreak), with automated walkover remainder allocation.
-* **Mobile Bottom Sheet Transformation (`≤ 640px`):**
-  * Modal transitions from centered desktop dialog to an app-style bottom sheet (`inset: auto 0 0 0; max-height: 90dvh; border-radius: 1.25rem 1.25rem 0 0`).
-  * Top drag pill handle (`.mobile-sheet-handle`).
-  * Pinned sticky footer buttons (`Save Score`, `Cancel`) remaining visible above virtual keyboards.
-  * Explicit `inputmode="numeric" pattern="[0-9]*"` triggering native numeric keypad on iOS and Android.
+### 6.6 Badges, Chips & Toasts
+- Badges are pills with tint background, status text color, and an icon. Team Draft tiers A–E use distinct hues from section 2.3 plus a letter, never color alone.
+- Toasts are white with a 4px status-colored left edge, `--shadow-md`, anchored bottom-center on mobile and bottom-right on desktop, auto-dismissing after 5s with a visible hover-pause.
 
-### 4.6 Mobile Navigation Shell (Drawer & Bottom Quick Bar)
-* **Off-Canvas Slide-Out Drawer (`#navbarCollapseWrapper`):** On screens `≤ 900px`, navigation collapses into a glassmorphic right-hand drawer with frosted backdrop (`#mobileNavBackdrop`), closing upon tap-outside, `Escape` key, or navigation link tap.
-* **Thumb-Friendly Bottom Bar (`#mobileBottomBar`):** Fixed bottom navigation bar on screens `≤ 768px` offering 1-tap shortcuts for Tournaments, Leaderboard, Dashboard, and Admin.
-* **Safe-Area Compensation:** Integrated with `viewport-fit=cover` and `env(safe-area-inset-bottom)` to accommodate iPhone home indicator bars and Android gesture bars.
-
-### 4.7 Mobile UPI Intent & 1-Tap Copy (`tournament/register.html`)
-* **1-Tap Mobile UPI Intent (`#btnPayUpiApp`):** Direct `upi://pay?pa=...` deep link that launches installed UPI payment apps (GPay, PhonePe, Paytm, BHIM) directly on the user's mobile device, solving the "cannot scan on-screen QR code" mobile edge case.
-* **1-Tap Copy UPI ID:** Inline clipboard copy button with visual confirmation feedback (`✓ Copied!`).
+### 6.7 Empty & Error States
+Centered illustration-light layout: Cormorant Garamond heading, one line of Inter secondary text, and a single Primary action. Example copy: "No matches scheduled yet. Create the draw to get started."
 
 ---
 
-## 5. Responsive Behavior & Breakpoints
-
-To guarantee zero regression or visual change to the desktop experience, all mobile rules are strictly encapsulated within targeted media queries:
-
-| Breakpoint | Target Devices | Layout Adaptations & Mobile Experience |
-| :--- | :--- | :--- |
-| **Small Mobile (`≤ 480px`)** | iPhone SE, small Androids (320px–414px) | Single-column fluid grids (`minmax(min(100%, 280px), 1fr)`). Bottom sheet modals (`max-height: 90dvh`). Auto-compact match density. Strict `font-size: 16px !important;` on form controls to prevent iOS Safari auto-zoom. |
-| **Standard Mobile (`481px – 768px`)** | iPhone 14/15/16 Pro, large Androids | Off-canvas drawer nav, sticky bottom quick bar, horizontal momentum scrolling on tables with sticky rank/player columns, touch-panning brackets with round-by-round pill tabs. |
-| **Tablet (`769px – 992px`)** | iPads & Foldables | Adaptive 2-column dashboards, horizontal category tabs, desktop top navbar. |
-| **Desktop (`> 992px`)** | Laptops & Monitors | **100% Unaltered:** Multi-column bracket tree with SVG vector curves, side-by-side court matrix, full 2-column organizer layout, and centered modal dialogs. |
-
-### 5.1 Knockout Bracket Touch Navigation
-* **Hardware-Accelerated Touch Pan:** Smooth drag gesture listeners (`touchstart`, `touchmove`, `touchend`) on `.bracket-viewport` allowing fluid navigation across large draws.
-* **Round-by-Round Navigation Tabs:** Swipeable pill bar on mobile (`Round of 16` | `Quarterfinals` | `Semifinals` | `Finals`) that smoothly auto-scrolls to center the target round without breaking SVG connector geometry.
-* **Preservation of Horizontal Bracket Geometry:** Strict avoidance of vertical round stacking, preserving SVG bezier connector coordinates across rounds.
+## 7. Print & PDF Exports (`print_layout.html`, `export/*.html`)
+Clean `#FFFFFF` paper with `#14221C` typography, `#0F3D2E` section, round, and court banners, `#C9A55C` baseline dividers, `#F2EEE4` and `#E7E1D2` row shading, and the stacked logo (light version) in the header. No shadows, no animation, and no gradients in print. Floating print preview controls use `#0F3D2E` with `#FAF8F3` text.
 
 ---
 
-## 6. Accessibility & Usability (a11y)
-* High contrast ratio (> 4.5:1) across all text elements against dark slate backgrounds.
-* All interactive match cards, tabs, and buttons feature explicit ARIA attributes (`role="tab"`, `aria-selected`, `aria-expanded`).
-* Visible focus indicators (`outline: 2px solid var(--color-primary); outline-offset: 2px;`) for keyboard navigation.
-* Minimum touch target sizes of 44×44px (or 48×48px) for thumb-friendly mobile interaction.
+## 8. Logo & Brand Marks
+- **Monogram:** serif "B" inside a double Champion Gold ring, resting on a gold baseline with a small ball dot. On Court Green use Gold ring and Ivory letter; on light surfaces use Gold ring and Court Green letter.
+- **Wordmark:** "THE" small and tracked in Gold (or Antique Gold on light), "Baseline Society" in Cormorant Garamond 600.
+- **Minimum sizes:** full logo 120px wide; monogram 40px. Below 40px use the letter only.
+- **Clear space:** at least the height of the "B" on all sides.
+- **Tagline:** "Every draw, every court, every champion."

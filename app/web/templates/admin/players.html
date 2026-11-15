@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Player Directory - TourneyPro Admin{% endblock %}
+{% block title %}Player Directory - The Baseline Society Admin{% endblock %}
 
 {% block content %}
 <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 2rem;">
@@ -18,7 +18,7 @@
         <div class="card-body">
             <form action="{{ url_for('player.admin_players') }}" method="GET" style="display: flex; gap: 1rem; align-items: center;">
                 <div style="flex: 1;">
-                    <input type="text" name="search" class="form-input" placeholder="Search by Player Name or Registration No..." value="{{ search_query }}" style="width: 100%; border: 1px solid rgba(255,255,255,0.2); background: var(--bg-secondary);">
+                    <input type="text" name="search" class="form-input" placeholder="Search by Player Name or Registration No..." value="{{ search_query }}" style="width: 100%; border: 1px solid var(--border-strong); background: var(--bg-primary);">
                 </div>
                 <button type="submit" class="btn btn-primary" style="padding: 0.75rem 2rem;">Search</button>
                 {% if search_query %}
@@ -34,7 +34,7 @@
             {% if players %}
                 <table style="width: 100%; border-collapse: collapse; text-align: left;">
                     <thead>
-                        <tr style="border-bottom: 2px solid rgba(255,255,255,0.1); color: var(--text-secondary);">
+                        <tr style="border-bottom: 2px solid var(--border-color); background: var(--bg-secondary); color: var(--text-secondary);">
                             <th style="padding: 1rem 0.5rem;">Registration No</th>
                             <th style="padding: 1rem 0.5rem;">Name</th>
                             <th style="padding: 1rem 0.5rem;">Gender</th>
@@ -46,7 +46,7 @@
                     </thead>
                     <tbody>
                         {% for player in players %}
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.02)'" onmouseout="this.style.backgroundColor='transparent'">
+                            <tr style="border-bottom: 1px solid var(--border-subtle); transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='var(--bg-hover)'" onmouseout="this.style.backgroundColor='transparent'">
                                 <td style="padding: 1rem 0.5rem; font-family: monospace; color: var(--accent-primary);">{{ player.registration_no or 'N/A' }}</td>
                                 <td style="padding: 1rem 0.5rem; font-weight: bold; color: var(--text-primary);">{{ player.name }}</td>
                                 <td style="padding: 1rem 0.5rem; color: var(--text-secondary);">{{ player.gender }}</td>

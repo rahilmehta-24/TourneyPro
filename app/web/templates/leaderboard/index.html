@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Leaderboard - TourneyPro{% endblock %}
+{% block title %}Leaderboard - The Baseline Society{% endblock %}
 
 {% block content %}
 <style>
-    .badge-national { background: #ffd700; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
-    .badge-state { background: #10b981; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
+    .badge-national { background: #C9A55C; color: #0B2B20; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
+    .badge-state { background: #047857; color: #FFFFFF; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
 </style>
 <div class="container">
     <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
@@ -73,10 +73,10 @@
     {% endif %}
 
     <!-- Leaderboard Table -->
-    <div class="table-container" style="background: var(--bg-secondary); border-radius: var(--radius-lg); overflow-x: auto; -webkit-overflow-scrolling: touch;">
+    <div class="table-container" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); overflow-x: auto; -webkit-overflow-scrolling: touch; box-shadow: var(--shadow-sm);">
         <table style="width: 100%; border-collapse: collapse; text-align: left;">
             <thead>
-                <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <tr style="background: var(--bg-secondary); border-bottom: 2px solid var(--border-color);">
                     <th style="padding: 1rem;">Rank</th>
                     <th style="padding: 1rem;">Player</th>
                     <th style="padding: 1rem;">Category</th>
@@ -89,11 +89,11 @@
             </thead>
             <tbody>
                 {% for player in players %}
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                    <td style="padding: 1rem; font-weight: bold; color: var(--accent-primary);">#{{ loop.index }}</td>
+                <tr style="border-bottom: 1px solid var(--border-subtle);">
+                    <td style="padding: 1rem; font-weight: bold; color: var(--accent-primary-text);">#{{ loop.index }}</td>
                     <td style="padding: 1rem;">
                         <div style="display: inline-flex; align-items: center; gap: 5px;">
-                            <a href="{{ url_for('player.view_player', player_id=player.id) }}" style="font-weight: 500; color: var(--accent-primary); text-decoration: none;" class="hover-underline">{{ player.name }}</a>
+                            <a href="{{ url_for('player.view_player', player_id=player.id) }}" style="font-weight: 600; color: var(--accent-primary-text); text-decoration: none;" class="hover-underline">{{ player.name }}</a>
                             <span onclick="togglePlayerDetails('{{ player.id }}')" style="font-size: 0.8rem; cursor: pointer; color: var(--text-secondary); padding: 0 5px;" title="Toggle Details">▼</span>
                         </div>
                         <div style="font-size: 0.85rem; margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px;">
@@ -107,28 +107,28 @@
                         </div>
                     </td>
                     <td style="padding: 1rem; color: var(--text-secondary);">{{ player.age_category }} {{ player.gender }}</td>
-                    <td style="padding: 1rem; font-weight: bold; color: var(--accent-secondary);">{{ player.total_points }}</td>
+                    <td style="padding: 1rem; font-weight: bold; color: var(--accent-secondary-text);">{{ player.total_points }}</td>
                     <td style="padding: 1rem; color: var(--text-secondary);">{{ player.matches_won }}W - {{ player.matches_lost }}L</td>
                     {% if current_user and current_user.role == 'superadmin' %}
                     <td style="padding: 1rem; text-align: right; white-space: nowrap;">
                         <button onclick="openAddPointsModal('{{ player.id }}', '{{ player.name }}')" class="btn btn-small btn-secondary">+ Add Points</button>
                         <button onclick="openEditPlayerModal('{{ player.id }}', '{{ player.name|escape }}', '{{ player.gender }}', '{{ player.age_category }}')" class="btn btn-small btn-secondary" style="margin-left: 0.25rem;">✏️ Edit</button>
                         <form method="POST" action="{{ url_for('leaderboard.delete_player', player_id=player.id) }}" style="display: inline-block; margin-left: 0.25rem; margin-bottom: 0;" onsubmit="return confirm('Are you sure you want to delete {{ player.name|escape }}? This cannot be undone.');">
-                            <button type="submit" class="btn btn-small" style="background: #ef4444; color: white;" aria-label="Delete player {{ player.name|escape }}" title="Delete Player">🗑️</button>
+                            <button type="submit" class="btn btn-small" style="background: var(--accent-danger); color: #FFFFFF;" aria-label="Delete player {{ player.name|escape }}" title="Delete Player">🗑️</button>
                         </form>
                     </td>
                     {% endif %}
                 </tr>
-                <tr id="player-details-{{ player.id }}" style="display: none; background: rgba(0,0,0,0.2);">
+                <tr id="player-details-{{ player.id }}" style="display: none; background: var(--bg-secondary);">
                     <td colspan="{% if current_user and current_user.role == 'superadmin' %}6{% else %}5{% endif %}" style="padding: 1rem 1rem 1.5rem 3rem;">
                         <div style="font-size: 0.9rem;">
-                            <strong style="color: var(--accent-primary);">Points Breakdown:</strong>
+                            <strong style="color: var(--accent-primary-text);">Points Breakdown:</strong>
                             <ul style="list-style: none; padding: 0; margin-top: 0.75rem; margin-bottom: 0;">
                                 {% for record in player.tournament_records|sort(attribute='date_recorded', reverse=True) %}
-                                <li style="margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px dashed rgba(255,255,255,0.1);">
+                                <li style="margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px dashed var(--border-color);">
                                     - <strong>{{ record.tournament_name }}</strong> 
                                     <span style="color: var(--text-secondary);">({{ record.level }}, {{ record.round_reached }})</span> : 
-                                    <span style="color: var(--accent-secondary); font-weight: bold;">+{{ record.points_earned }} pts</span>
+                                    <span style="color: var(--accent-secondary-text); font-weight: bold;">+{{ record.points_earned }} pts</span>
                                     <span style="color: var(--text-muted); font-size: 0.8rem; margin-left: 8px;"> ({{ record.date_recorded.strftime('%Y-%m-%d') }})</span>
                                 </li>
                                 {% else %}
@@ -307,8 +307,8 @@
 </script>
 
     <!-- Points Distribution Modal -->
-    <div id="pointsModal" class="modal-backdrop" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
-        <div class="modal-content" style="background: var(--bg-secondary); padding: 2rem; border-radius: var(--radius-lg); width: 100%; max-width: 400px; position: relative;">
+    <div id="pointsModal" class="modal-backdrop" role="dialog" aria-modal="true" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(11, 43, 32, 0.52); backdrop-filter: blur(4px); z-index: 1000; justify-content: center; align-items: center;">
+        <div class="modal-content" style="background: var(--bg-card); border: 1px solid var(--border-strong); border-top: 4px solid var(--accent-secondary); padding: 2rem; border-radius: var(--radius-lg); width: 100%; max-width: 400px; position: relative; box-shadow: var(--shadow-lg);">
             <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                 <h2 style="margin: 0;">Tournament Points Distribution</h2>
                 <button type="button" class="close-btn" onclick="document.getElementById('pointsModal').style.display='none'" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</button>
@@ -316,43 +316,43 @@
             <div class="modal-body">
                 <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
                     <thead>
-                        <tr style="border-bottom: 2px solid rgba(255,255,255,0.1);">
+                        <tr style="border-bottom: 2px solid var(--border-color);">
                             <th style="padding: 0.75rem; text-align: left;">Round Reached</th>
                             <th style="padding: 0.75rem; text-align: right;">Points Awarded</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <tr style="border-bottom: 1px solid var(--border-subtle);">
                             <td style="padding: 0.75rem;">🥇 Winner</td>
-                            <td style="padding: 0.75rem; text-align: right; font-weight: bold; color: var(--accent-secondary);">650</td>
+                            <td style="padding: 0.75rem; text-align: right; font-weight: bold; color: var(--accent-secondary-text);">650</td>
                         </tr>
-                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <tr style="border-bottom: 1px solid var(--border-subtle);">
                             <td style="padding: 0.75rem;">🥈 Runner-Up</td>
-                            <td style="padding: 0.75rem; text-align: right; font-weight: bold; color: var(--accent-secondary);">400</td>
+                            <td style="padding: 0.75rem; text-align: right; font-weight: bold; color: var(--accent-secondary-text);">400</td>
                         </tr>
-                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <tr style="border-bottom: 1px solid var(--border-subtle);">
                             <td style="padding: 0.75rem;">🥉 Semi-Final</td>
-                            <td style="padding: 0.75rem; text-align: right; font-weight: bold; color: var(--accent-secondary);">250</td>
+                            <td style="padding: 0.75rem; text-align: right; font-weight: bold; color: var(--accent-secondary-text);">250</td>
                         </tr>
-                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <tr style="border-bottom: 1px solid var(--border-subtle);">
                             <td style="padding: 0.75rem;">Quarter-Final</td>
-                            <td style="padding: 0.75rem; text-align: right; font-weight: bold; color: var(--accent-secondary);">160</td>
+                            <td style="padding: 0.75rem; text-align: right; font-weight: bold; color: var(--accent-secondary-text);">160</td>
                         </tr>
-                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <tr style="border-bottom: 1px solid var(--border-subtle);">
                             <td style="padding: 0.75rem;">Round 4 (Top 16)</td>
-                            <td style="padding: 0.75rem; text-align: right; font-weight: bold; color: var(--accent-secondary);">100</td>
+                            <td style="padding: 0.75rem; text-align: right; font-weight: bold; color: var(--accent-secondary-text);">100</td>
                         </tr>
-                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <tr style="border-bottom: 1px solid var(--border-subtle);">
                             <td style="padding: 0.75rem;">Round 3 (Top 32)</td>
-                            <td style="padding: 0.75rem; text-align: right; font-weight: bold; color: var(--accent-secondary);">60</td>
+                            <td style="padding: 0.75rem; text-align: right; font-weight: bold; color: var(--accent-secondary-text);">60</td>
                         </tr>
-                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <tr style="border-bottom: 1px solid var(--border-subtle);">
                             <td style="padding: 0.75rem;">Round 2 (Top 64)</td>
-                            <td style="padding: 0.75rem; text-align: right; font-weight: bold; color: var(--accent-secondary);">30</td>
+                            <td style="padding: 0.75rem; text-align: right; font-weight: bold; color: var(--accent-secondary-text);">30</td>
                         </tr>
                         <tr>
                             <td style="padding: 0.75rem;">Round 1 / Participation</td>
-                            <td style="padding: 0.75rem; text-align: right; font-weight: bold; color: var(--accent-secondary);">10</td>
+                            <td style="padding: 0.75rem; text-align: right; font-weight: bold; color: var(--accent-secondary-text);">10</td>
                         </tr>
                     </tbody>
                 </table>

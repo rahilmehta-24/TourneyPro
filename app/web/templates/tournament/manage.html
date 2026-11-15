@@ -94,7 +94,7 @@
                 <button type="button" id="tabBtnPlayers" onclick="switchDashboardTab('players')" style="padding: 0.5rem 1.1rem; font-size: 0.85rem; font-weight: 600; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-secondary); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 0.35rem;">
                     👥 Players &amp; Approvals ({{ total_players }})
                     {% if pending_registrations %}
-                    <span style="background: var(--accent-warning); color: #000; font-size: 0.72rem; padding: 1px 6px; border-radius: 9999px; font-weight: 700;">
+                    <span style="background: var(--accent-warning); color: #FFFFFF; font-size: 0.72rem; padding: 1px 6px; border-radius: 9999px; font-weight: 700;">
                         {{ pending_registrations|length }}
                     </span>
                     {% endif %}
@@ -225,7 +225,7 @@
 
                         <!-- Dynamic Daily Operating Hours Box -->
                         <div id="dynamicDailyScheduleSection" style="margin-bottom: 1.25rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.85rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.85rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.5rem;">
                                 <div>
                                     <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-primary); margin: 0;">
                                         ⏰ Dynamic Daily Hours (Per Day)
@@ -284,10 +284,10 @@
                 
                 <!-- PENDING APPROVALS SECTION (Displayed if any pending) -->
                 {% if pending_registrations %}
-                <div class="card" style="background: rgba(245, 158, 11, 0.05); border: 1px solid var(--accent-warning); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1.25rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; border-bottom: 1px solid rgba(245, 158, 11, 0.2); padding-bottom: 0.5rem;">
-                        <h3 style="margin: 0; color: var(--accent-warning); font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 0.4rem;">
-                            ⏳ Pending Registrations <span style="background: var(--accent-warning); color: #000; padding: 1px 7px; border-radius: 9999px; font-size: 0.75rem;">{{ pending_registrations|length }}</span>
+                <div class="card" style="background: rgba(201, 165, 92, 0.12); border: 1px solid #C9A55C; border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1.25rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; border-bottom: 1px solid rgba(122, 95, 30, 0.25); padding-bottom: 0.5rem;">
+                        <h3 style="margin: 0; color: #7A5F1E; font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 0.4rem;">
+                            ⏳ Pending Registrations <span style="background: var(--accent-warning); color: #FFFFFF; padding: 1px 7px; border-radius: 9999px; font-size: 0.75rem;">{{ pending_registrations|length }}</span>
                         </h3>
                         <span style="font-size: 0.8rem; color: var(--text-secondary);">Review and approve player signups</span>
                     </div>
@@ -313,12 +313,12 @@
                                     <span>Fee: <strong style="color: var(--accent-success);">₹{{ '%.0f'|format(reg.amount_due) }}</strong></span>
                                     {% if reg.payment_method == 'cash' %}
                                     <span>&bull;</span>
-                                    <span style="background: rgba(16, 185, 129, 0.12); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 1px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
+                                    <span style="background: rgba(16, 185, 129, 0.12); color: #065F46; border: 1px solid rgba(16, 185, 129, 0.3); padding: 1px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
                                         💵 Cash on Arrival
                                     </span>
                                     {% elif reg.transaction_id %}
                                     <span>&bull;</span>
-                                    <span style="background: rgba(59, 130, 246, 0.12); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); padding: 1px 6px; border-radius: 4px; font-size: 0.75rem; font-family: monospace;">
+                                    <span style="background: rgba(15, 61, 46, 0.10); color: #0F3D2E; border: 1px solid rgba(15, 61, 46, 0.28); padding: 1px 6px; border-radius: 4px; font-size: 0.75rem; font-family: monospace;">
                                         UTR: {{ reg.transaction_id }}
                                     </span>
                                     {% endif %}
@@ -390,7 +390,7 @@
                             </thead>
                             <tbody>
                                 {% for participant in participants %}
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                                <tr style="border-bottom: 1px solid var(--border-subtle);">
                                     <td style="padding: 0.6rem 0.75rem; font-weight: 700; color: var(--text-secondary);">
                                         #{{ participant.seed or loop.index }}
                                     </td>
@@ -418,15 +418,15 @@
                                     </td>
                                     <td style="padding: 0.6rem 0.75rem;">
                                         {% if participant.payment_method == 'online' %}
-                                        <span style="display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.73rem; background: rgba(59, 130, 246, 0.12); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); padding: 2px 7px; border-radius: 9999px; font-weight: 600;">
+                                        <span style="display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.73rem; background: rgba(15, 61, 46, 0.10); color: #0F3D2E; border: 1px solid rgba(15, 61, 46, 0.28); padding: 2px 7px; border-radius: 9999px; font-weight: 600;">
                                             💳 Online
                                         </span>
                                         {% elif participant.payment_method == 'cash' %}
-                                        <span style="display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.73rem; background: rgba(16, 185, 129, 0.12); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 2px 7px; border-radius: 9999px; font-weight: 600;">
+                                        <span style="display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.73rem; background: rgba(16, 185, 129, 0.12); color: #065F46; border: 1px solid rgba(16, 185, 129, 0.3); padding: 2px 7px; border-radius: 9999px; font-weight: 600;">
                                             💵 Cash
                                         </span>
                                         {% elif participant.payment_method == 'free' %}
-                                        <span style="font-size: 0.73rem; background: rgba(255, 255, 255, 0.05); color: var(--text-muted); border: 1px solid var(--border-color); padding: 2px 7px; border-radius: 9999px;">
+                                        <span style="font-size: 0.73rem; background: var(--bg-secondary); color: var(--text-muted); border: 1px solid var(--border-color); padding: 2px 7px; border-radius: 9999px;">
                                             Free
                                         </span>
                                         {% else %}
@@ -802,8 +802,8 @@
 </div>
 
 <!-- RENAME CATEGORY MODAL -->
-<div id="renameCategoryModal" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 1rem;">
-    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); width: 100%; max-width: 440px; padding: 1.5rem; box-shadow: var(--shadow-md);">
+<div id="renameCategoryModal" role="dialog" aria-modal="true" style="display: none; position: fixed; inset: 0; background: rgba(11, 43, 32, 0.52); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 1rem;">
+    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-top: 4px solid var(--accent-secondary); border-radius: var(--radius-lg); width: 100%; max-width: 440px; padding: 1.5rem; box-shadow: var(--shadow-md);">
         <h3 style="margin: 0 0 0.5rem; font-size: 1.2rem; color: var(--text-primary); font-weight: 700;">
             ✏️ Rename Category
         </h3>
@@ -948,7 +948,7 @@ function copyShareLink(url, btn) {
                     const pDays = parseInt(pill.getAttribute('data-days'), 10);
                     if (pDays === curDur) {
                         pill.style.background = 'var(--accent-primary)';
-                        pill.style.color = '#fff';
+                        pill.style.color = '#FDFBF6';
                         pill.style.borderColor = 'var(--accent-primary)';
                         pill.setAttribute('aria-selected', 'true');
                     } else {
@@ -1244,7 +1244,7 @@ function toggleApprovalMethod(method) {
         if (radioOnline) radioOnline.checked = true;
         if (labelOnline) {
             labelOnline.style.borderColor = 'var(--accent-primary)';
-            labelOnline.style.background = 'rgba(59, 130, 246, 0.08)';
+            labelOnline.style.background = 'rgba(15, 61, 46, 0.08)';
             labelOnline.style.boxShadow = '0 0 0 1px var(--accent-primary)';
         }
         if (labelCash) {
@@ -1313,8 +1313,8 @@ document.addEventListener('keydown', function(e) {
 </script>
 
 <!-- ADD PLAYER / LATE ENTRY MODAL -->
-<div id="addLatePlayerModal" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 1rem;">
-    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; padding: 1.75rem; box-shadow: var(--shadow-lg);">
+<div id="addLatePlayerModal" role="dialog" aria-modal="true" style="display: none; position: fixed; inset: 0; background: rgba(11, 43, 32, 0.52); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 1rem;">
+    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-top: 4px solid var(--accent-secondary); border-radius: var(--radius-lg); width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; padding: 1.75rem; box-shadow: var(--shadow-lg);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
             <div>
                 <h3 style="margin: 0; font-size: 1.2rem; color: var(--text-primary); font-weight: 700;">
@@ -1422,8 +1422,8 @@ document.addEventListener('keydown', function(e) {
 </div>
 
 <!-- REGISTRATION APPROVAL MODAL (ONLINE & CASH APPROVAL BOX) -->
-<div id="approveRegistrationModal" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(5px); z-index: 10000; align-items: center; justify-content: center; padding: 1rem;">
-    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); width: 100%; max-width: 500px; padding: 1.5rem; box-shadow: var(--shadow-lg);">
+<div id="approveRegistrationModal" role="dialog" aria-modal="true" style="display: none; position: fixed; inset: 0; background: rgba(11, 43, 32, 0.55); backdrop-filter: blur(5px); z-index: 10000; align-items: center; justify-content: center; padding: 1rem;">
+    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-top: 4px solid var(--accent-secondary); border-radius: var(--radius-lg); width: 100%; max-width: 500px; padding: 1.5rem; box-shadow: var(--shadow-lg);">
         
         <!-- Header -->
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
@@ -1451,9 +1451,9 @@ document.addEventListener('keydown', function(e) {
                     <div id="modalAmountDisplay" style="font-size: 1.25rem; font-weight: 800; color: var(--accent-success); margin-top: 0.1rem;">₹0</div>
                 </div>
             </div>
-            <div id="modalSubmittedUtrBanner" style="display: none; margin-top: 0.65rem; padding-top: 0.5rem; border-top: 1px solid rgba(255, 255, 255, 0.05); font-size: 0.78rem; color: var(--text-secondary);">
+            <div id="modalSubmittedUtrBanner" style="display: none; margin-top: 0.65rem; padding-top: 0.5rem; border-top: 1px solid var(--border-subtle); font-size: 0.78rem; color: var(--text-secondary);">
                 <span>Player Submitted UTR:</span>
-                <span id="modalSubmittedUtrVal" style="font-family: monospace; font-weight: 700; color: var(--accent-primary); background: rgba(59, 130, 246, 0.1); padding: 1px 6px; border-radius: 4px; margin-left: 0.35rem;">-</span>
+                <span id="modalSubmittedUtrVal" style="font-family: monospace; font-weight: 700; color: var(--accent-primary-text); background: rgba(15, 61, 46, 0.10); padding: 1px 6px; border-radius: 4px; margin-left: 0.35rem;">-</span>
             </div>
         </div>
 
@@ -1470,7 +1470,7 @@ document.addEventListener('keydown', function(e) {
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
                     
                     <!-- Online Option Card -->
-                    <label id="labelPayOnline" onclick="toggleApprovalMethod('online')" style="cursor: pointer; border: 2px solid var(--accent-primary); background: rgba(59, 130, 246, 0.08); border-radius: var(--radius-md); padding: 0.85rem; display: flex; flex-direction: column; gap: 0.3rem; transition: all 0.15s ease;">
+                    <label id="labelPayOnline" onclick="toggleApprovalMethod('online')" style="cursor: pointer; border: 2px solid var(--accent-primary); background: rgba(15, 61, 46, 0.08); border-radius: var(--radius-md); padding: 0.85rem; display: flex; flex-direction: column; gap: 0.3rem; transition: all 0.15s ease;">
                         <div style="display: flex; align-items: center; justify-content: space-between;">
                             <span style="font-weight: 700; font-size: 0.92rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.35rem;">
                                 💳 Online
@@ -1499,7 +1499,7 @@ document.addEventListener('keydown', function(e) {
             </div>
 
             <!-- Conditional Section: Online Payment Fields -->
-            <div id="onlinePaymentFields" style="display: block; background: rgba(59, 130, 246, 0.04); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: var(--radius-md); padding: 0.85rem;">
+            <div id="onlinePaymentFields" style="display: block; background: rgba(15, 61, 46, 0.06); border: 1px solid rgba(15, 61, 46, 0.22); border-radius: var(--radius-md); padding: 0.85rem;">
                 <label for="modalTxIdInput" style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">
                     UTR / Transaction Reference ID
                 </label>
@@ -1510,8 +1510,8 @@ document.addEventListener('keydown', function(e) {
             </div>
 
             <!-- Conditional Section: Cash Payment Fields -->
-            <div id="cashPaymentFields" style="display: none; background: rgba(16, 185, 129, 0.04); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: var(--radius-md); padding: 0.85rem;">
-                <div style="font-size: 0.82rem; color: #10b981; font-weight: 600; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.35rem;">
+            <div id="cashPaymentFields" style="display: none; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.28); border-radius: var(--radius-md); padding: 0.85rem;">
+                <div style="font-size: 0.82rem; color: #065F46; font-weight: 600; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.35rem;">
                     💵 Cash Payment Confirmation
                 </div>
                 <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.65rem;">

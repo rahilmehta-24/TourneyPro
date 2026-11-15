@@ -76,7 +76,7 @@
         </a>
         {% for cat in tournament.categories %}
         <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=cat.id) }}" class="btn btn-sm btn-secondary" style="border-radius: 9999px; white-space: nowrap; padding: 0.4rem 1rem; font-size: 0.85rem; font-weight: 500;">
-            {{ cat.name }} {% if cat.status == 'in_progress' %}<span style="color: #ef4444; font-size: 0.75rem;">● Live</span>{% elif cat.status == 'completed' %}<span style="color: #10b981; font-size: 0.75rem;">✓ Done</span>{% endif %}
+            {{ cat.name }} {% if cat.status == 'in_progress' %}<span style="color: var(--accent-tertiary-text); font-size: 0.75rem; font-weight: 700;">● Live</span>{% elif cat.status == 'completed' %}<span style="color: #065F46; font-size: 0.75rem; font-weight: 700;">✓ Done</span>{% endif %}
         </a>
         {% endfor %}
         <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug) }}" class="btn btn-sm btn-secondary" style="border-radius: 9999px; white-space: nowrap; padding: 0.4rem 1rem; font-size: 0.85rem; font-weight: 500;" id="btnOrderOfPlayTab" data-turbo="false">
@@ -87,10 +87,10 @@
     <!-- 🏆 CHAMPIONS PODIUM / HALL OF FAME -->
     {% set completed_cats = tournament.categories|selectattr('status', 'equalto', 'completed')|list %}
     {% if completed_cats %}
-    <div class="podium-section" style="margin: 2rem 0; background: linear-gradient(180deg, rgba(255, 215, 0, 0.05) 0%, rgba(0,0,0,0) 100%); border-radius: var(--radius-lg); padding: 2rem 1.5rem; border: 1px solid rgba(255, 215, 0, 0.2);">
+    <div class="podium-section" style="margin: 2rem 0; background: linear-gradient(180deg, rgba(201, 165, 92, 0.12) 0%, rgba(253, 251, 246, 0) 100%); border-radius: var(--radius-lg); padding: 2rem 1.5rem; border: 1px solid rgba(201, 165, 92, 0.42);">
         <div style="text-align: center; margin-bottom: 2rem;">
-            <span style="font-size: 0.85rem; letter-spacing: 2px; text-transform: uppercase; color: #ffd700; font-weight: 700;">Hall of Fame</span>
-            <h2 style="font-size: 2rem; margin: 0.25rem 0; color: var(--text-primary); font-weight: 800;">🏆 Tournament Champions</h2>
+            <span style="font-size: 0.85rem; letter-spacing: 2px; text-transform: uppercase; color: #7A5F1E; font-weight: 700;">Hall of Fame</span>
+            <h2 style="font-family: var(--font-display); font-size: 2.2rem; margin: 0.25rem 0; color: var(--text-primary); font-weight: 600;">🏆 Tournament Champions</h2>
             <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">Celebrating division champions and finalists</p>
         </div>
 
@@ -98,22 +98,22 @@
             {% for cat in completed_cats %}
             {% set champ = cat.participants|selectattr('final_rank', 'equalto', 1)|first %}
             {% set runner_up = cat.participants|selectattr('final_rank', 'equalto', 2)|first %}
-            <div class="podium-card winner-card" style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 1.5rem; border: 1px solid var(--border-color); border-top: 4px solid #FFD700; box-shadow: 0 4px 15px rgba(0,0,0,0.15); text-align: center;">
-                <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-primary); font-weight: 600; margin-bottom: 0.5rem;">{{ cat.name }}</div>
+            <div class="podium-card winner-card" style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 1.5rem; border: 1px solid var(--border-color); border-top: 4px solid var(--accent-secondary); box-shadow: var(--shadow-md); text-align: center;">
+                <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-primary-text); font-weight: 700; margin-bottom: 0.5rem;">{{ cat.name }}</div>
                 <div style="font-size: 2.2rem; margin-bottom: 0.25rem;">🥇</div>
-                <div style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1.5px; color: #ffd700; font-weight: 700;">Champion</div>
+                <div style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1.5px; color: #7A5F1E; font-weight: 700;">Champion</div>
                 <div style="font-size: 1.4rem; font-weight: 800; color: var(--text-primary); margin: 0.25rem 0 0.5rem;">
                     {{ champ.name if champ else 'TBD' }}
                 </div>
                 {% if champ and champ.manual_seed %}
-                <span style="font-size: 0.75rem; background: rgba(255,215,0,0.15); color: #ffd700; padding: 0.15rem 0.5rem; border-radius: 9999px;">Seed #{{ champ.manual_seed }}</span>
+                <span style="font-size: 0.75rem; background: rgba(201, 165, 92, 0.20); color: #7A5F1E; border: 1px solid rgba(122, 95, 30, 0.35); padding: 0.15rem 0.5rem; border-radius: 9999px; font-weight: 600;">Seed #{{ champ.manual_seed }}</span>
                 {% elif champ and champ.seed %}
-                <span style="font-size: 0.75rem; background: rgba(255,215,0,0.15); color: #ffd700; padding: 0.15rem 0.5rem; border-radius: 9999px;">Seed #{{ champ.seed }}</span>
+                <span style="font-size: 0.75rem; background: rgba(201, 165, 92, 0.20); color: #7A5F1E; border: 1px solid rgba(122, 95, 30, 0.35); padding: 0.15rem 0.5rem; border-radius: 9999px; font-weight: 600;">Seed #{{ champ.seed }}</span>
                 {% endif %}
 
                 {% if runner_up %}
                 <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
-                    <span style="color: #c0c0c0; font-weight: 600;">🥈 Runner-Up</span>
+                    <span style="color: var(--text-secondary); font-weight: 600;">🥈 Runner-Up</span>
                     <span style="color: var(--text-primary); font-weight: 600;">{{ runner_up.name }}</span>
                 </div>
                 {% endif %}
@@ -265,16 +265,16 @@
 
             <div data-category="{{ category.id }}" class="category-leaderboard-card"
                 style="min-width: 250px; background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border-color); overflow: hidden;">
-                <div style="background: var(--gradient-primary); padding: 1rem; text-align: center;">
-                    <h3 style="margin: 0; color: var(--text-primary); font-size: 1.125rem; font-weight: 700;">{{ category.name }}</h3>
+                <div style="background: var(--gradient-court); border-bottom: 2px solid var(--accent-secondary); padding: 1rem; text-align: center;">
+                    <h3 style="margin: 0; color: #FDFBF6; font-family: var(--font-display); font-size: 1.25rem; font-weight: 600;">{{ category.name }}</h3>
                 </div>
 
                 <div style="padding: 0;">
                     {% set winner = category.participants | selectattr('final_rank', 'equalto', 1) | first %}
                     {% if winner %}
                     <div style="border-bottom: 1px solid var(--border-color);">
-                        <div style="padding: 0.75rem 1rem; background: rgba(255,215,0,0.1); border-left: 3px solid #FFD700;">
-                            <div style="font-weight: 700; font-size: 0.875rem; color: #FFD700; margin-bottom: 0.25rem;">
+                        <div style="padding: 0.75rem 1rem; background: rgba(201, 165, 92, 0.16); border-left: 3px solid #C9A55C;">
+                            <div style="font-weight: 700; font-size: 0.875rem; color: #7A5F1E; margin-bottom: 0.25rem;">
                                 🥇 CHAMPION</div>
                             <div style="color: var(--text-primary); font-weight: 600;">{{ winner.name }}</div>
                         </div>
@@ -284,8 +284,8 @@
                     {% set runner_up = category.participants | selectattr('final_rank', 'equalto', 2) | first %}
                     {% if runner_up %}
                     <div style="border-bottom: 1px solid var(--border-color);">
-                        <div style="padding: 0.75rem 1rem; background: rgba(192,192,192,0.1); border-left: 3px solid #C0C0C0;">
-                            <div style="font-weight: 700; font-size: 0.875rem; color: #C0C0C0; margin-bottom: 0.25rem;">
+                        <div style="padding: 0.75rem 1rem; background: rgba(85, 105, 94, 0.10); border-left: 3px solid #55695E;">
+                            <div style="font-weight: 700; font-size: 0.875rem; color: #2F4A3E; margin-bottom: 0.25rem;">
                                 🥈 RUNNER-UP</div>
                             <div style="color: var(--text-primary); font-weight: 600;">{{ runner_up.name }}</div>
                         </div>
@@ -296,8 +296,8 @@
                     {% set sf2 = category.participants | selectattr('final_rank', 'equalto', 4) | list %}
                     {% set sf_combined = sf1 + sf2 %}
                     {% if sf_combined %}
-                    <div style="padding: 0.75rem 1rem; background: rgba(205,127,50,0.1); border-left: 3px solid #cd7f32;">
-                        <div style="font-weight: 700; font-size: 0.875rem; color: #cd7f32; margin-bottom: 0.5rem;">
+                    <div style="padding: 0.75rem 1rem; background: rgba(181, 89, 58, 0.10); border-left: 3px solid #B5593A;">
+                        <div style="font-weight: 700; font-size: 0.875rem; color: #9A482C; margin-bottom: 0.5rem;">
                             🥉 SEMI-FINALISTS</div>
                         {% for sf in sf_combined[:2] %}
                         <div style="color: var(--text-primary); font-weight: 500; padding: 0.25rem 0;">{{ sf.name }}</div>
@@ -367,7 +367,7 @@
             <div style="overflow-x: auto;">
                 <table id="playerTable" style="width: 100%; border-collapse: collapse;">
                     <thead>
-                        <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid var(--border-color);">
+                        <tr style="background: var(--bg-secondary); border-bottom: 1px solid var(--border-color);">
                             <th style="padding: 1rem; text-align: left; font-weight: 600; color: var(--text-secondary); cursor: pointer;"
                                 onclick="sortTable(0)">Player Name ↕</th>
                             <th
@@ -412,11 +412,11 @@
                                 {% if player.placements %}
                                 {% set best = player.placements[0] %}
                                 {% if best[0] == 'Champion' %}
-                                <span style="color: #FFD700; font-weight: 600;">🥇 {{ best[0] }}</span>
+                                <span style="color: #7A5F1E; font-weight: 700;">🥇 {{ best[0] }}</span>
                                 {% elif best[0] == 'Runner-Up' %}
-                                <span style="color: #C0C0C0; font-weight: 600;">🥈 {{ best[0] }}</span>
+                                <span style="color: #2F4A3E; font-weight: 600;">🥈 {{ best[0] }}</span>
                                 {% elif best[0] == 'Semi-Finalist' %}
-                                <span style="color: #cd7f32; font-weight: 600;">🥉 {{ best[0] }}</span>
+                                <span style="color: #9A482C; font-weight: 600;">🥉 {{ best[0] }}</span>
                                 {% endif %}
                                 <span style="color: var(--text-secondary); font-size: 0.875rem;"> in {{ best[1]
                                     }}</span>
@@ -489,7 +489,7 @@
         // Add hover effect
         document.querySelectorAll('.player-row').forEach(row => {
             row.addEventListener('mouseenter', () => {
-                row.style.background = 'rgba(255,255,255,0.05)';
+                row.style.background = 'var(--bg-tertiary)';
             });
             row.addEventListener('mouseleave', () => {
                 row.style.background = '';

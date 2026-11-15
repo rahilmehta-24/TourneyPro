@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Print - Tournament Platform{% endblock %}</title>
+    <title>{% block title %}Print - The Baseline Society{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='brand/app-icon.svg') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=4.0">
     
     <style>
-        /* Force explicit white background and black text on all elements by default for printing */
-        body { background: #ffffff !important; color: #000000 !important; }
+        /* Force explicit white background and Deep Green Ink for printing */
+        body { background: #ffffff !important; color: #0B2B20 !important; }
         
         /* Hide UI components completely */
         .page-actions, .header-actions, .navbar, .footer, .btn, .flash-messages, .mobile-menu-btn, .no-print,
@@ -25,8 +26,9 @@
             display: block;
             margin: 0 0 10px 0;
             padding: 6px 14px;
-            background: #f8fafc;
-            border: 1.5px solid #0f172a;
+            background: #F4EFE3;
+            border: 1.5px solid #0F3D2E;
+            border-bottom: 2.5px solid #C9A55C;
             border-radius: 4px;
             text-align: center;
         }
@@ -38,36 +40,38 @@
         }
         .print-draw-title,
         body.pdf-export-mode .print-draw-title {
-            font-size: 13pt !important;
-            font-weight: 900 !important;
-            color: #000000 !important;
+            font-family: 'Cormorant Garamond', Georgia, serif !important;
+            font-size: 15pt !important;
+            font-weight: 600 !important;
+            color: #0B2B20 !important;
             text-transform: uppercase !important;
             letter-spacing: 0.5px !important;
         }
         .print-draw-badge,
         body.pdf-export-mode .print-draw-badge {
-            background: #f1f5f9 !important;
-            color: #0f172a !important;
-            border: 1.5px solid #0f172a !important;
+            background: #0F3D2E !important;
+            color: #FDFBF6 !important;
+            border: 1.5px solid #0F3D2E !important;
+            border-bottom: 2px solid #C9A55C !important;
             padding: 3px 12px !important;
             border-radius: 9999px !important;
             font-size: 9pt !important;
-            font-weight: 800 !important;
+            font-weight: 700 !important;
             letter-spacing: 0.3px !important;
             display: inline-block !important;
         }
         .print-draw-sub,
         body.pdf-export-mode .print-draw-sub {
             font-size: 9pt !important;
-            color: #334155 !important;
+            color: #2F4A3E !important;
             font-weight: 700 !important;
             font-style: normal !important;
         }
 
         /* High-density printable draw sheets for body.pdf-export-mode (screen preview & print) */
         body.pdf-export-mode {
-            background: #f8fafc !important;
-            color: #000000 !important;
+            background: #F4EFE3 !important;
+            color: #0B2B20 !important;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
         }
 
@@ -111,16 +115,18 @@
 
         body.pdf-export-mode .bracket-round .round-title,
         body.pdf-export-mode .round-title {
-            background: #f1f5f9 !important;
-            background-color: #f1f5f9 !important;
-            color: #000000 !important;
+            background: #0F3D2E !important;
+            background-color: #0F3D2E !important;
+            color: #FDFBF6 !important;
             box-shadow: none !important;
             backdrop-filter: none !important;
             border-radius: 4px !important;
-            border: 1.5px solid #000000 !important;
-            font-size: 9.5pt !important;
-            font-weight: 900 !important;
-            letter-spacing: 0.5px !important;
+            border: 1.5px solid #0F3D2E !important;
+            border-bottom: 2.5px solid #C9A55C !important;
+            font-family: 'Cormorant Garamond', Georgia, serif !important;
+            font-size: 10.5pt !important;
+            font-weight: 600 !important;
+            letter-spacing: 0.6px !important;
             text-transform: uppercase !important;
             padding: 6px 10px !important;
             margin: 0 0 10px 0 !important;
@@ -149,7 +155,7 @@
             min-height: 60px !important;
             max-height: 60px !important;
             background: #ffffff !important;
-            border: 1.5px solid #000000 !important;
+            border: 1.5px solid #0F3D2E !important;
             border-radius: 4px !important;
             box-shadow: none !important;
             display: flex !important;
@@ -164,9 +170,9 @@
             padding: 0 8px !important;
             font-size: 7.5pt !important;
             font-weight: 800 !important;
-            border-bottom: 1px solid #cbd5e1 !important;
-            background: #f1f5f9 !important;
-            color: #0f172a !important;
+            border-bottom: 1px solid #C9A55C !important;
+            background: #F4EFE3 !important;
+            color: #0B2B20 !important;
             display: flex !important;
             align-items: center !important;
             justify-content: space-between !important;
@@ -188,14 +194,14 @@
             display: flex !important;
             align-items: center !important;
             justify-content: space-between !important;
-            border-bottom: 1px solid #e2e8f0 !important;
+            border-bottom: 1px solid #EAE2D0 !important;
             box-sizing: border-box !important;
         }
         body.pdf-export-mode .tennis-player-row:last-child {
             border-bottom: none !important;
         }
         body.pdf-export-mode .tennis-player-row.winner {
-            background: #f8fafc !important;
+            background: #E8E0CC !important;
         }
 
         body.pdf-export-mode .tennis-player-info {
@@ -208,7 +214,7 @@
 
         body.pdf-export-mode .tennis-player-name {
             font-weight: 700 !important;
-            color: #000000 !important;
+            color: #0B2B20 !important;
             font-size: 9pt !important;
             white-space: nowrap !important;
             overflow: hidden !important;
@@ -219,14 +225,14 @@
 
         body.pdf-export-mode .tennis-player-row.winner .tennis-player-name {
             font-weight: 900 !important;
-            color: #000000 !important;
+            color: #0B2B20 !important;
         }
 
         body.pdf-export-mode .tennis-player-seed {
             font-size: 7.5pt !important;
             font-weight: 800 !important;
-            color: #0f172a !important;
-            background: #e2e8f0 !important;
+            color: #0F3D2E !important;
+            background: #E8E0CC !important;
             padding: 1px 5px !important;
             border-radius: 3px !important;
             margin-right: 5px !important;
@@ -245,31 +251,31 @@
             line-height: 17px !important;
             font-size: 8.5pt !important;
             text-align: center !important;
-            border: 1px solid #334155 !important;
+            border: 1px solid #7C7462 !important;
             border-radius: 2px !important;
             background: #ffffff !important;
-            color: #000000 !important;
+            color: #0B2B20 !important;
             font-weight: 800 !important;
         }
 
         body.pdf-export-mode .tennis-set-box.set-winner {
-            background: #0f172a !important;
-            color: #ffffff !important;
-            border-color: #0f172a !important;
+            background: #0F3D2E !important;
+            color: #FDFBF6 !important;
+            border-color: #0F3D2E !important;
             font-weight: 900 !important;
         }
 
         body.pdf-export-mode .tennis-set-box.empty {
-            color: #94a3b8 !important;
-            border: 1px dashed #cbd5e1 !important;
+            color: #55695E !important;
+            border: 1px dashed #DDD4BF !important;
             background: transparent !important;
         }
 
-        /* Crisp Black Connectors for Print */
+        /* Crisp Court Green Connectors for Print */
         body.pdf-export-mode .match-card-wrapper::after, 
         body.pdf-export-mode .match-card-wrapper::before, 
         body.pdf-export-mode .bracket-round:not(:first-child) .tennis-match::before {
-            background: #000000 !important;
+            background: #0F3D2E !important;
             z-index: 5 !important;
         }
 
@@ -308,7 +314,7 @@
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
                 background: #ffffff !important;
-                color: #000000 !important;
+                color: #0B2B20 !important;
             }
             body.pdf-export-mode .page-break {
                 box-shadow: none !important;
@@ -323,16 +329,16 @@
             /* Modern Header adjustments for print */
             .modern-header {
                 background: #ffffff !important;
-                color: #000000 !important;
+                color: #0B2B20 !important;
                 border: none !important;
                 box-shadow: none !important;
                 padding: 0.25rem 0 0.5rem 0 !important;
                 margin-bottom: 0.5rem !important;
-                border-bottom: 2px solid #000000 !important;
+                border-bottom: 2px solid #C9A55C !important;
             }
             .modern-header h1 {
                 font-weight: 800 !important;
-                color: #000000 !important;
+                color: #0B2B20 !important;
                 font-size: 18pt !important;
                 margin: 0 !important;
             }
@@ -660,9 +666,9 @@
 </head>
 <body class="pdf-export-mode" id="print-body">
     <!-- Floating Print Actions Bar (Hidden during actual print) -->
-    <div class="print-actions-bar no-print" style="position: fixed; top: 16px; right: 24px; z-index: 9999; display: flex; gap: 12px; align-items: center; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); padding: 8px 18px; border-radius: 9999px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2);">
-        <span style="color: #ffffff; font-size: 0.85rem; font-weight: 600; letter-spacing: 0.3px;">📄 Print / PDF Preview</span>
-        <button type="button" onclick="window.print()" style="background: #3b82f6; color: #ffffff; border: none; padding: 6px 16px; border-radius: 9999px; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4); transition: transform 0.15s ease;">
+    <div class="print-actions-bar no-print" style="position: fixed; top: 16px; right: 24px; z-index: 9999; display: flex; gap: 12px; align-items: center; background: rgba(253, 251, 246, 0.96); backdrop-filter: blur(10px); padding: 8px 18px; border-radius: 9999px; box-shadow: 0 4px 20px rgba(11, 43, 32, 0.14); border: 1.5px solid #0F3D2E; border-bottom: 2.5px solid #C9A55C;">
+        <span style="color: #0B2B20; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.3px;">📄 Print / PDF Preview</span>
+        <button type="button" onclick="window.print()" style="background: #0F3D2E; color: #FDFBF6; border: none; padding: 6px 16px; border-radius: 9999px; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(15, 61, 46, 0.28); transition: transform 0.15s ease;">
             <span>🖨️ Print / Save as PDF</span>
         </button>
     </div>

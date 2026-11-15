@@ -324,7 +324,11 @@ class DrawExportAdapter:
                 dates_str += f" – {e_date.strftime('%d %b %Y')}"
 
         scoring_summary = None
-        if category.num_sets:
+        if category.format == "group_stage":
+            scoring_summary = f"{category.total_games or 7} Games/Rubber"
+        elif category.scoring_format == "points":
+            scoring_summary = f"First to {category.points_to_win or 11} Points"
+        elif category.num_sets:
             scoring_summary = f"{category.num_sets} Sets ({category.games_per_set or 6} Games)"
 
         # In-memory player name lookup cache to eliminate N+1 DB queries across matches

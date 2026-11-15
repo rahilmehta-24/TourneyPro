@@ -99,6 +99,118 @@ def start_single_category(category, tournament):
         pass
 
 
+def _extract_category_scoring_config(format_type, form):
+    """Extract format-isolated scoring configuration for a category."""
+    if format_type == 'group_stage':
+        raw_total = form.get('total_games', type=int)
+        return {
+            'scoring_format': 'games',
+            'num_sets': None,
+            'games_per_set': None,
+            'total_games': raw_total if raw_total is not None else 7,
+            'points_to_win': None,
+            'max_players_per_team': form.get('max_players_per_team', type=int),
+        }
+
+    scoring_format = form.get('scoring_format') or 'games'
+    if scoring_format not in ('games', 'points'):
+        scoring_format = 'games'
+
+    if scoring_format == 'points':
+        raw_points = form.get('points_to_win', type=int)
+        return {
+            'scoring_format': 'points',
+            'num_sets': None,
+            'games_per_set': None,
+            'total_games': None,
+            'points_to_win': raw_points if raw_points is not None else 11,
+            'max_players_per_team': None,
+        }
+
+    return {
+        'scoring_format': 'games',
+        'num_sets': form.get('num_sets', type=int) or 3,
+        'games_per_set': form.get('games_per_set', type=int) or 6,
+        'total_games': None,
+        'points_to_win': None,
+        'max_players_per_team': None,
+    }
+
+
+def _sync_category_groups(category, target_num_groups, rebalance_participants=False):
+    """Ensure Group A..Group N exist for `category` and optionally re-seed participants."""
+    from app.services.format_engine.group_stage.logic import GroupStageFormat
+
+    target_num_groups = max(2, min(16, int(target_num_groups or 2)))
+    existing_groups = Group.query.filter_by(category_id=category.id).order_by(Group.id).all()
+    synced_groups = []
+
+    for i in range(target_num_groups):
+        g_name = f"Group {chr(65 + i)}"
+        matched = next((g for g in existing_groups if g.name == g_name), None)
+        if matched:
+            synced_groups.append(matched)
+        else:
+            new_g = Group(category_id=category.id, name=g_name)
+            db.session.add(new_g)
+            db.session.flush()
+            synced_groups.append(new_g)
+
+    valid_ids = {g.id for g in synced_groups}
+    category_participants = Participant.query.filter_by(category_id=category.id).all()
+
+    # Clear participant references to removed groups before deleting excess Group rows
+    for eg in existing_groups:
+        if eg.id not in valid_ids:
+            for p in category_participants:
+                if p.group_id == eg.id:
+                    p.group_id = None
+            db.session.delete(eg)
+    db.session.flush()
+
+    if rebalance_participants:
+        # In team leagues, only assign formed teams; in singles/doubles assign all participants
+        is_team_event = bool(category.max_players_per_team and category.max_players_per_team > 1)
+        assignable = [p for p in category_participants if p.team_members] if is_team_event else category_participants
+        for p in assignable:
+            p.group_id = None
+        if assignable:
+            GroupStageFormat._assign_groups_snake(assignable, synced_groups, teams_per_group=category.teams_per_group)
+
+    return synced_groups
+
+
+def _collect_draft_pool(category):
+    """Return (tier_records, unassigned_players, teams, total_players) for Team Draft views."""
+    from app.domain.models import Registration
+
+    tier_records = PlayerCategoryTier.query.filter_by(category_id=category.id).all()
+    tiered_player_ids = {t.player_id for t in tier_records}
+    participants = Participant.query.filter_by(category_id=category.id).all()
+
+    unassigned_players = []
+    seen_unassigned_ids = set()
+
+    for p in participants:
+        if not p.team_members and p.player_id and p.player_id not in tiered_player_ids and p.player_id not in seen_unassigned_ids:
+            player_obj = Player.query.get(p.player_id)
+            if player_obj:
+                unassigned_players.append(player_obj)
+                seen_unassigned_ids.add(player_obj.id)
+
+    registrations = Registration.query.filter_by(category_id=category.id, status='approved').all()
+    for reg in registrations:
+        if reg.player_id and reg.player_id not in tiered_player_ids and reg.player_id not in seen_unassigned_ids:
+            player_obj = Player.query.get(reg.player_id)
+            if player_obj:
+                unassigned_players.append(player_obj)
+                seen_unassigned_ids.add(player_obj.id)
+
+    teams = [p for p in participants if p.team_members]
+    total_players = len(tier_records) + len(unassigned_players)
+    return tier_records, unassigned_players, teams, total_players
+
+
 @category_bp.route('/t/<slug>/categories/new', methods=['GET', 'POST'])
 @category_bp.route('/tournaments/<slug>/categories/new', methods=['GET', 'POST'])
 @login_required
@@ -123,16 +235,23 @@ def create_category(slug):
         gender = request.form.get('gender', 'Unspecified')
         age_category = request.form.get('age_category', 'Unspecified')
 
-        # Tennis settings
-        scoring_format = request.form.get('scoring_format', 'games')
-        num_sets = request.form.get('num_sets', type=int)
-        games_per_set = request.form.get('games_per_set', type=int)
-        total_games = request.form.get('total_games', type=int)
-        points_to_win = request.form.get('points_to_win', type=int)
+        # Format-isolated scoring settings
+        scoring_cfg = _extract_category_scoring_config(format_type, request.form)
+        scoring_format = scoring_cfg['scoring_format']
+        num_sets = scoring_cfg['num_sets']
+        games_per_set = scoring_cfg['games_per_set']
+        total_games = scoring_cfg['total_games']
+        points_to_win = scoring_cfg['points_to_win']
+        max_players_per_team = scoring_cfg['max_players_per_team']
 
         # Advanced settings for group stage
         has_group_stage = (format_type in ['group_stage', 'round_robin', 'doubles_round_robin'])
+        group_structure_mode = request.form.get('group_structure_mode', 'auto') if format_type == 'group_stage' else 'manual'
+        if group_structure_mode not in ('auto', 'manual'):
+            group_structure_mode = 'auto'
         num_groups = request.form.get('num_groups', type=int) if has_group_stage else None
+        if format_type == 'group_stage' and not num_groups:
+            num_groups = 2
         teams_per_group = request.form.get('teams_per_group', type=int) if has_group_stage else None
         matches_per_team_pair = request.form.get('matches_per_team_pair', type=int, default=1) if has_group_stage else None
         
@@ -140,7 +259,7 @@ def create_category(slug):
         if format_type == 'group_stage':
             qualifiers_per_group = request.form.get('qualifiers_per_group', type=int, default=2)
             allow_lucky_losers = request.form.get('allow_lucky_losers') == 'on'
-        elif format_type == 'round_robin':
+        elif format_type in ['round_robin', 'doubles_round_robin']:
             has_knockout = request.form.get('has_knockout_stage') == 'on'
             if has_knockout:
                 qualifiers_per_group = request.form.get('qualifiers_per_group', type=int, default=2)
@@ -151,7 +270,6 @@ def create_category(slug):
         else:
             qualifiers_per_group = None
             allow_lucky_losers = False
-        max_players_per_team = request.form.get('max_players_per_team', type=int)
 
         # Scheduling fields inherited globally from tournament or overridden by category
         import json
@@ -251,6 +369,7 @@ def create_category(slug):
             matches_per_team_pair=matches_per_team_pair,
             qualifiers_per_group=qualifiers_per_group,
             allow_lucky_losers=allow_lucky_losers,
+            group_structure_mode=group_structure_mode,
             max_players_per_team=max_players_per_team,
             start_date=start_date,
             end_date=end_date,
@@ -435,6 +554,19 @@ def view_category(slug, category_id):
     total_group_matches = len(group_matches_list)
     pending_group_count = sum(1 for m in group_matches_list if getattr(m, 'status', None) != 'completed')
 
+    # Group stage structure & knockout qualification preview context
+    knockout_preview = None
+    structure_options = []
+    if category.has_group_stage:
+        from app.services.format_engine.group_stage.logic import GroupStageFormat
+        if groups_data:
+            knockout_preview = GroupStageFormat.get_knockout_qualification_preview(category)
+        if category.status == 'setup' and category.format == 'group_stage' and len(participants) >= 4:
+            structure_options = GroupStageFormat.compute_group_structure_options(
+                len(participants),
+                category.qualifiers_per_group or 2
+            )
+
     return render_template('category/view.html',
                          is_export=is_export,
                          winners=winners,
@@ -451,6 +583,9 @@ def view_category(slug, category_id):
                          rankings=rankings,
                          team_rosters_map=team_rosters_map,
                          total_group_matches=total_group_matches,
+                         pending_group_count=pending_group_count,
+                         knockout_preview=knockout_preview,
+                         structure_options=structure_options,
                          formats=TOURNAMENT_FORMATS)
 
 
@@ -684,27 +819,6 @@ def manage_category(slug, category_id):
             elif action == 'update_settings':
                 name = request.form.get('name')
                 max_participants = request.form.get('max_participants', type=int)
-                total_games = request.form.get('total_games', type=int)
-                points_to_win = request.form.get('points_to_win', type=int)
-                scoring_format = request.form.get('scoring_format', 'games')
-                max_players_per_team = request.form.get('max_players_per_team', type=int)
-                
-                # Group stage settings
-                if category.format == 'group_stage':
-                    category.num_groups = request.form.get('num_groups', type=int)
-                    category.teams_per_group = request.form.get('teams_per_group', type=int)
-                    category.matches_per_team_pair = request.form.get('matches_per_team_pair', type=int, default=1)
-                    category.qualifiers_per_group = request.form.get('qualifiers_per_group', type=int, default=2)
-                    category.allow_lucky_losers = request.form.get('allow_lucky_losers') == 'on'
-                elif category.format in ['round_robin', 'doubles_round_robin']:
-                    category.teams_per_group = request.form.get('teams_per_group', type=int)
-                    has_knockout = request.form.get('has_knockout_stage') == 'on'
-                    if has_knockout:
-                        category.qualifiers_per_group = request.form.get('qualifiers_per_group', type=int, default=2)
-                        category.allow_lucky_losers = request.form.get('allow_lucky_losers') == 'on'
-                    else:
-                        category.qualifiers_per_group = 0
-                        category.allow_lucky_losers = False
 
                 if not name:
                     flash('Category name cannot be empty.', 'error')
@@ -712,10 +826,6 @@ def manage_category(slug, category_id):
 
                 category.name = name
                 category.max_participants = max_participants
-                category.total_games = total_games
-                category.scoring_format = scoring_format
-                category.points_to_win = points_to_win
-                category.max_players_per_team = max_players_per_team
                 category.entry_fee = request.form.get('entry_fee', type=float, default=0.0)
 
                 # Date and daily operating times for Category
@@ -784,7 +894,7 @@ def manage_category(slug, category_id):
 
                 # Settings only editable in setup status
                 if category.status == 'setup':
-                    format_type = request.form.get('format')
+                    format_type = request.form.get('format') or category.format
                     if format_type == 'single_elimination':
                         sub_format = request.form.get('sub_format')
                         if sub_format == 'doubles':
@@ -793,32 +903,42 @@ def manage_category(slug, category_id):
                         sub_format = request.form.get('sub_format')
                         if sub_format == 'doubles':
                             format_type = 'doubles_round_robin'
-                    num_sets = request.form.get('num_sets', type=int, default=1)
-                    games_per_set = request.form.get('games_per_set', type=int, default=6)
 
+                    scoring_cfg = _extract_category_scoring_config(format_type, request.form)
                     category.format = format_type
-                    category.num_sets = num_sets
-                    category.games_per_set = games_per_set
+                    category.scoring_format = scoring_cfg['scoring_format']
+                    category.num_sets = scoring_cfg['num_sets']
+                    category.games_per_set = scoring_cfg['games_per_set']
+                    category.total_games = scoring_cfg['total_games']
+                    category.points_to_win = scoring_cfg['points_to_win']
+                    category.max_players_per_team = scoring_cfg['max_players_per_team']
 
                     category.has_group_stage = (format_type in ['group_stage', 'round_robin', 'doubles_round_robin'])
                     if category.has_group_stage:
-                        category.num_groups = request.form.get('num_groups', type=int)
+                        if format_type == 'group_stage':
+                            mode_val = request.form.get('group_structure_mode')
+                            if mode_val in ('auto', 'manual'):
+                                category.group_structure_mode = mode_val
+                        category.num_groups = request.form.get('num_groups', type=int) or (2 if format_type == 'group_stage' else None)
                         category.teams_per_group = request.form.get('teams_per_group', type=int)
                         category.matches_per_team_pair = request.form.get('matches_per_team_pair', type=int, default=1)
                         if format_type == 'group_stage':
-                            category.qualifiers_per_group = request.form.get('qualifiers_per_group', type=int)
+                            category.qualifiers_per_group = request.form.get('qualifiers_per_group', type=int, default=2)
                             category.allow_lucky_losers = request.form.get('allow_lucky_losers') == 'on'
-                        elif format_type == 'round_robin':
+                        elif format_type in ['round_robin', 'doubles_round_robin']:
                             has_knockout = request.form.get('has_knockout_stage') == 'on'
                             if has_knockout:
-                                category.qualifiers_per_group = request.form.get('qualifiers_per_group', type=int)
+                                category.qualifiers_per_group = request.form.get('qualifiers_per_group', type=int, default=2)
                                 category.allow_lucky_losers = request.form.get('allow_lucky_losers') == 'on'
                             else:
                                 category.qualifiers_per_group = 0
                                 category.allow_lucky_losers = False
+                        if format_type == 'group_stage' and category.num_groups:
+                            _sync_category_groups(category, category.num_groups, rebalance_participants=False)
                     else:
                         category.num_groups = None
                         category.teams_per_group = None
+                        category.matches_per_team_pair = None
                         category.qualifiers_per_group = None
                         category.allow_lucky_losers = False
 
@@ -918,10 +1038,26 @@ def manage_category(slug, category_id):
             flash(f'Failed to perform action: {str(e)}', 'error')
             return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
 
+    structure_options = []
+    if category.format == 'group_stage' and category.status == 'setup':
+        from app.services.format_engine.group_stage.logic import GroupStageFormat
+        k = category.max_players_per_team or 1
+        if k > 1:
+            _, _, teams, total_reg_players = _collect_draft_pool(category)
+            n_for_options = len(teams) if len(teams) >= 4 else (total_reg_players // k)
+        else:
+            n_for_options = len(participants)
+        if n_for_options >= 4:
+            structure_options = GroupStageFormat.compute_group_structure_options(
+                n_for_options,
+                category.qualifiers_per_group or 2
+            )
+
     return render_template('category/manage.html',
                          tournament=tournament,
                          category=category,
                          participants=participants,
+                         structure_options=structure_options,
                          formats=TOURNAMENT_FORMATS)
 
 @category_bp.route('/tournaments/<slug>/categories/<int:category_id>/seeding', methods=['GET', 'POST'])
@@ -990,9 +1126,24 @@ def start_knockout_stage(slug, category_id):
         return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
 
     try:
-        # Generate knockout bracket from group qualifiers
+        # Generate knockout bracket from group qualifiers (honoring manual Lucky Loser selection if submitted)
         from app.services.format_engine.group_stage.logic import GroupStageFormat
-        matches_data = GroupStageFormat.generate_knockout_from_groups(category)
+        lucky_loser_ids = request.form.getlist('lucky_loser_ids', type=int)
+        preview = GroupStageFormat.get_knockout_qualification_preview(category)
+        slots_needed = preview['slots_to_fill']
+
+        if category.allow_lucky_losers and slots_needed > 0 and lucky_loser_ids:
+            valid_candidate_ids = {p.id for p in preview['lucky_loser_candidates']}
+            unique_ll_ids = list(dict.fromkeys([pid for pid in lucky_loser_ids if pid in valid_candidate_ids]))
+            if len(unique_ll_ids) != slots_needed:
+                flash(
+                    f'Please select exactly {slots_needed} Lucky Loser(s) to complete the {preview["target_bracket"]}-team knockout bracket.',
+                    'error'
+                )
+                return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
+            matches_data = GroupStageFormat.generate_knockout_from_groups(category, lucky_loser_ids=unique_ll_ids)
+        else:
+            matches_data = GroupStageFormat.generate_knockout_from_groups(category)
 
         for match_data in matches_data:
             sub_rubbers = match_data.pop('sub_matches', None)
@@ -1201,6 +1352,9 @@ def report_category_match_result(slug, category_id, match_id):
             'tb5_p2': request.form.get('tb5_p2', ''),
         }
 
+        outcome_type = request.form.get('outcome_type', 'normal')
+        retiring_player = request.form.get('retiring_player', type=int)
+
         # Validate and format score
         if match.parent_match_id or getattr(match, 'rubber_type', None) or (category and category.format == 'group_stage' and category.total_games and scoring_format == 'games'):
             from app.services.tennis_logic import validate_team_rubber_score
@@ -1225,7 +1379,10 @@ def report_category_match_result(slug, category_id, match_id):
                 p1_tb_pts=p1_tb,
                 p2_tb_pts=p2_tb,
                 total_games=category.total_games or 7,
-                is_live_update=is_live_update
+                is_live_update=is_live_update,
+                is_walkover=(outcome_type == 'walkover'),
+                is_retired=(outcome_type == 'retired'),
+                retiring_player=retiring_player,
             )
             if not is_live_update and winner_ind:
                 actual_winner_id = match.participant1_id if winner_ind == 1 else match.participant2_id
@@ -1233,49 +1390,38 @@ def report_category_match_result(slug, category_id, match_id):
                     raise ValueError("The selected winner does not match the rubber scores.")
                 winner_id = actual_winner_id
         elif scoring_format == 'points' or (category and category.format in ['round_robin', 'doubles_round_robin'] and scoring_format != 'games'):
+            from app.services.tennis_logic import validate_points_score
             if scoring_format == 'points':
-                p1_score = request.form.get('points_p1', type=int)
-                p2_score = request.form.get('points_p2', type=int)
+                p1_raw = request.form.get('points_p1')
+                p2_raw = request.form.get('points_p2')
             else:
-                p1_score = request.form.get('set1_p1', type=int)
-                p2_score = request.form.get('set1_p2', type=int)
-            
-            if p1_score is None or p2_score is None:
-                if is_live_update:
-                    p1_score = p1_score or 0
-                    p2_score = p2_score or 0
-                else:
-                    raise ValueError("Scores for both players are required.")
+                p1_raw = request.form.get('set1_p1')
+                p2_raw = request.form.get('set1_p2')
 
-            if p1_score < 0 or p2_score < 0:
-                raise ValueError("Scores cannot be negative.")
-
-            if not is_live_update:
-                if winner_id == match.participant1_id and p1_score <= p2_score:
-                    raise ValueError("Winner must have a higher score.")
-                if winner_id == match.participant2_id and p2_score <= p1_score:
-                    raise ValueError("Winner must have a higher score.")
-                    
-                winning_score = max(p1_score, p2_score)
-                losing_score = min(p1_score, p2_score)
-                
-                if winning_score < points_to_win:
-                    raise ValueError(f"One player must reach {points_to_win} points to win.")
-                    
-                diff = winning_score - losing_score
-                if diff < 2:
-                    raise ValueError("A player must win by a difference of at least 2 points.")
-                
-                # If extending past points_to_win (e.g. 12-10 in an 11-point game), diff must be exactly 2
-                if winning_score > points_to_win and diff > 2:
-                    raise ValueError(f"Invalid score. When extending past {points_to_win} points, the match ends as soon as a 2-point difference is reached.")
-                
-            score1 = str(p1_score)
-            score2 = str(p2_score)
+            score1, score2, winner_id = validate_points_score(
+                winner_id=winner_id,
+                p1_id=match.participant1_id,
+                p2_id=match.participant2_id,
+                p1_score_raw=p1_raw,
+                p2_score_raw=p2_raw,
+                points_to_win=points_to_win,
+                is_live_update=is_live_update,
+                outcome_type=outcome_type,
+                retiring_player=retiring_player,
+            )
         else:
+            if not is_live_update and outcome_type in ('walkover', 'retired') and not winner_id and retiring_player in (1, 2):
+                winner_id = match.participant2_id if retiring_player == 1 else match.participant1_id
             score1, score2 = validate_and_format_score(
-                winner_id, match.participant1_id, match.participant2_id,
-                num_sets, games_per_set, form_data, is_live_update=is_live_update
+                winner_id,
+                match.participant1_id,
+                match.participant2_id,
+                num_sets,
+                games_per_set,
+                form_data,
+                is_live_update=is_live_update,
+                outcome_type=outcome_type,
+                retiring_player=retiring_player,
             )
 
         match.score1 = score1
@@ -1559,62 +1705,70 @@ def update_grid_scores(slug, category_id):
 def team_draft_view(slug, category_id):
     """
     Main Draft Board for Team League categories:
-    1. Organize registered players into 5 Skill Tiers (Tier A Captains, Tier B VCs, C, D, E).
-    2. Mode A: Manual Paper Chit Draw selection.
-    3. Mode B: 1-Click Auto-Draft Balanced Teams.
-    4. Group Session Start Timings & Courts configuration.
+    1. Review registered player count, handle any leftover slots (Late Entry / Dummy),
+       and pick Group Stage + Knockout structure (e.g., 2 uneven groups vs 3 groups + Lucky Losers).
+    2. Organize registered players into Skill Tiers (Tier A Captains, Tier B VCs, C..E).
+    3. Mode A: Manual Paper Chit Draw selection / Mode B: 1-Click Auto-Draft.
+    4. Group allocation review & Group Session Start Timings / Courts configuration.
     """
+    from app.services.format_engine.group_stage.logic import GroupStageFormat
+
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
     check_tournament_ownership(tournament)
     category = Category.query.get_or_404(category_id)
 
-    # Ensure default group count is set
     num_groups = category.num_groups or 2
     existing_groups = Group.query.filter_by(category_id=category.id).order_by(Group.id).all()
     if not existing_groups:
-        for i in range(num_groups):
-            g = Group(category_id=category.id, name=f"Group {chr(65 + i)}")
-            db.session.add(g)
+        existing_groups = _sync_category_groups(category, num_groups, rebalance_participants=False)
         db.session.commit()
-        existing_groups = Group.query.filter_by(category_id=category.id).order_by(Group.id).all()
 
-    # Discover all registered players for this category
-    from app.domain.models import Registration
-    tier_records = PlayerCategoryTier.query.filter_by(category_id=category.id).all()
-    tiered_player_ids = {t.player_id for t in tier_records}
+    tier_records, unassigned_players, teams, total_players = _collect_draft_pool(category)
 
-    # Fetch individual participants (not teams) to populate unassigned pool
-    participants = Participant.query.filter_by(category_id=category.id).all()
-    unassigned_players = []
-    
-    for p in participants:
-        # If participant is not already a team (has no team_members) and not tiered yet
-        if not p.team_members and p.player_id and p.player_id not in tiered_player_ids:
-            player_obj = Player.query.get(p.player_id)
-            if player_obj and player_obj not in unassigned_players:
-                unassigned_players.append(player_obj)
-
-    # Also discover from approved registrations
-    registrations = Registration.query.filter_by(category_id=category.id, status='approved').all()
-    for reg in registrations:
-        if reg.player_id and reg.player_id not in tiered_player_ids:
-            player_obj = Player.query.get(reg.player_id)
-            if player_obj and player_obj not in unassigned_players:
-                unassigned_players.append(player_obj)
-
-    # Group existing tiers into buckets
-    tiers_map = {'A': [], 'B': [], 'C': [], 'D': [], 'E': []}
+    # Group existing tiers into buckets (dynamic up to k)
+    k = category.max_players_per_team or 5
+    active_tier_letters = list('ABCDEFGH'[:k])
+    tiers_map = {letter: [] for letter in active_tier_letters}
     for tr in tier_records:
         if tr.tier in tiers_map:
             tiers_map[tr.tier].append(tr)
 
-    # Fetch existing formed teams (participants having team_members)
-    teams = [p for p in participants if p.team_members]
-
-    k = category.max_players_per_team or 5
-    total_players = len(tier_records) + len(unassigned_players)
-    calculated_teams = max(2, total_players // k) if total_players >= k else 2
+    full_teams = total_players // k if total_players >= k else 0
+    leftover_players = total_players % k if total_players > 0 else 0
+    players_needed_for_next = (k - leftover_players) if leftover_players > 0 else 0
+    calculated_teams = max(2, full_teams) if total_players >= k else 2
     teams_per_group = max(1, calculated_teams // num_groups)
+
+    qualifiers_per_group = category.qualifiers_per_group or 2
+    team_count_for_struct = len(teams) if len(teams) >= 2 else calculated_teams
+    structure_options = GroupStageFormat.compute_group_structure_options(
+        team_count_for_struct,
+        qualifiers_per_group=qualifiers_per_group,
+    )
+    next_team_options = (
+        GroupStageFormat.compute_group_structure_options(full_teams + 1, qualifiers_per_group=qualifiers_per_group)
+        if leftover_players > 0 and full_teams + 1 >= 2 else []
+    )
+
+    # Identify Dummy / TBD placeholder players so organizer can replace them with late entries
+    dummy_players = []
+    seen_dummy_ids = set()
+    for p in unassigned_players:
+        if p.name and p.name.startswith('TBD / Dummy') and p.id not in seen_dummy_ids:
+            dummy_players.append(p)
+            seen_dummy_ids.add(p.id)
+    for tr in tier_records:
+        if tr.player and tr.player.name and tr.player.name.startswith('TBD / Dummy') and tr.player.id not in seen_dummy_ids:
+            dummy_players.append(tr.player)
+            seen_dummy_ids.add(tr.player.id)
+
+    teams_by_group = {g.id: [] for g in existing_groups}
+    unassigned_teams = []
+    for team in teams:
+        if team.group_id in teams_by_group:
+            teams_by_group[team.group_id].append(team)
+        else:
+            unassigned_teams.append(team)
 
     return render_template(
         'category/team_draft.html',
@@ -1623,12 +1777,21 @@ def team_draft_view(slug, category_id):
         groups=existing_groups,
         unassigned_players=unassigned_players,
         tiers_map=tiers_map,
+        active_tier_letters=active_tier_letters,
         teams=teams,
+        teams_by_group=teams_by_group,
+        unassigned_teams=unassigned_teams,
         total_players=total_players,
         players_per_team=k,
+        full_teams=full_teams,
+        leftover_players=leftover_players,
+        players_needed_for_next=players_needed_for_next,
+        dummy_players=dummy_players,
         calculated_teams=calculated_teams,
         teams_per_group=teams_per_group,
-        num_groups=num_groups
+        num_groups=num_groups,
+        structure_options=structure_options,
+        next_team_options=next_team_options,
     )
 
 
@@ -1834,6 +1997,10 @@ def create_manual_teams(slug, category_id):
 
             created_teams.append(team_p)
 
+        if cat_groups and created_teams:
+            from app.services.format_engine.group_stage.logic import GroupStageFormat
+            GroupStageFormat._assign_groups_snake(created_teams, cat_groups, teams_per_group=category.teams_per_group)
+
         db.session.commit()
         msg = f'Successfully formed {len(created_teams)} teams via Ballot Chit Draw!'
         if request.is_json:
@@ -1902,6 +2069,242 @@ def update_group_timings(slug, category_id):
     except Exception as e:
         db.session.rollback()
         flash(f'Failed to update group timings: {str(e)}', 'error')
+
+    return redirect(url_for('category.team_draft_view', slug=slug, category_id=category_id))
+
+
+@category_bp.route('/tournaments/<slug>/categories/<int:category_id>/configure-structure', methods=['POST'])
+@login_required
+@role_required('admin', 'superadmin')
+def configure_group_structure(slug, category_id):
+    """Apply an organizer-selected Group Stage + Knockout structure option (G groups, Lucky Losers)."""
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
+    category = Category.query.get_or_404(category_id)
+
+    next_target = request.form.get('next_target', 'draft')
+
+    def _redirect_back():
+        if next_target == 'manage':
+            return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
+        if next_target == 'view':
+            return redirect(url_for('category.view_category', slug=slug, category_id=category_id))
+        return redirect(url_for('category.team_draft_view', slug=slug, category_id=category_id))
+
+    if category.status != 'setup':
+        flash('Cannot change group structure once matches are in progress.', 'error')
+        return _redirect_back()
+
+    num_groups = request.form.get('num_groups', type=int)
+    if not num_groups or num_groups < 2 or num_groups > 16:
+        flash('Number of groups must be between 2 and 16.', 'error')
+        return _redirect_back()
+
+    raw_ll = str(request.form.get('allow_lucky_losers', '')).strip().lower()
+    allow_lucky_losers = raw_ll in ('1', 'true', 'on', 'yes')
+    qualifiers_per_group = request.form.get('qualifiers_per_group', type=int)
+
+    try:
+        category.num_groups = num_groups
+        category.allow_lucky_losers = allow_lucky_losers
+        category.group_structure_mode = 'manual'
+        if qualifiers_per_group and qualifiers_per_group >= 1:
+            category.qualifiers_per_group = qualifiers_per_group
+
+        _sync_category_groups(category, num_groups, rebalance_participants=True)
+        db.session.commit()
+
+        ll_msg = 'with Lucky Losers enabled' if allow_lucky_losers else 'without Lucky Losers'
+        flash(f'Group structure updated: {num_groups} groups configured ({ll_msg}).', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Failed to update group structure: {str(e)}', 'error')
+
+    return _redirect_back()
+
+
+@category_bp.route('/tournaments/<slug>/categories/<int:category_id>/assign-team-group', methods=['POST'])
+@login_required
+@role_required('admin', 'superadmin')
+def assign_team_group(slug, category_id):
+    """Move a drafted team between Group A / B / C... while category is in setup."""
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
+    category = Category.query.get_or_404(category_id)
+
+    if category.status != 'setup':
+        if request.is_json:
+            return jsonify({'success': False, 'error': 'Cannot move teams once matches have started.'}), 400
+        flash('Cannot move teams once matches have started.', 'error')
+        return redirect(url_for('category.team_draft_view', slug=slug, category_id=category_id))
+
+    payload = request.get_json(silent=True) or request.form
+    participant_id = payload.get('participant_id')
+    group_id = payload.get('group_id')
+    try:
+        participant_id = int(participant_id)
+        group_id = int(group_id)
+    except (TypeError, ValueError):
+        if request.is_json:
+            return jsonify({'success': False, 'error': 'Invalid team or group selection.'}), 400
+        flash('Invalid team or group selection.', 'error')
+        return redirect(url_for('category.team_draft_view', slug=slug, category_id=category_id))
+
+    team = Participant.query.filter_by(id=participant_id, category_id=category.id).first_or_404()
+    grp = Group.query.filter_by(id=group_id, category_id=category.id).first_or_404()
+
+    team.group_id = grp.id
+    db.session.commit()
+
+    if request.is_json:
+        return jsonify({'success': True, 'message': f'Moved {team.name} to {grp.name}.'})
+    flash(f'Moved {team.name} to {grp.name}.', 'success')
+    return redirect(url_for('category.team_draft_view', slug=slug, category_id=category_id) + '#teams')
+
+
+@category_bp.route('/tournaments/<slug>/categories/<int:category_id>/quick-late-entry', methods=['POST'])
+@login_required
+@role_required('admin', 'superadmin')
+def quick_late_entry_player(slug, category_id):
+    """
+    Add a late-entry player directly from Team Draft (either as a new player or
+    replacing an existing 'TBD / Dummy' placeholder slot in place).
+    """
+    from app.domain.models import Registration
+
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
+    category = Category.query.get_or_404(category_id)
+
+    if category.status != 'setup':
+        flash('Cannot add players once matches are in progress.', 'error')
+        return redirect(url_for('category.team_draft_view', slug=slug, category_id=category_id))
+
+    raw_name = request.form.get('player_name', '').strip()
+    ok, clean_name = validate_name(raw_name, min_len=2, max_len=100, field_name="Player Name")
+    if not ok:
+        flash(clean_name, 'error')
+        return redirect(url_for('category.team_draft_view', slug=slug, category_id=category_id))
+
+    mobile = request.form.get('player_mobile', '').strip()
+    if mobile:
+        ok_m, clean_m = validate_mobile(mobile, field_name="Mobile")
+        if not ok_m:
+            flash(clean_m, 'error')
+            return redirect(url_for('category.team_draft_view', slug=slug, category_id=category_id))
+        mobile = clean_m
+
+    gender = request.form.get('player_gender') or (
+        category.gender if category.gender in ('Male', 'Female', 'Boys', 'Girls') else 'Male'
+    )
+    age_val = request.form.get('player_age', type=int) or 25
+    dob = estimate_dob_from_age(age_val)
+    age_cat = determine_age_category(age=age_val, dob=dob)
+    replace_dummy_id = request.form.get('replace_dummy_id', type=int)
+
+    try:
+        if replace_dummy_id:
+            dummy_player = Player.query.get_or_404(replace_dummy_id)
+            old_name = dummy_player.name
+            dummy_player.name = clean_name
+            if mobile:
+                dummy_player.contact_number = mobile
+            dummy_player.gender = gender
+            dummy_player.dob = dob
+            dummy_player.age_category = age_cat
+            db.session.commit()
+            flash(f'Replaced placeholder "{old_name}" with late-entry player {clean_name}!', 'success')
+            return redirect(url_for('category.team_draft_view', slug=slug, category_id=category_id))
+
+        current_u = get_current_user()
+        player_obj = Player(
+            name=clean_name,
+            contact_number=mobile or None,
+            gender=gender,
+            dob=dob,
+            age_category=age_cat,
+        )
+        db.session.add(player_obj)
+        db.session.flush()
+
+        reg = Registration(
+            tournament_id=tournament.id,
+            category_id=category.id,
+            user_id=current_u.id,
+            player_id=player_obj.id,
+            status='approved',
+            payment_status='paid',
+            payment_method='cash',
+        )
+        db.session.add(reg)
+        db.session.commit()
+        flash(f'Added late-entry player {clean_name} to draft pool!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Failed to add late-entry player: {str(e)}', 'error')
+
+    return redirect(url_for('category.team_draft_view', slug=slug, category_id=category_id))
+
+
+@category_bp.route('/tournaments/<slug>/categories/<int:category_id>/add-dummy-players', methods=['POST'])
+@login_required
+@role_required('admin', 'superadmin')
+def add_dummy_players(slug, category_id):
+    """
+    Create placeholder 'TBD / Dummy Player' slots to complete a partial team
+    before final groups are formed; can later be replaced via Late Entry.
+    """
+    from app.domain.models import Registration
+
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
+    category = Category.query.get_or_404(category_id)
+
+    if category.status != 'setup':
+        flash('Cannot modify players once matches are in progress.', 'error')
+        return redirect(url_for('category.team_draft_view', slug=slug, category_id=category_id))
+
+    k = category.max_players_per_team or 5
+    _, _, _, total_players = _collect_draft_pool(category)
+    leftover = total_players % k
+    default_needed = (k - leftover) if leftover > 0 else 1
+
+    count = request.form.get('count', type=int) or default_needed
+    count = max(1, min(k, count))
+
+    try:
+        current_u = get_current_user()
+        existing_dummies = Player.query.filter(Player.name.like('TBD / Dummy Player #%')).count()
+        created_names = []
+        default_gender = category.gender if category.gender in ('Male', 'Female', 'Boys', 'Girls') else 'Male'
+
+        for i in range(1, count + 1):
+            label = f"TBD / Dummy Player #{existing_dummies + i}"
+            dummy = Player(
+                name=label,
+                gender=default_gender,
+                age_category=category.age_category or 'Open',
+            )
+            db.session.add(dummy)
+            db.session.flush()
+
+            reg = Registration(
+                tournament_id=tournament.id,
+                category_id=category.id,
+                user_id=current_u.id,
+                player_id=dummy.id,
+                status='approved',
+                payment_status='pending',
+                payment_method='cash',
+            )
+            db.session.add(reg)
+            created_names.append(label)
+
+        db.session.commit()
+        flash(f'Added {len(created_names)} Dummy/TBD slot(s) to complete full team(s). You can replace them anytime via Late Entry!', 'info')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Failed to add dummy slots: {str(e)}', 'error')
 
     return redirect(url_for('category.team_draft_view', slug=slug, category_id=category_id))
 
