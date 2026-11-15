@@ -12,8 +12,9 @@ auth_bp = Blueprint('auth', __name__)
 
 def get_current_user():
     if 'user_id' in session:
-        if not hasattr(g, 'current_user') or g.current_user is None:
-            g.current_user = User.query.get(session['user_id'])
+        user_id = session['user_id']
+        if not hasattr(g, 'current_user') or g.current_user is None or getattr(g.current_user, 'id', None) != user_id:
+            g.current_user = db.session.get(User, user_id)
         return g.current_user
     return None
 
@@ -418,6 +419,31 @@ def request_admin():
 def user_management():
     users = User.query.order_by(User.role.desc(), User.username).all()
     return render_template('auth/users.html', users=users)
+
+@auth_bp.route('/admin/users/create', methods=['GET', 'POST'])
+@login_required
+@role_required('superadmin')
+def create_user_admin():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        role = request.form.get('role', 'user')
+        full_name = request.form.get('full_name')
+
+        from app.services.user_service import admin_create_user
+        result = admin_create_user(
+            username=username,
+            email=email,
+            password=password,
+            role=role,
+            full_name=full_name
+        )
+
+        flash(result.message, result.category)
+        return redirect(url_for('auth.user_management'))
+
+    return redirect(url_for('auth.user_management'))
 
 @auth_bp.route('/admin/users/<int:user_id>/grant', methods=['POST'])
 @login_required

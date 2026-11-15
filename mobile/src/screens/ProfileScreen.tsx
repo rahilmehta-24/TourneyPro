@@ -7,11 +7,17 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
+  Modal,
+  TextInput,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { User, Bell, Shield, Trash2, LogOut, Award, ChevronRight } from 'lucide-react-native';
+import { User, Bell, Shield, Trash2, LogOut, Award, ChevronRight, UserPlus, X } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 import { useAuthStore } from '../state/authStore';
+import { apiClient } from '../api/client';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -20,6 +26,49 @@ export default function ProfileScreen() {
   const [notifyMatchCall, setNotifyMatchCall] = useState(true);
   const [notifyDraws, setNotifyDraws] = useState(true);
   const [notifyResults, setNotifyResults] = useState(true);
+
+  // Admin User Provisioning state
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [adminUsername, setAdminUsername] = useState('');
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminFullName, setAdminFullName] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [adminRole, setAdminRole] = useState<'player' | 'umpire' | 'admin'>('player');
+  const [adminSubmitting, setAdminSubmitting] = useState(false);
+
+  const handleAdminCreateUser = async () => {
+    if (!adminUsername.trim() || !adminEmail.trim() || !adminPassword.trim()) {
+      Alert.alert('Required Fields', 'Username, email, and password are required.');
+      return;
+    }
+    setAdminSubmitting(true);
+    try {
+      const res = await apiClient.post('/admin/users', {
+        username: adminUsername.trim(),
+        email: adminEmail.trim(),
+        full_name: adminFullName.trim(),
+        password: adminPassword.trim(),
+        role: adminRole,
+      });
+
+      if (res.data?.success) {
+        setShowAdminModal(false);
+        setAdminUsername('');
+        setAdminEmail('');
+        setAdminFullName('');
+        setAdminPassword('');
+        const title = res.data.category === 'warning' ? 'Verification Notice' : 'User Provisioned';
+        Alert.alert(title, res.data.message);
+      } else {
+        Alert.alert('Provisioning Failed', res.data?.message || 'Failed to create user.');
+      }
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to create user.';
+      Alert.alert('Error', errorMsg);
+    } finally {
+      setAdminSubmitting(false);
+    }
+  };
 
   const handleDeleteAccount = () => {
     Alert.alert(
@@ -124,6 +173,26 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* Administrator Actions */}
+        {(activeRole === 'admin' || user?.role === 'admin' || user?.role === 'superadmin') && (
+          <>
+            <Text style={styles.sectionTitle}>ADMINISTRATOR ACTIONS</Text>
+            <View style={styles.settingsGroup}>
+              <TouchableOpacity
+                style={styles.actionRow}
+                onPress={() => setShowAdminModal(true)}
+              >
+                <UserPlus size={18} color={colors.brandGreenCourt} />
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={styles.actionLabel}>Provision User Account</Text>
+                  <Text style={styles.settingSub}>Create user with clean workspace verification</Text>
+                </View>
+                <ChevronRight size={16} color={colors.textMuted} style={styles.chevron} />
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+
         {/* Account Actions */}
         <Text style={styles.sectionTitle}>ACCOUNT & PRIVACY</Text>
         <View style={styles.settingsGroup}>
@@ -142,6 +211,108 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Admin User Provisioning Modal */}
+      <Modal
+        visible={showAdminModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowAdminModal(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalTitle}>PROVISION USER</Text>
+                <Text style={styles.modalSubtitle}>DATA ISOLATION & VERIFICATION</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowAdminModal(false)} style={styles.closeBtn}>
+                <X size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 380 }}>
+              <Text style={styles.fieldLabel}>FULL NAME</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="e.g. Carlos Alcaraz"
+                placeholderTextColor={colors.textMuted}
+                value={adminFullName}
+                onChangeText={setAdminFullName}
+              />
+
+              <Text style={styles.fieldLabel}>USERNAME *</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="e.g. calcaraz"
+                placeholderTextColor={colors.textMuted}
+                autoCapitalize="none"
+                value={adminUsername}
+                onChangeText={setAdminUsername}
+              />
+
+              <Text style={styles.fieldLabel}>EMAIL *</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="e.g. carlos@baseline.local"
+                placeholderTextColor={colors.textMuted}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                value={adminEmail}
+                onChangeText={setAdminEmail}
+              />
+
+              <Text style={styles.fieldLabel}>PASSWORD *</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Min. 6 characters"
+                placeholderTextColor={colors.textMuted}
+                secureTextEntry
+                value={adminPassword}
+                onChangeText={setAdminPassword}
+              />
+
+              <Text style={styles.fieldLabel}>ASSIGNED ROLE</Text>
+              <View style={styles.rolePicker}>
+                {(['player', 'umpire', 'admin'] as const).map((r) => (
+                  <TouchableOpacity
+                    key={r}
+                    style={[
+                      styles.roleChip,
+                      adminRole === r && styles.roleChipActive,
+                    ]}
+                    onPress={() => setAdminRole(r)}
+                  >
+                    <Text
+                      style={[
+                        styles.roleChipText,
+                        adminRole === r && styles.roleChipTextActive,
+                      ]}
+                    >
+                      {r.toUpperCase()}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+
+            <TouchableOpacity
+              style={[styles.modalSubmitBtn, adminSubmitting && { opacity: 0.7 }]}
+              onPress={handleAdminCreateUser}
+              disabled={adminSubmitting}
+            >
+              {adminSubmitting ? (
+                <ActivityIndicator color={colors.surfaceCard} size="small" />
+              ) : (
+                <Text style={styles.modalSubmitText}>CREATE & VERIFY WORKSPACE</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -309,6 +480,106 @@ const styles = StyleSheet.create({
   },
   chevron: {
     marginLeft: 'auto',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modalCard: {
+    backgroundColor: colors.surfaceCard,
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.surfaceSecondary,
+    paddingBottom: 10,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: 1,
+    color: colors.brandGreenDeep,
+  },
+  modalSubtitle: {
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    color: colors.brandGold,
+    marginTop: 2,
+  },
+  closeBtn: {
+    padding: 4,
+  },
+  fieldLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    color: colors.textSecondary,
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  modalInput: {
+    backgroundColor: colors.canvasLight,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 13,
+    color: colors.textPrimary,
+  },
+  rolePicker: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 4,
+  },
+  roleChip: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    backgroundColor: colors.canvasLight,
+    alignItems: 'center',
+  },
+  roleChipActive: {
+    backgroundColor: colors.brandGreenDeep,
+    borderColor: colors.brandGreenDeep,
+  },
+  roleChipText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.textSecondary,
+  },
+  roleChipTextActive: {
+    color: colors.brandGold,
+  },
+  modalSubmitBtn: {
+    backgroundColor: colors.brandGreenDeep,
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 18,
+  },
+  modalSubmitText: {
+    color: colors.brandGold,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1,
   },
 });
 

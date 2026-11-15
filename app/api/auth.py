@@ -52,30 +52,28 @@ def register():
     if not data or not data.get('username') or not data.get('password') or not data.get('email'):
         return jsonify({"success": False, "message": "Missing fields"}), 400
 
-    if User.query.filter_by(username=data['username']).first():
-        return jsonify({"success": False, "message": "Username already exists"}), 400
-    if User.query.filter_by(email=data['email']).first():
-        return jsonify({"success": False, "message": "Email already exists"}), 400
-
-    user = User(
+    from app.services.user_service import admin_create_user
+    result = admin_create_user(
         username=data['username'],
-        email=data['email']
+        email=data['email'],
+        password=data['password'],
+        role=data.get('role', 'user'),
+        full_name=data.get('full_name')
     )
-    if data.get('role') in ['admin', 'user']:
-        user.role = data['role']
-    user.set_password(data['password'])
-    db.session.add(user)
-    db.session.flush()
 
-    # Create default notification preferences
-    prefs = UserNotificationPreferences(user_id=user.id)
-    db.session.add(prefs)
-    db.session.commit()
+    if not result.success:
+        return jsonify({"success": False, "message": result.message}), result.status_code
 
+    user = result.user
     access_token = create_access_token(identity=str(user.id))
     refresh_token = create_refresh_token(identity=str(user.id))
     return jsonify({
         "success": True,
+        "message": result.message,
+        "category": result.category,
+        "is_clean": result.is_clean,
+        "has_existing_data": result.has_existing_data,
+        "verification_failed": result.verification_failed,
         "access_token": access_token,
         "refresh_token": refresh_token,
         "user": {
@@ -325,3 +323,33 @@ def update_notification_preferences():
         "success": True,
         "preferences": notification_preferences_schema.dump(prefs)
     }), 200
+
+
+@api_bp.route('/admin/users', methods=['POST'])
+@jwt_required()
+def admin_create_user_api():
+    """Administrator user creation endpoint with workspace initialization and verification."""
+    current_user_id = get_jwt_identity()
+    admin_user = User.query.get(int(current_user_id)) if current_user_id and str(current_user_id).isdigit() else None
+    if not admin_user or admin_user.role not in ('superadmin', 'admin'):
+        return jsonify({"success": False, "message": "Forbidden: Administrator privileges required"}), 403
+
+    data = request.get_json() or {}
+    username = data.get('username')
+    email = data.get('email')
+    password = data.get('password')
+    role = data.get('role', 'user')
+    full_name = data.get('full_name')
+    simulate_fail = bool(data.get('simulate_verification_failure', False))
+
+    from app.services.user_service import admin_create_user
+    result = admin_create_user(
+        username=username,
+        email=email,
+        password=password,
+        role=role,
+        full_name=full_name,
+        simulate_verification_failure=simulate_fail
+    )
+
+    return jsonify(result.to_dict()), result.status_code

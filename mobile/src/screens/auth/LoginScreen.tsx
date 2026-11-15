@@ -126,9 +126,11 @@ export default function LoginScreen() {
       });
 
       if (res.data?.success && res.data?.access_token) {
+        const notifMsg = res.data?.message || 'User created successfully! A fresh workspace has been initialized. No existing user data was found or carried over.';
+        const notifTitle = res.data?.category === 'warning' ? 'Verification Notice' : 'Account Initialized';
         Alert.alert(
-          'Welcome to Baseline!',
-          `Account created successfully as a ${regRole === 'admin' ? 'Tournament Organizer' : 'Player'}.`,
+          notifTitle,
+          notifMsg,
           [
             {
               text: 'Continue',
@@ -159,7 +161,10 @@ export default function LoginScreen() {
           'offline_reg_access_token',
           'offline_reg_refresh_token'
         );
-        Alert.alert('Welcome to Baseline!', `Account created offline as a ${regRole === 'admin' ? 'Tournament Organizer' : 'Player'}.`);
+        Alert.alert(
+          'Account Initialized',
+          'User created successfully! A fresh workspace has been initialized. No existing user data was found or carried over.'
+        );
       } else {
         Alert.alert('Registration Error', errorMsg || 'Unable to register at this time.');
       }
