@@ -8,7 +8,25 @@
 
 // This file should not import `react-native` in order to remain self-contained.
 
-import { URL, URLSearchParams } from 'whatwg-url-without-unicode';
+import { URL, URLSearchParams } from 'whatwg-url-minimum';
+
+declare namespace globalThis {
+  const RN$Bridgeless: undefined | boolean;
+  const nativeModuleProxy: Record<string, unknown>;
+  function __turboModuleProxy(name: string): unknown;
+}
+
+// TODO(@kitten): Provide BlobModule types matching native module
+interface NativeBlobModule {
+  BLOB_URI_SCHEME: string;
+  BLOB_URI_HOST: string;
+}
+interface TurboBlobModule {
+  getConstants(): {
+    BLOB_URI_SCHEME: string;
+    BLOB_URI_HOST: string;
+  };
+}
 
 let isSetup = false;
 let BLOB_URL_PREFIX: string | null = null;
@@ -22,9 +40,9 @@ function getBlobUrlPrefix() {
   const BlobModule =
     globalThis.RN$Bridgeless !== true
       ? // Legacy RN implementation
-        globalThis.nativeModuleProxy['BlobModule']
+        (globalThis.nativeModuleProxy['BlobModule'] as NativeBlobModule)
       : // Newer RN implementation
-        globalThis.__turboModuleProxy('BlobModule');
+        (globalThis.__turboModuleProxy('BlobModule') as TurboBlobModule);
 
   const constants = 'BLOB_URI_SCHEME' in BlobModule ? BlobModule : BlobModule.getConstants();
 
@@ -35,6 +53,16 @@ function getBlobUrlPrefix() {
     }
   }
   return BLOB_URL_PREFIX;
+}
+
+declare module 'whatwg-url-minimum' {
+  // TODO(@kitten): Clarify where this came from
+  type BlobLike = Blob & { data?: { blobId: string; offset: number } };
+
+  interface URLConstructor {
+    createObjectURL(blob: BlobLike): string;
+    revokeObjectURL(url: URL): void;
+  }
 }
 
 /**
@@ -61,26 +89,19 @@ function getBlobUrlPrefix() {
  * </resources>
  * ```
  */
-URL.createObjectURL = function createObjectURL(blob) {
+URL.createObjectURL = function createObjectURL(
+  blob: Blob & { data?: { blobId: string; offset: number } }
+) {
   if (getBlobUrlPrefix() == null) {
     throw new Error('Cannot create URL for blob');
   }
-  return `${getBlobUrlPrefix()}${encodeURIComponent(blob.data.blobId)}?offset=${encodeURIComponent(
-    blob.data.offset
+  return `${getBlobUrlPrefix()}${encodeURIComponent(blob.data!.blobId)}?offset=${encodeURIComponent(
+    blob.data!.offset
   )}&size=${encodeURIComponent(blob.size)}`;
 };
 
-URL.revokeObjectURL = function revokeObjectURL(url) {
+URL.revokeObjectURL = function revokeObjectURL(_url) {
   // Do nothing.
-};
-
-URL.canParse = function canParse(url: string, base?: string): boolean {
-  try {
-    URL(url, base);
-    return true;
-  } catch {
-    return false;
-  }
 };
 
 export { URL, URLSearchParams };
