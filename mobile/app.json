@@ -22,6 +22,9 @@
         "backgroundColor": "#0B2B20"
       }
     },
-    "scheme": "baselinesociety"
+    "scheme": "baselinesociety",
+    "plugins": [
+      "expo-asset"
+    ]
   }
 }

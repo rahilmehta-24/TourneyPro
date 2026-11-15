@@ -62,3 +62,4 @@ export async function clearAllAuthTokens(): Promise<void> {
     removeCourtToken(),
   ]);
 }
+

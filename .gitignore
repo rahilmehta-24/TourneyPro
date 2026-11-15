@@ -86,3 +86,9 @@ baseline-society-logo-files
 
 .agents/*
 .tokenshield/*
+
+# Node & Expo
+node_modules/
+mobile/node_modules/
+mobile/.expo/
+mobile/dist/

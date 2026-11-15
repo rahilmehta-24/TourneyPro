@@ -37,3 +37,4 @@ export const typography = {
   headingSerif: 'serif',
   bodySans: 'System',
 };
+
