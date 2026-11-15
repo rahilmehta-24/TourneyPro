@@ -23,7 +23,8 @@ def create_app(config_class=Config):
     
     
     # Initialize JWT and Marshmallow
-    app.config['JWT_SECRET_KEY'] = app.config.get('SECRET_KEY', 'super-secret')  # Use app secret key for JWT
+    if not app.config.get('JWT_SECRET_KEY'):
+        app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY') or 'baseline-society-jwt-secret-key-32-chars-minimum-prod'
     jwt = JWTManager(app)
     
     from app.domain.schemas import ma

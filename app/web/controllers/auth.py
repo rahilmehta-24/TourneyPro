@@ -64,7 +64,15 @@ def check_tournament_access(tournament, min_role="scorer"):
         return True
 
     role_weights = {"manager": 3, "official": 2, "scorer": 1}
-    min_weight = role_weights.get(min_role, 1)
+    role_aliases = {
+        "tournament_admin": "manager",
+        "desk": "official",
+        "umpire": "scorer"
+    }
+    canonical_min = role_aliases.get(min_role, min_role)
+    if canonical_min not in role_weights:
+        raise ValueError(f"Invalid min_role specified: {min_role}")
+    min_weight = role_weights[canonical_min]
 
     # 3. Check TournamentStaff table for logged-in user
     if user:
@@ -73,7 +81,8 @@ def check_tournament_access(tournament, min_role="scorer"):
             user_id=user.id
         ).first()
         if staff:
-            staff_weight = role_weights.get(staff.role, 0)
+            canonical_staff = role_aliases.get(staff.role, staff.role)
+            staff_weight = role_weights.get(canonical_staff, 0)
             if staff_weight >= min_weight:
                 return True
 
@@ -84,7 +93,8 @@ def check_tournament_access(tournament, min_role="scorer"):
         staff = TournamentStaff.query.get(pin_data.get("staff_id"))
         if staff and staff.tournament_id == tournament.id:
             if not staff.pin_expires_at or staff.pin_expires_at > datetime.utcnow():
-                staff_weight = role_weights.get(staff.role, 0)
+                canonical_staff = role_aliases.get(staff.role, staff.role)
+                staff_weight = role_weights.get(canonical_staff, 0)
                 if staff_weight >= min_weight:
                     return True
             else:

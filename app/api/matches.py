@@ -37,7 +37,7 @@ def report_match(match_id):
             is_staff = True
         else:
             staff = TournamentStaff.query.filter_by(tournament_id=match.tournament_id, user_id=user.id).first()
-            if staff and staff.role in ('manager', 'official', 'scorer'):
+            if staff and staff.role in ('manager', 'official', 'scorer', 'tournament_admin', 'desk', 'umpire'):
                 is_staff = True
     elif court_pin_staff_id:
         staff = TournamentStaff.query.get(court_pin_staff_id)

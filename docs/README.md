@@ -1,28 +1,30 @@
-# TourneyPro — Advanced Tournament Management Platform
+# The Baseline Society — Advanced Tournament Management Platform
 
 [![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](https://www.python.org/)
 [![Framework](https://img.shields.io/badge/Framework-Flask%203.1-black.svg)](https://flask.palletsprojects.com/)
 [![ORM](https://img.shields.io/badge/ORM-SQLAlchemy%202.0-red.svg)](https://www.sqlalchemy.org/)
 [![Database](https://img.shields.io/badge/Database-SQLite%20%7C%20PostgreSQL-green.svg)](https://supabase.com/)
-[![Tests](https://img.shields.io/badge/Tests-82%20Passing-brightgreen.svg)](../tests/)
+[![Tests](https://img.shields.io/badge/Tests-82%20Passing-brightgreen.svg)](tests/)
 [![Code Style](https://img.shields.io/badge/Code%20Style-Ruff-purple.svg)](https://docs.astral.sh/ruff/)
 
-**TourneyPro** is an enterprise-grade, full-lifecycle tournament management web platform engineered for racquet sports (Lawn Tennis, Pickleball, Badminton, Padel, Table Tennis) and competitive esports. It replaces paper draw sheets, complex spreadsheets, and manual WhatsApp group coordination with an automated, mathematical tournament operating system.
+**The Baseline Society** is an enterprise-grade, full-lifecycle tournament management web platform engineered for racquet sports (Lawn Tennis, Pickleball, Badminton, Padel, Table Tennis) and competitive esports. It replaces paper draw sheets, complex spreadsheets, and manual WhatsApp group coordination with an automated, mathematical tournament operating system.
+
+> **Naming note:** the product is now **The Baseline Society**. Technical identifiers still use the legacy name to avoid breaking code and integrations: the repository folder `TourneyPro/`, the manual file `TourneyPro_User_Manual.pdf`, MCP tool names `tourneypro_*`, and `tourneypro://` resource URIs. Rename them in a dedicated, tested change.
 
 ---
 
 ## 📖 Master Documentation Directory
 
-TourneyPro features an exhaustive, interconnected documentation suite. Every document serves as a specialized source of truth:
+The Baseline Society features an exhaustive, interconnected documentation suite. Every document serves as a specialized source of truth:
 
 | Document | Description & Focus |
 | :--- | :--- |
 | **[`PRD.md`](PRD.md)** | **Product Requirements Document:** Target personas, tournament formats, scoring modes, court scheduling constraints, and operational goals. |
-| **[`DESIGN.md`](DESIGN.md)** | **System & UX/UI Design:** Visual design system, dark-mode tokens, interactive SVG bracket connectors, and component specifications. |
+| **[`DESIGN.md`](DESIGN.md)** | **System & UX/UI Design:** Single light-theme design system: color tokens, motion, mobile and resolution rules, SVG bracket connectors, and component specifications. |
 | **[`ARCHITECTURE.md`](ARCHITECTURE.md)** | **Technical Architecture:** Application factory pattern, blueprint layout, service layer, and data flow sequence diagrams. |
 | **[`DATABASE.md`](DATABASE.md)** | **Database Schema & Relational Models:** Comprehensive breakdown of all 18 tables, columns, foreign keys, and migration rules. |
 | **[`API.md`](API.md)** | **RESTful API Specification:** JSON contracts, JWT bearer token authentication, request/response models, and live score polling. |
-| **[`USER_MANUAL.md`](USER_MANUAL.md)** | **End-User Operational Manual:** Non-technical web guide with visual screenshots for Organizers, Umpires, Captains, and Players. Available as [PDF Download](TourneyPro_User_Manual.pdf). |
+| **[`docs/USER_MANUAL.md`](docs/USER_MANUAL.md)** | **End-User Operational Manual:** Non-technical web guide with visual screenshots for Organizers, Umpires, Captains, and Players. Available as [PDF Download](docs/TourneyPro_User_Manual.pdf). |
 | **[`AGENTS.md`](AGENTS.md)** | **AI & Developer Agent Operating Manual:** Rules of engagement, coding guidelines, security guardrails, and automated checks for AI agents. |
 | **[`PLAN.md`](PLAN.md)** | **Phased Delivery Roadmap:** Milestones, completed Phase 1 capabilities, active Phase 2 items, and upcoming Phase 3 features. |
 | **[`SETUP.md`](SETUP.md)** | **Installation & Environment Guide:** Local macOS/Linux/Windows setup, virtual environments, environment variables, and initial database bootstrapping. |
@@ -31,6 +33,7 @@ TourneyPro features an exhaustive, interconnected documentation suite. Every doc
 | **[`MCP.md`](MCP.md)** | **Model Context Protocol Specification:** MCP tools, resources, and server integration for AI developer agents. |
 | **[`INTEGRATIONS.md`](INTEGRATIONS.md)** | **External Services & Infrastructure:** Supabase PostgreSQL, Vercel serverless, xhtml2pdf vector generation, and future Stripe/Twilio integrations. |
 | **[`TESTING.md`](TESTING.md)** | **Quality Assurance & Testing Strategy:** 82-test automated suite inventory, SQLite test fixtures, and GitHub Actions CI gates. |
+| **[`SECURITY_REVIEW.md`](SECURITY_REVIEW.md)** | **Security & Consistency Review:** findings, severity, fixes, resolution coverage matrix, and open items that need source-code verification. |
 | **[`DEBUGGING.md`](DEBUGGING.md)** | **Troubleshooting & Diagnostics Playbook:** Runbooks for database connection pooling, Alembic batch desync, and court scheduling conflicts. |
 
 ---
@@ -58,7 +61,7 @@ TourneyPro features an exhaustive, interconnected documentation suite. Every doc
   * **Participant Rosters:** Player rosters, payment tracking, and check-in sheets.
 
 ### 5. First-Class Mobile Web App Experience
-* **Native Smartphone UX:** 100% responsive architecture across iOS Safari and Android Chrome (320px–430px viewports) with zero regression or alteration to the desktop interface.
+* **Native Smartphone UX:** 100% responsive architecture across iOS Safari and Android Chrome (320px to 480px phone viewports, plus tablet, desktop, and venue-display tiers) with zero regression or alteration to the desktop interface.
 * **Knockout Bracket Touch Navigation:** Hardware-accelerated touch-drag panning (`touchstart`/`touchmove`/`touchend`) and round-by-round pill navigation tabs (`Round of 16` → `Quarterfinals` → `Semifinals` → `Finals`) that maintain full SVG connector geometry.
 * **Mobile Bottom-Sheet Score Dialog:** Transforms match score reporting into an app-like bottom sheet on `≤ 640px` screens with dynamic viewport units (`dvh`), sticky action footers, and native numeric keypads (`inputmode="numeric"`).
 * **1-Tap Mobile UPI Intent:** Direct `upi://pay` deep linking into installed UPI apps (Google Pay, PhonePe, Paytm) and 1-tap clipboard copying for frictionless on-device registrations.
@@ -66,11 +69,18 @@ TourneyPro features an exhaustive, interconnected documentation suite. Every doc
 
 ### 6. Enterprise RBAC & Delegated Tournament Operations
 * **Role-Based Access Control (RBAC):** Hierarchical permission model distinguishing Platform Superadmins, Tournament Owners, Tournament Desk Managers, Match Officials / Umpires, Quick Court Scorekeepers, and Team Captains.
-* **Staff Delegation:** Tournament organizers can appoint registered users as staff (`owner`, `tournament_admin`, `desk`, `umpire`) with granular permissions across courts, check-ins, and match scoring.
-* **Court PIN Fast-Entry Mode:** Dedicated court PIN tablets allow on-court scorers to record live match games instantly without requiring personal user accounts.
+* **Staff Delegation:** Tournament organizers can appoint registered users as staff (`manager`, `official`, `scorer`; legacy `tournament_admin`/`desk`/`umpire` names are being migrated) with granular permissions across courts, check-ins, and match scoring.
+* **Court PIN Fast-Entry Mode:** Dedicated court tablets accept a 6-digit, expiring, court-bound PIN so on-court scorers can record live games without personal accounts. PINs are stored hashed, rate-limited, and audit-logged.
 * **Conflict of Interest Guard:** Active tournament competitors are strictly blocked from officiating or submitting scores for their own matches.
 * **Optimistic Concurrency Control:** Enforces `lock_version` validation on match score submissions, preventing concurrent referee update overwrites with HTTP 409 Conflict handling.
 * **Draft vs. Published Draw Control:** Organizers can generate, preview, and seed brackets in draft mode; brackets remain hidden from public viewers and PDF downloads until explicitly published.
+
+---
+
+## 🔐 Security & Responsive Support
+
+* **Security posture:** fail-closed RBAC, Court PIN v2, mandatory optimistic locking, draft-draw gating, rate limiting, secure cookies and headers, and hardened uploads/exports are specified in [`AUTH.md`](AUTH.md) and tracked in [`SECURITY_REVIEW.md`](SECURITY_REVIEW.md). Never run production with default secrets.
+* **Resolution support:** phones 320 to 480 px, large phones and small tablets 481 to 640 px, tablets 641 to 1023 px, desktop 1024 to 1599 px, and venue displays from 1600 px; landscape phones, 200 % zoom, and print are covered in [`DESIGN.md`](DESIGN.md) §7.
 
 ---
 
@@ -85,6 +95,7 @@ TourneyPro features an exhaustive, interconnected documentation suite. Every doc
 * **Frontend:** Vanilla HTML5, CSS3 (Design Tokens & Glassmorphism), Vanilla JavaScript
 * **PDF Engine:** xhtml2pdf 0.2.17, ReportLab 4.5.1
 * **Linter & Tests:** Ruff 0.15+, Python `unittest` (82 automated tests)
+* **Security tooling (required by `AGENTS.md`):** bandit, pip-audit; recommended runtime libraries: Flask-Limiter, Flask-Talisman
 
 ---
 
@@ -112,10 +123,12 @@ pip install -r requirements.txt
 Create a `.env` file in the project root (or copy `.env.example`):
 ```ini
 FLASK_APP=run.py
-FLASK_ENV=development
-SECRET_KEY=dev-secret-key-change-in-production
+FLASK_DEBUG=1                      # development only (FLASK_ENV is ignored by Flask 3)
+APP_ENV=development                # set to "production" in cloud; enables strict startup checks
+SECRET_KEY=dev-secret-key-change-in-production      # development only
+JWT_SECRET_KEY=dev-jwt-secret-change-in-production  # development only; must differ from SECRET_KEY
 SUPERADMIN_USERNAME=superadmin
-SUPERADMIN_PASSWORD=adminpassword
+SUPERADMIN_PASSWORD=adminpassword  # development only; production refuses this value
 # Leave DATABASE_URL omitted or commented out to use local SQLite:
 # DATABASE_URL=sqlite:///instance/tournaments.db
 ```
@@ -124,7 +137,7 @@ SUPERADMIN_PASSWORD=adminpassword
 ```bash
 python run.py
 ```
-Open your browser and navigate to `http://127.0.0.1:5000`. Log in with `superadmin` / `adminpassword` to access administrative controls.
+Open your browser and navigate to `http://127.0.0.1:5000`. Log in with `superadmin` / `adminpassword` to access administrative controls (development defaults only; production refuses them, see [`SETUP.md`](SETUP.md) §3.2).
 
 ### 5. Run the Automated Test Suite
 ```bash
@@ -152,7 +165,8 @@ TourneyPro/
 │   │   ├── static/              # Vanilla CSS stylesheets, JS scripts, and brand assets
 │   │   └── templates/           # Server-side rendered Jinja2 templates
 │   └── __init__.py              # Flask Application Factory (create_app)
-├── instance/                    # Local SQLite database files
+├── docs/                        # User manual (Markdown, HTML, PDF)
+├── instance/                    # Local SQLite database files (git-ignored)
 ├── migrations/                  # Alembic database migration revisions
 ├── scripts/                     # Operational scripts (sync_db_schema.py, init_uat_db.py)
 ├── tests/                       # 82 automated unit and integration tests
@@ -166,4 +180,4 @@ TourneyPro/
 ---
 
 ## 📄 License
-TourneyPro is proprietary software. All rights reserved.
+The Baseline Society is proprietary software. All rights reserved.

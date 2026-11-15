@@ -215,7 +215,7 @@ def toggle_category_publish(category_id):
     # Check permission
     is_staff = False
     staff = TournamentStaff.query.filter_by(tournament_id=tournament.id, user_id=user.id).first()
-    if staff and staff.role in ('manager', 'official'):
+    if staff and staff.role in ('manager', 'official', 'tournament_admin'):
         is_staff = True
 
     if user.role != 'superadmin' and tournament.user_id != user.id and not is_staff:

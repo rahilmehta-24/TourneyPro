@@ -1,9 +1,9 @@
-# TourneyPro — Functional Feature Matrix & Algorithmic Specifications (FEATURES.md)
+# The Baseline Society — Functional Feature Matrix & Algorithmic Specifications (FEATURES.md)
 
 **Document Status:** Approved  
-**Source of Truth:** Inherits from [`PRD.md`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/PRD.md), [`DESIGN.md`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/DESIGN.md), and [`ARCHITECTURE.md`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/ARCHITECTURE.md)  
+**Source of Truth:** Inherits from [`PRD.md`](PRD.md), [`DESIGN.md`](DESIGN.md), and [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 **Feature Set Version:** 2.0  
-**Last Updated:** October 2026  
+**Last Updated:** November 2026  
 
 ---
 
@@ -27,7 +27,8 @@
 | **Tournament Staff & Court PIN Mode** | ✅ Production | `app/web/controllers/tournament.py`, `auth.py` | `TournamentStaff`, `Tournament` |
 | **Draw Publication State Machine** | ✅ Production | `app/web/controllers/category.py`, `export.py` | `Category` |
 | **Anti-Conflict Scoring Guard** | ✅ Production | `app/web/controllers/auth.py`, `api/matches.py` | `Match`, `Player`, `User` |
-| **Optimistic Concurrency Control** | ✅ Production | `app/web/controllers/category.py`, `tournament.py` | `Match` (`lock_version`) |
+| **Optimistic Concurrency Control** | ✅ Production (atomic compare-and-update required) | `app/web/controllers/category.py`, `tournament.py` | `Match` (`lock_version`) |
+| **Security Hardening (fail-closed RBAC, Court PIN v2, rate limits)** | 🔒 Required; see `SECURITY_REVIEW.md` | `app/web/controllers/auth.py`, `app/__init__.py` | `TournamentStaff`, `AuditLog`, `Match` |
 | **Live Score Polling Feed** | ✅ Production | `app/api/live.py` | `Match`, `Tournament` |
 | **Mobile Web App & Touch Engine** | ✅ Production | `app/web/static/css/style.css`, `base.html` | All Views / Presentation |
 | **WebSocket Score Push** | ⚡ Phase 2 Active | `app/services/live_stream/` | `Match` |
@@ -87,6 +88,7 @@ Each team tie between Team Alpha and Team Beta consists of 3 distinct rubber fix
 * **Rubber 1:** Tier A Singles
 * **Rubber 2:** Doubles (Tier B + Tier C)
 * **Rubber 3:** Tier D Singles
+* **Tier E** is the reserve/substitute slot: the fifth player of each team does not play a fixed rubber but may replace an injured or absent player when the lineup rules allow it. (If the tournament uses a different rule, state it in the category settings.)
 
 #### 2.4.3 Rubber Scoring ($T=7$ Summation Rule)
 * Every rubber is played up to exactly 7 total games:
@@ -101,7 +103,7 @@ Each team tie between Team Alpha and Team Beta consists of 3 distinct rubber fix
 #### 2.4.5 Group Standings Tiebreakers
 In pool play, teams are ranked by:
 1. **Total Matches Won** (Team ties won).
-2. **Head-to-Head Result** (Direct head-to-head winner between tied teams).
+2. **Head-to-Head Result** (direct result between tied teams). With three or more tied teams, build a mini-table from matches among only the tied teams; if still tied, continue to rule 3.
 3. **Total Game Differential** ($\text{Games Won} - \text{Games Lost}$).
 4. **Total Games Won**.
 
@@ -128,20 +130,35 @@ The scheduling engine solves resource constraints across multiple tournament day
   1. Input name, contact number, email, and DOB.
   2. System checks `Player` registry for matching mobile/email; reuses existing athlete profile if found or creates a new `Player` record.
   3. The registration is mapped internally to a system `anonymous_registrations` user account.
-* **Account Claiming:** If the athlete later registers an account with matching credentials, all historical tournament records and statistics automatically link to their user profile.
+* **Account Claiming:** an athlete can link a profile to a new account only after proving control of the email (verification link) or mobile number (OTP). Matching unverified details alone never links history, because that would let anyone hijack another person's records.
 
 ---
 
 ### 2.7 High-Fidelity Vector PDF Exports
 * **Draw Sheets:** Vector bracket rendered via `DrawPdfService`, including tournament title, category name, seeds, participant names, match scores, and progression connectors.
 * **Order of Play:** Multi-court matrix displaying daily match schedules, court assignments, and estimated match durations.
-* **HTTP 304 Caching:** PDF responses compute an MD5 hash of the PDF byte stream, returning `304 Not Modified` on unchanged requests to conserve server bandwidth.
+* **HTTP 304 Caching:** the ETag is derived from a cheap version stamp (latest `lock_version`/`completed_at` plus the `draw_published` flag) so an unchanged request returns `304 Not Modified` **without rendering the PDF**. Authorization is always checked before an ETag is honored, and draft draws return `403`.
 
 ---
 
 ### 2.8 Mobile Web App Experience & Touch Navigation Engine
 * **Touch-Enabled Bracket Navigation:** Native `touchstart`, `touchmove`, `touchend` event bindings with momentum pan scrolling and pill-tab round selectors (`Round of 16` → `Quarterfinals` → `Semifinals` → `Finals`) that preserve SVG connector math.
-* **Ergonomic Bottom Sheet Modals:** Converts centered dialogs on `≤ 640px` screens to bottom sheets using dynamic viewport units (`dvh`) with sticky action buttons and numeric keypads (`inputmode="numeric"`).
+* **Ergonomic Bottom Sheet Modals:** Converts centered dialogs on `≤ 640px` screens to bottom sheets using dynamic viewport units (`dvh`, with a `vh` fallback) with sticky action buttons and numeric keypads (`inputmode="numeric"`).
 * **Deep-Linked Mobile UPI Intent:** Auto-detects mobile environments to render 1-tap `upi://pay` links and 1-tap clipboard copy helpers.
 * **Auto-Collapsing Fluid Grids:** Global CSS safeguards for `repeat(auto-fit, minmax(...))` rules that prevent horizontal page wobble and viewport blowouts on narrow screens.
-* **Zero Desktop Regression:** All mobile behaviors are strictly encapsulated in responsive media queries (`@media (max-width: ...)`), keeping the desktop experience 100% pixel-perfect and untouched.
+* **Zero Desktop Regression:** All mobile behaviors are strictly encapsulated in responsive media queries (`@media (max-width: ...)`), keeping the desktop experience at 1025 px and above untouched.
+
+#### 2.8.1 Supported Resolutions
+| Tier | Width | Status |
+| :--- | :--- | :--- |
+| Small phone | 320 to 359 px | Supported |
+| Phone | 360 to 480 px (includes 440 px-wide phones) | Supported |
+| Large phone / small tablet | 481 to 640 px | Supported |
+| Tablet portrait | 641 to 1023 px | **Needs explicit design and test coverage** (modals centered, 2-column cards, scrollable tables) |
+| Desktop | 1024 to 1599 px | Supported (baseline, never regressed) |
+| Wide / venue display | 1600 px and above | Planned: Venue TV mode (PLAN WP 2.3) |
+| Landscape phone | height ≤ 500 px | **Needs explicit design and test coverage** |
+| Print / PDF | `@media print` | Supported |
+
+### 2.9 Court PIN Scoring Mode (v2)
+6-digit, expiring, court-bound PINs held in `tournament_staff`; stored as keyed hashes, rate-limited, audit-logged, and valid for scoring only (see [`AUTH.md`](AUTH.md) §2.3).

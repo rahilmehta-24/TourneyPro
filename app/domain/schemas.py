@@ -13,6 +13,16 @@ class UserSchema(SQLAlchemyAutoSchema):
         model = User
         exclude = ("password_hash",)
 
+class PublicUserSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        model = User
+        fields = ("id", "username", "role")
+
+class PublicParticipantSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        model = Participant
+        fields = ("id", "name", "seed", "final_rank")
+
 class PlayerSchema(SQLAlchemyAutoSchema):
     class Meta:
         model = Player
@@ -49,6 +59,10 @@ class TournamentSchema(SQLAlchemyAutoSchema):
 
 user_schema = UserSchema()
 users_schema = UserSchema(many=True)
+public_user_schema = PublicUserSchema()
+public_users_schema = PublicUserSchema(many=True)
+public_participant_schema = PublicParticipantSchema()
+public_participants_schema = PublicParticipantSchema(many=True)
 
 tournament_schema = TournamentSchema()
 tournaments_schema = TournamentSchema(many=True)
