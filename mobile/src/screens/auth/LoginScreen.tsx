@@ -231,13 +231,14 @@ export default function LoginScreen() {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Brand Header with Real Official Logo Asset */}
+        {/* Brand Header with Crest & Prominent App Name */}
         <View style={styles.brandSection}>
           <Image
-            source={require('../../../assets/logo-stacked-on-light.png')}
-            style={styles.brandLogo}
+            source={require('../../../assets/monogram-on-light.png')}
+            style={styles.brandMonogram}
           />
-          <Text style={styles.brandSubtitle}>THE BASELINE SOCIETY • EST. 2026</Text>
+          <Text style={styles.brandTitle}>BASELINE</Text>
+          <Text style={styles.brandSubtitle}>THE BASELINE SOCIETY</Text>
           <Text style={styles.tagline}>Championship Circuit & Club Management</Text>
         </View>
 
@@ -599,26 +600,33 @@ const styles = StyleSheet.create({
   },
   brandSection: {
     alignItems: 'center',
-    marginTop: 4,
-    marginBottom: 14,
+    marginTop: 6,
+    marginBottom: 16,
   },
-  brandLogo: {
-    width: 170,
-    height: 105,
+  brandMonogram: {
+    width: 76,
+    height: 76,
     resizeMode: 'contain',
-    marginBottom: 2,
+    marginBottom: 6,
+  },
+  brandTitle: {
+    fontSize: 32,
+    fontWeight: '900',
+    letterSpacing: 3,
+    color: colors.brandGreenDeep,
   },
   brandSubtitle: {
-    fontSize: 10,
+    fontSize: 13,
     fontWeight: '800',
-    letterSpacing: 1.5,
-    color: colors.brandGold,
-    marginTop: 2,
+    letterSpacing: 2,
+    color: colors.brandGreenCourt,
+    marginTop: 3,
   },
   tagline: {
     fontSize: 12,
+    fontWeight: '500',
     color: colors.textSecondary,
-    marginTop: 3,
+    marginTop: 4,
   },
 
   /* Tabs */

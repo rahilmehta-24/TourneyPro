@@ -71,10 +71,17 @@ export default function EventsScreen({ navigation }: any) {
     <View style={[styles.container, { paddingTop: Math.max(insets.top, 16) }]}>
       {/* Top Header - Inset safely below Android Status Bar */}
       <View style={styles.header}>
-        <Image
-          source={require('../../assets/logo-horizontal-on-light.png')}
-          style={styles.headerLogo}
-        />
+        <View style={styles.headerBrandRow}>
+          <Image
+            source={require('../../assets/monogram-on-light.png')}
+            style={styles.headerMonogram}
+          />
+          <View style={styles.headerTitles}>
+            <Text style={styles.headerAppTitle}>BASELINE</Text>
+            <Text style={styles.headerAppSub}>THE BASELINE SOCIETY</Text>
+          </View>
+        </View>
+
         <View style={styles.headerRight}>
           <View style={styles.roleChip}>
             <Text style={styles.roleChipText}>
@@ -289,10 +296,31 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
   },
-  headerLogo: {
-    width: 145,
+  headerBrandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  headerMonogram: {
+    width: 36,
     height: 36,
     resizeMode: 'contain',
+  },
+  headerTitles: {
+    justifyContent: 'center',
+  },
+  headerAppTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    letterSpacing: 2,
+    color: colors.brandGreenDeep,
+  },
+  headerAppSub: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    color: colors.brandGreenCourt,
+    marginTop: 1,
   },
   headerRight: {
     flexDirection: 'row',
