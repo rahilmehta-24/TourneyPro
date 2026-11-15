@@ -5,12 +5,13 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Clock, CheckCircle2, ChevronRight, Activity } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 
 export default function MyScheduleScreen() {
+  const insets = useSafeAreaInsets();
   const [activeCourt, setActiveCourt] = useState('All');
 
   const courts = ['All', 'Court 1', 'Court 2'];
@@ -79,7 +80,7 @@ export default function MyScheduleScreen() {
     : scheduleMatches.filter((m) => m.court === activeCourt);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: Math.max(insets.top, 16) }]}>
       {/* Header */}
       <View style={styles.header}>
         <View>
@@ -170,7 +171,7 @@ export default function MyScheduleScreen() {
           );
         })}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

@@ -61,6 +61,8 @@ def register():
         username=data['username'],
         email=data['email']
     )
+    if data.get('role') in ['admin', 'user']:
+        user.role = data['role']
     user.set_password(data['password'])
     db.session.add(user)
     db.session.flush()

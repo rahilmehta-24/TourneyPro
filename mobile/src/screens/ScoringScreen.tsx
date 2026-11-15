@@ -5,14 +5,15 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  SafeAreaView,
   Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ShieldCheck, Plus, Minus, KeyRound, Award } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 import { useAuthStore } from '../state/authStore';
 
 export default function ScoringScreen() {
+  const insets = useSafeAreaInsets();
   const { courtSession, activeRole, loginCourt } = useAuthStore();
   const [pin, setPin] = useState('');
   const [isUnlocked, setIsUnlocked] = useState(false);
@@ -67,7 +68,7 @@ export default function ScoringScreen() {
 
   if (!isUnlocked && activeRole !== 'admin') {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={[styles.container, { paddingTop: Math.max(insets.top, 16) }]}>
         <View style={styles.pinContainer}>
           <View style={styles.iconCircle}>
             <KeyRound size={32} color={colors.brandGold} />
@@ -94,12 +95,12 @@ export default function ScoringScreen() {
 
           <Text style={styles.pinHelp}>Demo PIN: 123456</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: Math.max(insets.top, 16) }]}>
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>LIVE SCOREKEEPER</Text>
@@ -162,7 +163,7 @@ export default function ScoringScreen() {
           <Text style={styles.actionBtnPrimaryText}>BROADCAST SCORE</Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

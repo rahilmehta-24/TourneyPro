@@ -7,17 +7,19 @@ import {
   TouchableOpacity,
   TextInput,
   RefreshControl,
-  SafeAreaView,
+  Image,
 } from 'react-native';
-import { Search, MapPin, Calendar, Trophy, ChevronRight, Filter } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Search, MapPin, Calendar, Trophy, ChevronRight, Shield, CheckCircle2, KeyRound, LogOut } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 import { useAuthStore } from '../state/authStore';
 
 export default function EventsScreen({ navigation }: any) {
+  const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSurface, setSelectedSurface] = useState('All');
-  const { activeRole, setActiveRole } = useAuthStore();
+  const { activeRole, setActiveRole, user, logout } = useAuthStore();
 
   const surfaces = ['All', 'Clay 🧱', 'Hard 🎾', 'Grass 🌱'];
 
@@ -66,36 +68,32 @@ export default function EventsScreen({ navigation }: any) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Top Header */}
+    <View style={[styles.container, { paddingTop: Math.max(insets.top, 16) }]}>
+      {/* Top Header - Inset safely below Android Status Bar */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.appTitle}>BASELINE</Text>
-          <Text style={styles.societySub}>THE BASELINE SOCIETY • CHAMPIONSHIP CIRCUIT</Text>
-        </View>
-        <TouchableOpacity style={styles.badgeClub}>
-          <Text style={styles.badgeClubText}>EST. 2026</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Role Experience Switcher Bar */}
-      <View style={styles.roleBar}>
-        <Text style={styles.roleLabel}>VIEWING AS:</Text>
-        <View style={styles.rolePills}>
-          {(['organizer', 'player', 'umpire', 'spectator'] as const).map((r) => {
-            const isSelected = activeRole === (r === 'organizer' ? 'admin' : r);
-            return (
-              <TouchableOpacity
-                key={r}
-                style={[styles.rolePill, isSelected && styles.rolePillActive]}
-                onPress={() => setActiveRole(r === 'organizer' ? 'admin' : r)}
-              >
-                <Text style={[styles.rolePillText, isSelected && styles.rolePillTextActive]}>
-                  {r.toUpperCase()}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+        <Image
+          source={require('../../assets/logo-horizontal-on-light.png')}
+          style={styles.headerLogo}
+        />
+        <View style={styles.headerRight}>
+          <View style={styles.roleChip}>
+            <Text style={styles.roleChipText}>
+              {activeRole === 'admin'
+                ? 'ORGANIZER'
+                : activeRole === 'umpire'
+                ? 'OFFICIAL'
+                : activeRole === 'player'
+                ? 'PLAYER'
+                : 'GUEST'}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.btnLogoutQuick}
+            onPress={() => logout()}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <LogOut size={16} color={colors.textSecondary} />
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -103,6 +101,87 @@ export default function EventsScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
+        {/* Role-Specific Executive Banner */}
+        {activeRole === 'admin' && (
+          <View style={styles.adminBanner}>
+            <View style={styles.roleBannerHeader}>
+              <Shield size={16} color={colors.brandGold} />
+              <Text style={styles.adminBannerTitle}>ORGANIZER COMMAND CENTER</Text>
+            </View>
+            <Text style={styles.adminBannerSub}>
+              3 pending entries awaiting your approval for Baseline National Invitational.
+            </Text>
+            <View style={styles.adminActionsRow}>
+              <TouchableOpacity
+                style={styles.btnAdminAction}
+                onPress={() => navigation.navigate('My Schedule')}
+              >
+                <Text style={styles.btnAdminActionText}>Review Entries (3)</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.btnAdminAction, { backgroundColor: colors.surfaceCard }]}
+                onPress={() => navigation.navigate('Scoring')}
+              >
+                <Text style={[styles.btnAdminActionText, { color: colors.brandGreenDeep }]}>Court PINs</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {activeRole === 'player' && (
+          <View style={styles.playerBanner}>
+            <View style={styles.roleBannerHeader}>
+              <CheckCircle2 size={16} color={colors.brandGreenCourt} />
+              <Text style={styles.playerBannerTitle}>MY NEXT MATCH TODAY</Text>
+            </View>
+            <Text style={styles.playerBannerDetail}>
+              Men's Singles SF • Court 1 • Scheduled 09:00 AM (vs. R. Nadal)
+            </Text>
+            <TouchableOpacity
+              style={styles.btnPlayerSchedule}
+              onPress={() => navigation.navigate('My Schedule')}
+            >
+              <Text style={styles.btnPlayerScheduleText}>View My Court Schedule →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {activeRole === 'umpire' && (
+          <View style={styles.umpireBanner}>
+            <View style={styles.roleBannerHeader}>
+              <KeyRound size={16} color="#2B6CB0" />
+              <Text style={styles.umpireBannerTitle}>ASSIGNED COURT: COURT 1</Text>
+            </View>
+            <Text style={styles.umpireBannerSub}>
+              Live Scorekeeper active. Ready to score R. Federer vs R. Nadal.
+            </Text>
+            <TouchableOpacity
+              style={styles.btnUmpireAction}
+              onPress={() => navigation.navigate('Scoring')}
+            >
+              <Text style={styles.btnUmpireActionText}>Open Court Scorekeeper →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {activeRole === 'spectator' && (
+          <View style={styles.spectatorBanner}>
+            <View style={styles.roleBannerHeader}>
+              <Trophy size={16} color={colors.brandGold} />
+              <Text style={styles.spectatorBannerTitle}>GUEST SPECTATOR MODE</Text>
+            </View>
+            <Text style={styles.spectatorBannerSub}>
+              You are exploring live circuit draws and schedules as a guest.
+            </Text>
+            <TouchableOpacity
+              style={styles.btnSpectatorSignIn}
+              onPress={() => logout()}
+            >
+              <Text style={styles.btnSpectatorSignInText}>Sign In / Register Now →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Search & Filter */}
         <View style={styles.searchSection}>
           <View style={styles.searchBar}>
@@ -191,7 +270,7 @@ export default function EventsScreen({ navigation }: any) {
           ))}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -202,7 +281,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingTop: 8,
     paddingBottom: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -210,70 +289,174 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
   },
-  appTitle: {
-    fontFamily: colors.brandGreenCourt,
-    fontSize: 22,
-    fontWeight: '900',
-    letterSpacing: 2,
-    color: colors.brandGreenDeep,
+  headerLogo: {
+    width: 145,
+    height: 36,
+    resizeMode: 'contain',
   },
-  societySub: {
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 1.2,
-    color: colors.brandGold,
-    marginTop: 2,
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  badgeClub: {
+  roleChip: {
     backgroundColor: colors.brandGreenDeep,
     paddingVertical: 5,
     paddingHorizontal: 10,
-    borderRadius: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.brandGold,
   },
-  badgeClubText: {
+  roleChipText: {
     color: colors.brandGold,
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '900',
     letterSpacing: 1,
   },
-  roleBar: {
+  btnLogoutQuick: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
     backgroundColor: colors.surfaceSecondary,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  spectatorBanner: {
+    marginHorizontal: 20,
+    marginTop: 12,
+    backgroundColor: colors.surfaceCard,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1.5,
+    borderColor: colors.brandGold,
+  },
+  spectatorBannerTitle: {
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1,
+    color: colors.brandGreenDeep,
+  },
+  spectatorBannerSub: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 4,
+    lineHeight: 18,
+  },
+  btnSpectatorSignIn: {
+    backgroundColor: colors.brandGreenCourt,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  btnSpectatorSignInText: {
+    color: colors.canvasLight,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  adminBanner: {
+    marginHorizontal: 20,
+    marginTop: 12,
+    backgroundColor: '#FAF5EB',
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1.5,
+    borderColor: colors.brandGold,
+  },
+  roleBannerHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 6,
+    marginBottom: 4,
   },
-  roleLabel: {
-    fontSize: 10,
+  adminBannerTitle: {
+    fontSize: 11,
     fontWeight: '800',
-    color: colors.textSecondary,
     letterSpacing: 1,
+    color: colors.brandGreenDeep,
   },
-  rolePills: {
-    flexDirection: 'row',
-    gap: 4,
-  },
-  rolePill: {
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    borderRadius: 4,
-    backgroundColor: 'transparent',
-  },
-  rolePillActive: {
-    backgroundColor: colors.brandGreenDeep,
-  },
-  rolePillText: {
-    fontSize: 9,
-    fontWeight: '700',
+  adminBannerSub: {
+    fontSize: 12,
     color: colors.textSecondary,
+    lineHeight: 18,
+    marginBottom: 10,
   },
-  rolePillTextActive: {
+  adminActionsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  btnAdminAction: {
+    backgroundColor: colors.brandGreenDeep,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+  },
+  btnAdminActionText: {
     color: colors.brandGold,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  playerBanner: {
+    marginHorizontal: 20,
+    marginTop: 12,
+    backgroundColor: colors.brandGreenSubtle,
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1.5,
+    borderColor: colors.brandGreenCourt,
+  },
+  playerBannerTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1,
+    color: colors.brandGreenCourt,
+  },
+  playerBannerDetail: {
+    fontSize: 12,
+    color: colors.textPrimary,
+    fontWeight: '600',
+    marginVertical: 4,
+  },
+  btnPlayerSchedule: {
+    marginTop: 4,
+  },
+  btnPlayerScheduleText: {
+    color: colors.brandGreenCourt,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  umpireBanner: {
+    marginHorizontal: 20,
+    marginTop: 12,
+    backgroundColor: '#EBF4FF',
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1.5,
+    borderColor: '#3182CE',
+  },
+  umpireBannerTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1,
+    color: '#2B6CB0',
+  },
+  umpireBannerSub: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginVertical: 4,
+  },
+  btnUmpireAction: {
+    marginTop: 4,
+  },
+  btnUmpireActionText: {
+    color: '#2B6CB0',
+    fontSize: 11,
+    fontWeight: '800',
   },
   searchSection: {
     paddingHorizontal: 20,
-    paddingTop: 14,
+    paddingTop: 12,
   },
   searchBar: {
     flexDirection: 'row',
@@ -453,4 +636,3 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
-

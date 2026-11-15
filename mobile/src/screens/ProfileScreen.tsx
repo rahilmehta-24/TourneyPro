@@ -6,14 +6,15 @@ import {
   ScrollView,
   TouchableOpacity,
   Switch,
-  SafeAreaView,
   Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { User, Bell, Shield, Trash2, LogOut, Award, ChevronRight } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 import { useAuthStore } from '../state/authStore';
 
 export default function ProfileScreen() {
+  const insets = useSafeAreaInsets();
   const { user, logout, activeRole, setActiveRole } = useAuthStore();
 
   const [notifyMatchCall, setNotifyMatchCall] = useState(true);
@@ -39,7 +40,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: Math.max(insets.top, 16) }]}>
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>PLAYER PROFILE</Text>
@@ -141,7 +142,7 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

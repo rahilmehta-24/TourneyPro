@@ -75,7 +75,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({
       user: null,
       courtSession: null,
-      activeRole: 'spectator',
+      activeRole: 'player',
       isAuthenticated: false,
     });
   },

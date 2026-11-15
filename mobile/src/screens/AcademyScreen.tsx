@@ -5,12 +5,13 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Users, Award, Bell, ChevronRight } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 
 export default function AcademyScreen() {
+  const insets = useSafeAreaInsets();
   const announcements = [
     {
       id: 1,
@@ -34,7 +35,7 @@ export default function AcademyScreen() {
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: Math.max(insets.top, 16) }]}>
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>ACADEMY & CLUB</Text>
@@ -81,7 +82,7 @@ export default function AcademyScreen() {
           ))}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

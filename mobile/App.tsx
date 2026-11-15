@@ -3,7 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import MainTabNavigator from './src/navigation/MainTabNavigator';
+import RootNavigator from './src/navigation/RootNavigator';
 
 const queryClient = new QueryClient();
 
@@ -13,7 +13,7 @@ export default function App() {
       <QueryClientProvider client={queryClient}>
         <NavigationContainer>
           <StatusBar style="dark" />
-          <MainTabNavigator />
+          <RootNavigator />
         </NavigationContainer>
       </QueryClientProvider>
     </SafeAreaProvider>
