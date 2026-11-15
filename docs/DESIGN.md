@@ -171,13 +171,14 @@ Motion is soft and quick. Elements decelerate into place and accelerate out. Use
 ### 6.1 Navigation & Hero
 - `.navbar`: `--gradient-court` with a `3px solid var(--accent-secondary)` baseline, 64px tall, sticky, with `--shadow-sm` after scrolling.
 - `.hero`: Court Green framing, Cormorant Garamond display headline, one Gold primary CTA and one ghost secondary button.
-- Mobile: bottom tab bar (5 items max), 56px tall, active item marked by a Gold top indicator.
+- Mobile: bottom tab bar and compact top bar; see section 7.
 
 ### 6.2 Buttons
 - **Primary** (`.btn-primary`): Court Green fill, Ivory text, `--radius-md`, 44px height, 20px horizontal padding.
 - **Gold** (`.btn-gold`): Champion Gold fill, Ink text. Use at most one per screen, for the single most important action.
 - **Secondary:** white fill, `--border-strong`, Ink text. **Ghost:** transparent, Court Green text, Green-tint hover.
 - **Destructive:** Danger fill with white text, always behind a confirmation.
+- **Mobile:** buttons grow to 48–52px, go full width in forms and sheets, and use press states instead of hover. Full rules in section 7.4.
 - **Disabled:** 45% opacity, no hover, `cursor: not-allowed`. **Loading:** label replaced by a small spinner; width is preserved so the layout does not shift.
 
 ### 6.3 Forms
@@ -207,12 +208,136 @@ Centered illustration-light layout: Cormorant Garamond heading, one line of Inte
 
 ---
 
-## 7. Print & PDF Exports (`print_layout.html`, `export/*.html`)
+## 7. Mobile Experience
+Design mobile-first: phones are the primary device for scoring, checking draws, and receiving live updates at the court. Desktop layouts are enhancements, not the baseline.
+
+### 7.1 Breakpoints
+Write base styles for phones and add `min-width` queries upward.
+```css
+:root { --bp-sm: 480px; --bp-md: 768px; --bp-lg: 1024px; --bp-xl: 1280px; }
+/* base = phones (320–479). @media (min-width: 480px) large phones. 768px tablets. 1024px desktop. */
+```
+Test at 360 × 640, 390 × 844, 430 × 932, tablet portrait, and landscape.
+
+### 7.2 Layout, Spacing & Safe Areas
+- **Viewport:** `<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">`. Never disable user zoom.
+- **Gutters:** 16px (14px under 360px wide). Single-column layout; two columns only for compact stats and chips.
+- **Cards:** 16–18px padding, 12px gap between cards, 24px between sections.
+- **Safe areas:** pad fixed bars with `env(safe-area-inset-bottom)` and page edges with the left and right insets so nothing hides behind notches or the home indicator.
+- **Heights:** use `100svh` or `100dvh`, not `100vh`, so the mobile browser toolbar does not clip content.
+- **Text:** body 15–16px, headings scale down (h1 28px, h2 22px), inputs always 16px or larger to prevent iOS zoom-on-focus. Never use hover-only information; tap reveals it instead.
+- **Scrolling:** one vertical scroll per screen. Horizontal scrolling only inside deliberate containers (brackets, chip rows, wide tables) with scroll-snap and a fade at the edge.
+
+### 7.3 Thumb Zone & Reach
+- Place the most frequent actions in the bottom third of the screen: score entry, "Start match", "Save", primary navigation.
+- Put destructive actions (cancel match, remove player) away from the primary action, never directly adjacent, and always behind a confirmation sheet.
+- Top corners hold only low-frequency items (back, overflow menu, notifications).
+
+### 7.4 Buttons on Mobile
+Touch targets follow platform guidance: at least 44 × 44 px, with 48 × 48 px preferred. Adjacent targets are separated by at least 8px.
+
+| Type | Height | Width | Use |
+|---|---|---|---|
+| **Primary** (`.btn-primary`) | 52px | Full width in forms, sheets, and action bars | The single main action on screen |
+| **Gold** (`.btn-gold`) | 52px | Full width | The one hero action ("Create tournament"), max one per screen |
+| **Secondary** | 48px | Full width or 50/50 with primary | Alternate actions |
+| **Ghost / text** | 48px | Auto, min 64px wide | Low-emphasis actions such as Skip, Cancel |
+| **Compact** | 40px visual, 44px tap area | Auto | Inline actions inside table rows and cards; extend hit area with padding or a pseudo-element |
+| **Icon button** | 44 × 44 px (icon 24px) | Square | Toolbars and headers; always has an `aria-label` |
+| **Chip / segmented** | 44px | Auto | Filters and view toggles |
+| **Score stepper (+ / −)** | 56 × 56 px | Square | One-handed live scoring |
+
+**Shape and type:** radius `12px` on mobile (`--radius-md` rises from 10px), Inter 16px at weight 600, horizontal padding 20px, label never wraps (shorten the label instead).
+
+**Pairing:** when two buttons sit together, the primary action goes on the bottom (nearest the thumb) when stacked, or on the right when side by side. Never place two filled buttons next to each other; the second is Secondary or Ghost.
+
+**States:**
+- No hover on touch. Wrap hover styles in `@media (hover: hover)`.
+- **Press:** `transform: scale(0.98)` plus the `--accent-primary-active` fill over `--dur-instant` (90ms) for immediate feedback.
+- **Focus:** keep the shared focus ring for keyboard and switch-control users (`:focus-visible`).
+- **Loading:** show a 18px spinner replacing the label, keep the width fixed, set `aria-busy="true"`, and ignore further taps.
+- **Disabled:** 45% opacity, not focusable; explain why in helper text nearby, since there is no hover tooltip.
+- **Success confirmation:** the label briefly swaps to a check icon (800ms) before returning, for actions with no visible result.
+
+**Browser behavior:**
+```css
+button, .btn { -webkit-tap-highlight-color: transparent; touch-action: manipulation; user-select: none; }
+.btn { min-height: 48px; padding: 0 20px; border-radius: 12px; font: 600 16px/1 Inter, sans-serif; }
+.btn-block { width: 100%; }
+.btn:active { transform: scale(0.98); transition-duration: var(--dur-instant); }
+@media (hover: hover) { .btn-primary:hover { background: var(--accent-primary-hover); } }
+.icon-btn { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; }
+.btn-compact { min-height: 40px; position: relative; }
+.btn-compact::after { content: ""; position: absolute; inset: -2px 0; } /* extends tap area to 44px */
+```
+
+### 7.5 Sticky Action Bar
+For forms and detail screens, keep the primary action visible in a bottom bar rather than at the end of a long page.
+```css
+.action-bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+  display: flex; gap: 12px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  background: rgba(250, 248, 243, 0.94); backdrop-filter: blur(8px);
+  border-top: 1px solid var(--border-subtle); box-shadow: 0 -8px 20px rgba(15, 61, 46, 0.08);
+}
+.page-with-action-bar { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+```
+- One primary (flex 2) and at most one secondary (flex 1). A single primary spans the full width.
+- The bar hides while the on-screen keyboard is open if it would cover the field; the field scrolls into view above the keyboard.
+- When a bottom tab bar is also present, the action bar sits directly above it, and the page padding adds both heights.
+
+### 7.6 Floating Action Button (FAB)
+- 56px circle in Champion Gold with an Ink icon, `--shadow-md`, placed 16px from the right and 16px above the tab bar (plus the safe-area inset).
+- Use it for the single creation action on a list screen ("New tournament", "Add match").
+- **Extended FAB** (icon + label, 48px high) at the top of a list or on first view, collapsing to icon-only after scrolling.
+- Hides on scroll down (`translateY(120%)`, `--dur-base`, `--ease-in`) and returns on scroll up. Never overlaps the action bar; it is hidden on screens that have one.
+
+### 7.7 Navigation & Surfaces
+- **Bottom tab bar:** 56px plus safe-area inset, maximum 5 destinations (Home, Draws, Schedule, Live, Profile). Icon 24px with a 12px label always visible. The active tab has a Gold 3px top indicator and a Court Green icon and label.
+- **Top bar:** 56px, back button at left, title centered or left, one or two icon buttons at right. It condenses (shadow appears) once the page scrolls.
+- **Bottom sheets replace modals** on phones: slide up from the bottom, 16px top radius, drag handle (36 × 4px), snap points at about 50% and 90% of `100svh`, swipe down or tap the backdrop to dismiss, content scrolls inside the sheet. Sheet actions use the full-width stacked buttons from section 7.4.
+- **Menus** open as sheets, not small floating popovers.
+- **Toasts** appear above the tab bar and action bar, never behind them, and are not used for critical errors.
+
+### 7.8 Draws, Brackets & Tables on Mobile
+- **Brackets:** show one round at a time with sticky round tabs (Round of 16, QF, SF, Final) and swipe between rounds using scroll-snap. A "Full bracket" button opens a pan-and-pinch-zoom view.
+- **Match cards:** full width, 16px padding, tap anywhere to open the match sheet. Winner is bold with a check icon.
+- **Standings and wide tables:** keep the first column (player) sticky, scroll the rest horizontally, 48px minimum row height, and right-aligned tabular numerals. Alternatively, collapse each row into a stacked card for tables with more than 5 columns.
+- **Fixtures list:** group by day with sticky date headers; live matches float to the top with the Clay LIVE pill.
+- **Live scoring:** the score screen uses large 56px stepper buttons and a prominent "Undo" button, with haptic feedback where available (`navigator.vibrate(10)`).
+
+### 7.9 Forms on Mobile
+- Inputs 48px tall, 16px text, labels above, helper text below, one field per row.
+- Use `inputmode`, `type`, and `autocomplete` attributes (`numeric`, `email`, `tel`) so the right keyboard appears; use native date and time pickers.
+- Validate on blur and on submit, scroll to the first error, and show the message below the field with an icon.
+- Avoid stacking sheets on sheets; use a full-screen step for multi-step flows such as tournament setup, with a progress indicator at the top and Back / Next in the action bar.
+
+### 7.10 Motion & Performance on Mobile
+- Shorten durations by about 20% on phones (`--dur-base: 210ms`, `--dur-slow: 340ms`) and drop `--ease-spring` overshoot.
+- Animate only `transform` and `opacity`. No parallax, no scroll-jacking, and no more than two looping animations visible at once.
+- Use `backdrop-filter` only for the top bar, action bar, and sheet backdrop, and keep blur at 8px or less.
+- Ambient background light is limited to the soft aurora and the baseline shimmer on hero and login screens. Use smaller, less blurred shapes, and never run it behind brackets, tables, or score screens.
+- Pull-to-refresh uses a small tennis ball that rotates with the pull distance.
+- Pause looping animations when the tab is hidden, and honor `prefers-reduced-motion` (section 5.3).
+- **Budgets:** Largest Contentful Paint under 2.5s on a mid-range phone over 4G, Cumulative Layout Shift under 0.1, Interaction to Next Paint under 200ms, 60fps scrolling. Lazy-load below-the-fold images, preload the two fonts in use with `font-display: swap`, and reserve space for images and skeletons to avoid layout shift.
+
+### 7.11 Mobile QA Checklist
+- Every tappable element is at least 44 × 44 px and has 8px spacing from neighbors.
+- Primary action is reachable with one thumb and not covered by the keyboard or the browser toolbar.
+- No horizontal page scroll at 320px wide; text stays readable at 200% zoom.
+- Safe areas respected in portrait and landscape.
+- Inputs do not trigger zoom on focus.
+- Status is never conveyed by color alone.
+- Works with reduced motion on, with VoiceOver and TalkBack labels on icon buttons, and with a slow network (skeletons appear within 100ms).
+
+---
+
+## 8. Print & PDF Exports (`print_layout.html`, `export/*.html`)
 Clean `#FFFFFF` paper with `#14221C` typography, `#0F3D2E` section, round, and court banners, `#C9A55C` baseline dividers, `#F2EEE4` and `#E7E1D2` row shading, and the stacked logo (light version) in the header. No shadows, no animation, and no gradients in print. Floating print preview controls use `#0F3D2E` with `#FAF8F3` text.
 
 ---
 
-## 8. Logo & Brand Marks
+## 9. Logo & Brand Marks
 - **Monogram:** serif "B" inside a double Champion Gold ring, resting on a gold baseline with a small ball dot. On Court Green use Gold ring and Ivory letter; on light surfaces use Gold ring and Court Green letter.
 - **Wordmark:** "THE" small and tracked in Gold (or Antique Gold on light), "Baseline Society" in Cormorant Garamond 600.
 - **Minimum sizes:** full logo 120px wide; monogram 40px. Below 40px use the letter only.
