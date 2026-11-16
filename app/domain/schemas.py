@@ -1,7 +1,10 @@
 from flask_marshmallow import Marshmallow
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
 from marshmallow import fields
-from .models import Tournament, Category, Match, Participant, User, Player
+from .models import (
+    Tournament, Category, Match, Participant, User, Player,
+    Registration, DeviceRegistration, InAppNotification, UserNotificationPreferences
+)
 
 ma = Marshmallow()
 
@@ -9,6 +12,16 @@ class UserSchema(SQLAlchemyAutoSchema):
     class Meta:
         model = User
         exclude = ("password_hash",)
+
+class PublicUserSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        model = User
+        fields = ("id", "username", "role")
+
+class PublicParticipantSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        model = Participant
+        fields = ("id", "name", "seed", "final_rank")
 
 class PlayerSchema(SQLAlchemyAutoSchema):
     class Meta:
@@ -46,6 +59,10 @@ class TournamentSchema(SQLAlchemyAutoSchema):
 
 user_schema = UserSchema()
 users_schema = UserSchema(many=True)
+public_user_schema = PublicUserSchema()
+public_users_schema = PublicUserSchema(many=True)
+public_participant_schema = PublicParticipantSchema()
+public_participants_schema = PublicParticipantSchema(many=True)
 
 tournament_schema = TournamentSchema()
 tournaments_schema = TournamentSchema(many=True)
@@ -58,3 +75,34 @@ matches_schema = MatchSchema(many=True)
 
 participant_schema = ParticipantSchema()
 participants_schema = ParticipantSchema(many=True)
+
+class RegistrationSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        model = Registration
+        include_fk = True
+
+class InAppNotificationSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        model = InAppNotification
+        include_fk = True
+
+class DeviceRegistrationSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        model = DeviceRegistration
+        include_fk = True
+
+class UserNotificationPreferencesSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        model = UserNotificationPreferences
+        include_fk = True
+
+registration_schema = RegistrationSchema()
+registrations_schema = RegistrationSchema(many=True)
+
+notification_schema = InAppNotificationSchema()
+notifications_schema = InAppNotificationSchema(many=True)
+
+device_registration_schema = DeviceRegistrationSchema()
+device_registrations_schema = DeviceRegistrationSchema(many=True)
+
+notification_preferences_schema = UserNotificationPreferencesSchema()

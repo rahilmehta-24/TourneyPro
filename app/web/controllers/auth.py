@@ -12,8 +12,9 @@ auth_bp = Blueprint('auth', __name__)
 
 def get_current_user():
     if 'user_id' in session:
-        if not hasattr(g, 'current_user') or g.current_user is None:
-            g.current_user = User.query.get(session['user_id'])
+        user_id = session['user_id']
+        if not hasattr(g, 'current_user') or g.current_user is None or getattr(g.current_user, 'id', None) != user_id:
+            g.current_user = db.session.get(User, user_id)
         return g.current_user
     return None
 
@@ -64,7 +65,15 @@ def check_tournament_access(tournament, min_role="scorer"):
         return True
 
     role_weights = {"manager": 3, "official": 2, "scorer": 1}
-    min_weight = role_weights.get(min_role, 1)
+    role_aliases = {
+        "tournament_admin": "manager",
+        "desk": "official",
+        "umpire": "scorer"
+    }
+    canonical_min = role_aliases.get(min_role, min_role)
+    if canonical_min not in role_weights:
+        raise ValueError(f"Invalid min_role specified: {min_role}")
+    min_weight = role_weights[canonical_min]
 
     # 3. Check TournamentStaff table for logged-in user
     if user:
@@ -73,7 +82,8 @@ def check_tournament_access(tournament, min_role="scorer"):
             user_id=user.id
         ).first()
         if staff:
-            staff_weight = role_weights.get(staff.role, 0)
+            canonical_staff = role_aliases.get(staff.role, staff.role)
+            staff_weight = role_weights.get(canonical_staff, 0)
             if staff_weight >= min_weight:
                 return True
 
@@ -84,7 +94,8 @@ def check_tournament_access(tournament, min_role="scorer"):
         staff = TournamentStaff.query.get(pin_data.get("staff_id"))
         if staff and staff.tournament_id == tournament.id:
             if not staff.pin_expires_at or staff.pin_expires_at > datetime.utcnow():
-                staff_weight = role_weights.get(staff.role, 0)
+                canonical_staff = role_aliases.get(staff.role, staff.role)
+                staff_weight = role_weights.get(canonical_staff, 0)
                 if staff_weight >= min_weight:
                     return True
             else:
@@ -214,9 +225,16 @@ def bootstrap_superadmin():
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if get_current_user():
-        return redirect(url_for('main.index'))
+        return redirect(url_for('player.dashboard'))
 
     if request.method == 'POST':
+        from app.services.utils.rate_limiter import check_rate_limit, get_client_ip, reset_rate_limit
+        client_ip = get_client_ip()
+        allowed, retry_after = check_rate_limit(f"web_login_{client_ip}", max_requests=10, window_seconds=60)
+        if not allowed:
+            flash(f"Too many login attempts. Please wait {retry_after} seconds before trying again.", "error")
+            return render_template('auth/login.html')
+
         username = request.form.get('username', '').strip()
         password = request.form.get('password')
 
@@ -227,10 +245,20 @@ def login():
             return redirect(url_for('auth.login'))
             
         if user and user.check_password(password):
+            reset_rate_limit(f"web_login_{client_ip}")
+            # Session fixation protection: clear existing session first
+            session.clear()
             session['user_id'] = user.id
             session.permanent = True
+            g.current_user = user
+
+            # Step 1-3: Verify profile exists for authenticated user; initialize if missing
+            from app.services.user_service import ensure_user_profile
+            ensure_user_profile(user.id)
+
             flash(f'Welcome back, {user.username}!', 'success')
-            return redirect(url_for('main.index'))
+            # Step 4: Redirect authenticated user to their own profile dashboard
+            return redirect(url_for('player.dashboard'))
         else:
             flash('Invalid username or password.', 'error')
 
@@ -239,12 +267,20 @@ def login():
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
     if get_current_user():
-        return redirect(url_for('main.index'))
+        return redirect(url_for('player.dashboard'))
 
     if request.method == 'POST':
+        from app.services.utils.rate_limiter import check_rate_limit, get_client_ip, reset_rate_limit
+        client_ip = get_client_ip()
+        allowed, retry_after = check_rate_limit(f"web_register_{client_ip}", max_requests=10, window_seconds=60)
+        if not allowed:
+            flash(f"Too many registration attempts. Please wait {retry_after} seconds before trying again.", "error")
+            return render_template('auth/register.html')
+
         username = request.form.get('username', '').strip()
         email = request.form.get('email', '').strip()
         password = request.form.get('password')
+        password_confirm = request.form.get('password_confirm')
         name = request.form.get('name', username).strip() or username
         contact_number = request.form.get('contact_number', '').strip()
 
@@ -260,9 +296,13 @@ def register():
             return render_template('auth/register.html')
         email = e_clean
 
-        ok, p_clean = validate_password(password, min_len=8)
+        ok, p_clean = validate_password(password, min_length=8)
         if not ok:
             flash(p_clean, 'error')
+            return render_template('auth/register.html')
+
+        if password_confirm is not None and password != password_confirm:
+            flash('Passwords do not match. Please verify your password.', 'error')
             return render_template('auth/register.html')
 
         ok, n_clean = validate_name(name, min_len=2, field_name="Full Name")
@@ -278,116 +318,92 @@ def register():
                 return render_template('auth/register.html')
             contact_number = mob_clean
 
-        # Check existing
-        if User.query.filter_by(username=username).first():
-            flash('Username already exists.', 'error')
-            return render_template('auth/register.html')
-
-        if User.query.filter_by(email=email).first():
-            flash('Email already exists.', 'error')
-            return render_template('auth/register.html')
-
-        user = User(username=username, email=email, role='user')
-        user.set_password(password)
-
-        db.session.add(user)
-        db.session.commit()  # commit to get user.id
-        
-        # Create initial Player profile
-        from app.domain.models import Player
-        from datetime import date
-        
-        gender = request.form.get('gender', 'Male')
-        if gender not in ['Male', 'Female']:
-            gender = 'Male'
-            
         dob_str = request.form.get('dob', '').strip()
         dob = None
-        age_category = 'Open'
-        
         if dob_str:
             ok, dob_res = validate_dob(dob_str, field_name="Date of Birth")
             if not ok:
                 flash(dob_res, 'error')
                 return render_template('auth/register.html')
             dob = dob_res
-            today = date.today()
-            age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
-            
-            if age <= 8:
-                age_category = 'U8'
-            elif age <= 10:
-                age_category = 'U10'
-            elif age <= 12:
-                age_category = 'U12'
-            elif age <= 14:
-                age_category = 'U14'
-            elif age <= 16:
-                age_category = 'U16'
-            elif age <= 18:
-                age_category = 'U18'
-            elif age >= 45:
-                age_category = '45+'
-            elif age >= 35:
-                age_category = '35+'
-            else:
-                age_category = 'Open'
-                
-        # Parse new fields
-        contact_number = request.form.get('contact_number')
-        nationality = request.form.get('nationality')
-        height = request.form.get('height')
-        weight = request.form.get('weight')
-        blood_group = request.form.get('blood_group')
-        address = request.form.get('address')
-        coach = request.form.get('coach')
-        academy = request.form.get('academy')
-        
-        # System generated fields
-        from datetime import date
-        from datetime import timedelta
-        import random
-        
-        current_date = date.today()
-        # Generate Registration No: TP-YYYY-HEX
-        reg_no = f"TP-{current_date.year}-{random.randint(0x1000, 0xFFFF):X}"
-        registration_date = current_date
-        registration_validity = current_date + timedelta(days=365)
-        
-        player = Player(
-            user_id=user.id,
-            name=name,
-            gender=gender,
-            age_category=age_category,
-            dob=dob,
-            email=email,
-            contact_number=contact_number,
-            nationality=nationality,
-            height=height,
-            weight=weight,
-            blood_group=blood_group,
-            address=address,
-            coach=coach,
-            academy=academy,
-            registration_no=reg_no,
-            registration_date=registration_date,
-            registration_validity=registration_validity,
-            current_status='Active'
-        )
-        db.session.add(player)
-        db.session.commit()
 
-        flash('Registration successful! Your player profile has been generated. Please log in.', 'success')
+        from app.services.user_service import register_user
+        result = register_user(
+            username=username,
+            email=email,
+            password=password,
+            password_confirm=password_confirm,
+            full_name=name,
+            gender=request.form.get('gender', 'Male'),
+            dob=dob,
+            contact_number=contact_number,
+            nationality=request.form.get('nationality'),
+            height=request.form.get('height'),
+            weight=request.form.get('weight'),
+            blood_group=request.form.get('blood_group'),
+            address=request.form.get('address'),
+            coach=request.form.get('coach'),
+            academy=request.form.get('academy')
+        )
+
+        if not result.success:
+            flash(result.message, 'error')
+            return render_template('auth/register.html')
+
+        reset_rate_limit(f"web_register_{client_ip}")
+        flash(result.message, result.category)
         return redirect(url_for('auth.login'))
 
     return render_template('auth/register.html')
 
 @auth_bp.route('/logout')
 def logout():
-    session.pop('user_id', None)
+    session.clear()
     g.current_user = None
     flash('You have been logged out.', 'info')
-    return redirect(url_for('main.index'))
+    return redirect(url_for('auth.login'))
+
+@auth_bp.route('/organizer/activate', methods=['POST'])
+@login_required
+def activate_organizer():
+    """Self-service tournament organizer activation with fair play agreement and auditing."""
+    user = get_current_user()
+    org_name = request.form.get('organization_name', '').strip()
+    contact_phone = request.form.get('contact_phone', '').strip()
+    agreed_terms = request.form.get('agreed_terms')
+
+    if not org_name or len(org_name) < 3:
+        flash('Organization, club, or host name must be at least 3 characters.', 'error')
+        return redirect(request.referrer or url_for('player.dashboard'))
+
+    if not agreed_terms:
+        flash('You must agree to the Tournament Organizer Fair Play & Security terms.', 'error')
+        return redirect(request.referrer or url_for('player.dashboard'))
+
+    # Update role to admin/organizer
+    user.role = 'admin'
+    user.admin_requested = False
+
+    player = Player.query.filter_by(user_id=user.id).first()
+    if player:
+        if not player.academy:
+            player.academy = org_name
+        if contact_phone and not player.contact_number:
+            player.contact_number = contact_phone
+
+    from app.services.utils.audit import log_audit
+    log_audit(
+        action_type="organizer_self_activation",
+        target_id=user.id,
+        target_name=user.username,
+        reason="Self-Service Organizer Activation",
+        explanation=f"User activated tournament organizer status for club/org '{org_name}'.",
+        user_id=user.id
+    )
+
+    db.session.commit()
+    flash(f"Organizer status activated! Welcome to the Baseline Society Tournament Host Network, {org_name}.", "success")
+    return redirect(url_for('tournament.create_tournament'))
 
 @auth_bp.route('/request-admin', methods=['POST'])
 @login_required
@@ -408,6 +424,31 @@ def request_admin():
 def user_management():
     users = User.query.order_by(User.role.desc(), User.username).all()
     return render_template('auth/users.html', users=users)
+
+@auth_bp.route('/admin/users/create', methods=['GET', 'POST'])
+@login_required
+@role_required('superadmin')
+def create_user_admin():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        role = request.form.get('role', 'user')
+        full_name = request.form.get('full_name')
+
+        from app.services.user_service import admin_create_user
+        result = admin_create_user(
+            username=username,
+            email=email,
+            password=password,
+            role=role,
+            full_name=full_name
+        )
+
+        flash(result.message, result.category)
+        return redirect(url_for('auth.user_management'))
+
+    return redirect(url_for('auth.user_management'))
 
 @auth_bp.route('/admin/users/<int:user_id>/grant', methods=['POST'])
 @login_required

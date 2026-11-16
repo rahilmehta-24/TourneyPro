@@ -1,10 +1,10 @@
-from flask import Flask, request
+from flask import Flask, request, session, flash, redirect, url_for
 from config import Config
 from app.domain.models import db
 from flask_compress import Compress
 from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
-from flask_wtf.csrf import CSRFProtect
+from flask_wtf.csrf import CSRFProtect, CSRFError
 import os
 
 migrate = Migrate()
@@ -23,7 +23,8 @@ def create_app(config_class=Config):
     
     
     # Initialize JWT and Marshmallow
-    app.config['JWT_SECRET_KEY'] = app.config.get('SECRET_KEY', 'super-secret')  # Use app secret key for JWT
+    if not app.config.get('JWT_SECRET_KEY'):
+        app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY') or 'baseline-society-jwt-secret-key-32-chars-minimum-prod'
     jwt = JWTManager(app)
     
     from app.domain.schemas import ma
@@ -182,16 +183,65 @@ def create_app(config_class=Config):
         import markupsafe
         return markupsafe.Markup(markupsafe.escape(s).replace('\n', '<br>\n'))
 
-    # Cache Control Middleware for static assets & Security Headers
+    @app.before_request
+    def ensure_session_permanent():
+        session.permanent = True
+
+    # Cache Control Middleware for static assets & Security Headers (OWASP ASVS SEC-081, SEC-084, SEC-086, SEC-087)
     @app.after_request
-    def add_cache_headers(response):
-        # Global Security & Watermark Headers
-        response.headers['X-Author'] = 'Built for Tennis by Rahil Mehta'
-        response.headers['X-Powered-By'] = 'TourneyPro Engine'
+    def add_security_and_cache_headers(response):
+        # HTTP Security Headers
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        response.headers['Permissions-Policy'] = 'geolocation=(), camera=(), microphone=()'
+        response.headers['Content-Security-Policy'] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' https://unpkg.com; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com data:; "
+            "img-src 'self' data: https: blob:; "
+            "connect-src 'self' https: ws: wss:; "
+            "frame-ancestors 'self';"
+        )
         
-        # Cache static files for 1 hour
+        # Strip server signature headers (SEC-060, SEC-094)
+        response.headers.pop('X-Powered-By', None)
+        response.headers.pop('Server', None)
+
+        # Enforce HSTS on production / Vercel HTTPS deployments (SEC-081)
+        if request.is_secure or request.headers.get('X-Forwarded-Proto') == 'https':
+            response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+
+        # CORS restrictions for API routes (SEC-084)
+        if request.path.startswith('/api/'):
+            origin = request.headers.get('Origin')
+            trusted_origins = os.environ.get(
+                'TRUSTED_ORIGINS',
+                'http://localhost:3000,http://localhost:5001,http://127.0.0.1:3000,http://127.0.0.1:5001,http://localhost:8081,http://localhost:19006'
+            ).split(',')
+            trusted_origins = [o.strip() for o in trusted_origins if o.strip()]
+            
+            if origin:
+                is_trusted = (
+                    origin in trusted_origins or
+                    origin.startswith('http://localhost:') or
+                    origin.startswith('http://127.0.0.1:') or
+                    origin.startswith('exp://')
+                )
+                if is_trusted:
+                    response.headers['Access-Control-Allow-Origin'] = origin
+                    response.headers['Access-Control-Allow-Credentials'] = 'true'
+                    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+                    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With'
+
+        # Cache static files for 1 hour; prevent proxies/CDN/browsers from caching dynamic HTML with CSRF tokens
         if request.path.startswith('/static/'):
             response.headers['Cache-Control'] = 'public, max-age=3600'
+        elif not request.path.startswith('/api/'):
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
         return response
 
     # Inject current_user into templates
@@ -202,6 +252,18 @@ def create_app(config_class=Config):
 
     import traceback
     import logging
+
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(e):
+        db.session.rollback()
+        logging.warning(f"CSRF validation failed: {getattr(e, 'description', str(e))}")
+        if request.path.startswith('/api/'):
+            return {"success": False, "message": "Security token has expired or is invalid. Please refresh the page."}, 400
+        flash("Your session security token has expired. Please try submitting again.", "warning")
+        referrer = request.referrer
+        if referrer and (referrer.startswith(request.host_url) or referrer.startswith('/')):
+            return redirect(referrer)
+        return redirect(url_for('main.index'))
 
     @app.errorhandler(Exception)
     def handle_exception(e):

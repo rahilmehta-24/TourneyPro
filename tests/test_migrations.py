@@ -3,7 +3,8 @@ import os
 import tempfile
 from app import create_app
 from app.domain.models import (
-    db, User, Tournament, Category, Participant, Match, Group, PlayerCategoryTier, TeamMember, Registration
+    db, User, Tournament, Category, Participant, Match, Group, PlayerCategoryTier, TeamMember, Registration,
+    DeviceRegistration, InAppNotification, UserNotificationPreferences
 )
 from flask_migrate import upgrade
 
@@ -69,6 +70,15 @@ class MigrationTestCase(unittest.TestCase):
             self.assertIn('start_time', Category.__table__.columns)
             self.assertIn('end_time', Category.__table__.columns)
             self.assertIn('daily_schedule', Category.__table__.columns)
+
+            # Verify mobile notification and device tables from b7e2d91f4a01
+            self.assertTrue(hasattr(DeviceRegistration, '__table__'))
+            self.assertTrue(hasattr(InAppNotification, '__table__'))
+            self.assertTrue(hasattr(UserNotificationPreferences, '__table__'))
+            self.assertIn('device_token', DeviceRegistration.__table__.columns)
+            self.assertIn('platform', DeviceRegistration.__table__.columns)
+            self.assertIn('notification_type', InAppNotification.__table__.columns)
+            self.assertIn('notify_match_called', UserNotificationPreferences.__table__.columns)
 
     def test_02_sqlite_batch_mode_enabled(self):
         """Verify that render_as_batch is enabled on the migrate extension"""

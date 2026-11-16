@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "Baseline Society",
+    "slug": "baseline-society",
+    "version": "1.0.0",
+    "sdkVersion": "58.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B2B20"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.baselinesociety.app"
+    },
+    "android": {
+      "package": "com.baselinesociety.app",
+      "usesCleartextTraffic": true,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0B2B20"
+      }
+    },
+    "scheme": "baselinesociety",
+    "plugins": [
+      "expo-asset"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "bd97c2f8-598e-47ec-924e-2c4939583ddb"
+      }
+    }
+  }
+}

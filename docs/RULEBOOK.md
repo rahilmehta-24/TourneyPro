@@ -1,9 +1,9 @@
-# TourneyPro Rulebook & Operating Manual
+# The Baseline Society Rulebook & Operating Manual
 
-Welcome to the official rulebook and operating manual for TourneyPro. This guide provides an in-depth look at how the tournament system operates, the formats supported, and how scoring and rankings are processed behind the scenes.
+Welcome to the official rulebook and operating manual for The Baseline Society. This guide provides an in-depth look at how the tournament system operates, the formats supported, and how scoring and rankings are processed behind the scenes.
 
 ## 1. System Overview
-TourneyPro is a centralized, multi-tier tournament management system designed to host sports and gaming competitions. 
+The Baseline Society is a centralized, multi-tier tournament management system designed to host sports and gaming competitions. 
 
 The architecture follows a strict hierarchy:
 `Tournament -> Categories -> Matches & Participants`
@@ -17,7 +17,7 @@ The architecture follows a strict hierarchy:
 A standard knockout bracket where a player is eliminated after a single match loss.
 - **Generation:** Bracket generation relies on mathematical powers of 2. If the number of participants is not a power of 2 (e.g. 8, 16, 32), the system automatically generates **Byes** for the top seeds, advancing them straight to the next round.
 - **Seeding:** Supports manual numeric seeding. If unseeded, players are randomly distributed into the bracket.
-- **Rankings:** The winner of the final gets Final Rank 1 (Champion). The loser gets Final Rank 2 (Runner-Up). The losers of the Semi-Finals both receive Final Rank 3 (Semi-Finalists).
+- **Rankings:** The winner of the final gets Final Rank 1 (Champion). The loser gets Final Rank 2 (Runner-Up). The losers of the Semi-Finals both receive Final Rank 3 (tied Semi-Finalists, displayed as the "3-4" band). Quarter-Final losers are the tied "5-8" band. The bands are display labels; the stored `final_rank` for both semi-finalists is 3.
 
 ### 2.1.1 Doubles Elimination (Knockout)
 Operates exactly like Single Elimination, but participants are registered as pairs (e.g. `Player 1 / Player 2`). 
@@ -32,7 +32,7 @@ In this format, every participant plays exactly one match against every other pa
 
 ### 2.3 Group Stage Team League (Multi-Rubber Ties)
 Specially engineered for club, corporate, and inter-team racquet sports leagues:
-- **Team Structure & Drafting:** Teams consist of 5 tiered players (Tiers A through E). Supports **Mode A** (manual chit draw with duplicate prevention) and **Mode B** (auto-balanced tier draft distributing 1 player from each tier into each team).
+- **Team Structure & Drafting:** Teams consist of 5 tiered players (Tiers A through E). Tiers A, B, C, and D fill the three rubbers; Tier E is the reserve/substitute slot. Supports **Mode A** (manual chit draw with duplicate prevention) and **Mode B** (auto-balanced tier draft distributing 1 player from each tier into each team).
 - **3-Rubber Fixture Structure:** Each team tie consists of 3 distinct rubbers:
   - *Rubber 1:* Singles 1 (Tier A vs Tier A)
   - *Rubber 2:* Doubles (Tier B + Tier C vs Tier B + Tier C)
@@ -70,14 +70,15 @@ When a tournament finishes, the "Overall Leaderboard" will parse the finalized r
 
 ## 5. Official Roles & Delegated Tournament Operations
 
-TourneyPro enforces a strict role hierarchy for operational security and sporting integrity:
+The Baseline Society enforces a strict, fail-closed role hierarchy for operational security and sporting integrity:
 
-1. **Tournament Organizer / Director (`owner` / `tournament_admin`):** Controls the entire tournament lifecycle, court rosters, financial settings, staff appointments, and draw publication.
-2. **Tournament Desk / Operations Manager (`desk`):** Manages day-to-day check-in, seed assignments, court scheduling, and match score verifications.
-3. **Chair Umpire / Match Official (`umpire`):** Reports game and set scores on assigned courts via mobile or tablet.
-4. **Fast Court PIN Scorekeeper (`court_pin`):** Dedicated on-court tablets authenticated with a 4-digit tournament PIN, allowing rapid score reporting without personal accounts.
-5. **Team League Captain (`captain`):** Submits 3-rubber lineups before match deadlines.
-6. **Competitors & Spectators:** Public view-only access for published draws, standings, and order of play.
+1. **Tournament Organizer / Director (`owner`):** Controls the entire tournament lifecycle, court rosters, financial settings, staff appointments, Court PINs, and draw publication. Only the owner (or a superadmin) can do these.
+2. **Tournament Manager (`manager`; legacy `tournament_admin`, `desk`):** Day-to-day check-in, seed assignments, court scheduling, and score verification. Cannot appoint staff or publish draws.
+3. **Match Official (`official`):** Chief referee: walkovers, retirements, disputes, score corrections.
+4. **Scorer (`scorer`; legacy `umpire`):** Reports game and set scores on assigned courts via mobile or tablet.
+5. **Court PIN Scorekeeper:** Dedicated on-court tablets unlocked with a **6-digit, expiring PIN tied to one court**. Scoring only; no account is needed, and every action is audit-logged under the scorer's display name.
+6. **Team League Captain (`captain`):** Submits 3-rubber lineups before the cutoff.
+7. **Competitors & Spectators:** Public view-only access for published draws, standings, and order of play.
 
 ## 6. Bracket Publication Workflow (Draft vs. Published)
 
@@ -94,8 +95,9 @@ TourneyPro enforces a strict role hierarchy for operational security and sportin
 
 To maintain absolute competitive fairness:
 - **Active Competitor Lockout:** An athlete scheduled to play in a match cannot officiate or submit scores for that match. The system automatically inspects participant accounts and raises an immediate `HTTP 403 Forbidden` error if a conflict is detected.
-- **Team Captain Restriction:** Team captains cannot score or report results for ties involving their own team.
-- **Optimistic Concurrency Lock:** Matches maintain a `lock_version` counter. If two referees or officials attempt to modify the same match simultaneously, the second submission is rejected with `HTTP 409 Conflict`, preventing data corruption or accidental overwrites.
+- **Team Restriction:** Team captains and every rostered player (including lineup players of a rubber) cannot score or report results for ties involving their own team.
+- **PIN Scorers:** A Court PIN scorer should not be a competitor in the matches on that court. PIN scoring is audit-logged so organizers can review it.
+- **Optimistic Concurrency Lock:** Matches maintain a mandatory `lock_version` counter checked atomically. If two referees or officials attempt to modify the same match simultaneously, the second submission is rejected with `HTTP 409 Conflict`, preventing data corruption or accidental overwrites.
 
 ## 8. Administration & Lifecycle
 
@@ -106,7 +108,7 @@ The system utilizes a **Unified Step-by-Step Wizard** to prevent workflow fragme
 3. **Step 3: Registration & Deadlines:** Admin defines a `Registration Closes At` deadline. The system handles all Timezone translations securely, converting the Admin's local time natively into UTC.
 4. **Step 4: Execution & Match Reporting:** Admin clicks "Start Tournament". The system intelligently cascades generation to all unstarted categories. Admins then use the interactive grid/bracket to report results on the fly.
 5. **Completion:** When all matches in a category end, the "Finish Category" button is clicked. This locks the results and assigns Final Ranks.
-6. **Reset:** If a mistake is made, Admins can completely wipe the tournament bracket back to the Setup Phase without losing registered participants. Note: Double-execution safeguards prevent overlapping generation.
+6. **Reset:** If a mistake is made, Admins can completely wipe the tournament bracket back to the Setup Phase without losing registered participants. A reset requires typing the category name and a reason, and it is written to the audit log. Note: Double-execution safeguards prevent overlapping generation.
 
 ## 9. Points Distribution (Leaderboard)
 
@@ -121,21 +123,29 @@ When a Knockout category concludes, the players earn points toward their global 
 - **Round 2 (Top 64):** 30 Points
 - **Round 1 (Participation):** 10 Points
 
+*Rank bands such as "Semi-Finals (Rank 3-4)" are display labels; both semi-final losers are stored with `final_rank = 3` and earn the same points.*
+
 These points accumulate indefinitely to determine the global Leaderboard rankings across all tournaments.
 
 ## 10. Mobile Responsive Web & Touch Experience
 
-TourneyPro features a first-class mobile web architecture providing an app-like experience on iOS Safari and Android Chrome without requiring app store installation.
+The Baseline Society features a first-class mobile web architecture providing an app-like experience on iOS Safari and Android Chrome without requiring app store installation.
 
 ### 10.1 Role Segregation on Mobile
 - **Normal Users / Fans:** Read-only dashboard with live scores, Order of Play schedules, and swipeable bracket rounds.
 - **Tournament Staff & Umpires:** Off-canvas menu, quick scoring bottom sheet modals, and court PIN fast login mode.
 
 ### 10.2 Web vs. Desktop Workflow Integration
-To ensure maximum stability, certain complex actions are restricted exclusively to the **Web Dashboard** and are not available in the mobile app:
+To ensure maximum stability, certain complex actions are restricted exclusively to the **Web Dashboard** and are not available in the mobile web experience:
 - Initial Tournament and Category creation.
 - Bulk CSV Participant Imports/Exports.
 - Generating and Reseting the geometric tournament brackets.
 - Assigning specific numeric Seeds. 
 
-The mobile app is optimized strictly for **live-event consumption** and **on-the-fly score reporting**.
+The mobile web experience is optimized strictly for **live-event consumption** and **on-the-fly score reporting**.
+
+## 11. Data Privacy & Fair Play
+- Only display names, avatars, statistics, and results are public. Contact details, date of birth, address, and blood group are visible to tournament staff only. Players under 18 appear by display name only.
+- Guest registrants must verify their email or mobile number before a profile can be linked to an account; this prevents others from claiming a player's history.
+- Entry fees paid by UPI require a unique 12-digit transaction reference per tournament; organizers approve each payment and approvals are logged.
+- Players can request correction or deletion of their personal data from the organizer or platform administrator.
