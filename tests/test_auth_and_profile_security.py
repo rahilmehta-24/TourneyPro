@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from datetime import date
 from app import create_app, db
-from app.domain.models import User, Player, Tournament, UserNotificationPreferences
+from app.domain.models import User, Player, Tournament, UserNotificationPreferences, AuditLog
 from app.services.user_service import (
     register_user,
     ensure_user_profile,
@@ -11,6 +11,7 @@ from app.services.user_service import (
     MSG_REGISTRATION_EXISTING_DATA,
     MSG_REGISTRATION_INIT_FAILED
 )
+from app.services.utils.rate_limiter import reset_rate_limit
 
 
 class TestAuthAndProfileSecurity(unittest.TestCase):
@@ -40,15 +41,25 @@ class TestAuthAndProfileSecurity(unittest.TestCase):
         self.app_context = self.app.app_context()
         self.app_context.push()
         self.client = self.app.test_client()
+        reset_rate_limit("api_login_127.0.0.1")
+        reset_rate_limit("api_register_127.0.0.1")
+        reset_rate_limit("web_login_127.0.0.1")
+        reset_rate_limit("web_register_127.0.0.1")
         db.create_all()
 
     def tearDown(self):
         db.session.rollback()
+        for al in AuditLog.query.all():
+            db.session.delete(al)
         for p in Player.query.all():
             db.session.delete(p)
         for u in User.query.all():
             db.session.delete(u)
         db.session.commit()
+        reset_rate_limit("api_login_127.0.0.1")
+        reset_rate_limit("api_register_127.0.0.1")
+        reset_rate_limit("web_login_127.0.0.1")
+        reset_rate_limit("web_register_127.0.0.1")
         self.app_context.pop()
 
     # -------------------------------------------------------------
@@ -302,6 +313,143 @@ class TestAuthAndProfileSecurity(unittest.TestCase):
             "password": "DeletePass123!"
         })
         self.assertEqual(login_again.status_code, 401)
+
+    def test_10_organizer_self_activation_api(self):
+        """Test mobile/API self-service organizer activation flow."""
+        reg = register_user("aspiring_host", "host@baseline.test", "HostPass123!", "HostPass123!")
+        uid = reg.user.id
+        self.assertEqual(reg.user.role, "user")
+
+        login_res = self.client.post("/api/v1/auth/login", json={
+            "username": "aspiring_host",
+            "password": "HostPass123!"
+        })
+        token = login_res.get_json()["access_token"]
+
+        # Missing terms should fail
+        fail_res = self.client.post(
+            "/api/v1/organizer/activate",
+            json={"organization_name": "Metro Club", "agreed_terms": False},
+            headers={"Authorization": f"Bearer {token}"}
+        )
+        self.assertEqual(fail_res.status_code, 400)
+
+        # Short org name should fail
+        fail_res2 = self.client.post(
+            "/api/v1/organizer/activate",
+            json={"organization_name": "AB", "agreed_terms": True},
+            headers={"Authorization": f"Bearer {token}"}
+        )
+        self.assertEqual(fail_res2.status_code, 400)
+
+        # Valid activation
+        act_res = self.client.post(
+            "/api/v1/organizer/activate",
+            json={"organization_name": "Metro Lawn Tennis Club", "contact_phone": "+91 99999 88888", "agreed_terms": True},
+            headers={"Authorization": f"Bearer {token}"}
+        )
+        self.assertEqual(act_res.status_code, 200)
+        data = act_res.get_json()
+        self.assertTrue(data["success"])
+        self.assertEqual(data["user"]["role"], "admin")
+
+        # Verify database record
+        reloaded = db.session.get(User, uid)
+        self.assertEqual(reloaded.role, "admin")
+        player = Player.query.filter_by(user_id=uid).first()
+        self.assertEqual(player.academy, "Metro Lawn Tennis Club")
+
+    def test_11_organizer_self_activation_web(self):
+        """Test web self-service organizer activation flow."""
+        reg = register_user("web_host", "webhost@baseline.test", "WebHostPass123!", "WebHostPass123!")
+        uid = reg.user.id
+        self.assertEqual(reg.user.role, "user")
+
+        # Log in via web session
+        with self.client.session_transaction() as sess:
+            sess['user_id'] = uid
+
+        post_res = self.client.post(
+            "/organizer/activate",
+            data={"organization_name": "Wimbledon Club", "agreed_terms": "1"},
+            follow_redirects=False
+        )
+        # Should redirect to create tournament
+        self.assertEqual(post_res.status_code, 302)
+        self.assertIn("/tournaments/new", post_res.headers.get("Location", ""))
+
+        reloaded = db.session.get(User, uid)
+        self.assertEqual(reloaded.role, "admin")
+
+    def test_12_security_headers_present(self):
+        """Test that HTTP security headers are injected into responses."""
+        res = self.client.get("/")
+        self.assertEqual(res.headers.get("X-Content-Type-Options"), "nosniff")
+        self.assertEqual(res.headers.get("X-Frame-Options"), "SAMEORIGIN")
+        self.assertEqual(res.headers.get("Referrer-Policy"), "strict-origin-when-cross-origin")
+        self.assertIn("microphone=()", res.headers.get("Permissions-Policy", ""))
+        self.assertNotIn("X-Powered-By", res.headers)
+
+    def test_13_rate_limiting_enforcement(self):
+        """Test sliding-window rate limiting on login endpoint."""
+        from app.services.utils.rate_limiter import reset_rate_limit
+        reset_rate_limit("api_login_127.0.0.1")
+
+        for _ in range(10):
+            res = self.client.post("/api/v1/auth/login", json={"username": "fake", "password": "bad"})
+            self.assertEqual(res.status_code, 401)
+
+        # 11th request should be rate-limited (HTTP 429)
+        blocked_res = self.client.post("/api/v1/auth/login", json={"username": "fake", "password": "bad"})
+        self.assertEqual(blocked_res.status_code, 429)
+        self.assertIn("Too many login attempts", blocked_res.get_json()["message"])
+
+        reset_rate_limit("api_login_127.0.0.1")
+
+    def test_14_app_verify_anonymous_100_percent(self):
+        """On app boot, anonymous security verification runs and passes 100%."""
+        res = self.client.get("/api/v1/security/app-verify")
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertTrue(data["success"])
+        self.assertEqual(data["status"], "passed")
+        self.assertEqual(data["score"], 100)
+        self.assertEqual(data["checks"]["database_connectivity"]["status"], "PASS")
+        self.assertEqual(data["checks"]["environment_security"]["status"], "PASS")
+        self.assertEqual(data["checks"]["rate_limiter"]["status"], "PASS")
+
+    def test_15_app_verify_authenticated_100_percent(self):
+        """On app boot, authenticated session runs full suite and passes 100%."""
+        reg = register_user("secure_app_user", "secureapp@baseline.test", "SecurePass123!", "SecurePass123!")
+        token = self.client.post("/api/v1/auth/login", json={
+            "username": "secure_app_user",
+            "password": "SecurePass123!"
+        }).get_json()["access_token"]
+
+        res = self.client.get("/api/v1/security/app-verify", headers={"Authorization": f"Bearer {token}"})
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertTrue(data["success"])
+        self.assertEqual(data["status"], "passed")
+        self.assertEqual(data["score"], 100)
+        self.assertEqual(data["checks"]["database_connectivity"]["status"], "PASS")
+        self.assertEqual(data["checks"]["environment_security"]["status"], "PASS")
+        self.assertEqual(data["checks"]["rate_limiter"]["status"], "PASS")
+        self.assertEqual(data["checks"]["auth_session"]["status"], "PASS")
+        self.assertEqual(data["checks"]["data_isolation"]["status"], "PASS")
+        self.assertIsNotNone(data["user"])
+        self.assertIsNotNone(data["player"])
+        self.assertEqual(data["user"]["username"], "secure_app_user")
+
+    def test_16_app_verify_invalid_token_fails(self):
+        """Tampered or invalid token fails auth check with HTTP 401."""
+        res = self.client.get("/api/v1/security/app-verify", headers={"Authorization": "Bearer invalid.jwt.token"})
+        self.assertEqual(res.status_code, 401)
+        data = res.get_json()
+        self.assertFalse(data["success"])
+        self.assertEqual(data["status"], "failed")
+        self.assertLess(data["score"], 100)
+        self.assertEqual(data["checks"]["auth_session"]["status"], "FAIL")
 
 
 if __name__ == "__main__":

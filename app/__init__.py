@@ -183,13 +183,54 @@ def create_app(config_class=Config):
         import markupsafe
         return markupsafe.Markup(markupsafe.escape(s).replace('\n', '<br>\n'))
 
-    # Cache Control Middleware for static assets & Security Headers
+    # Cache Control Middleware for static assets & Security Headers (OWASP ASVS SEC-081, SEC-084, SEC-086, SEC-087)
     @app.after_request
-    def add_cache_headers(response):
-        # Global Security & Watermark Headers
-        response.headers['X-Author'] = 'Built for Tennis by Rahil Mehta'
-        response.headers['X-Powered-By'] = 'TourneyPro Engine'
+    def add_security_and_cache_headers(response):
+        # HTTP Security Headers
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        response.headers['Permissions-Policy'] = 'geolocation=(), camera=(), microphone=()'
+        response.headers['Content-Security-Policy'] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' https://unpkg.com; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com data:; "
+            "img-src 'self' data: https: blob:; "
+            "connect-src 'self' https: ws: wss:; "
+            "frame-ancestors 'self';"
+        )
         
+        # Strip server signature headers (SEC-060, SEC-094)
+        response.headers.pop('X-Powered-By', None)
+        response.headers.pop('Server', None)
+
+        # Enforce HSTS on production / Vercel HTTPS deployments (SEC-081)
+        if request.is_secure or request.headers.get('X-Forwarded-Proto') == 'https':
+            response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+
+        # CORS restrictions for API routes (SEC-084)
+        if request.path.startswith('/api/'):
+            origin = request.headers.get('Origin')
+            trusted_origins = os.environ.get(
+                'TRUSTED_ORIGINS',
+                'http://localhost:3000,http://localhost:5001,http://127.0.0.1:3000,http://127.0.0.1:5001,http://localhost:8081,http://localhost:19006'
+            ).split(',')
+            trusted_origins = [o.strip() for o in trusted_origins if o.strip()]
+            
+            if origin:
+                is_trusted = (
+                    origin in trusted_origins or
+                    origin.startswith('http://localhost:') or
+                    origin.startswith('http://127.0.0.1:') or
+                    origin.startswith('exp://')
+                )
+                if is_trusted:
+                    response.headers['Access-Control-Allow-Origin'] = origin
+                    response.headers['Access-Control-Allow-Credentials'] = 'true'
+                    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+                    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With'
+
         # Cache static files for 1 hour
         if request.path.startswith('/static/'):
             response.headers['Cache-Control'] = 'public, max-age=3600'

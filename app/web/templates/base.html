@@ -192,6 +192,11 @@
                 <!-- User Actions (Right) -->
                 <div class="nav-user-actions" id="navUserActions">
                     {% if current_user %}
+                        {% if current_user.role in ['admin', 'superadmin'] %}
+                            <a href="{{ url_for('tournament.create_tournament') }}" class="btn btn-outline btn-small" style="margin-right: 0.5rem; text-decoration: none; font-size: 0.8rem; padding: 0.35rem 0.75rem;">+ Host Tournament</a>
+                        {% elif current_user.role == 'user' %}
+                            <button type="button" onclick="openOrganizerModal()" class="btn btn-outline btn-small" style="margin-right: 0.5rem; text-decoration: none; font-size: 0.8rem; padding: 0.35rem 0.75rem; border-color: var(--gold-primary, #C9A55C); color: var(--gold-primary, #C9A55C); background: transparent; cursor: pointer;">+ Host Tournament</button>
+                        {% endif %}
                         <!-- Profile Section Dropdown containing Theme Toggle, Admin Links, Dashboard & Logout -->
                         <div class="profile-dropdown-container" id="profileDropdownContainer">
                             <button type="button" id="profileDropdownTrigger" class="profile-dropdown-trigger" aria-expanded="false" aria-haspopup="true">
@@ -221,11 +226,18 @@
                                     </a>
                                     {% endif %}
                                     {% if current_user.role in ['admin', 'superadmin'] %}
+                                    <a href="{{ url_for('tournament.create_tournament') }}" class="profile-dropdown-item">
+                                        <span>🏆</span> Host Tournament
+                                    </a>
                                     <a href="{{ url_for('player.admin_players') }}" class="profile-dropdown-item">
                                         <span>📋</span> Player Directory
                                     </a>
                                     {% endif %}
                                     {% if current_user.role == 'user' %}
+                                    <button type="button" onclick="openOrganizerModal()" class="profile-dropdown-item" style="width: calc(100% - 0.7rem); border: none; background: transparent; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 0.6rem; font-family: inherit; color: var(--gold-primary, #C9A55C); font-weight: 600;">
+                                        <span>🏆</span>
+                                        <span>Host a Tournament</span>
+                                    </button>
                                     <form method="POST" action="{{ url_for('auth.request_admin') }}" style="margin: 0; padding: 0.1rem 0;">
                                         <button type="submit" class="profile-dropdown-item" style="width: calc(100% - 0.7rem); border: none; background: transparent; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 0.6rem; font-family: inherit;">
                                             <span>🛡️</span>
@@ -723,6 +735,57 @@
                 }, 10000);
             });
         </script>
+
+        {% if current_user and current_user.role == 'user' %}
+        <div id="organizerActivationModal" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); backdrop-filter: blur(4px); z-index: 99999; align-items: center; justify-content: center; padding: 1rem;">
+            <div style="background: var(--bg-primary, #111); border: 1px solid var(--border-color, #333); border-radius: 12px; max-width: 500px; width: 100%; box-shadow: 0 20px 40px rgba(0,0,0,0.5); overflow: hidden;">
+                <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color, #333); display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <span style="font-size: 1.5rem;">🏆</span>
+                        <div>
+                            <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--text-primary, #fff);">Become a Tournament Host</h3>
+                            <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted, #888);">Activate your organizer permissions</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="closeOrganizerModal()" style="background: transparent; border: none; font-size: 1.5rem; color: var(--text-muted, #888); cursor: pointer;">&times;</button>
+                </div>
+                <form method="POST" action="{{ url_for('auth.activate_organizer') }}" style="padding: 1.5rem;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <p style="font-size: 0.88rem; color: var(--text-secondary, #ccc); margin-top: 0; line-height: 1.5;">
+                        As a tournament organizer on The Baseline Society, you can create and manage tournaments, generate draws, schedule matches, and record official results.
+                    </p>
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-primary, #fff); margin-bottom: 0.35rem;">Club / Academy / Organization Name *</label>
+                        <input type="text" name="organization_name" required placeholder="e.g. Metro Tennis Club or Independent Host" style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 6px; border: 1px solid var(--border-color, #444); background: var(--bg-secondary, #1a1a1a); color: var(--text-primary, #fff); font-size: 0.9rem;" value="{% if current_user.player and current_user.player.academy %}{{ current_user.player.academy }}{% endif %}">
+                    </div>
+                    <div style="margin-bottom: 1.25rem;">
+                        <label style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-primary, #fff); margin-bottom: 0.35rem;">Contact Phone (Optional)</label>
+                        <input type="tel" name="contact_phone" placeholder="e.g. +1 555-0199" style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 6px; border: 1px solid var(--border-color, #444); background: var(--bg-secondary, #1a1a1a); color: var(--text-primary, #fff); font-size: 0.9rem;" value="{% if current_user.player and current_user.player.contact_number %}{{ current_user.player.contact_number }}{% endif %}">
+                    </div>
+                    <div style="margin-bottom: 1.5rem; background: var(--bg-secondary, #1a1a1a); padding: 0.85rem 1rem; border-radius: 6px; border: 1px solid var(--border-color, #333);">
+                        <label style="display: flex; align-items: flex-start; gap: 0.65rem; cursor: pointer; font-size: 0.82rem; color: var(--text-secondary, #ccc); line-height: 1.4;">
+                            <input type="checkbox" name="agreed_terms" value="1" required style="margin-top: 0.15rem;">
+                            <span>I agree to uphold the Baseline Society Fair Play & Security standards. I understand all created tournaments and fixtures are auditable.</span>
+                        </label>
+                    </div>
+                    <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                        <button type="button" onclick="closeOrganizerModal()" class="btn btn-secondary" style="padding: 0.6rem 1.2rem;">Cancel</button>
+                        <button type="submit" class="btn btn-primary" style="padding: 0.6rem 1.4rem;">Activate & Host Tournament</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <script>
+            function openOrganizerModal() {
+                var m = document.getElementById('organizerActivationModal');
+                if (m) m.style.display = 'flex';
+            }
+            function closeOrganizerModal() {
+                var m = document.getElementById('organizerActivationModal');
+                if (m) m.style.display = 'none';
+            }
+        </script>
+        {% endif %}
 </body>
 
 </html>

@@ -3,8 +3,7 @@ from flask_jwt_extended import (
     create_access_token,
     create_refresh_token,
     jwt_required,
-    get_jwt_identity,
-    get_jwt
+    get_jwt_identity
 )
 from datetime import datetime
 from . import api_bp
@@ -13,12 +12,18 @@ from app.domain.models import (
     DeviceRegistration, InAppNotification, UserNotificationPreferences
 )
 from app.domain.schemas import (
-    user_schema, notification_schema, notifications_schema,
+    notifications_schema,
     notification_preferences_schema
 )
 
 @api_bp.route('/auth/login', methods=['POST'])
 def login():
+    from app.services.utils.rate_limiter import check_rate_limit, get_client_ip, reset_rate_limit
+    client_ip = get_client_ip()
+    allowed, retry_after = check_rate_limit(f"api_login_{client_ip}", max_requests=10, window_seconds=60)
+    if not allowed:
+        return jsonify({"success": False, "message": f"Too many login attempts. Please wait {retry_after} seconds before trying again."}), 429
+
     data = request.get_json()
     if not data or not data.get('username') or not data.get('password'):
         return jsonify({"success": False, "message": "Missing username or password"}), 400
@@ -30,6 +35,7 @@ def login():
         return jsonify({"success": False, "message": "This account has been deleted."}), 401
 
     if user and user.check_password(data['password']):
+        reset_rate_limit(f"api_login_{client_ip}")
         from app.services.user_service import ensure_user_profile
         ensure_user_profile(user.id)
 
@@ -52,6 +58,12 @@ def login():
 
 @api_bp.route('/auth/register', methods=['POST'])
 def register():
+    from app.services.utils.rate_limiter import check_rate_limit, get_client_ip, reset_rate_limit
+    client_ip = get_client_ip()
+    allowed, retry_after = check_rate_limit(f"api_register_{client_ip}", max_requests=5, window_seconds=60)
+    if not allowed:
+        return jsonify({"success": False, "message": f"Too many registration attempts. Please wait {retry_after} seconds before trying again."}), 429
+
     data = request.get_json()
     if not data or not data.get('username') or not data.get('password') or not data.get('email'):
         return jsonify({"success": False, "message": "Missing required fields"}), 400
@@ -70,6 +82,7 @@ def register():
     if not result.success:
         return jsonify({"success": False, "message": result.message}), result.status_code
 
+    reset_rate_limit(f"api_register_{client_ip}")
     user = result.user
     access_token = create_access_token(identity=str(user.id))
     refresh_token = create_refresh_token(identity=str(user.id))
@@ -215,6 +228,234 @@ def get_current_user_profile():
             "created_at": user.created_at.isoformat() if user.created_at else None
         },
         "player": player_data
+    }), 200
+
+
+@api_bp.route('/security/app-verify', methods=['GET', 'POST'])
+def app_verify_security():
+    """
+    On-boot mobile security verification endpoint.
+    Performs comprehensive verification of backend security controls,
+    session validity, profile data integrity, and database health.
+    Returns 100% pass score only when all applicable checks succeed.
+    """
+    checks = {}
+    passed_count = 0
+    total_checks = 0
+
+    # Check 1: Database Connectivity & Query Health
+    total_checks += 1
+    try:
+        db.session.execute(db.text("SELECT 1")).scalar()
+        checks["database_connectivity"] = {
+            "status": "PASS",
+            "description": "Database connection and query engine operational"
+        }
+        passed_count += 1
+    except Exception as e:
+        checks["database_connectivity"] = {
+            "status": "FAIL",
+            "description": f"Database check failed: {str(e)}"
+        }
+
+    # Check 2: Environment & Cryptographic Security
+    total_checks += 1
+    from flask import current_app
+    has_secret = bool(current_app.config.get('SECRET_KEY'))
+    has_jwt_secret = bool(current_app.config.get('JWT_SECRET_KEY'))
+    httponly = current_app.config.get('SESSION_COOKIE_HTTPONLY', True)
+    if has_secret and has_jwt_secret and httponly:
+        checks["environment_security"] = {
+            "status": "PASS",
+            "description": "Cryptographic secrets and cookie protections active"
+        }
+        passed_count += 1
+    else:
+        checks["environment_security"] = {
+            "status": "FAIL",
+            "description": "Environment security flags misconfigured"
+        }
+
+    # Check 3: Rate Limiter Status
+    total_checks += 1
+    from app.services.utils.rate_limiter import get_client_ip, check_rate_limit
+    client_ip = get_client_ip()
+    allowed, retry_after = check_rate_limit(f"app_boot_{client_ip}", max_requests=60, window_seconds=60)
+    if allowed:
+        checks["rate_limiter"] = {
+            "status": "PASS",
+            "description": f"Client IP {client_ip} clean and within security thresholds"
+        }
+        passed_count += 1
+    else:
+        checks["rate_limiter"] = {
+            "status": "FAIL",
+            "description": f"Rate limit exceeded. Retry after {retry_after}s"
+        }
+
+    # Check 4 & 5: Authentication Session & Data Isolation (if Bearer token supplied)
+    auth_header = request.headers.get('Authorization', '')
+    user_payload = None
+    player_payload = None
+
+    if auth_header.startswith('Bearer '):
+        total_checks += 2
+        raw_token = auth_header.split(' ', 1)[1].strip()
+        try:
+            from flask_jwt_extended import decode_token
+            decoded = decode_token(raw_token)
+            user_id = decoded.get('sub')
+            
+            user = User.query.get(int(user_id)) if user_id and str(user_id).isdigit() else None
+            if not user or user.role == 'deleted':
+                checks["auth_session"] = {
+                    "status": "FAIL",
+                    "description": "Account does not exist or has been deleted"
+                }
+                checks["data_isolation"] = {
+                    "status": "FAIL",
+                    "description": "Cannot verify data isolation for invalid user"
+                }
+            else:
+                checks["auth_session"] = {
+                    "status": "PASS",
+                    "description": f"Authenticated session valid for user '{user.username}' (role: {user.role})"
+                }
+                passed_count += 1
+
+                # Data isolation & profile self-healing
+                from app.services.user_service import ensure_user_profile
+                player = ensure_user_profile(user.id)
+                if player and player.user_id == user.id:
+                    checks["data_isolation"] = {
+                        "status": "PASS",
+                        "description": f"Profile isolation verified. Player record #{player.id} bound to UID #{user.id}"
+                    }
+                    passed_count += 1
+
+                    total_m = player.matches_played or 0
+                    won_m = player.matches_won or 0
+                    lost_m = player.matches_lost or 0
+                    win_rate = round((won_m / total_m * 100), 1) if total_m > 0 else 0.0
+
+                    player_payload = {
+                        "id": player.id,
+                        "name": player.name,
+                        "email": player.email,
+                        "registration_no": player.registration_no,
+                        "gender": player.gender,
+                        "age_category": player.age_category,
+                        "dob": player.dob.isoformat() if player.dob else None,
+                        "age": player.age,
+                        "contact_number": player.contact_number,
+                        "nationality": player.nationality,
+                        "height": player.height,
+                        "weight": player.weight,
+                        "blood_group": player.blood_group,
+                        "current_status": player.current_status,
+                        "academy": player.academy,
+                        "coach": player.coach,
+                        "avatar_url": player.avatar_url,
+                        "total_points": player.total_points or 0.0,
+                        "matches_played": total_m,
+                        "matches_won": won_m,
+                        "matches_lost": lost_m,
+                        "win_rate": win_rate
+                    }
+                else:
+                    checks["data_isolation"] = {
+                        "status": "FAIL",
+                        "description": "Player profile failed isolation binding"
+                    }
+
+                user_payload = {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "role": user.role,
+                    "created_at": user.created_at.isoformat() if user.created_at else None
+                }
+
+        except Exception as e:
+            checks["auth_session"] = {
+                "status": "FAIL",
+                "description": f"Token verification error: {str(e)}"
+            }
+            checks["data_isolation"] = {
+                "status": "FAIL",
+                "description": "Data isolation check aborted due to token error"
+            }
+
+    score = int((passed_count / total_checks) * 100) if total_checks > 0 else 0
+    all_passed = (score == 100)
+
+    status_code = 200 if all_passed else 400
+    if not all_passed and checks.get("auth_session", {}).get("status") == "FAIL":
+        status_code = 401
+
+    return jsonify({
+        "success": all_passed,
+        "status": "passed" if all_passed else "failed",
+        "score": score,
+        "passed_checks": passed_count,
+        "total_checks": total_checks,
+        "checks": checks,
+        "user": user_payload,
+        "player": player_payload
+    }), status_code
+
+
+@api_bp.route('/organizer/activate', methods=['POST'])
+@jwt_required()
+def activate_organizer():
+    """Self-service tournament organizer activation for mobile app."""
+    current_user_id = get_jwt_identity()
+    user = User.query.get(int(current_user_id)) if current_user_id and str(current_user_id).isdigit() else None
+    if not user:
+        return jsonify({"success": False, "message": "User not found"}), 404
+
+    data = request.get_json() or {}
+    org_name = (data.get('organization_name') or '').strip()
+    contact_phone = (data.get('contact_phone') or '').strip()
+    agreed_terms = data.get('agreed_terms')
+
+    if not org_name or len(org_name) < 3:
+        return jsonify({"success": False, "message": "Organization, club, or host name must be at least 3 characters."}), 400
+
+    if not agreed_terms:
+        return jsonify({"success": False, "message": "You must agree to the Tournament Organizer Fair Play & Security terms."}), 400
+
+    user.role = 'admin'
+    user.admin_requested = False
+
+    from app.domain.models import Player
+    player = Player.query.filter_by(user_id=user.id).first()
+    if player:
+        if not player.academy:
+            player.academy = org_name
+        if contact_phone and not player.contact_number:
+            player.contact_number = contact_phone
+
+    from app.services.utils.audit import log_audit
+    log_audit(
+        action_type="organizer_self_activation",
+        target_id=user.id,
+        target_name=user.username,
+        reason="Self-Service Organizer Activation",
+        explanation=f"User activated tournament organizer status for club/org '{org_name}'.",
+        user_id=user.id
+    )
+
+    db.session.commit()
+    return jsonify({
+        "success": True,
+        "message": f"Organizer status activated! Welcome to the Baseline Society Tournament Host Network, {org_name}.",
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "role": user.role
+        }
     }), 200
 
 

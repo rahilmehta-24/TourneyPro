@@ -4,7 +4,7 @@ The Baseline Society
 """
 
 import random
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from typing import Optional, Dict, Any
 from app import db
 from app.domain.models import (
@@ -357,7 +357,7 @@ def register_user(
     workspace & Player profile atomically, and enforces strict data isolation.
     """
     from app.services.utils.validation import (
-        validate_username, validate_email, validate_password, validate_name
+        validate_username, validate_email, validate_password
     )
 
     username = (username or "").strip()

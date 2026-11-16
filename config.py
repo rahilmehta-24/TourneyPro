@@ -32,6 +32,12 @@ class Config:
                 'prepare_threshold': None
             }
         }
+    # Session & Cookie Security (OWASP ASVS SEC-023, SEC-024, SEC-025, SEC-083)
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_SECURE = os.environ.get('FLASK_ENV') == 'production' or bool(os.environ.get('VERCEL'))
+    PERMANENT_SESSION_LIFETIME = 86400 * 7  # 7 days max session lifetime
+
     # Upload folder in 'app/web/static/uploads'
     UPLOAD_FOLDER = os.path.join(basedir, 'app', 'web', 'static', 'uploads')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size

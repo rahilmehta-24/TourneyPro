@@ -15,7 +15,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { User, Bell, Shield, Trash2, LogOut, Award, ChevronRight, UserPlus, X } from 'lucide-react-native';
+import { User, Bell, Shield, Trash2, LogOut, Award, ChevronRight, UserPlus, X, Trophy, CheckSquare, Square } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 import { useAuthStore } from '../state/authStore';
 import { apiClient } from '../api/client';
@@ -37,6 +37,13 @@ export default function ProfileScreen() {
   const [adminPassword, setAdminPassword] = useState('');
   const [adminRole, setAdminRole] = useState<'player' | 'umpire' | 'admin'>('player');
   const [adminSubmitting, setAdminSubmitting] = useState(false);
+
+  // Tournament Organizer Activation state
+  const [showOrganizerModal, setShowOrganizerModal] = useState(false);
+  const [orgClubName, setOrgClubName] = useState('');
+  const [orgPhone, setOrgPhone] = useState('');
+  const [orgAgreed, setOrgAgreed] = useState(false);
+  const [orgSubmitting, setOrgSubmitting] = useState(false);
 
   const fetchProfileAndPrefs = async () => {
     try {
@@ -128,6 +135,41 @@ export default function ProfileScreen() {
       Alert.alert('Error', errorMsg);
     } finally {
       setAdminSubmitting(false);
+    }
+  };
+
+  const handleActivateOrganizer = async () => {
+    const trimmedOrg = orgClubName.trim();
+    if (!trimmedOrg || trimmedOrg.length < 3) {
+      Alert.alert('Validation Error', 'Organization / club name must be at least 3 characters.');
+      return;
+    }
+    if (!orgAgreed) {
+      Alert.alert('Agreement Required', 'You must agree to the Tournament Organizer Fair Play & Security terms.');
+      return;
+    }
+    setOrgSubmitting(true);
+    try {
+      const res = await apiClient.post('/organizer/activate', {
+        organization_name: trimmedOrg,
+        contact_phone: orgPhone.trim(),
+        agreed_terms: true,
+      });
+      if (res.data?.success) {
+        if (res.data.user) {
+          useAuthStore.getState().setUser(res.data.user);
+          setActiveRole('admin');
+        }
+        setShowOrganizerModal(false);
+        Alert.alert('Organizer Activated!', res.data.message || 'You are now authorized to host tournaments.');
+        await fetchProfileAndPrefs();
+      } else {
+        Alert.alert('Activation Failed', res.data?.message || 'Could not complete organizer activation.');
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err.response?.data?.message || 'Failed to activate organizer permissions.');
+    } finally {
+      setOrgSubmitting(false);
     }
   };
 
@@ -253,6 +295,43 @@ export default function ProfileScreen() {
               trackColor={{ false: colors.surfaceSecondary, true: colors.brandGreenCourt }}
             />
           </View>
+        </View>
+
+        {/* Tournament Hosting */}
+        <Text style={styles.sectionTitle}>TOURNAMENT HOSTING</Text>
+        <View style={styles.settingsGroup}>
+          {user?.role === 'user' ? (
+            <TouchableOpacity
+              style={styles.actionRow}
+              onPress={() => {
+                setOrgClubName(player?.academy || '');
+                setOrgPhone(player?.contact_number || '');
+                setOrgAgreed(false);
+                setShowOrganizerModal(true);
+              }}
+            >
+              <Trophy size={18} color={colors.brandGold} />
+              <View style={{ flex: 1, marginLeft: 10 }}>
+                <Text style={[styles.actionLabel, { marginLeft: 0, color: colors.brandGreenDeep }]}>
+                  Become a Tournament Host
+                </Text>
+                <Text style={styles.settingSub}>
+                  Activate organizer permissions to host tournaments & manage draws
+                </Text>
+              </View>
+              <ChevronRight size={16} color={colors.textMuted} style={styles.chevron} />
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.actionRow}>
+              <Trophy size={18} color={colors.brandGreenCourt} />
+              <View style={{ flex: 1, marginLeft: 10 }}>
+                <Text style={[styles.actionLabel, { marginLeft: 0 }]}>Active Tournament Host</Text>
+                <Text style={styles.settingSub}>
+                  Authorized organizer • {user?.role.toUpperCase()}
+                </Text>
+              </View>
+            </View>
+          )}
         </View>
 
         {/* Administrator Actions */}
@@ -392,6 +471,82 @@ export default function ProfileScreen() {
                 <Text style={styles.modalSubmitText}>CREATE & VERIFY WORKSPACE</Text>
               )}
             </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Tournament Organizer Self-Activation Modal */}
+      <Modal
+        visible={showOrganizerModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowOrganizerModal(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalTitle}>BECOME A HOST</Text>
+                <Text style={styles.modalSubtitle}>BASELINE SOCIETY HOST NETWORK</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowOrganizerModal(false)} style={styles.closeBtn}>
+                <X size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
+              <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 12, lineHeight: 18 }}>
+                As an authorized tournament organizer, you can create official tournaments, manage registrations, publish draws, and schedule matches.
+              </Text>
+
+              <Text style={styles.fieldLabel}>CLUB / ACADEMY / ORGANIZATION NAME *</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="e.g. Metro Tennis Club or Independent Host"
+                placeholderTextColor={colors.textMuted}
+                value={orgClubName}
+                onChangeText={setOrgClubName}
+              />
+
+              <Text style={styles.fieldLabel}>CONTACT PHONE NUMBER (OPTIONAL)</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="e.g. +91 98765 43210"
+                placeholderTextColor={colors.textMuted}
+                value={orgPhone}
+                onChangeText={setOrgPhone}
+                keyboardType="phone-pad"
+              />
+
+              <TouchableOpacity
+                style={{ flexDirection: 'row', alignItems: 'flex-start', marginTop: 14, backgroundColor: colors.canvasLight, padding: 10, borderRadius: 8, borderWidth: 1, borderColor: colors.borderLight }}
+                onPress={() => setOrgAgreed(!orgAgreed)}
+              >
+                {orgAgreed ? (
+                  <CheckSquare size={18} color={colors.brandGreenCourt} style={{ marginTop: 2, marginRight: 8 }} />
+                ) : (
+                  <Square size={18} color={colors.textMuted} style={{ marginTop: 2, marginRight: 8 }} />
+                )}
+                <Text style={{ flex: 1, fontSize: 11, color: colors.textSecondary, lineHeight: 16 }}>
+                  I agree to uphold the Baseline Society Fair Play & Security standards. I understand all created tournaments and fixtures are auditable.
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalSubmitBtn, orgSubmitting && { opacity: 0.6 }]}
+                onPress={handleActivateOrganizer}
+                disabled={orgSubmitting}
+              >
+                {orgSubmitting ? (
+                  <ActivityIndicator color={colors.brandGold} size="small" />
+                ) : (
+                  <Text style={styles.modalSubmitText}>ACTIVATE ORGANIZER STATUS</Text>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         </KeyboardAvoidingView>
       </Modal>

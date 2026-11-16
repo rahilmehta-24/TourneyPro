@@ -228,6 +228,13 @@ def login():
         return redirect(url_for('player.dashboard'))
 
     if request.method == 'POST':
+        from app.services.utils.rate_limiter import check_rate_limit, get_client_ip, reset_rate_limit
+        client_ip = get_client_ip()
+        allowed, retry_after = check_rate_limit(f"web_login_{client_ip}", max_requests=10, window_seconds=60)
+        if not allowed:
+            flash(f"Too many login attempts. Please wait {retry_after} seconds before trying again.", "error")
+            return render_template('auth/login.html')
+
         username = request.form.get('username', '').strip()
         password = request.form.get('password')
 
@@ -238,6 +245,7 @@ def login():
             return redirect(url_for('auth.login'))
             
         if user and user.check_password(password):
+            reset_rate_limit(f"web_login_{client_ip}")
             # Session fixation protection: clear existing session first
             session.clear()
             session['user_id'] = user.id
@@ -262,6 +270,13 @@ def register():
         return redirect(url_for('player.dashboard'))
 
     if request.method == 'POST':
+        from app.services.utils.rate_limiter import check_rate_limit, get_client_ip, reset_rate_limit
+        client_ip = get_client_ip()
+        allowed, retry_after = check_rate_limit(f"web_register_{client_ip}", max_requests=10, window_seconds=60)
+        if not allowed:
+            flash(f"Too many registration attempts. Please wait {retry_after} seconds before trying again.", "error")
+            return render_template('auth/register.html')
+
         username = request.form.get('username', '').strip()
         email = request.form.get('email', '').strip()
         password = request.form.get('password')
@@ -335,6 +350,7 @@ def register():
             flash(result.message, 'error')
             return render_template('auth/register.html')
 
+        reset_rate_limit(f"web_register_{client_ip}")
         flash(result.message, result.category)
         return redirect(url_for('auth.login'))
 
@@ -346,6 +362,48 @@ def logout():
     g.current_user = None
     flash('You have been logged out.', 'info')
     return redirect(url_for('auth.login'))
+
+@auth_bp.route('/organizer/activate', methods=['POST'])
+@login_required
+def activate_organizer():
+    """Self-service tournament organizer activation with fair play agreement and auditing."""
+    user = get_current_user()
+    org_name = request.form.get('organization_name', '').strip()
+    contact_phone = request.form.get('contact_phone', '').strip()
+    agreed_terms = request.form.get('agreed_terms')
+
+    if not org_name or len(org_name) < 3:
+        flash('Organization, club, or host name must be at least 3 characters.', 'error')
+        return redirect(request.referrer or url_for('player.dashboard'))
+
+    if not agreed_terms:
+        flash('You must agree to the Tournament Organizer Fair Play & Security terms.', 'error')
+        return redirect(request.referrer or url_for('player.dashboard'))
+
+    # Update role to admin/organizer
+    user.role = 'admin'
+    user.admin_requested = False
+
+    player = Player.query.filter_by(user_id=user.id).first()
+    if player:
+        if not player.academy:
+            player.academy = org_name
+        if contact_phone and not player.contact_number:
+            player.contact_number = contact_phone
+
+    from app.services.utils.audit import log_audit
+    log_audit(
+        action_type="organizer_self_activation",
+        target_id=user.id,
+        target_name=user.username,
+        reason="Self-Service Organizer Activation",
+        explanation=f"User activated tournament organizer status for club/org '{org_name}'.",
+        user_id=user.id
+    )
+
+    db.session.commit()
+    flash(f"Organizer status activated! Welcome to the Baseline Society Tournament Host Network, {org_name}.", "success")
+    return redirect(url_for('tournament.create_tournament'))
 
 @auth_bp.route('/request-admin', methods=['POST'])
 @login_required

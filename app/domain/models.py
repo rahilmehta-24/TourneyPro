@@ -397,7 +397,7 @@ class AuditLog(db.Model):
     __tablename__ = 'audit_logs'
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     action_type = db.Column(db.String(100), nullable=False)
     target_id = db.Column(db.Integer)
     target_name = db.Column(db.String(200))
@@ -406,7 +406,7 @@ class AuditLog(db.Model):
     details = db.Column(db.Text) # JSON diffs or additional metadata
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    user = db.relationship('User', backref='audit_logs', lazy=True)
+    user = db.relationship('User', backref=db.backref('audit_logs', cascade='all, delete-orphan'), lazy=True)
 
 class Registration(db.Model):
     __tablename__ = 'registrations'

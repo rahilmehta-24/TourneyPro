@@ -3,7 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime
 from . import api_bp
 from app.domain.models import (
-    db, Tournament, Category, Match, Participant, Group,
+    db, Tournament, Category, Participant, Group,
     Registration, TournamentStaff, User, InAppNotification
 )
 from app.domain.schemas import tournaments_schema, tournament_schema, category_schema

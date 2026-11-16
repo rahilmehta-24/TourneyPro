@@ -46,6 +46,18 @@ export interface CourtSession {
   };
 }
 
+export interface SecurityCheckResult {
+  status: 'PASS' | 'FAIL';
+  description: string;
+}
+
+export interface SecurityVerificationReport {
+  score: number;
+  passed_checks: number;
+  total_checks: number;
+  checks: Record<string, SecurityCheckResult>;
+}
+
 interface AuthState {
   user: UserProfile | null;
   player: PlayerProfile | null;
@@ -53,12 +65,14 @@ interface AuthState {
   courtSession: CourtSession | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  securityReport: SecurityVerificationReport | null;
+  securityVerified: boolean;
   setUser: (user: UserProfile | null) => void;
   setPlayer: (player: PlayerProfile | null) => void;
   setActiveRole: (role: UserRole) => void;
   loginUser: (user: UserProfile, accessToken: string, refreshToken: string, player?: PlayerProfile) => Promise<void>;
   loginCourt: (courtSession: CourtSession, accessToken: string) => Promise<void>;
-  restoreSession: () => Promise<boolean>;
+  restoreSession: (maxRetries?: number) => Promise<boolean>;
   logout: () => Promise<void>;
 }
 
@@ -69,6 +83,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   courtSession: null,
   isAuthenticated: false,
   isLoading: false,
+  securityReport: null,
+  securityVerified: false,
 
   setUser: (user) => set({
     user,
@@ -106,66 +122,114 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     });
   },
 
-  restoreSession: async () => {
+  restoreSession: async (maxRetries = 3) => {
     set({ isLoading: true });
-    try {
-      const accessToken = await getAccessToken();
-      const courtToken = await getCourtToken();
+    let attempt = 0;
+    let lastError: any = null;
 
-      if (courtToken && !accessToken) {
-        set({
-          activeRole: 'umpire',
-          isAuthenticated: true,
-          isLoading: false,
-        });
-        return true;
+    while (attempt < maxRetries) {
+      attempt++;
+      try {
+        const accessToken = await getAccessToken();
+        const courtToken = await getCourtToken();
+
+        if (courtToken && !accessToken) {
+          set({
+            activeRole: 'umpire',
+            isAuthenticated: true,
+            isLoading: false,
+            securityVerified: true,
+          });
+          return true;
+        }
+
+        // Run full on-boot security verification check on the backend
+        const headers: Record<string, string> = {};
+        if (accessToken) {
+          headers['Authorization'] = `Bearer ${accessToken}`;
+        }
+
+        const res = await apiClient.get('/security/app-verify', { headers });
+
+        if (res.data?.success && res.data?.status === 'passed' && res.data?.score === 100) {
+          const report: SecurityVerificationReport = {
+            score: res.data.score,
+            passed_checks: res.data.passed_checks,
+            total_checks: res.data.total_checks,
+            checks: res.data.checks,
+          };
+
+          if (res.data.user) {
+            const u = res.data.user;
+            const p = res.data.player || null;
+            const role: UserRole = u.role === 'superadmin' || u.role === 'admin' ? 'admin' : 'player';
+            set({
+              user: u,
+              player: p,
+              activeRole: role,
+              isAuthenticated: true,
+              isLoading: false,
+              securityReport: report,
+              securityVerified: true,
+            });
+          } else {
+            // Valid anonymous visitor baseline verified
+            set({
+              user: null,
+              player: null,
+              isAuthenticated: false,
+              isLoading: false,
+              securityReport: report,
+              securityVerified: true,
+            });
+          }
+          return true;
+        }
+
+        // Did not pass 100%, trigger retry
+        lastError = new Error(`Security score ${res.data?.score}%. Verification incomplete.`);
+      } catch (err: any) {
+        lastError = err;
+
+        // If 401 Unauthorized (e.g. access token expired), attempt token refresh before next retry
+        if (err.response?.status === 401) {
+          const refreshToken = await getRefreshToken();
+          if (refreshToken) {
+            try {
+              const refreshRes = await apiClient.post('/auth/refresh', {}, {
+                headers: { Authorization: `Bearer ${refreshToken}` },
+              });
+              if (refreshRes.data?.access_token) {
+                await setAccessToken(refreshRes.data.access_token);
+                continue; // Immediately retry verification with refreshed token
+              }
+            } catch {
+              // Refresh token invalid, clear tokens
+              await clearAllAuthTokens();
+            }
+          } else {
+            await clearAllAuthTokens();
+          }
+        }
       }
 
-      if (!accessToken) {
-        set({
-          user: null,
-          player: null,
-          isAuthenticated: false,
-          isLoading: false,
-        });
-        return false;
+      // If attempt failed and more retries remain, back off briefly (400ms, 800ms)
+      if (attempt < maxRetries) {
+        await new Promise((resolve) => setTimeout(resolve, attempt * 400));
       }
-
-      // Verify token with backend /users/me
-      const res = await apiClient.get('/users/me');
-      if (res.data?.success && res.data?.user) {
-        const u = res.data.user;
-        const p = res.data.player || null;
-        const role: UserRole = u.role === 'superadmin' || u.role === 'admin' ? 'admin' : 'player';
-        set({
-          user: u,
-          player: p,
-          activeRole: role,
-          isAuthenticated: true,
-          isLoading: false,
-        });
-        return true;
-      }
-
-      // If user not returned
-      await clearAllAuthTokens();
-      set({
-        user: null,
-        player: null,
-        isAuthenticated: false,
-        isLoading: false,
-      });
-      return false;
-    } catch (err) {
-      await clearAllAuthTokens();
-      set({
-        user: null,
-        player: null,
-        isAuthenticated: false,
-        isLoading: false,
-      });
-      return false;
     }
+
+    // If 3 retries exhausted:
+    console.warn(`[Security] App security checks failed after ${maxRetries} attempts:`, lastError);
+    await clearAllAuthTokens();
+    set({
+      user: null,
+      player: null,
+      isAuthenticated: false,
+      isLoading: false,
+      securityVerified: false,
+    });
+    return false;
   },
 
   logout: async () => {
