@@ -1,10 +1,10 @@
-from flask import Flask, request
+from flask import Flask, request, session, flash, redirect, url_for
 from config import Config
 from app.domain.models import db
 from flask_compress import Compress
 from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
-from flask_wtf.csrf import CSRFProtect
+from flask_wtf.csrf import CSRFProtect, CSRFError
 import os
 
 migrate = Migrate()
@@ -183,6 +183,10 @@ def create_app(config_class=Config):
         import markupsafe
         return markupsafe.Markup(markupsafe.escape(s).replace('\n', '<br>\n'))
 
+    @app.before_request
+    def ensure_session_permanent():
+        session.permanent = True
+
     # Cache Control Middleware for static assets & Security Headers (OWASP ASVS SEC-081, SEC-084, SEC-086, SEC-087)
     @app.after_request
     def add_security_and_cache_headers(response):
@@ -231,9 +235,13 @@ def create_app(config_class=Config):
                     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
                     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With'
 
-        # Cache static files for 1 hour
+        # Cache static files for 1 hour; prevent proxies/CDN/browsers from caching dynamic HTML with CSRF tokens
         if request.path.startswith('/static/'):
             response.headers['Cache-Control'] = 'public, max-age=3600'
+        elif not request.path.startswith('/api/'):
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
         return response
 
     # Inject current_user into templates
@@ -244,6 +252,18 @@ def create_app(config_class=Config):
 
     import traceback
     import logging
+
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(e):
+        db.session.rollback()
+        logging.warning(f"CSRF validation failed: {getattr(e, 'description', str(e))}")
+        if request.path.startswith('/api/'):
+            return {"success": False, "message": "Security token has expired or is invalid. Please refresh the page."}, 400
+        flash("Your session security token has expired. Please try submitting again.", "warning")
+        referrer = request.referrer
+        if referrer and (referrer.startswith(request.host_url) or referrer.startswith('/')):
+            return redirect(referrer)
+        return redirect(url_for('main.index'))
 
     @app.errorhandler(Exception)
     def handle_exception(e):

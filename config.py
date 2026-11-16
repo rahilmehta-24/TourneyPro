@@ -38,6 +38,10 @@ class Config:
     SESSION_COOKIE_SECURE = os.environ.get('FLASK_ENV') == 'production' or bool(os.environ.get('VERCEL'))
     PERMANENT_SESSION_LIFETIME = 86400 * 7  # 7 days max session lifetime
 
+    # CSRF Configuration - keep tokens valid for the full duration of the session
+    WTF_CSRF_ENABLED = True
+    WTF_CSRF_TIME_LIMIT = None  # Valid for lifetime of session (prevents premature 1-hour expiration)
+
     # Upload folder in 'app/web/static/uploads'
     UPLOAD_FOLDER = os.path.join(basedir, 'app', 'web', 'static', 'uploads')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size

@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="turbo-cache-control" content="no-cache">
     <title>{% block title %}The Baseline Society{% endblock %}</title>
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='brand/app-icon.svg') }}">
     <link rel="alternate icon" type="image/png" href="{{ url_for('static', filename='brand/app-icon.png') }}">
@@ -16,30 +17,37 @@
         } catch (e) {}
         document.documentElement.removeAttribute('data-theme');
 
+        function getCsrfToken() {
+            return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        }
+
         // Automatic CSRF token injector for Turbo, fetch, and native forms
         document.addEventListener('turbo:before-fetch-request', function(event) {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            if (csrfToken) {
-                event.detail.fetchOptions.headers['X-CSRFToken'] = csrfToken;
+            const token = getCsrfToken();
+            if (token) {
+                event.detail.fetchOptions.headers['X-CSRFToken'] = token;
             }
         });
 
+        function injectCsrfIntoForms() {
+            const token = getCsrfToken();
+            if (!token) return;
+
+            document.querySelectorAll('form[method="POST"], form[method="post"]').forEach(function(form) {
+                let input = form.querySelector('input[name="csrf_token"]');
+                if (!input) {
+                    input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'csrf_token';
+                    form.appendChild(input);
+                }
+                if (!input.value) {
+                    input.value = token;
+                }
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            if (!csrfToken) return;
-
-            function injectCsrfIntoForms() {
-                document.querySelectorAll('form[method="POST"], form[method="post"]').forEach(function(form) {
-                    if (!form.querySelector('input[name="csrf_token"]')) {
-                        const input = document.createElement('input');
-                        input.type = 'hidden';
-                        input.name = 'csrf_token';
-                        input.value = csrfToken;
-                        form.appendChild(input);
-                    }
-                });
-            }
-
             injectCsrfIntoForms();
             document.addEventListener('turbo:render', injectCsrfIntoForms);
             document.addEventListener('turbo:frame-load', injectCsrfIntoForms);
@@ -47,14 +55,15 @@
             // Hook native fetch
             const originalFetch = window.fetch;
             window.fetch = function(url, options = {}) {
-                if (options.method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(options.method.toUpperCase())) {
+                const token = getCsrfToken();
+                if (token && options.method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(options.method.toUpperCase())) {
                     options.headers = options.headers || {};
                     if (options.headers instanceof Headers) {
-                        if (!options.headers.has('X-CSRFToken')) options.headers.append('X-CSRFToken', csrfToken);
+                        if (!options.headers.has('X-CSRFToken')) options.headers.append('X-CSRFToken', token);
                     } else if (Array.isArray(options.headers)) {
-                        options.headers.push(['X-CSRFToken', csrfToken]);
+                        options.headers.push(['X-CSRFToken', token]);
                     } else {
-                        options.headers['X-CSRFToken'] = csrfToken;
+                        options.headers['X-CSRFToken'] = token;
                     }
                 }
                 return originalFetch(url, options);
