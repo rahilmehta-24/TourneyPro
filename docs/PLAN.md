@@ -1,7 +1,7 @@
-# TourneyPro — Phased Delivery Roadmap & Execution Plan (PLAN.md)
+# The Baseline Society — Phased Delivery Roadmap & Execution Plan (PLAN.md)
 
 **Document Status:** Approved  
-**Source of Truth:** Inherits from [`README.md`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/README.md), [`PRD.md`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/PRD.md), and [`ARCHITECTURE.md`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/ARCHITECTURE.md)  
+**Source of Truth:** Inherits from [`README.md`](README.md), [`PRD.md`](PRD.md), and [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 **Current Milestone:** Phase 1 & Phase 2 Core RBAC Completed / Real-Time Operations In Progress  
 **Last Updated:** November 2026  
 
@@ -9,11 +9,11 @@
 
 ## 1. Roadmap Overview & Strategic Objectives
 
-TourneyPro's product roadmap is structured into three iterative phases to balance immediate operational reliability with long-term real-time automation:
+The Baseline Society's product roadmap is structured into three iterative phases to balance immediate operational reliability with long-term real-time automation:
 
 ```mermaid
 gantt
-    title TourneyPro Phased Development Roadmap
+    title The Baseline Society Phased Development Roadmap
     dateFormat  YYYY-MM
     section Phase 1 (Completed)
     Core Brackets & Formats           :done, 2026-05, 2026-07
@@ -23,6 +23,7 @@ gantt
     Mobile App Web Architecture       :done, 2026-10, 2026-11
     section Phase 2 (In Progress)
     Enterprise RBAC & Staff PIN Mode  :done, 2026-10, 2026-11
+    Security Hardening Sprint (WP 2.5) :crit, 2026-11, 2026-12
     WebSocket Live Score Streaming    :active, 2026-11, 2026-12
     Dynamic Court Slot Optimization   :2026-12, 2027-01
     Venue TV / Large Scoreboard Mode  :2027-01, 2027-02
@@ -37,7 +38,7 @@ gantt
 
 ## 2. Phase 1: Core Lifecycle & Ecosystem (✅ COMPLETED)
 
-Phase 1 established the stable operational foundation of TourneyPro, replacing legacy manual spreadsheets and paper draw sheets.
+Phase 1 established the stable operational foundation of The Baseline Society, replacing legacy manual spreadsheets and paper draw sheets.
 
 ### 2.1 Completed Milestones & Capabilities
 1. **Mathematical Tournament Formats:**
@@ -55,7 +56,7 @@ Phase 1 established the stable operational foundation of TourneyPro, replacing l
 4. **Vector PDF Export Suite:**
    * High-fidelity printable vector PDF downloads for Draws, Order of Play, and Participant Rosters via `xhtml2pdf` and `reportlab`.
 5. **Quality Assurance & Deployment Automation:**
-   * 72 automated unit and integration tests passing cleanly.
+   * 72 automated unit and integration tests at Phase 1 close (82 after WP 2.0 added RBAC tests).
    * GitHub Actions CI quality gates and automated database schema synchronization (`scripts/sync_db_schema.py`) for Supabase PostgreSQL.
 6. **Mobile Responsive Web App & Touch Experience:**
    * Safe-area notch and home indicator support (`viewport-fit=cover`, `env(safe-area-inset-bottom)`).
@@ -77,8 +78,8 @@ Phase 2 focuses on modernizing tournament venues with real-time score feeds and 
 #### WP 2.0: Enterprise RBAC, Staff Delegation & Court PIN Mode (✅ COMPLETED)
 * **Objective:** Secure tournament administration, enable operational delegation, and provide on-court tablet scorekeeping.
 * **Delivered Capabilities:**
-  * **Relational Staff Delegation:** Created `tournament_staff` table linking tournaments, users, and roles (`owner`, `tournament_admin`, `desk`, `umpire`). Appoint, edit, and revoke staff via `/tournaments/<slug>/staff`.
-  * **Court PIN Fast Entry:** Added `court_pin` to `Tournament`. Dedicated tablet scoring at `/tournaments/<slug>/court-pin` without individual user accounts.
+  * **Relational Staff Delegation:** Created `tournament_staff` table linking tournaments, users, and roles (canonical: `manager`, `official`, `scorer`, with the owner held in `tournaments.user_id`; legacy `tournament_admin`/`desk`/`umpire` are being migrated). Appoint, edit, and revoke staff via `/tournaments/<slug>/staff`.
+  * **Court PIN Fast Entry:** Dedicated tablet scoring at `/tournaments/<slug>/court-pin` without individual user accounts. The original tournament-wide 4-digit PIN is superseded by **Court PIN v2** (6-digit, expiring, court-bound PINs stored hashed in `tournament_staff`; see WP 2.5).
   * **Draft Draw State Machine:** Added `draw_published` to `Category`. Brackets remain hidden from public viewers until organizers review and publish.
   * **Sporting Integrity & Anti-Conflict Guard:** Blocked active participants from scoring or officiating their own matches (`HTTP 403 Forbidden`).
   * **Optimistic Concurrency Control:** Added `lock_version` to `Match` records to eliminate simultaneous referee score overwrites (`HTTP 409 Conflict`).
@@ -91,6 +92,7 @@ Phase 2 focuses on modernizing tournament venues with real-time score feeds and 
   * Integrate `Flask-SocketIO` with an event-driven broadcast channel per tournament room (`tournament_<slug>`).
   * When an organizer reports a score via the modal or API, emit a `score_update` event with payload `{ match_id, score1, score2, status, winner_id }`.
   * Public web client subscribes to the socket room; DOM nodes update with subtle flash animations without full page reloads.
+* **Platform constraint:** Vercel serverless functions cannot hold WebSocket connections, so Flask-SocketIO cannot be deployed there. Decide first between (A) CDN-cached polling with ETag (no new infrastructure), (B) a managed realtime service (Supabase Realtime, Ably, Pusher), or (C) moving the app tier to a container host with Redis. Recommended: A now, B if sub-second latency is needed. Polling remains the fallback in every option (see [`ARCHITECTURE.md`](ARCHITECTURE.md) §7).
 
 #### WP 2.2: Dynamic Match Scheduling & Court Assignment
 * **Objective:** Move from manual court assignment to automated constraint optimization.
@@ -104,9 +106,26 @@ Phase 2 focuses on modernizing tournament venues with real-time score feeds and 
 * **Features:**
   * Carousel rotating between Live Matches, Court Schedule ("Now Playing" / "Up Next"), and Tournament Leaderboards.
   * Large-format typography legible from 20 meters away.
+  * Resolution targets: 1920 x 1080 and 3840 x 2160, 16:9, root font 20 to 24 px, no hover or tap-only interactions, auto-rotation with pause on hover/keyboard, and no sleep/screensaver interruptions.
+  * Read-only, token-protected display URL (no personal data, published draws only).
 
 #### WP 2.4: Team & Club Portals
 * **Objective:** Allow team managers to create club accounts, manage athlete rosters, and submit multi-player team entries directly.
+
+#### WP 2.5: Security & Compliance Hardening (🔒 PRIORITY)
+* **Objective:** close the gaps listed in [`SECURITY_REVIEW.md`](SECURITY_REVIEW.md) before wider public launch.
+* **Scope (in priority order):**
+  1. Fail-closed `check_tournament_access()`, canonical role names, and a data migration for legacy staff roles.
+  2. Court PIN v2 (6-digit, hashed, expiring, court-bound, rate-limited, audited).
+  3. Conflict-of-interest guard rewritten to resolve users through `Player.user_id`, team rosters, and rubber lineups.
+  4. Draft-draw and private-data gating on every public API endpoint; separate public/staff schemas.
+  5. Production startup validation (no default secrets or superadmin password), separate `JWT_SECRET_KEY`, `ProxyFix`, secure cookies, security headers.
+  6. Shared-storage rate limiting (login, registration, PIN, live feed) and CDN caching for the live feed.
+  7. Atomic `lock_version` updates; mandatory `lock_version` on all score requests.
+  8. Upload, PDF, and spreadsheet hardening; object storage for attachments.
+  9. Verified-contact account claiming; privacy controls for minors' data.
+  10. Security regression tests and CI scans (`bandit`, `pip-audit`).
+* **Exit criteria:** all High findings closed, regression tests in CI, documentation and code in agreement.
 
 ---
 
@@ -131,7 +150,7 @@ Phase 3 introduces automated participant notifications and self-service ticketin
   * Printable PDF draw sheets attached to announcement emails.
 
 #### WP 3.3: Native Mobile Companion App
-* Dedicated mobile application for Android and iOS (React Native or Flutter) tailored specifically for court umpires to submit scores live court-side.
+* Dedicated mobile application for Android and iOS (React Native or Flutter, a separate codebase; the "no frontend framework" rule in [`AGENTS.md`](AGENTS.md) applies only to the web app) tailored specifically for court umpires to submit scores live court-side.
 
 ---
 
@@ -143,3 +162,10 @@ Phase 3 introduces automated participant notifications and self-service ticketin
 | **Tournament Delay Cascades (Inclement Weather)** | High | Medium | Implement bulk schedule delay actions (`Shift all remaining matches by +60 minutes`). |
 | **Double-Booking on Manual Court Changes** | Medium | Medium | Automated validation warnings in `check_match_progression_allowed()` immediately flag overlapping matches. |
 | **Vercel Serverless Cold Starts** | Low | Low | Cold-start bypass implemented in `app/__init__.py` (skips redundant schema queries on boot). |
+| **Authorization Bypass (fail-open role checks, PIN misuse)** | High | Medium | WP 2.5 items 1 to 3; fail-closed guard and regression tests. |
+| **Draft Draw / Private Data Leak via Public API** | High | Medium | Draft-draw gating and public schemas on every endpoint (WP 2.5 item 4). |
+| **Default Credentials in Production** | High | Medium | Startup validation refuses default secrets and superadmin password. |
+| **Court PIN Brute Force** | Medium | Medium | 6-digit PIN, hashed, expiring, rate-limited with lockout, audit alerts. |
+| **Realtime Plan Incompatible with Vercel** | Medium | High | Choose polling+CDN or a managed realtime service before building WP 2.1. |
+| **Spectator Load Spike on Live Feed** | Medium | Medium | `Cache-Control`/ETag with CDN, shared rate limits, indexed queries. |
+| **Personal Data of Minors** | Medium | Medium | Public schemas exclude private fields; consent, retention, and deletion processes. |

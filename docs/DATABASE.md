@@ -1,17 +1,17 @@
-# TourneyPro — Database & Schema Architecture (DATABASE.md)
+# The Baseline Society — Database & Schema Architecture (DATABASE.md)
 
 **Document Status:** Approved  
-**Source of Truth:** Inherits from [`ARCHITECTURE.md`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/ARCHITECTURE.md) and [`PRD.md`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/PRD.md)  
+**Source of Truth:** Inherits from [`ARCHITECTURE.md`](ARCHITECTURE.md) and [`PRD.md`](PRD.md)  
 **Database Engines:** PostgreSQL 15+ (Production / Staging via Supabase) & SQLite 3 (Development / Testing)  
 **ORM:** SQLAlchemy 2.0.51 / Flask-SQLAlchemy 3.1.1  
 **Migration Tooling:** Alembic 1.20.0 / Flask-Migrate 4.1.0  
-**Last Updated:** October 2026  
+**Last Updated:** November 2026  
 
 ---
 
 ## 1. Relational Entity Overview
 
-TourneyPro manages 17 relational entities structured around the tournament execution lifecycle, global player registry, and academy club portals.
+The Baseline Society manages 18 relational entities (tables) structured around the tournament execution lifecycle, global player registry, and academy club portals.
 
 ```mermaid
 erDiagram
@@ -52,6 +52,9 @@ erDiagram
     
     MATCHES ||--o{ MATCHES : "parent_fixture (rubbers)"
     MATCHES ||--o{ MATCH_ATTACHMENTS : "evidences"
+    PLAYERS ||--o{ REGISTRATIONS : "applies_as"
+    CATEGORIES ||--o{ REGISTRATIONS : "receives"
+    USERS ||--o| PLAYERS : "claims"
 ```
 
 ---
@@ -96,6 +99,8 @@ Root container for events, multi-day calendar windows, and venue court capacitie
 | `court_buffer_minutes` | `INTEGER` | Nullable | `10` | Rest turnaround between matches on the same court. |
 | `min_rest_minutes` | `INTEGER` | Nullable | `30` | Mandatory player rest buffer between consecutive matches. |
 | `max_matches_per_player_day` | `INTEGER` | Nullable | `3` | Safety cap preventing player overexertion per calendar day. |
+
+> **Note on legacy `court_pin`:** older documents describe a 4-digit `tournaments.court_pin`. That column does **not** exist in this schema. Court PINs are rows in `tournament_staff` (6-digit, expiring, court-bound; see §2.18). Any code still reading a tournament-level PIN must be migrated.
 
 ---
 
@@ -182,7 +187,7 @@ Individual players, doubles pairs, or teams registered to compete in an event.
 | `group_wins` | `INTEGER` | Nullable | `0` | Wins in pool play. |
 | `group_losses` | `INTEGER` | Nullable | `0` | Losses in pool play. |
 | `group_points` | `INTEGER` | Nullable | `0` | Cumulative points in pool play. |
-| `payment_status` | `VARCHAR(20)` | Nullable | `'paid'` | `pending`, `paid`, `refunded`. |
+| `payment_status` | `VARCHAR(20)` | Nullable | `'paid'` | `pending`, `paid`, `refunded`. **Review:** a default of `'paid'` can mark unpaid entries as paid; see §4 (change to `'pending'`). |
 | `payment_method` | `VARCHAR(50)` | Nullable | NULL | `online`, `cash`, `free`. |
 | `created_at` | `DATETIME` | Nullable | `utcnow` | Registration timestamp. |
 
@@ -266,7 +271,7 @@ System accounts for authentication, authorization, and ownership.
 | `id` | `INTEGER` | Primary Key | Auto | User identifier. |
 | `username` | `VARCHAR(80)` | UNIQUE, NOT NULL | - | Login handle. |
 | `email` | `VARCHAR(120)` | UNIQUE, NOT NULL | - | Account email address. |
-| `password_hash` | `VARCHAR(256)` | NOT NULL | - | Secure Werkzeug PBKDF2-HMAC-SHA256 hash. |
+| `password_hash` | `VARCHAR(256)` | NOT NULL | - | Werkzeug password hash (scrypt by default in Werkzeug 3.x; legacy PBKDF2-HMAC-SHA256 hashes still verify and are re-hashed on login). |
 | `role` | `VARCHAR(20)` | Nullable | `'user'` | Role: `superadmin`, `admin`, `user`, `deleted`. |
 | `admin_requested` | `BOOLEAN` | Nullable | `FALSE` | Flag indicating user requested organizer privileges. |
 | `created_at` | `DATETIME` | Nullable | `utcnow` | Account registration datetime. |
@@ -360,7 +365,7 @@ Security and administrative mutation ledger.
 | Column | Type | Constraints | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `id` | `INTEGER` | Primary Key | Auto | Audit record identifier. |
-| `user_id` | `INTEGER` | FK (`users.id`), NOT NULL | - | Acting user identifier. |
+| `user_id` | `INTEGER` | FK (`users.id`), NOT NULL | - | Acting user identifier. **Review:** must become nullable so Court PIN and system actions can be logged (see §4). |
 | `action_type` | `VARCHAR(100)`| NOT NULL | - | Action tag (e.g., `RESET_BRACKET`, `UPDATE_SCORE`). |
 | `target_id` | `INTEGER` | Nullable | NULL | Entity ID modified. |
 | `target_name` | `VARCHAR(200)`| Nullable | NULL | Human-readable target name. |
@@ -453,13 +458,17 @@ Tournament staff appointments, referee delegations, and temporary 6-digit court 
 *Table Constraints:*
 - Unique constraint on `(tournament_id, user_id)` preventing duplicate user appointments in the same tournament.
 
+*Role values:* the canonical roles are `manager`, `official`, and `scorer` (owner is `tournaments.user_id`). Legacy values `tournament_admin`, `desk`, and `umpire` found in older code map to `manager`, `manager`, and `scorer` and must be rewritten by a data migration.
+
+*PIN handling:* the PIN is a credential. It should be stored as a keyed hash and shown once (see §4). Plaintext storage in `court_pin` is acceptable only until that migration ships.
+
 ---
 
 ## 3. Database Migration & Schema Synchronization
 
 ### 3.1 Migration Strategy with Flask-Migrate & Alembic
-* Migrations reside in [`migrations/versions/`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/migrations/versions/).
-* To support schema alterations on local SQLite development databases without recreating tables, `render_as_batch=True` is enabled in [`app/__init__.py`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/app/__init__.py):
+* Migrations reside in [`migrations/versions/`](migrations/versions/).
+* To support schema alterations on local SQLite development databases without recreating tables, `render_as_batch=True` is enabled in [`app/__init__.py`](app/__init__.py):
   ```python
   migrate.init_app(app, db, render_as_batch=True)
   ```
@@ -469,3 +478,46 @@ In automated CI/CD deployment pipelines (e.g. Supabase production deployments), 
 1. Inspects active PostgreSQL tables and columns.
 2. Compares active structure against SQLAlchemy model declarations.
 3. Automatically executes non-destructive `CREATE TABLE` and `ALTER TABLE ... ADD COLUMN` commands for missing elements.
+
+### 3.3 What `sync_db_schema.py` Cannot Do
+The reconciler only adds missing tables and columns. It never adds or changes constraints, indexes, `NOT NULL`, defaults, or `ON DELETE` rules. Every change in §4 therefore needs a real Alembic revision (with `batch_alter_table` for SQLite), and any backfill must run before a constraint is tightened.
+
+---
+
+## 4. Proposed Schema Hardening (requires new Alembic revisions)
+
+| # | Change | Why |
+| :---: | :--- | :--- |
+| 1 | `tournaments.user_id` to `NOT NULL` (backfill orphans to a superadmin first) | The BOLA anchor must always exist |
+| 2 | `participants.payment_status` default `'pending'` | Unpaid entries must not appear paid |
+| 3 | Unique partial index on `registrations (tournament_id, transaction_id) WHERE transaction_id IS NOT NULL` | One UPI reference cannot pay for several entries |
+| 4 | Unique partial index on `registrations (tournament_id, player_id) WHERE category_id IS NULL` | `uq_tournament_category_player` does not catch duplicates when `category_id` is `NULL` |
+| 5 | `tournament_staff`: add `court_pin_hash VARCHAR(64)`, `created_by` (FK `users.id`), `revoked_at`; drop plaintext `court_pin` after backfill; unique `(tournament_id, court_pin_hash)` | PIN is a credential and needs revocation and attribution |
+| 6 | `CHECK (role IN ('manager','official','scorer'))` on `tournament_staff.role` after the legacy-role data migration | Prevents unknown roles that previously passed rank checks |
+| 7 | `audit_logs`: make `user_id` nullable; add `actor_type` (`user`/`court_pin`/`system`), `staff_id`, `actor_label`, `ip_address VARCHAR(45)` | Log PIN and system actions; support forensics |
+| 8 | `users`: add `email_verified_at`, `last_login_at` | Needed for safe account claiming and anomaly review |
+| 9 | `match_attachments.file_path` to `storage_key` plus `content_type`, `size_bytes`, `sha256`; `players.avatar_url` likewise | Files move to object storage; serverless filesystems are read-only and `static/` is public |
+| 10 | `matches.lock_version` as SQLAlchemy `version_id_col` or atomic `UPDATE ... WHERE lock_version = :v` | Removes the check-then-write race |
+| 11 | `court_names`, `daily_operating_hours`, `daily_schedule`: JSON only (use `JSON` type) | The "JSON or comma-separated" ambiguity breaks parsing |
+| 12 | Explicit `ON DELETE`: `participants`/`matches`/`categories` to `tournaments` = `CASCADE`; `matches.winner_id`/`participant*_id` = `SET NULL`; `registrations.*` = `RESTRICT`; `audit_logs.user_id` = `SET NULL` | Prevents orphans without losing history |
+| 13 | Timestamps: `DateTime(timezone=True)` on PostgreSQL, defaults `lambda: datetime.now(timezone.utc)` | `datetime.utcnow` is deprecated in Python 3.12 |
+
+### 4.1 Recommended Indexes
+| Table | Index | Query it serves |
+| :--- | :--- | :--- |
+| `matches` | `(category_id, round, match_number)` | Bracket rendering and advancement |
+| `matches` | `(tournament_id, status, scheduled_time)` | Live feed and Order of Play |
+| `matches` | `(tournament_id, court_name, scheduled_time)` | Court conflict checks |
+| `matches` | `(parent_match_id)` | Rubbers of a tie |
+| `participants` | `(category_id)`, `(player_id)`, `(player2_id)` | Rosters and conflict-of-interest lookups |
+| `registrations` | `(tournament_id, status)` | Admin registration hub |
+| `tournament_staff` | `(tournament_id, user_id)` (unique, exists) | Access checks on every request |
+| `audit_logs` | `(created_at)`, `(target_id, action_type)` | Forensic searches |
+| `tournaments` | `(is_private, status)` | Public list filtering |
+
+### 4.2 Personal Data Classification
+| Sensitivity | Columns | Rule |
+| :--- | :--- | :--- |
+| High (never public) | `players.address`, `blood_group`, `dob`, `contact_number`, `email`; `participants.email`, `mobile`, `dob`; `registrations.transaction_id` | Staff-only access; excluded from public schemas and exports unless the organizer needs them |
+| Medium | `players.height`, `weight`, `registration_no`, `coach` | Visible to the player and staff |
+| Public | display name, avatar, statistics, results | Minors (U10 to U18) show display name only |

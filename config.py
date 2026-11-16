@@ -10,6 +10,9 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'baseline-society-jwt-secret-key-32-chars-minimum-prod'
+    JWT_ACCESS_TOKEN_EXPIRES = 3600  # 60 minutes
+    JWT_REFRESH_TOKEN_EXPIRES = 30 * 86400  # 30 days
     # Database file in 'instance' folder at root
     db_url = os.environ.get('DATABASE_URL')
     if db_url:
@@ -29,6 +32,16 @@ class Config:
                 'prepare_threshold': None
             }
         }
+    # Session & Cookie Security (OWASP ASVS SEC-023, SEC-024, SEC-025, SEC-083)
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_SECURE = os.environ.get('FLASK_ENV') == 'production' or bool(os.environ.get('VERCEL'))
+    PERMANENT_SESSION_LIFETIME = 86400 * 7  # 7 days max session lifetime
+
+    # CSRF Configuration - keep tokens valid for the full duration of the session
+    WTF_CSRF_ENABLED = True
+    WTF_CSRF_TIME_LIMIT = None  # Valid for lifetime of session (prevents premature 1-hour expiration)
+
     # Upload folder in 'app/web/static/uploads'
     UPLOAD_FOLDER = os.path.join(basedir, 'app', 'web', 'static', 'uploads')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size

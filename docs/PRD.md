@@ -1,4 +1,4 @@
-# TourneyPro — Product Requirements Document (PRD)
+# The Baseline Society — Product Requirements Document (PRD)
 
 **Document Status:** Approved & Baseline Source of Truth  
 **Product Version:** 2.0 (Phase 1 & Phase 2 Core RBAC Complete)  
@@ -10,7 +10,7 @@
 
 ## 1. Executive Summary & Vision
 
-**TourneyPro** is an enterprise-grade, end-to-end tournament operations and competition management web platform. Designed from the ground up to solve the operational chaos of paper draw sheets, manual WhatsApp coordination, and fragmented tournament tools, TourneyPro provides a unified operating system for tournament organizers, academy directors, players, and spectators.
+**The Baseline Society** is an enterprise-grade, end-to-end tournament operations and competition management web platform. Designed from the ground up to solve the operational chaos of paper draw sheets, manual WhatsApp coordination, and fragmented tournament tools, The Baseline Society provides a unified operating system for tournament organizers, academy directors, players, and spectators.
 
 The platform orchestrates the complete tournament lifecycle:
 1. Multi-category event creation with customizable rules and entry fees.
@@ -25,7 +25,7 @@ The platform orchestrates the complete tournament lifecycle:
 
 ## 2. Target Personas & Use Cases
 
-### 2.1 Tournament Organizer / Director (`owner` / `tournament_admin`)
+### 2.1 Tournament Organizer / Director (`owner`)
 * **Goals:** Create multi-event tournaments quickly, seed participants, generate balanced draws, schedule hundreds of matches across finite courts without player clashes, appoint tournament desk staff and umpires, publish finalized draws, and report live scores without math errors.
 * **Pain Points:** Duplicate matches, players scheduled on two courts simultaneously, calculating complex head-to-head tiebreakers in leagues, dealing with walkovers and mid-match retirements, delegating desk duties without sharing master admin credentials.
 * **Key Tasks:**
@@ -40,17 +40,17 @@ The platform orchestrates the complete tournament lifecycle:
 * **Pain Points:** Separate software needed for club announcements vs tournament fixtures.
 * **Key Tasks:** Create an Academy portal (`/academy/<slug>`), manage club rosters, and restrict tournament registration to internal academy members.
 
-### 2.3 Tournament Desk / Operations Manager (`desk` staff)
+### 2.3 Tournament Desk / Operations Manager (`manager` staff; legacy name `desk`)
 * **Goals:** Execute day-to-day court desk logistics without altering tournament financial or staff configuration.
 * **Key Tasks:** Check in arriving participants, assign seeds, schedule matches to available courts, enter match scores, and verify scorecards.
 
-### 2.4 Match Official / Chair Umpire (`umpire` staff)
+### 2.4 Match Official / Chair Umpire (`official` / `scorer` staff; legacy name `umpire`)
 * **Goals:** Officiate assigned matches, report live game and rubber scores from court-side smartphones/tablets, and mark matches completed.
 * **Key Tasks:** Open assigned match scoring modals, record game progression, and submit final scorelines. Strictly guarded against scoring matches in which they compete.
 
-### 2.5 Quick Court Scorekeeper (`court_pin` mode)
-* **Goals:** Enable dedicated on-court tablets to enter scores instantly using a 4-digit court PIN without requiring individual umpire user account sign-in.
-* **Key Tasks:** Unlock court scoring interface with tournament PIN, report game scores, and advance live tournament scores.
+### 2.5 Quick Court Scorekeeper (Court PIN mode)
+* **Goals:** Enable dedicated on-court tablets to enter scores instantly using a 6-digit, expiring, court-bound PIN without requiring individual user accounts.
+* **Key Tasks:** Unlock the court scoring interface with the PIN and a display name, report game scores, and advance live scores for that court only.
 
 ### 2.6 Team League Captain (`captain`)
 * **Goals:** Manage club/corporate team rosters, submit 3-rubber tie lineups before match cutoffs, and monitor group standings.
@@ -90,7 +90,7 @@ Platform (Superadmin & Global Player Registry)
 
 ## 4. Tournament Format Specifications
 
-TourneyPro natively supports four primary competition formats:
+The Baseline Society natively supports four primary competition formats:
 
 ### 4.1 Single Elimination (Knockout)
 * **Mathematical Basis:** Generates brackets based on the smallest power of 2 greater than or equal to $N$ participants ($2^{\lceil \log_2 N \rceil}$).
@@ -102,8 +102,8 @@ TourneyPro natively supports four primary competition formats:
 * **Ranking & Points:**
   * Final Rank 1: Champion (Winner of Final)
   * Final Rank 2: Runner-up (Loser of Final)
-  * Final Rank 3–4: Semi-Finalists
-  * Final Rank 5–8: Quarter-Finalists
+  * Final Rank 3 (displayed "3–4"): both Semi-Finalists, tied
+  * Final Rank 5 (displayed "5–8"): Quarter-Finalists, tied
 
 ### 4.2 Doubles Elimination (Knockout)
 * **Pair Representation:** Formatted as `Player 1 / Player 2` with dual database references (`player_id` and `player2_id`).
@@ -125,6 +125,7 @@ Specially engineered for club, corporate, and inter-team tennis/badminton league
   * Rubber 1: Singles (e.g., Tier A vs Tier A)
   * Rubber 2: Doubles (e.g., Tier B + Tier C vs Tier B + Tier C)
   * Rubber 3: Singles / Decider (e.g., Tier D vs Tier D)
+  * Tier E is the reserve/substitute slot and plays only when replacing an unavailable team member.
 * **Rubber Scoring (Summation Rule $T=7$):**
   * Each rubber is played up to 7 total games ($G_1 + G_2 = 7$).
   * If a rubber reaches 3–3, an automatic tiebreaker is played to decide the 7th game (winning score is 4–3).
@@ -169,7 +170,7 @@ The integrated multi-court scheduling engine solves complex resource allocation 
 ### 7.1 Smart Guest Registration Flow
 * Allows players to register without undergoing a traditional account creation workflow.
 * The system automatically creates a global `Player` profile and links the entry to an internal `anonymous_registrations` account.
-* If the user subsequently registers an official `User` account with the same email or mobile number, their lifetime player profile and tournament history are seamlessly reconciled.
+* If the user subsequently registers an official `User` account with the same email or mobile number, their lifetime player profile and tournament history are reconciled **only after the email or mobile number has been verified** (verification link or OTP).
 
 ### 7.2 Lifetime Player Registry & Statistics
 * Global tracking across all tournaments:
@@ -187,7 +188,7 @@ The integrated multi-court scheduling engine solves complex resource allocation 
 
 ## 8. Document Generation & Export Engine
 
-TourneyPro delivers publication-ready vector documents:
+The Baseline Society delivers publication-ready vector documents:
 1. **Dynamic Draw PDF:** Vector-rendered knockout brackets with seed indicators, participant names, match scores, and progression connectors.
 2. **Order of Play PDF:** Comprehensive daily schedule organized by court columns, match start times, category headers, and estimated match durations.
 3. **Participants Roster PDF & Excel:** Check-in sheets, contact rosters, seed tables, and payment statuses.
@@ -197,53 +198,65 @@ TourneyPro delivers publication-ready vector documents:
 ## 9. Non-Functional Requirements (NFRs)
 
 ### 9.1 Performance & Responsiveness
-* SSR pages must achieve Largest Contentful Paint (LCP) under 1.2 seconds.
-* Live score polling endpoint (`/api/v1/live/<slug>/scores`) must respond in < 60ms under standard loads.
-* PDF generation for 64-player brackets must complete in under 2.5 seconds.
+* SSR pages: Largest Contentful Paint under 1.2 seconds on desktop broadband and under 2.5 seconds on a mid-range phone over 4G.
+* Live score polling endpoint (`/api/v1/live/<slug>/scores`): origin response under 60 ms at the 95th percentile, served through a short-lived CDN cache (`max-age=3`) with ETag, sized for 1,000 concurrent spectators polling every 5 seconds.
+* PDF generation for 64-player brackets under 2.5 seconds, and `304` responses without rendering when nothing changed.
 
 ### 9.2 Security & Data Integrity
 * **CSRF Defense:** `CSRFProtect` enforced on all web mutations.
-* **API Security:** Stateless JWT bearer tokens (`HS256` or `RS256`) with expiration.
-* **BOLA / IDOR Protection:** Organizers are strictly locked to tournaments where `tournament.user_id == current_user.id` (with superadmin bypass).
-* **Database Relational Integrity:** Full foreign key cascade handling to avoid orphaned matches or participants.
+* **API Security:** stateless JWT bearer tokens (`HS256` with a dedicated secret, or `RS256`), 60-minute default expiry, per-request user validation.
+* **Authorization:** fail-closed `check_tournament_access()` honoring owner, delegated staff (`manager`, `official`, `scorer`), expiring court-bound PIN sessions, and audited superadmin override. Organizers are locked to tournaments they own or are appointed to.
+* **Brute-force and abuse protection:** shared-storage rate limits on login, registration, PIN entry, and public endpoints.
+* **Transport and headers:** HTTPS only, HSTS, CSP, `nosniff`, secure/HttpOnly/SameSite cookies, `ProxyFix` behind proxies.
+* **Secrets:** no default credentials in production; startup validation; separate secrets per environment.
+* **Integrity:** atomic optimistic locking, complete audit trail (including scores and PIN actions), and foreign key rules that avoid orphaned matches or participants.
+* **Input/output safety:** escaped templates and PDFs, formula-safe spreadsheet exports, size- and type-restricted uploads stored outside the web root.
 
 ### 9.3 Availability & Hosting
-* Dual database support: Zero-dependency local SQLite for rapid testing; Supabase PostgreSQL with transaction pooling (PgBouncer) for production.
-* Serverless WSGI compatibility targeting Vercel (`@vercel/python`) and containerized Gunicorn servers.
+* Dual database support: zero-dependency local SQLite for testing; Supabase PostgreSQL with transaction pooling (PgBouncer) for production.
+* Serverless WSGI compatibility targeting Vercel (`@vercel/python`) and containerized Gunicorn servers. Real-time push requires a non-serverless or managed-realtime option (see [`ARCHITECTURE.md`](ARCHITECTURE.md) §7); polling is the baseline.
 
-### 9.4 Mobile Responsive & Touch Requirements
-* **Smartphone Screen Support:** Full native web app support for viewports from 320px up to 430px (e.g. iPhone SE, iPhone 14/15/16 Pro, Google Pixel, Samsung Galaxy).
-* **Safe-Area Inset Handling:** Support for notches, Dynamic Island, and gesture bars via `viewport-fit=cover` and dynamic viewport units (`dvh`).
-* **Touch Target Standards:** All interactive controls (buttons, tabs, inputs) maintain at least 44×44px hit areas.
-* **Input Usability:** Elimination of iOS Safari auto-zoom through strict 16px font-size floors on mobile, plus `inputmode="numeric"` on score/UTR inputs.
-* **Zero Desktop Alteration:** All mobile styling strictly isolated behind responsive breakpoints (`@media (max-width: ...)`), preserving desktop layout without compromise.
+### 9.4 Responsive, Touch & Accessibility Requirements
+* **Phones:** viewports from 320 px to 480 px (including 440 px-wide phones such as the largest current iPhones) with full native-style web app support.
+* **Tablets and desktops:** 481 to 640 px, 641 to 1023 px (tablet portrait, explicitly designed), 1024 to 1599 px (desktop baseline), and 1600 px and above (venue display mode).
+* **Orientation and zoom:** landscape phones (height 500 px or less) and 200 % browser zoom must work without horizontal page scroll.
+* **Safe-Area Inset Handling:** notches, Dynamic Island, and gesture bars via `viewport-fit=cover` and dynamic viewport units (`dvh`) with a `vh` fallback.
+* **Touch Target Standards:** all interactive controls keep at least 44 × 44 px hit areas.
+* **Input Usability:** no iOS Safari auto-zoom (16 px minimum on mobile) and `inputmode="numeric"` on score inputs.
+* **Accessibility:** WCAG 2.2 AA (contrast, focus visibility, keyboard operation, reduced-motion support).
+* **Zero Desktop Alteration:** mobile styling stays behind responsive breakpoints (`@media (max-width: ...)`), preserving the desktop layout.
+
+### 9.5 Privacy
+* Public pages and APIs expose names, results, and statistics only; contact, address, date of birth, and blood group are staff-only.
+* Minors' data (U10 to U18) is minimized and guardian consent is recorded; deletion and export requests are supported. Counsel should confirm obligations under India's Digital Personal Data Protection Act, 2023 before launch.
 
 ---
 
 ## 10. Operational Governance & Enterprise RBAC
 
 ### 10.1 Staff Delegation Lifecycle
-* Organizers can appoint registered platform users to dedicated tournament staff roles (`owner`, `tournament_admin`, `desk`, `umpire`) via `/tournaments/<slug>/staff`.
-* Appointed staff gain scoped access to tournament controls without gaining access to other tournaments owned by the organizer.
-* Platform Superadmins retain platform-wide administrative authority across all tournaments.
+* Organizers (`owner`) can appoint registered platform users to dedicated tournament staff roles (`manager`, `official`, `scorer`) via `/tournaments/<slug>/staff`. Legacy names `tournament_admin`, `desk`, and `umpire` map to `manager`, `manager`, and `scorer`.
+* Appointed staff gain scoped access to that tournament only. They can never appoint staff, generate PINs, or publish draws.
+* Platform Superadmins retain platform-wide authority, and their overrides are always audit-logged.
 
 ### 10.2 Court PIN Fast Scoring Mode
-* Tournaments configure an optional 4-digit numeric PIN (`tournament.court_pin`).
-* Physical court-side tablets or roving scorekeepers can authenticate at `/tournaments/<slug>/court-pin` by entering the PIN and selecting their court number.
-* Enables rapid, touch-friendly score reporting without requiring scorekeepers to create or log in to personal accounts.
+* Owners generate 6-digit PINs with a validity of 8, 24, or 48 hours, optionally bound to a court.
+* Court-side tablets authenticate at `/tournaments/<slug>/court-pin` with the PIN and the scorer's display name.
+* PIN sessions can score only (no exports, staff, or settings), only on the assigned court, are rate-limited and audit-logged, and are never accepted by the REST API.
 
 ### 10.3 Draw Publication State Machine (Draft vs. Published)
 * Newly created categories and generated brackets start in **Draft** state (`draw_published = False`).
 * During draft mode, tournament organizers and desk staff can view bracket geometry, adjust seedings, test progression, and verify schedules.
 * Public viewers, unauthenticated spectators, and players navigating to the category see a friendly status banner: *"Draws for this event are being finalized by the tournament committee"*.
 * Bracket PDF generation is locked until the organizer explicitly toggles the category to **Published** via `/categories/<id>/toggle-publish`.
+* The REST API and the live-score feed apply the same rule: unpublished categories return `403` (or are omitted) and expose no participants or fixtures.
 
 ### 10.4 Match Integrity & Anti-Conflict of Interest
 * Active competitors (players or doubles pairs) participating in a match are strictly blocked from scoring or officiating that specific fixture.
-* In team leagues, competing team captains are prevented from reporting match results for ties involving their own team.
+* In team leagues, competing team captains and every rostered or lineup player are prevented from reporting results for ties involving their own team.
 * Matches must be officiated by neutral chair umpires, desk managers, or tournament directors.
 
 ### 10.5 Optimistic Concurrency Control
 * Match entities maintain a monotonic `lock_version` integer.
-* Score submission requests validate the client's current version against the database record. If another desk official or umpire submitted a score change in the interim, the system rejects the transaction with `HTTP 409 Conflict`, prompting the user to refresh and verify the current score state before reapplying changes.
+* Score submission requests must include the client's current version, and it is validated atomically against the database record. If another desk official or umpire submitted a score change in the interim, the system rejects the transaction with `HTTP 409 Conflict`, prompting the user to refresh and verify the current score state before reapplying changes.
 

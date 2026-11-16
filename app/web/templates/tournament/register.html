@@ -52,6 +52,7 @@
     </div>
 
     <form method="POST" id="registrationForm" style="display: flex; flex-direction: column; gap: 1.5rem;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <!-- 1. CATEGORY SELECTION CARD -->
         <div class="card" style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 1.5rem; border: 1px solid var(--border-color);">
             <h3 style="margin: 0 0 0.35rem; font-size: 1.2rem; color: var(--text-primary); font-weight: 700;">

@@ -19,6 +19,13 @@ def dashboard():
     # For now, let's assume a 1-to-many relationship, and the dashboard lists all players they manage
     current_user = get_current_user()
     players = Player.query.filter_by(user_id=current_user.id).all()
+    if not players:
+        # Secure profile recovery / initialization if missing
+        from app.services.user_service import ensure_user_profile
+        recovered = ensure_user_profile(current_user.id)
+        if recovered:
+            players = [recovered]
+
     all_players = []
     if current_user.role == 'superadmin':
         all_players = Player.query.filter(Player.registration_no.isnot(None), Player.registration_no != '').order_by(Player.name).all()

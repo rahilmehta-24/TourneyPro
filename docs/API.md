@@ -1,8 +1,8 @@
-# TourneyPro — RESTful API Specification (API.md)
+# The Baseline Society — RESTful API Specification (API.md)
 
 **Document Status:** Approved  
-**Source of Truth:** Inherits from [`DATABASE.md`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/DATABASE.md) and [`ARCHITECTURE.md`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/ARCHITECTURE.md)  
-**API Version:** `v1`  
+**Source of Truth:** Inherits from [`DATABASE.md`](DATABASE.md) and [`ARCHITECTURE.md`](ARCHITECTURE.md)  
+**API Version:** `v1` (hardened revision)  
 **Base URL:** `/api/v1`  
 **Authentication Scheme:** HTTP Bearer Authentication (JSON Web Tokens - JWT)  
 **Last Updated:** November 2026  
@@ -17,24 +17,26 @@
 * Dates conform to `YYYY-MM-DD`.
 
 ### 1.2 Standard JSON Envelope
-Responses adhere to a standardized JSON structure:
+Every response carries a boolean `success`. Resource payloads are returned as named top-level keys next to `success` (for example `tournament`, `tournaments`, `matches`, `access_token`); the optional `message` is human-readable.
 
-**Success Response Envelope:**
+**Success Response:**
 ```json
 {
   "success": true,
   "message": "Operation completed successfully",
-  "data": { ... }
+  "tournament": { "...": "..." }
 }
 ```
 
-**Error Response Envelope:**
+**Error Response:**
 ```json
 {
   "success": false,
   "message": "Human-readable explanation of error condition"
 }
 ```
+
+> **Known deviation:** the live-score feed (§4.4) is a legacy shape without `success`. Clients must tolerate both. New endpoints must always include `success`. Error messages must never reveal stack traces, SQL, or whether a username exists.
 
 ### 1.3 HTTP Status Codes
 * `200 OK`: Request succeeded, response body contains requested entity.
@@ -44,34 +46,57 @@ Responses adhere to a standardized JSON structure:
 * `403 Forbidden`: Authenticated user lacks permission (insufficient RBAC role, BOLA ownership failure, or active participant conflict of interest).
 * `404 Not Found`: Target tournament, category, or match does not exist.
 * `409 Conflict`: Concurrency collision (submitted `lock_version` does not match database version).
+* `429 Too Many Requests`: Rate limit exceeded (see §5). Response includes a `Retry-After` header.
 * `500 Internal Server Error`: Unhandled server exception (automatically rolled back in DB).
 
 ---
 
 ## 2. Authentication, RBAC & Concurrency Control
 
-API authentication is powered by `Flask-JWT-Extended`. All mutating operations require a valid JWT token passed in the `Authorization` HTTP header:
+API authentication is powered by `Flask-JWT-Extended`. All mutating operations require a valid JWT in the `Authorization` header:
 
 ```http
 Authorization: Bearer <eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...>
 ```
 
-* **CSRF Exemption:** The API Blueprint (`/api/v1/*`) is explicitly exempted from CSRF cookie requirements, relying strictly on stateless token authorization.
-* **Hierarchical RBAC & Delegated Staff:** Operations evaluate the caller's role via `check_tournament_access()`. Mutating match scores is permitted for `superadmin`, tournament `owner`, or appointed `TournamentStaff` with role `tournament_admin`, `desk`, or `umpire`.
-* **Anti-Conflict of Interest Protection:** If the authenticated user is an active participant in the target match (or captain of a competing team in team leagues), score reporting is blocked with `HTTP 403 Forbidden`. Active competitors cannot officiate or score their own matches.
-* **Optimistic Concurrency Control:** When reporting scores, clients should supply the known `lock_version` integer. If the match has been concurrently modified by another desk official or umpire, the API returns `HTTP 409 Conflict`. Successful updates increment `lock_version`.
+### 2.1 Token Policy (required hardening)
+* **Signing secret:** `JWT_SECRET_KEY` must be a separate high-entropy secret (>= 32 random bytes), never the Flask session `SECRET_KEY`. Algorithm pinned to `HS256`; tokens with `alg: none` or any other algorithm are rejected.
+* **Lifetime:** access tokens expire in 60 minutes by default (`JWT_ACCESS_TOKEN_EXPIRES`). Long-lived tokens are not issued; refresh tokens, if introduced, must be rotating and revocable.
+* **Per-request user check:** every protected request reloads the user and rejects accounts whose role is `deleted`. Roles are never trusted from token claims.
+* **Transport:** tokens are sent only over HTTPS and are never placed in URLs or logs.
+* **CSRF exemption:** the API Blueprint (`/api/v1/*`) is exempt from CSRF and must not accept session cookies as authentication.
+
+### 2.2 Hierarchical RBAC & Delegated Staff
+Operations evaluate the caller through `check_tournament_access(tournament, min_role=..., user=user)`. Roles, lowest to highest:
+
+| Rank | Role | Source | Typical API capability |
+| :---: | :--- | :--- | :--- |
+| 10 | `scorer` | `tournament_staff.role` | Report live scores |
+| 20 | `official` | `tournament_staff.role` | Complete matches, walkovers, retirements, reset a match to `pending` |
+| 30 | `manager` | `tournament_staff.role` | Scheduling, check-in, seeds, court assignment |
+| 40 | `owner` | `tournaments.user_id` | Settings, staff, PINs, draw publication |
+| 100 | `superadmin` | `users.role` | Global override (always audit-logged) |
+
+* Legacy names `tournament_admin`, `desk`, `umpire` are deprecated aliases (`tournament_admin`/`desk` map to `manager`, `umpire` maps to `scorer`) and must be migrated in `tournament_staff`.
+* The check is **fail-closed**: an unknown role or unknown `min_role` returns `403`.
+* **Court PIN sessions are web-only.** They are never accepted by the REST API.
+* **Anti-Conflict of Interest Protection:** if the authenticated user is an active participant in the target match (player, doubles partner, team member in a rubber lineup, or captain of a competing team), score reporting is blocked with `HTTP 403 Forbidden`.
+* **Optimistic Concurrency Control:** `lock_version` is **required** on every score-changing request. A missing value returns `400`; a stale value returns `409 Conflict`. The update is applied atomically (`UPDATE ... WHERE id = :id AND lock_version = :v`), so two simultaneous requests can never both succeed.
 
 ---
 
 ## 3. Serialization Schemas (Marshmallow)
 
-Defined in [`app/domain/schemas.py`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/app/domain/schemas.py):
+Defined in [`app/domain/schemas.py`](app/domain/schemas.py). Schemas are split by audience so private data can never leak by accident:
 
-* **`UserSchema`:** Fields: `id`, `username`, `email`, `role`, `created_at`.
-* **`ParticipantSchema`:** Fields: `id`, `name`, `seed`, `manual_seed`, `checked_in`, `eliminated`, `final_rank`, `payment_status`.
-* **`MatchSchema`:** Fields: `id`, `round`, `match_number`, `status`, `score1`, `score2`, `winner_id`, `court_name`, `scheduled_time`, `is_not_before`, `participant1` (`ParticipantSchema`), `participant2` (`ParticipantSchema`).
-* **`CategorySchema`:** Fields: `id`, `name`, `format`, `status`, `gender`, `age_category`, `matches` (`MatchSchema` list), `participants` (`ParticipantSchema` list).
-* **`TournamentSchema`:** Fields: `id`, `name`, `url_slug`, `description`, `status`, `start_date`, `end_date`, `num_courts`, `categories` (`CategorySchema` list).
+* **`UserSchema` (private, never public):** `id`, `username`, `role`, `created_at`. `email` is returned only to the user themselves or a superadmin.
+* **`PublicParticipantSchema`:** `id`, `name`, `seed`, `eliminated`, `final_rank`. Excludes `email`, `mobile`, `dob`, `payment_status`, `payment_method`, `checked_in`, `manual_seed`.
+* **`StaffParticipantSchema`** (owner/manager/official only): adds `manual_seed`, `checked_in`, `payment_status`.
+* **`MatchSchema`:** `id`, `round`, `match_number`, `status`, `score1`, `score2`, `winner_id`, `court_name`, `scheduled_time`, `is_not_before`, `participant1`, `participant2` (public participant schema).
+* **`CategorySchema`:** `id`, `name`, `format`, `status`, `gender`, `age_category`, `draw_published`. `matches` and `participants` are included only when the draw is published or the caller has staff access.
+* **`TournamentSchema`:** `id`, `name`, `url_slug`, `description`, `status`, `start_date`, `end_date`, `num_courts`, `categories`. Excludes `payment_upi_id` unless registration is open.
+
+> **Rule:** use `Schema(only=...)` / explicit public schemas; never serialize a model with `fields = "__all__"` in a public endpoint. Personal data of minors (age categories U10 to U18) must never appear in public responses beyond display name.
 
 ---
 
@@ -126,6 +151,9 @@ Defined in [`app/domain/schemas.py`](file:///Users/rahilmehta24/VS_Code/Projects
   }
   ```
 
+* **Hardening:** registration is rate-limited (5 per hour per IP), enforces a minimum password length of 10, rejects the 1,000 most common passwords, normalizes the email to lower case, and returns a generic error for duplicates so account existence is not revealed. New accounts always get role `user`; `role` supplied in the payload is ignored.
+* **Login hardening:** 10 attempts per 15 minutes per IP + username, generic `401 "Invalid credentials"` for both unknown user and wrong password, constant-time hash check, and a short lockout after repeated failures. Successful logins never include the password hash.
+
 ---
 
 ### 4.2 Tournament Endpoints
@@ -150,6 +178,8 @@ Defined in [`app/domain/schemas.py`](file:///Users/rahilmehta24/VS_Code/Projects
     ]
   }
   ```
+
+* **Visibility & paging:** only tournaments with `is_private = false` and status other than `setup` are listed publicly. Supports `?page=1&per_page=20` (max 100). Private tournaments are returned only to their owner, staff, or superadmin.
 
 #### 4.2.2 Get Tournament Details by Slug
 * **Endpoint:** `GET /api/v1/tournaments/<slug>`
@@ -179,7 +209,8 @@ Defined in [`app/domain/schemas.py`](file:///Users/rahilmehta24/VS_Code/Projects
 #### 4.2.3 Get Category Details
 * **Endpoint:** `GET /api/v1/tournaments/<slug>/categories/<int:category_id>`
 * **Access:** Public
-* **Response (200 OK):** Returns detailed category object with participants and bracket matches.
+* **Draft-draw guard:** when `draw_published = false` and the caller lacks staff access, the endpoint returns `403` with `"Draws for this event are being finalized by the tournament committee"` and **no** participants or matches.
+* **Response (200 OK):** Returns the category object with public participants and bracket matches (staff callers also receive staff-only fields).
 
 ---
 
@@ -209,9 +240,11 @@ Defined in [`app/domain/schemas.py`](file:///Users/rahilmehta24/VS_Code/Projects
   }
   ```
 
+* **Draft-draw guard:** applies exactly as in §4.2.3. Fixtures of unpublished categories are never returned to public callers.
+
 #### 4.3.2 Report Match Score & Progression
 * **Endpoint:** `POST /api/v1/matches/<int:match_id>/report`
-* **Access:** Authenticated (`owner`, `tournament_admin`, `desk`, `umpire`, or `superadmin`)
+* **Access:** Authenticated (`owner`, `manager`, `official`, `scorer`, or `superadmin`). Resetting to `pending` requires `official` or higher.
 * **Headers:** `Authorization: Bearer <token>`
 * **Action Types:**
   1. `complete_match`: Records final score, marks match completed, and advances winner to downstream fixture.
@@ -227,25 +260,22 @@ Defined in [`app/domain/schemas.py`](file:///Users/rahilmehta24/VS_Code/Projects
     "lock_version": 1
   }
   ```
-* **Validation & Security Enforcements:**
-  * **RBAC & Staff Authorization:** Evaluates `check_tournament_access(tournament, min_role="umpire")`. Verified against tournament owner or `TournamentStaff` entry.
-  * **Conflict of Interest Guard:** Calls `check_scoring_conflict_of_interest(match, current_user)`. If the user is an active participant or competing team captain, returns `HTTP 403 Forbidden`:
-    ```json
-    {
-      "success": false,
-      "message": "Conflict of interest: Active participants cannot officiate or score their own matches."
-    }
-    ```
-  * **Optimistic Concurrency Control:** Verifies that `submitted_lock_version == match.lock_version`. If a concurrent update occurred, returns `HTTP 409 Conflict`:
-    ```json
-    {
-      "success": false,
-      "message": "Conflict: Match was updated by another official. Please refresh and try again."
-    }
-    ```
-  * **Progression Guard:** Calls `check_match_progression_allowed(match)`. If feeder matches are incomplete, returns `HTTP 400 Bad Request`.
-  * **Automatic Bracket Progression:** Winner is advanced to parent/downstream fixture via `fmt.advance_match()`.
-  * **Group Standings Sync:** If format is `group_stage` or `round_robin`, triggers `recalculate_all_group_stats()`.
+  `lock_version` is mandatory. `score1`/`score2` are validated against a strict pattern and a 50-character limit; request bodies above 8 KB are rejected.
+* **Validation & Security Enforcements (evaluated in this order):**
+  1. **Authentication:** missing/expired/invalid JWT returns `401`; deleted users return `401`.
+  2. **RBAC & BOLA:** `check_tournament_access(match.tournament, min_role="scorer", user=user)`. The match must belong to the tournament resolved from its own record (never from a client-supplied tournament id).
+  3. **Conflict of Interest Guard:** `check_scoring_conflict_of_interest(match, user)` raises `403` for active players, doubles partners, rubber-lineup players, and competing team captains:
+     ```json
+     { "success": false, "message": "Conflict of interest: Active participants cannot officiate or score their own matches." }
+     ```
+  4. **Input validation:** `action_type` must be one of the three allowed values; `winner_id` must equal `participant1_id` or `participant2_id`; scoreline must satisfy the format rules (tennis sets, or $G_1 + G_2 = 7$ for rubbers); an already `completed` match cannot be completed again (prevents double advancement).
+  5. **Optimistic Concurrency Control:** `lock_version` is required and compared atomically. Mismatch returns `409`:
+     ```json
+     { "success": false, "message": "Conflict: Match was updated by another official. Please refresh and try again." }
+     ```
+  6. **Progression Guard:** `check_match_progression_allowed(match)`. Incomplete feeder matches return `HTTP 400 Bad Request`.
+  7. **Automatic Bracket Progression:** the winner is advanced via `fmt.advance_match()`; for `group_stage` / `round_robin`, `recalculate_all_group_stats()` runs.
+  8. **Audit:** every `complete_match`, correction, and `pending` reset writes an `AuditLog` row (actor, match, before/after scores, `lock_version`). Superadmin overrides are always flagged.
 * **Response (200 OK):**
   ```json
   {
@@ -261,8 +291,10 @@ Defined in [`app/domain/schemas.py`](file:///Users/rahilmehta24/VS_Code/Projects
 
 #### 4.4.1 Tournament Live Scores Feed
 * **Endpoint:** `GET /api/v1/live/<slug>/scores`
-* **Access:** Public
-* **Rate Recommendation:** Polled every 5 seconds by spectator bracket views.
+* **Access:** Public (published draws of public tournaments only)
+* **Polling:** every 5 seconds by spectator bracket views.
+* **Caching (required):** responses send `Cache-Control: public, max-age=3, s-maxage=3` and a strong `ETag` derived from the highest `lock_version`/`completed_at` of the tournament's matches; a matching `If-None-Match` returns `304`. This lets a CDN absorb thousands of spectators with one database read every few seconds.
+* **Content rules:** matches from categories with `draw_published = false` are excluded; only the fields below are returned (no participant contact data).
 * **Response (200 OK):**
   ```json
   {
@@ -282,3 +314,22 @@ Defined in [`app/domain/schemas.py`](file:///Users/rahilmehta24/VS_Code/Projects
     ]
   }
   ```
+* **Future:** when WebSocket/SSE push is introduced (see [`PLAN.md`](PLAN.md) WP 2.1), polling remains the fallback transport.
+
+---
+
+## 5. Rate Limits (required hardening)
+
+| Scope | Limit | Key |
+| :--- | :--- | :--- |
+| `POST /auth/login` | 10 / 15 min | IP + username |
+| `POST /auth/register` | 5 / hour | IP |
+| `POST /matches/<id>/report` | 120 / min | user |
+| Public `GET` endpoints | 120 / min | IP (cache-friendly endpoints exempt when served from CDN) |
+| `GET /live/<slug>/scores` | 30 / min | IP |
+
+Exceeded limits return `429` with `Retry-After`. Limiter storage must be shared (Redis or database), not per-process memory, so limits hold across Gunicorn workers and serverless instances. Behind a proxy or Vercel, the real client IP is read through `ProxyFix` / `X-Forwarded-For` from a trusted hop only.
+
+## 6. CORS & Security Headers
+* CORS is disabled by default. If a separate web or mobile origin needs access, allow-list exact origins; never `*` with credentials.
+* All API responses send `X-Content-Type-Options: nosniff`, `Cache-Control: no-store` (except the cacheable public endpoints above), and are served only over HTTPS with HSTS.

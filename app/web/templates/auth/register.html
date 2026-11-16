@@ -11,13 +11,14 @@
         <h2 class="form-section-title" style="font-family: var(--font-display); font-weight: 600; text-align: center; margin-bottom: var(--spacing-sm); font-size: 2.15rem; color: var(--text-primary);">Create Account &amp; Profile</h2>
         <p style="text-align: center; color: var(--text-secondary); margin-bottom: var(--spacing-lg);">Join The Baseline Society tournament club &amp; player registry</p>
         
-        <form method="POST" data-turbo="false" enctype="multipart/form-data">
+        <form method="POST" data-turbo="false" enctype="multipart/form-data" onsubmit="var btn=this.querySelector('button[type=submit]'); if(btn.dataset.submitted) return false; btn.dataset.submitted='true'; btn.disabled=true; btn.innerHTML='<span class=\'btn-icon\'>⏳</span> Creating Account...';">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <h3 style="margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; color: var(--accent-primary-text);">1. Account Details</h3>
             
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
                 <div class="form-group">
                     <label for="username" class="form-label">Username *</label>
-                    <input type="text" id="username" name="username" class="form-input" required minlength="3" maxlength="30" pattern="[a-zA-Z0-9_]+" placeholder="e.g. rahil_mehta">
+                    <input type="text" id="username" name="username" class="form-input" required minlength="3" maxlength="30" pattern="[a-zA-Z0-9_.-]+" placeholder="e.g. rahil_mehta">
                 </div>
                 
                 <div class="form-group">
@@ -28,6 +29,11 @@
                 <div class="form-group">
                     <label for="password" class="form-label">Password *</label>
                     <input type="password" id="password" name="password" class="form-input" required minlength="8" placeholder="Minimum 8 characters">
+                </div>
+
+                <div class="form-group">
+                    <label for="password_confirm" class="form-label">Confirm Password *</label>
+                    <input type="password" id="password_confirm" name="password_confirm" class="form-input" required minlength="8" placeholder="Re-enter your password">
                 </div>
             </div>
 

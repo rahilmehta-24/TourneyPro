@@ -1,9 +1,9 @@
-# The Baseline Society Design System — Refined Club UI
+# The Baseline Society Design System — Heritage Club Theme
 
 ## 1. Design Philosophy
 The Baseline Society feels like a well-kept private tennis club translated into software: calm, warm, precise. The interface is quiet so tournament data (draws, scores, schedules) is the star. Brand color is used with restraint, and motion is soft and purposeful.
 
-- **Single light theme.** No theme switcher. `color-scheme: light` everywhere (desktop, mobile, print, PDF).
+- **Single light theme.** No theme switcher. `color-scheme: light` everywhere (desktop, mobile, print, PDF). Declare `<meta name="color-scheme" content="light">` and `:root { color-scheme: light; }` so mobile browsers' forced dark modes do not recolor the app.
 - **Natural surfaces.** Warm ivory and stone neutrals, like linen and court-side stone, instead of stark white. Cards are pure white so they lift gently off the canvas.
 - **Brand in moderation.** Court Green is for structure and primary actions. Champion Gold is a highlight, never a background for body text. Clay is a rare warm accent.
 - **Depth through soft shadow, not heavy borders.** Shadows are tinted green-grey, never pure black.
@@ -85,6 +85,8 @@ Ratios use the WCAG 2.x formula.
 | UI label, button | Inter | 500–600 | 14 / 1.3 |
 | Caption, metadata | Inter | 400–500 | 12–13 / 1.4 |
 | Scores and draw numbers | Inter (tabular numerals) | 600 | 16–28 / 1.1 |
+
+Font delivery: self-host Cormorant Garamond and Inter as WOFF2 (`font-display: swap`, preload the two used weights) instead of loading Google Fonts. Self-hosting removes a third-party request, keeps the Content-Security-Policy strict, and avoids privacy issues. PDF exports cannot use web fonts, so register the same fonts as local TTF files for `xhtml2pdf`/ReportLab.
 
 Rules: use `font-variant-numeric: tabular-nums` for all scores, times, and standings so digits never jitter during live updates. Serif is for display only; all interactive UI is Inter. Maximum body line length is 70 characters.
 
@@ -206,25 +208,50 @@ Motion is soft and quick. Elements decelerate into place and accelerate out. Use
 ### 6.7 Empty & Error States
 Centered illustration-light layout: Cormorant Garamond heading, one line of Inter secondary text, and a single Primary action. Example copy: "No matches scheduled yet. Create the draw to get started."
 
+### 6.8 Security-Related UI Patterns
+- **PIN and password fields:** `type="password"` (or masked digits) with a show/hide toggle, `inputmode="numeric"` and `autocomplete="one-time-code"` for PINs, never place PINs, tokens, or transaction IDs in URLs.
+- **Errors:** generic wording for authentication failures ("Invalid credentials", "PIN invalid or expired"); a clear lockout message with the remaining wait time after repeated failures; never reveal whether an account exists.
+- **Destructive actions** (reset draw, remove staff, revoke PIN): confirmation sheet, Danger button, and for resets require typing the category name plus a reason.
+- **Draft draws:** show an Info banner to staff ("Draft: only organizers can see this draw") and the public notice to everyone else; never render draft data to unauthorized users and hide it with CSS.
+- **Role-aware UI:** hide controls the user cannot use, but always enforce permissions on the server.
+- **Session expiry:** show a non-blocking "Session expired, sign in again" toast and preserve unsent score input.
+- **Forms:** every form includes the CSRF token; never use `|safe` on user text.
+
 ---
 
 ## 7. Mobile Experience
 Design mobile-first: phones are the primary device for scoring, checking draws, and receiving live updates at the court. Desktop layouts are enhancements, not the baseline.
 
-### 7.1 Breakpoints
-Write base styles for phones and add `min-width` queries upward.
+### 7.1 Breakpoints & Resolution Matrix
+The shipped CSS is **desktop-first**: mobile styles live in `@media (max-width: ...)` blocks (768 px and 640 px) so the desktop layout at 1025 px and above is never altered. New components follow the same convention. Design thinking stays mobile-first (phones are the primary device at the court), but the code keeps `max-width` queries to avoid desktop regressions.
 ```css
-:root { --bp-sm: 480px; --bp-md: 768px; --bp-lg: 1024px; --bp-xl: 1280px; }
-/* base = phones (320–479). @media (min-width: 480px) large phones. 768px tablets. 1024px desktop. */
+:root { --bp-phone: 640px; --bp-tablet: 1023px; --bp-desktop: 1024px; --bp-wide: 1600px; }
+@media (max-width: 640px)  { /* phones: bottom sheets, bottom bar, 16px inputs */ }
+@media (max-width: 768px)  { /* inputs 16px, compact nav */ }
+@media (min-width: 641px) and (max-width: 1023px) { /* tablet portrait */ }
+@media (min-width: 1600px) { /* wide screens and venue display */ }
+@media (max-height: 500px) and (orientation: landscape) { /* landscape phones */ }
 ```
-Test at 360 × 640, 390 × 844, 430 × 932, tablet portrait, and landscape.
+
+| Tier | Width | Required layout |
+|---|---|---|
+| Small phone | 320 to 359 px | Single column, 14 px gutters, no horizontal page scroll |
+| Phone | 360 to 480 px (includes 440 px-wide phones) | Single column, bottom sheets, bottom tab bar |
+| Large phone / small tablet | 481 to 640 px | Phone layout; two-column chips and stats allowed |
+| Tablet portrait | 641 to 1023 px | Centered modals (not sheets), 2-column card grids, horizontally scrollable tables, optional bracket round tabs, tap targets stay 44 px |
+| Desktop | 1024 to 1599 px | Full layout, hover states, 12-column grid (unchanged) |
+| Wide / venue display | 1600 px and above | See section 10 |
+| Landscape phone | height 500 px or less | Top bar 48 px, no fixed bars taller than 56 px, sheets `max-height: 100dvh`, content never hidden behind bars |
+| Print / PDF | `@media print` | Section 8 |
+
+Test at 320 × 568, 360 × 640, 390 × 844, 430 × 932, 440 × 956, 768 × 1024, 1024 × 768, 1440 × 900, 1920 × 1080, landscape phone, 200 % zoom, and large system text.
 
 ### 7.2 Layout, Spacing & Safe Areas
 - **Viewport:** `<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">`. Never disable user zoom.
 - **Gutters:** 16px (14px under 360px wide). Single-column layout; two columns only for compact stats and chips.
 - **Cards:** 16–18px padding, 12px gap between cards, 24px between sections.
 - **Safe areas:** pad fixed bars with `env(safe-area-inset-bottom)` and page edges with the left and right insets so nothing hides behind notches or the home indicator.
-- **Heights:** use `100svh` or `100dvh`, not `100vh`, so the mobile browser toolbar does not clip content.
+- **Heights:** use `100svh` or `100dvh`, not `100vh`, so the mobile browser toolbar does not clip content. Declare `height: 100vh;` first as a fallback for older browsers, then the `dvh` value.
 - **Text:** body 15–16px, headings scale down (h1 28px, h2 22px), inputs always 16px or larger to prevent iOS zoom-on-focus. Never use hover-only information; tap reveals it instead.
 - **Scrolling:** one vertical scroll per screen. Horizontal scrolling only inside deliberate containers (brackets, chip rows, wide tables) with scroll-snap and a fade at the edge.
 
@@ -262,7 +289,8 @@ Touch targets follow platform guidance: at least 44 × 44 px, with 48 × 48 px p
 **Browser behavior:**
 ```css
 button, .btn { -webkit-tap-highlight-color: transparent; touch-action: manipulation; user-select: none; }
-.btn { min-height: 48px; padding: 0 20px; border-radius: 12px; font: 600 16px/1 Inter, sans-serif; }
+.btn { min-height: 44px; padding: 0 20px; border-radius: 10px; font: 600 14px/1 Inter, sans-serif; }        /* desktop */
+@media (max-width: 640px) { .btn { min-height: 48px; border-radius: 12px; font-size: 16px; } }          /* phones */
 .btn-block { width: 100%; }
 .btn:active { transform: scale(0.98); transition-duration: var(--dur-instant); }
 @media (hover: hover) { .btn-primary:hover { background: var(--accent-primary-hover); } }
@@ -319,7 +347,7 @@ For forms and detail screens, keep the primary action visible in a bottom bar ra
 - Ambient background light is limited to the soft aurora and the baseline shimmer on hero and login screens. Use smaller, less blurred shapes, and never run it behind brackets, tables, or score screens.
 - Pull-to-refresh uses a small tennis ball that rotates with the pull distance.
 - Pause looping animations when the tab is hidden, and honor `prefers-reduced-motion` (section 5.3).
-- **Budgets:** Largest Contentful Paint under 2.5s on a mid-range phone over 4G, Cumulative Layout Shift under 0.1, Interaction to Next Paint under 200ms, 60fps scrolling. Lazy-load below-the-fold images, preload the two fonts in use with `font-display: swap`, and reserve space for images and skeletons to avoid layout shift.
+- **Budgets:** Largest Contentful Paint under 2.5s on a mid-range phone over 4G (desktop SSR target: 1.2s, per the PRD), Cumulative Layout Shift under 0.1, Interaction to Next Paint under 200ms, 60fps scrolling. Lazy-load below-the-fold images, preload the two fonts in use with `font-display: swap`, and reserve space for images and skeletons to avoid layout shift.
 
 ### 7.11 Mobile QA Checklist
 - Every tappable element is at least 44 × 44 px and has 8px spacing from neighbors.
@@ -328,6 +356,8 @@ For forms and detail screens, keep the primary action visible in a bottom bar ra
 - Safe areas respected in portrait and landscape.
 - Inputs do not trigger zoom on focus.
 - Status is never conveyed by color alone.
+- Layout survives 200 % zoom, large system text, and text-spacing overrides; WCAG 2.2 AA target size is exceeded (44 px).
+- Tablet portrait (641 to 1023 px) and landscape-phone layouts have been checked.
 - Works with reduced motion on, with VoiceOver and TalkBack labels on icon buttons, and with a slow network (skeletons appear within 100ms).
 
 ---
@@ -343,3 +373,14 @@ Clean `#FFFFFF` paper with `#14221C` typography, `#0F3D2E` section, round, and c
 - **Minimum sizes:** full logo 120px wide; monogram 40px. Below 40px use the letter only.
 - **Clear space:** at least the height of the "B" on all sides.
 - **Tagline:** "Every draw, every court, every champion."
+
+---
+
+## 10. Large Display / Venue TV Mode (1600 px and above)
+For projectors and clubhouse monitors (PLAN WP 2.3):
+- Root font size 20 to 24 px (`clamp(20px, 1.2vw, 24px)`), scores 64 px or larger, readable from 20 meters.
+- Maximum contrast: Ivory text on Court Green, Gold for live highlights; no hover or tap-only interactions.
+- Carousel rotates Live Matches, Order of Play (Now Playing / Up Next), and Leaderboard every 12 to 20 seconds; pause on keyboard focus, and respect reduced motion by switching to cross-fades.
+- Safe margins of 5 % to avoid overscan clipping; layouts verified at 1920 × 1080 and 3840 × 2160.
+- Read-only: no personal data, published draws only, protected by a revocable display token in the URL.
+- Keep the screen awake (Wake Lock API where supported) and recover automatically after network loss.

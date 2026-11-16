@@ -1,0 +1,739 @@
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Alert,
+  Image,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { KeyRound, Shield, User, Trophy, Eye, EyeOff, ChevronRight, UserPlus, LogIn } from 'lucide-react-native';
+import { colors } from '../../theme/colors';
+import { useAuthStore } from '../../state/authStore';
+import { apiClient } from '../../api/client';
+
+type AuthMode = 'login' | 'register' | 'pin';
+
+export default function LoginScreen() {
+  const insets = useSafeAreaInsets();
+  const { loginUser, loginCourt, setActiveRole } = useAuthStore();
+
+  const [mode, setMode] = useState<AuthMode>('login');
+
+  // Sign In fields
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Sign Up / Register fields
+  const [regFullName, setRegFullName] = useState('');
+  const [regUsername, setRegUsername] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [regConfirmPassword, setRegConfirmPassword] = useState('');
+  const [regRole, setRegRole] = useState<'player' | 'admin'>('player');
+  const [showRegPassword, setShowRegPassword] = useState(false);
+
+  // Court PIN fields
+  const [courtPin, setCourtPin] = useState('');
+
+  const [loading, setLoading] = useState(false);
+
+  // --- SIGN IN HANDLER ---
+  const handleLogin = async (overrideUser?: string, overridePass?: string) => {
+    const userToLogin = overrideUser || username.trim();
+    const passToLogin = overridePass || password.trim();
+
+    if (!userToLogin || !passToLogin) {
+      Alert.alert('Required', 'Please enter your username/email and password.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await apiClient.post('/auth/login', {
+        username: userToLogin,
+        password: passToLogin,
+      });
+
+      if (res.data?.success && res.data?.access_token) {
+        await loginUser(
+          res.data.user,
+          res.data.access_token,
+          res.data.refresh_token || res.data.access_token
+        );
+      } else {
+        Alert.alert('Login Failed', res.data?.message || 'Invalid credentials.');
+      }
+    } catch (err: any) {
+      const errorMsg =
+        err.response?.data?.message ||
+        (err.request ? 'Unable to connect to server. Please check your network connection.' : 'Invalid credentials.');
+      Alert.alert('Sign In Error', errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- SIGN UP / REGISTER HANDLER ---
+  const handleRegister = async () => {
+    const trimmedFullName = regFullName.trim();
+    const trimmedUser = regUsername.trim();
+    const trimmedEmail = regEmail.trim();
+    const trimmedPass = regPassword.trim();
+    const trimmedConfirm = regConfirmPassword.trim();
+
+    if (!trimmedUser || !trimmedEmail || !trimmedPass || !trimmedConfirm) {
+      Alert.alert('Required Fields', 'Please fill in all mandatory fields.');
+      return;
+    }
+
+    if (trimmedPass.length < 8) {
+      Alert.alert('Password Requirements', 'Password must be at least 8 characters long.');
+      return;
+    }
+
+    if (trimmedPass !== trimmedConfirm) {
+      Alert.alert('Password Mismatch', 'Passwords do not match. Please verify your password.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await apiClient.post('/auth/register', {
+        username: trimmedUser,
+        email: trimmedEmail,
+        password: trimmedPass,
+        password_confirm: trimmedConfirm,
+        full_name: trimmedFullName || undefined,
+      });
+
+      if (res.data?.success && res.data?.access_token) {
+        const notifMsg =
+          res.data?.message ||
+          'Registration successful! Your Baseline Society account and personal workspace have been created.';
+        const notifTitle = res.data?.category === 'warning' ? 'Verification Notice' : 'Account Initialized';
+        Alert.alert(
+          notifTitle,
+          notifMsg,
+          [
+            {
+              text: 'Continue',
+              onPress: async () => {
+                await loginUser(
+                  res.data.user,
+                  res.data.access_token,
+                  res.data.refresh_token || res.data.access_token
+                );
+              },
+            },
+          ]
+        );
+      } else {
+        Alert.alert('Registration Failed', res.data?.message || 'Could not complete registration.');
+      }
+    } catch (err: any) {
+      const errorMsg =
+        err.response?.data?.message ||
+        (err.request ? 'Unable to connect to server. Please check your network connection.' : 'Unable to register at this time.');
+      Alert.alert('Registration Error', errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- COURT PIN LOGIN HANDLER ---
+  const handleCourtPinLogin = async (overridePin?: string) => {
+    const pin = overridePin || courtPin.trim();
+    if (!pin) {
+      Alert.alert('PIN Required', 'Please enter a 4 to 6 digit Court PIN.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await apiClient.post('/auth/court-login', { pin });
+      if (res.data?.success && res.data?.access_token) {
+        await loginCourt(
+          {
+            court: res.data.court || 'Court 1',
+            role: res.data.role || 'official',
+            tournament: res.data.tournament || {
+              id: 1,
+              name: 'Baseline National Invitational',
+              slug: 'baseline-championship',
+            },
+          },
+          res.data.access_token
+        );
+      } else {
+        Alert.alert('Invalid PIN', res.data?.message || 'Invalid court PIN.');
+      }
+    } catch (err: any) {
+      const errorMsg =
+        err.response?.data?.message ||
+        (err.request ? 'Unable to connect to server. Please check your network connection.' : 'Invalid court PIN.');
+      Alert.alert('PIN Error', errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSpectatorMode = () => {
+    setActiveRole('spectator');
+  };
+
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={[styles.container, { paddingTop: Math.max(insets.top, 16) }]}
+    >
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Brand Header with Crest & Prominent App Name */}
+        <View style={styles.brandSection}>
+          <Image
+            source={require('../../../assets/monogram-on-light.png')}
+            style={styles.brandMonogram}
+          />
+          <Text style={styles.brandTitle}>BASELINE</Text>
+          <Text style={styles.brandSubtitle}>THE BASELINE SOCIETY</Text>
+          <Text style={styles.tagline}>Championship Circuit & Club Management</Text>
+        </View>
+
+        {/* Segmented Auth Navigation Bar */}
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[styles.tabButton, mode === 'login' && styles.tabButtonActive]}
+            onPress={() => setMode('login')}
+          >
+            <LogIn size={15} color={mode === 'login' ? colors.brandGreenCourt : colors.textMuted} />
+            <Text style={[styles.tabText, mode === 'login' && styles.tabTextActive]}>
+              SIGN IN
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tabButton, mode === 'register' && styles.tabButtonActive]}
+            onPress={() => setMode('register')}
+          >
+            <UserPlus size={15} color={mode === 'register' ? colors.brandGreenCourt : colors.textMuted} />
+            <Text style={[styles.tabText, mode === 'register' && styles.tabTextActive]}>
+              REGISTER
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tabButton, mode === 'pin' && styles.tabButtonActive]}
+            onPress={() => setMode('pin')}
+          >
+            <KeyRound size={15} color={mode === 'pin' ? colors.brandGreenCourt : colors.textMuted} />
+            <Text style={[styles.tabText, mode === 'pin' && styles.tabTextActive]}>
+              COURT PIN
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* MODE 1: SIGN IN FORM */}
+        {mode === 'login' && (
+          <View style={styles.formCard}>
+            <Text style={styles.cardHeader}>SIGN IN TO YOUR ACCOUNT</Text>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>USERNAME OR EMAIL</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. player1 or organizer"
+                placeholderTextColor={colors.textMuted}
+                autoCapitalize="none"
+                value={username}
+                onChangeText={setUsername}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>PASSWORD</Text>
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={styles.passwordInput}
+                  placeholder="Enter your password"
+                  placeholderTextColor={colors.textMuted}
+                  secureTextEntry={!showPassword}
+                  value={password}
+                  onChangeText={setPassword}
+                />
+                <TouchableOpacity
+                  style={styles.eyeBtn}
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff size={18} color={colors.textSecondary} />
+                  ) : (
+                    <Eye size={18} color={colors.textSecondary} />
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={styles.btnPrimary}
+              activeOpacity={0.85}
+              onPress={() => handleLogin()}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color={colors.brandGold} />
+              ) : (
+                <Text style={styles.btnPrimaryText}>SIGN IN</Text>
+              )}
+            </TouchableOpacity>
+
+            {/* Link to Register */}
+            <TouchableOpacity
+              style={styles.linkRow}
+              onPress={() => setMode('register')}
+            >
+              <Text style={styles.linkText}>
+                Not registered yet?{' '}
+                <Text style={styles.linkTextBold}>Create an Account / Register Now →</Text>
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* MODE 2: REGISTER / SIGN UP FORM */}
+        {mode === 'register' && (
+          <View style={styles.formCard}>
+            <Text style={styles.cardHeader}>CREATE YOUR BASELINE ACCOUNT</Text>
+            <Text style={styles.cardSub}>
+              Enter tournaments, track live draws, and receive match alerts
+            </Text>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>FULL NAME</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. Rohan Bopanna"
+                placeholderTextColor={colors.textMuted}
+                value={regFullName}
+                onChangeText={setRegFullName}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>CHOOSE A USERNAME *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. rohanbopanna"
+                placeholderTextColor={colors.textMuted}
+                autoCapitalize="none"
+                value={regUsername}
+                onChangeText={setRegUsername}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>EMAIL ADDRESS *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. rohan@example.com"
+                placeholderTextColor={colors.textMuted}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                value={regEmail}
+                onChangeText={setRegEmail}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>PASSWORD (MIN 6 CHARACTERS) *</Text>
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={styles.passwordInput}
+                  placeholder="Create a secure password"
+                  placeholderTextColor={colors.textMuted}
+                  secureTextEntry={!showRegPassword}
+                  value={regPassword}
+                  onChangeText={setRegPassword}
+                />
+                <TouchableOpacity
+                  style={styles.eyeBtn}
+                  onPress={() => setShowRegPassword(!showRegPassword)}
+                >
+                  {showRegPassword ? (
+                    <EyeOff size={18} color={colors.textSecondary} />
+                  ) : (
+                    <Eye size={18} color={colors.textSecondary} />
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>CONFIRM PASSWORD *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Re-enter password"
+                placeholderTextColor={colors.textMuted}
+                secureTextEntry={!showRegPassword}
+                value={regConfirmPassword}
+                onChangeText={setRegConfirmPassword}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={styles.btnPrimary}
+              activeOpacity={0.85}
+              onPress={handleRegister}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color={colors.brandGold} />
+              ) : (
+                <Text style={styles.btnPrimaryText}>CREATE ACCOUNT & GET STARTED</Text>
+              )}
+            </TouchableOpacity>
+
+            {/* Link to Sign In */}
+            <TouchableOpacity
+              style={styles.linkRow}
+              onPress={() => setMode('login')}
+            >
+              <Text style={styles.linkText}>
+                Already registered?{' '}
+                <Text style={styles.linkTextBold}>Sign In to Your Account →</Text>
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* MODE 3: COURT PIN LOGIN */}
+        {mode === 'pin' && (
+          <View style={styles.formCard}>
+            <View style={styles.courtHeaderRow}>
+              <KeyRound size={22} color={colors.brandGold} />
+              <Text style={styles.cardHeader}>COURT SCORING PIN LOGIN</Text>
+            </View>
+            <Text style={styles.courtSub}>
+              Enter the 4 to 6 digit tournament PIN assigned by the director to unlock court scoring.
+            </Text>
+
+            <TextInput
+              style={styles.pinInput}
+              placeholder="• • • • • •"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="number-pad"
+              maxLength={6}
+              value={courtPin}
+              onChangeText={setCourtPin}
+            />
+
+            <TouchableOpacity
+              style={styles.btnPrimary}
+              onPress={() => handleCourtPinLogin()}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color={colors.brandGold} />
+              ) : (
+                <Text style={styles.btnPrimaryText}>ACTIVATE COURT SESSION</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.btnBackToLogin}
+              onPress={() => setMode('login')}
+            >
+              <Text style={styles.btnBackToLoginText}>← Back to Username / Password</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Continue as Spectator */}
+        <View style={styles.spectatorSection}>
+          <TouchableOpacity
+            style={styles.btnSpectator}
+            onPress={handleSpectatorMode}
+          >
+            <Text style={styles.btnSpectatorText}>CONTINUE AS GUEST / SPECTATOR →</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.canvasLight,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+  },
+  brandSection: {
+    alignItems: 'center',
+    marginTop: 6,
+    marginBottom: 16,
+  },
+  brandMonogram: {
+    width: 76,
+    height: 76,
+    resizeMode: 'contain',
+    marginBottom: 6,
+  },
+  brandTitle: {
+    fontSize: 32,
+    fontWeight: '900',
+    letterSpacing: 3,
+    color: colors.brandGreenDeep,
+  },
+  brandSubtitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 2,
+    color: colors.brandGreenCourt,
+    marginTop: 3,
+  },
+  tagline: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.textSecondary,
+    marginTop: 4,
+  },
+
+  /* Tabs */
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: colors.surfaceSecondary,
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 16,
+  },
+  tabButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 6,
+  },
+  tabButtonActive: {
+    backgroundColor: colors.surfaceCard,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  tabText: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    color: colors.textMuted,
+  },
+  tabTextActive: {
+    color: colors.brandGreenDeep,
+    fontWeight: '900',
+  },
+
+  /* Forms */
+  formCard: {
+    backgroundColor: colors.surfaceCard,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: colors.borderLight,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  cardHeader: {
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 1.2,
+    color: colors.brandGreenDeep,
+    marginBottom: 4,
+  },
+  cardSub: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginBottom: 16,
+  },
+  rolePickerRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 14,
+  },
+  rolePickerPill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: colors.borderLight,
+    backgroundColor: colors.canvasLight,
+    gap: 8,
+  },
+  rolePickerPillActive: {
+    borderColor: colors.brandGreenCourt,
+    backgroundColor: colors.brandGreenDeep,
+  },
+  rolePickerTextCol: {
+    flex: 1,
+  },
+  rolePickerTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.brandGreenDeep,
+  },
+  rolePickerTitleActive: {
+    color: colors.brandGold,
+  },
+  rolePickerDesc: {
+    fontSize: 9,
+    color: colors.textSecondary,
+    marginTop: 1,
+  },
+  rolePickerDescActive: {
+    color: '#D1E7DD',
+  },
+  inputGroup: {
+    marginBottom: 14,
+  },
+  inputLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    color: colors.textSecondary,
+    marginBottom: 6,
+  },
+  input: {
+    backgroundColor: colors.canvasLight,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    height: 46,
+    fontSize: 14,
+    color: colors.textPrimary,
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.canvasLight,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    height: 46,
+  },
+  passwordInput: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.textPrimary,
+  },
+  eyeBtn: {
+    padding: 4,
+  },
+  btnPrimary: {
+    backgroundColor: colors.brandGreenDeep,
+    borderRadius: 12,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: colors.brandGold,
+  },
+  btnPrimaryText: {
+    color: colors.brandGold,
+    fontSize: 13,
+    fontWeight: '900',
+    letterSpacing: 1.2,
+  },
+  linkRow: {
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  linkText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  linkTextBold: {
+    fontWeight: '800',
+    color: colors.brandGreenCourt,
+  },
+
+  /* Court PIN */
+  courtHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  courtSub: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  pinInput: {
+    backgroundColor: colors.canvasLight,
+    borderWidth: 1.5,
+    borderColor: colors.brandGold,
+    borderRadius: 12,
+    textAlign: 'center',
+    fontSize: 28,
+    fontWeight: '900',
+    letterSpacing: 8,
+    color: colors.brandGreenDeep,
+    height: 56,
+    marginBottom: 16,
+  },
+  btnBackToLogin: {
+    marginTop: 14,
+    alignItems: 'center',
+  },
+  btnBackToLoginText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.brandGreenCourt,
+  },
+
+  /* Spectator Action */
+  spectatorSection: {
+    marginTop: 6,
+  },
+  btnSpectator: {
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: colors.brandGreenCourt,
+    borderRadius: 12,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  btnSpectatorText: {
+    color: colors.brandGreenCourt,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+});
