@@ -203,8 +203,10 @@ def validate_username(username: Optional[str]) -> Tuple[bool, Optional[str]]:
     return True, cleaned
 
 
-def validate_password(password: Optional[str], min_length: int = 8) -> Tuple[bool, Optional[str]]:
+def validate_password(password: Optional[str], min_length: int = 8, min_len: Optional[int] = None) -> Tuple[bool, Optional[str]]:
     """Validate password complexity."""
+    if min_len is not None:
+        min_length = min_len
     if not password:
         return False, "Password is required."
     if len(password) < min_length:

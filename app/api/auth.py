@@ -23,12 +23,16 @@ def login():
     if not data or not data.get('username') or not data.get('password'):
         return jsonify({"success": False, "message": "Missing username or password"}), 400
 
-    user = User.query.filter_by(username=data['username']).first()
-    if not user:
-        # Also allow login via email
-        user = User.query.filter_by(email=data['username']).first()
+    username = str(data['username']).strip()
+    user = User.query.filter(db.or_(User.username.ilike(username), User.email.ilike(username))).first()
+
+    if user and user.role == 'deleted':
+        return jsonify({"success": False, "message": "This account has been deleted."}), 401
 
     if user and user.check_password(data['password']):
+        from app.services.user_service import ensure_user_profile
+        ensure_user_profile(user.id)
+
         access_token = create_access_token(identity=str(user.id))
         refresh_token = create_refresh_token(identity=str(user.id))
         return jsonify({
@@ -50,15 +54,17 @@ def login():
 def register():
     data = request.get_json()
     if not data or not data.get('username') or not data.get('password') or not data.get('email'):
-        return jsonify({"success": False, "message": "Missing fields"}), 400
+        return jsonify({"success": False, "message": "Missing required fields"}), 400
 
-    from app.services.user_service import admin_create_user
-    result = admin_create_user(
+    from app.services.user_service import register_user
+    result = register_user(
         username=data['username'],
         email=data['email'],
         password=data['password'],
-        role=data.get('role', 'user'),
-        full_name=data.get('full_name')
+        password_confirm=data.get('password_confirm'),
+        full_name=data.get('full_name') or data.get('name'),
+        gender=data.get('gender', 'Male'),
+        contact_number=data.get('contact_number')
     )
 
     if not result.success:
@@ -163,6 +169,42 @@ def get_current_user_profile():
     if not user:
         return jsonify({"success": False, "message": "User not found"}), 404
 
+    # Ensure profile exists for authenticated user (self-healing if missing)
+    from app.services.user_service import ensure_user_profile
+    player = ensure_user_profile(user.id)
+
+    player_data = None
+    if player:
+        total_m = player.matches_played or 0
+        won_m = player.matches_won or 0
+        lost_m = player.matches_lost or 0
+        win_rate = round((won_m / total_m * 100), 1) if total_m > 0 else 0.0
+
+        player_data = {
+            "id": player.id,
+            "name": player.name,
+            "email": player.email,
+            "registration_no": player.registration_no,
+            "gender": player.gender,
+            "age_category": player.age_category,
+            "dob": player.dob.isoformat() if player.dob else None,
+            "age": player.age,
+            "contact_number": player.contact_number,
+            "nationality": player.nationality,
+            "height": player.height,
+            "weight": player.weight,
+            "blood_group": player.blood_group,
+            "current_status": player.current_status,
+            "academy": player.academy,
+            "coach": player.coach,
+            "avatar_url": player.avatar_url,
+            "total_points": player.total_points or 0.0,
+            "matches_played": total_m,
+            "matches_won": won_m,
+            "matches_lost": lost_m,
+            "win_rate": win_rate
+        }
+
     return jsonify({
         "success": True,
         "user": {
@@ -171,7 +213,8 @@ def get_current_user_profile():
             "email": user.email,
             "role": user.role,
             "created_at": user.created_at.isoformat() if user.created_at else None
-        }
+        },
+        "player": player_data
     }), 200
 
 

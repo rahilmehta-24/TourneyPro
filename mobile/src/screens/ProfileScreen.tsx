@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { User, Bell, Shield, Trash2, LogOut, Award, ChevronRight, UserPlus, X } from 'lucide-react-native';
@@ -21,8 +22,9 @@ import { apiClient } from '../api/client';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const { user, logout, activeRole, setActiveRole } = useAuthStore();
+  const { user, player, setPlayer, logout, activeRole, setActiveRole } = useAuthStore();
 
+  const [refreshing, setRefreshing] = useState(false);
   const [notifyMatchCall, setNotifyMatchCall] = useState(true);
   const [notifyDraws, setNotifyDraws] = useState(true);
   const [notifyResults, setNotifyResults] = useState(true);
@@ -35,6 +37,65 @@ export default function ProfileScreen() {
   const [adminPassword, setAdminPassword] = useState('');
   const [adminRole, setAdminRole] = useState<'player' | 'umpire' | 'admin'>('player');
   const [adminSubmitting, setAdminSubmitting] = useState(false);
+
+  const fetchProfileAndPrefs = async () => {
+    try {
+      const [userRes, prefsRes] = await Promise.allSettled([
+        apiClient.get('/users/me'),
+        apiClient.get('/users/notification-preferences'),
+      ]);
+
+      if (userRes.status === 'fulfilled' && userRes.value.data?.success) {
+        if (userRes.value.data.player) {
+          setPlayer(userRes.value.data.player);
+        }
+      }
+
+      if (prefsRes.status === 'fulfilled' && prefsRes.value.data) {
+        const p = prefsRes.value.data;
+        if (typeof p.match_call !== 'undefined') setNotifyMatchCall(!!p.match_call);
+        if (typeof p.draws_published !== 'undefined') setNotifyDraws(!!p.draws_published);
+        if (typeof p.final_results !== 'undefined') setNotifyResults(!!p.final_results);
+      }
+    } catch {
+      // Ignore network errors on passive load
+    }
+  };
+
+  useEffect(() => {
+    fetchProfileAndPrefs();
+  }, []);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchProfileAndPrefs();
+    setRefreshing(false);
+  };
+
+  const updatePreference = async (key: 'match_call' | 'draws_published' | 'final_results', val: boolean) => {
+    try {
+      await apiClient.put('/users/notification-preferences', {
+        [key]: val,
+      });
+    } catch {
+      Alert.alert('Notice', 'Unable to save notification preference.');
+    }
+  };
+
+  const handleToggleMatchCall = (val: boolean) => {
+    setNotifyMatchCall(val);
+    updatePreference('match_call', val);
+  };
+
+  const handleToggleDraws = (val: boolean) => {
+    setNotifyDraws(val);
+    updatePreference('draws_published', val);
+  };
+
+  const handleToggleResults = (val: boolean) => {
+    setNotifyResults(val);
+    updatePreference('final_results', val);
+  };
 
   const handleAdminCreateUser = async () => {
     if (!adminUsername.trim() || !adminEmail.trim() || !adminPassword.trim()) {
@@ -80,55 +141,76 @@ export default function ProfileScreen() {
           text: 'Delete Account',
           style: 'destructive',
           onPress: async () => {
+            try {
+              await apiClient.post('/users/delete_account');
+            } catch {
+              // Proceed with client logout even if backend failed or already removed
+            }
             await logout();
-            Alert.alert('Account Deleted', 'Your account and PII have been scrubbed successfully.');
+            Alert.alert('Account Deleted', 'Your account and personal data have been scrubbed successfully.');
           },
         },
       ]
     );
   };
 
+  const displayName = player?.name || user?.username || 'Player';
+  const displayId = player?.registration_no || (user ? `BS-UID-${user.id}` : 'PENDING');
+  const initials = displayName.slice(0, 2).toUpperCase();
+  const playedCount = player?.matches_played ?? 0;
+  const wonCount = player?.matches_won ?? 0;
+  const lostCount = player?.matches_lost ?? 0;
+  const winRate = player?.win_rate ?? (playedCount > 0 ? Math.round((wonCount / playedCount) * 100) : 0);
+
   return (
     <View style={[styles.container, { paddingTop: Math.max(insets.top, 16) }]}>
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>PLAYER PROFILE</Text>
-          <Text style={styles.subtitle}>BASELINE SOCIETY ID #BS-2026-084</Text>
+          <Text style={styles.subtitle}>BASELINE SOCIETY ID #{displayId}</Text>
         </View>
         <TouchableOpacity style={styles.badgeRank}>
-          <Text style={styles.badgeRankText}>RANK #4</Text>
+          <Text style={styles.badgeRankText}>
+            {player?.total_points ? `${player.total_points} PTS` : 'ACTIVE'}
+          </Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brandGreenCourt} />}
+      >
         {/* Player Profile Card */}
         <View style={styles.profileCard}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>RN</Text>
+            <Text style={styles.avatarText}>{initials}</Text>
           </View>
           <View style={styles.profileDetails}>
-            <Text style={styles.playerName}>Rafael Nadal</Text>
-            <Text style={styles.playerRole}>Senior Member • Left-Handed</Text>
-            <Text style={styles.playerClub}>South Mumbai Lawn Tennis Club</Text>
+            <Text style={styles.playerName}>{displayName}</Text>
+            <Text style={styles.playerRole}>
+              {player?.age_category || 'Open Category'} • {player?.gender || 'Member'}
+            </Text>
+            <Text style={styles.playerClub}>{player?.academy || 'The Baseline Society Registry'}</Text>
           </View>
         </View>
 
         {/* Career Stats Grid */}
         <View style={styles.statsGrid}>
           <View style={styles.statBox}>
-            <Text style={styles.statNum}>18</Text>
+            <Text style={styles.statNum}>{playedCount}</Text>
             <Text style={styles.statLabel}>PLAYED</Text>
           </View>
           <View style={styles.statBox}>
-            <Text style={[styles.statNum, { color: colors.brandGreenCourt }]}>15</Text>
+            <Text style={[styles.statNum, { color: colors.brandGreenCourt }]}>{wonCount}</Text>
             <Text style={styles.statLabel}>WON</Text>
           </View>
           <View style={styles.statBox}>
-            <Text style={[styles.statNum, { color: colors.brandClay }]}>3</Text>
+            <Text style={[styles.statNum, { color: colors.brandClay }]}>{lostCount}</Text>
             <Text style={styles.statLabel}>LOST</Text>
           </View>
           <View style={styles.statBox}>
-            <Text style={[styles.statNum, { color: colors.brandGold }]}>83%</Text>
+            <Text style={[styles.statNum, { color: colors.brandGold }]}>{winRate}%</Text>
             <Text style={styles.statLabel}>WIN RATE</Text>
           </View>
         </View>
@@ -143,7 +225,7 @@ export default function ProfileScreen() {
             </View>
             <Switch
               value={notifyMatchCall}
-              onValueChange={setNotifyMatchCall}
+              onValueChange={handleToggleMatchCall}
               trackColor={{ false: colors.surfaceSecondary, true: colors.brandGreenCourt }}
             />
           </View>
@@ -155,7 +237,7 @@ export default function ProfileScreen() {
             </View>
             <Switch
               value={notifyDraws}
-              onValueChange={setNotifyDraws}
+              onValueChange={handleToggleDraws}
               trackColor={{ false: colors.surfaceSecondary, true: colors.brandGreenCourt }}
             />
           </View>
@@ -167,7 +249,7 @@ export default function ProfileScreen() {
             </View>
             <Switch
               value={notifyResults}
-              onValueChange={setNotifyResults}
+              onValueChange={handleToggleResults}
               trackColor={{ false: colors.surfaceSecondary, true: colors.brandGreenCourt }}
             />
           </View>

@@ -72,23 +72,10 @@ export default function LoginScreen() {
         Alert.alert('Login Failed', res.data?.message || 'Invalid credentials.');
       }
     } catch (err: any) {
-      const errorMsg = err.response?.data?.message;
-      if (!err.response) {
-        // Offline demo fallback so app works seamlessly
-        const demoRole = userToLogin.includes('admin') || userToLogin.includes('organizer') ? 'admin' : 'player';
-        await loginUser(
-          {
-            id: demoRole === 'admin' ? 1 : 2,
-            username: userToLogin,
-            email: `${userToLogin}@baseline.local`,
-            role: demoRole,
-          },
-          'offline_demo_access_token',
-          'offline_demo_refresh_token'
-        );
-      } else {
-        Alert.alert('Sign In Error', errorMsg || 'Invalid credentials.');
-      }
+      const errorMsg =
+        err.response?.data?.message ||
+        (err.request ? 'Unable to connect to server. Please check your network connection.' : 'Invalid credentials.');
+      Alert.alert('Sign In Error', errorMsg);
     } finally {
       setLoading(false);
     }
@@ -96,23 +83,24 @@ export default function LoginScreen() {
 
   // --- SIGN UP / REGISTER HANDLER ---
   const handleRegister = async () => {
+    const trimmedFullName = regFullName.trim();
     const trimmedUser = regUsername.trim();
     const trimmedEmail = regEmail.trim();
     const trimmedPass = regPassword.trim();
     const trimmedConfirm = regConfirmPassword.trim();
 
-    if (!trimmedUser || !trimmedEmail || !trimmedPass) {
-      Alert.alert('Required Fields', 'Please fill in your username, email, and password.');
+    if (!trimmedUser || !trimmedEmail || !trimmedPass || !trimmedConfirm) {
+      Alert.alert('Required Fields', 'Please fill in all mandatory fields.');
       return;
     }
 
-    if (trimmedPass.length < 6) {
-      Alert.alert('Weak Password', 'Password should be at least 6 characters.');
+    if (trimmedPass.length < 8) {
+      Alert.alert('Password Requirements', 'Password must be at least 8 characters long.');
       return;
     }
 
     if (trimmedPass !== trimmedConfirm) {
-      Alert.alert('Mismatch', 'Passwords do not match. Please verify your password.');
+      Alert.alert('Password Mismatch', 'Passwords do not match. Please verify your password.');
       return;
     }
 
@@ -122,11 +110,14 @@ export default function LoginScreen() {
         username: trimmedUser,
         email: trimmedEmail,
         password: trimmedPass,
-        role: regRole, // 'admin' (Organizer) or 'user' / 'player'
+        password_confirm: trimmedConfirm,
+        full_name: trimmedFullName || undefined,
       });
 
       if (res.data?.success && res.data?.access_token) {
-        const notifMsg = res.data?.message || 'User created successfully! A fresh workspace has been initialized. No existing user data was found or carried over.';
+        const notifMsg =
+          res.data?.message ||
+          'Registration successful! Your Baseline Society account and personal workspace have been created.';
         const notifTitle = res.data?.category === 'warning' ? 'Verification Notice' : 'Account Initialized';
         Alert.alert(
           notifTitle,
@@ -148,26 +139,10 @@ export default function LoginScreen() {
         Alert.alert('Registration Failed', res.data?.message || 'Could not complete registration.');
       }
     } catch (err: any) {
-      const errorMsg = err.response?.data?.message;
-      if (!err.response) {
-        // Offline demo fallback
-        await loginUser(
-          {
-            id: Date.now(),
-            username: trimmedUser,
-            email: trimmedEmail,
-            role: regRole,
-          },
-          'offline_reg_access_token',
-          'offline_reg_refresh_token'
-        );
-        Alert.alert(
-          'Account Initialized',
-          'User created successfully! A fresh workspace has been initialized. No existing user data was found or carried over.'
-        );
-      } else {
-        Alert.alert('Registration Error', errorMsg || 'Unable to register at this time.');
-      }
+      const errorMsg =
+        err.response?.data?.message ||
+        (err.request ? 'Unable to connect to server. Please check your network connection.' : 'Unable to register at this time.');
+      Alert.alert('Registration Error', errorMsg);
     } finally {
       setLoading(false);
     }
@@ -201,22 +176,10 @@ export default function LoginScreen() {
         Alert.alert('Invalid PIN', res.data?.message || 'Invalid court PIN.');
       }
     } catch (err: any) {
-      if (!err.response && (pin === '123456' || pin === '1234')) {
-        await loginCourt(
-          {
-            court: 'Court 1',
-            role: 'official',
-            tournament: {
-              id: 1,
-              name: 'Baseline National Invitational',
-              slug: 'baseline-championship',
-            },
-          },
-          'offline_court_jwt'
-        );
-      } else {
-        Alert.alert('PIN Error', err.response?.data?.message || 'Invalid court PIN.');
-      }
+      const errorMsg =
+        err.response?.data?.message ||
+        (err.request ? 'Unable to connect to server. Please check your network connection.' : 'Invalid court PIN.');
+      Alert.alert('PIN Error', errorMsg);
     } finally {
       setLoading(false);
     }
@@ -352,48 +315,8 @@ export default function LoginScreen() {
           <View style={styles.formCard}>
             <Text style={styles.cardHeader}>CREATE YOUR BASELINE ACCOUNT</Text>
             <Text style={styles.cardSub}>
-              Enter tournaments, track live draws, or manage circuits
+              Enter tournaments, track live draws, and receive match alerts
             </Text>
-
-            {/* Role Selection Segment */}
-            <Text style={styles.inputLabel}>SELECT YOUR ROLE</Text>
-            <View style={styles.rolePickerRow}>
-              <TouchableOpacity
-                style={[
-                  styles.rolePickerPill,
-                  regRole === 'player' && styles.rolePickerPillActive,
-                ]}
-                onPress={() => setRegRole('player')}
-              >
-                <User size={16} color={regRole === 'player' ? colors.canvasLight : colors.brandGreenDeep} />
-                <View style={styles.rolePickerTextCol}>
-                  <Text style={[styles.rolePickerTitle, regRole === 'player' && styles.rolePickerTitleActive]}>
-                    Tennis Player
-                  </Text>
-                  <Text style={[styles.rolePickerDesc, regRole === 'player' && styles.rolePickerDescActive]}>
-                    Enter draws, match alerts
-                  </Text>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.rolePickerPill,
-                  regRole === 'admin' && styles.rolePickerPillActive,
-                ]}
-                onPress={() => setRegRole('admin')}
-              >
-                <Shield size={16} color={regRole === 'admin' ? colors.canvasLight : colors.brandGold} />
-                <View style={styles.rolePickerTextCol}>
-                  <Text style={[styles.rolePickerTitle, regRole === 'admin' && styles.rolePickerTitleActive]}>
-                    Organizer
-                  </Text>
-                  <Text style={[styles.rolePickerDesc, regRole === 'admin' && styles.rolePickerDescActive]}>
-                    Create draws, court PINs
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>FULL NAME</Text>
@@ -535,53 +458,8 @@ export default function LoginScreen() {
           </View>
         )}
 
-        {/* Quick Demo Fast-Login Section */}
+        {/* Continue as Spectator */}
         <View style={styles.demoSection}>
-          <Text style={styles.demoTitle}>QUICK DEMO ROLES (TAP TO SIGN IN):</Text>
-
-          <TouchableOpacity
-            style={styles.demoRow}
-            onPress={() => handleLogin('organizer', 'pass123')}
-          >
-            <View style={[styles.demoIcon, { backgroundColor: '#FDF6E2' }]}>
-              <Shield size={16} color={colors.brandGold} />
-            </View>
-            <View style={styles.demoTextCol}>
-              <Text style={styles.demoRoleName}>Tournament Director / Admin</Text>
-              <Text style={styles.demoRoleSub}>Full tournament management, entry review, draws</Text>
-            </View>
-            <ChevronRight size={16} color={colors.textMuted} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.demoRow}
-            onPress={() => handleLogin('player1', 'pass123')}
-          >
-            <View style={[styles.demoIcon, { backgroundColor: colors.brandGreenSubtle }]}>
-              <User size={16} color={colors.brandGreenCourt} />
-            </View>
-            <View style={styles.demoTextCol}>
-              <Text style={styles.demoRoleName}>Tournament Player</Text>
-              <Text style={styles.demoRoleSub}>Registered draws, personal match alerts & stats</Text>
-            </View>
-            <ChevronRight size={16} color={colors.textMuted} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.demoRow}
-            onPress={() => handleCourtPinLogin('123456')}
-          >
-            <View style={[styles.demoIcon, { backgroundColor: '#EBF4FF' }]}>
-              <KeyRound size={16} color="#2B6CB0" />
-            </View>
-            <View style={styles.demoTextCol}>
-              <Text style={styles.demoRoleName}>Court Official / Umpire</Text>
-              <Text style={styles.demoRoleSub}>Court 1 scoring keypad with PIN 123456</Text>
-            </View>
-            <ChevronRight size={16} color={colors.textMuted} />
-          </TouchableOpacity>
-
-          {/* Continue as Spectator */}
           <TouchableOpacity
             style={styles.btnSpectator}
             onPress={handleSpectatorMode}

@@ -27,6 +27,17 @@ MSG_VERIFICATION_FAILED = (
     "Please review the user's data before proceeding."
 )
 
+# Standard User Registration Messages
+MSG_REGISTRATION_CLEAN_WORKSPACE = (
+    "Registration successful! Your Baseline Society account and personal workspace have been created."
+)
+MSG_REGISTRATION_EXISTING_DATA = (
+    "Your account has been successfully registered. Previously saved data associated with your account has been retained."
+)
+MSG_REGISTRATION_INIT_FAILED = (
+    "Your account was created, but profile initialization could not be completed. Please contact the administrator."
+)
+
 
 class UserCreationResult:
     """Encapsulates the result of admin user creation and workspace verification."""
@@ -273,4 +284,267 @@ def admin_create_user(
             category="error",
             status_code=500,
         )
+
+
+def ensure_user_profile(user_id: int) -> Optional[Player]:
+    """
+    Ensures that a user has an associated Player profile.
+    If missing, securely initializes a clean profile for this user_id.
+    """
+    user = db.session.get(User, user_id)
+    if not user:
+        return None
+
+    player = Player.query.filter_by(user_id=user.id).first()
+    if player:
+        return player
+
+    # Check if an unassigned player profile exists with user's email
+    unassigned = Player.query.filter(
+        Player.user_id.is_(None),
+        Player.email.ilike(user.email)
+    ).first()
+    if unassigned:
+        unassigned.user_id = user.id
+        db.session.commit()
+        return unassigned
+
+    # Initialize a clean player profile
+    current_date = date.today()
+    reg_no = f"TP-{current_date.year}-{random.randint(0x1000, 0xFFFF):X}"
+    new_player = Player(
+        user_id=user.id,
+        name=user.username,
+        email=user.email,
+        gender="Male",
+        age_category="Open",
+        registration_no=reg_no,
+        registration_date=current_date,
+        registration_validity=current_date + timedelta(days=365),
+        current_status="Active"
+    )
+    db.session.add(new_player)
+
+    prefs = UserNotificationPreferences.query.filter_by(user_id=user.id).first()
+    if not prefs:
+        db.session.add(UserNotificationPreferences(user_id=user.id))
+
+    db.session.commit()
+    return new_player
+
+
+def register_user(
+    username: str,
+    email: str,
+    password: str,
+    password_confirm: Optional[str] = None,
+    full_name: Optional[str] = None,
+    gender: str = "Male",
+    dob: Optional[date] = None,
+    contact_number: Optional[str] = None,
+    nationality: Optional[str] = None,
+    height: Optional[str] = None,
+    weight: Optional[str] = None,
+    blood_group: Optional[str] = None,
+    address: Optional[str] = None,
+    coach: Optional[str] = None,
+    academy: Optional[str] = None,
+    avatar_url: Optional[str] = None,
+    simulate_init_failure: bool = False,
+) -> UserCreationResult:
+    """
+    Registers a new public user into Baseline Society, initializes their personal
+    workspace & Player profile atomically, and enforces strict data isolation.
+    """
+    from app.services.utils.validation import (
+        validate_username, validate_email, validate_password, validate_name
+    )
+
+    username = (username or "").strip()
+    email = (email or "").strip().lower()
+
+    # 1. Mandatory Fields & Username Validation
+    ok, u_clean = validate_username(username)
+    if not ok:
+        return UserCreationResult(
+            success=False,
+            message=u_clean or "Invalid username.",
+            category="error",
+            status_code=400,
+        )
+    username = u_clean
+
+    # 2. Email Validation
+    ok, e_clean = validate_email(email, required=True)
+    if not ok:
+        return UserCreationResult(
+            success=False,
+            message=e_clean or "Invalid email address.",
+            category="error",
+            status_code=400,
+        )
+    email = e_clean
+
+    # 3. Password Validation & Complexity
+    ok, p_clean = validate_password(password, min_length=8)
+    if not ok:
+        return UserCreationResult(
+            success=False,
+            message=p_clean or "Password does not meet requirements.",
+            category="error",
+            status_code=400,
+        )
+
+    # 4. Password Confirmation
+    if password_confirm is not None:
+        if password != password_confirm:
+            return UserCreationResult(
+                success=False,
+                message="Passwords do not match. Please verify your password.",
+                category="error",
+                status_code=400,
+            )
+
+    # 5. Prevent Duplicate Registrations
+    if User.query.filter_by(username=username).first():
+        return UserCreationResult(
+            success=False,
+            message="Username already exists.",
+            category="error",
+            status_code=400,
+        )
+
+    if User.query.filter_by(email=email).first():
+        return UserCreationResult(
+            success=False,
+            message="Email already exists.",
+            category="error",
+            status_code=400,
+        )
+
+    # 6. Atomic User & Profile Creation
+    try:
+        # Default role is ALWAYS 'user' (never admin or superadmin via registration)
+        user = User(username=username, email=email, role='user')
+        user.set_password(password)
+        db.session.add(user)
+        db.session.flush()
+
+        actual_user_id = user.id
+
+        # Check for unassigned records with this email or existing data
+        unassigned_player = Player.query.filter(
+            Player.user_id.is_(None),
+            Player.email.ilike(email)
+        ).first()
+
+        existing_record_count = check_user_existing_data(actual_user_id)
+        if unassigned_player:
+            unassigned_player.user_id = actual_user_id
+            if full_name:
+                unassigned_player.name = full_name.strip()
+            if contact_number:
+                unassigned_player.contact_number = contact_number.strip()
+            existing_record_count += 1
+
+        has_existing_data = existing_record_count > 0
+
+        # Notification Preferences
+        prefs = UserNotificationPreferences.query.filter_by(user_id=actual_user_id).first()
+        if not prefs:
+            prefs = UserNotificationPreferences(user_id=actual_user_id)
+            db.session.add(prefs)
+
+        if not has_existing_data:
+            # Clean data: create initial Player profile
+            display_name = full_name.strip() if full_name else username
+            current_date = date.today()
+            reg_no = f"TP-{current_date.year}-{random.randint(0x1000, 0xFFFF):X}"
+
+            # Age category calculation if dob is present
+            age_category = "Open"
+            if dob:
+                today = date.today()
+                age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+                if age <= 8:
+                    age_category = 'U8'
+                elif age <= 10:
+                    age_category = 'U10'
+                elif age <= 12:
+                    age_category = 'U12'
+                elif age <= 14:
+                    age_category = 'U14'
+                elif age <= 16:
+                    age_category = 'U16'
+                elif age <= 18:
+                    age_category = 'U18'
+                elif age >= 45:
+                    age_category = '45+'
+                elif age >= 35:
+                    age_category = '35+'
+                else:
+                    age_category = 'Open'
+
+            new_player = Player(
+                user_id=actual_user_id,
+                name=display_name,
+                gender=gender if gender in ('Male', 'Female') else 'Male',
+                dob=dob,
+                email=email,
+                contact_number=contact_number.strip() if contact_number else None,
+                nationality=nationality.strip() if nationality else None,
+                height=height.strip() if height else None,
+                weight=weight.strip() if weight else None,
+                blood_group=blood_group if blood_group else None,
+                address=address.strip() if address else None,
+                coach=coach.strip() if coach else None,
+                academy=academy.strip() if academy else None,
+                avatar_url=avatar_url if avatar_url else None,
+                registration_no=reg_no,
+                registration_date=current_date,
+                registration_validity=current_date + timedelta(days=365),
+                current_status="Active",
+                age_category=age_category,
+            )
+            db.session.add(new_player)
+
+        if simulate_init_failure:
+            raise RuntimeError("Simulated profile initialization failure")
+
+        db.session.commit()
+
+        # Verification of Persistence
+        reloaded_user = db.session.get(User, actual_user_id)
+        if not reloaded_user:
+            raise ValueError("User persistence verification failed")
+
+        if has_existing_data:
+            return UserCreationResult(
+                success=True,
+                message=MSG_REGISTRATION_EXISTING_DATA,
+                category="success",
+                user=user,
+                status_code=201,
+                has_existing_data=True,
+            )
+        else:
+            return UserCreationResult(
+                success=True,
+                message=MSG_REGISTRATION_CLEAN_WORKSPACE,
+                category="success",
+                user=user,
+                status_code=201,
+                is_clean=True,
+            )
+
+    except Exception:
+        db.session.rollback()
+        return UserCreationResult(
+            success=False,
+            message=MSG_REGISTRATION_INIT_FAILED,
+            category="error",
+            status_code=500,
+            verification_failed=True,
+        )
+
 
