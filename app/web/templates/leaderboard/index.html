@@ -74,16 +74,16 @@
 
     <!-- Leaderboard Table -->
     <div class="table-container" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); overflow-x: auto; -webkit-overflow-scrolling: touch; box-shadow: var(--shadow-sm);">
-        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+        <table class="data-table" style="width: 100%; border-collapse: collapse; text-align: left;">
             <thead>
                 <tr style="background: var(--bg-secondary); border-bottom: 2px solid var(--border-color);">
-                    <th style="padding: 1rem;">Rank</th>
-                    <th style="padding: 1rem;">Player</th>
-                    <th style="padding: 1rem;">Category</th>
-                    <th style="padding: 1rem;">Points</th>
-                    <th style="padding: 1rem;">Matches (W-L)</th>
+                    <th style="padding: 0.85rem 1rem;">Rank</th>
+                    <th style="padding: 0.85rem 1rem;">Player</th>
+                    <th style="padding: 0.85rem 1rem;">Category</th>
+                    <th style="padding: 0.85rem 1rem;">Points</th>
+                    <th style="padding: 0.85rem 1rem;">Matches (W-L)</th>
                     {% if current_user and current_user.role == 'superadmin' %}
-                    <th style="padding: 1rem; text-align: right;">Actions</th>
+                    <th style="padding: 0.85rem 1rem; text-align: right;">Actions</th>
                     {% endif %}
                 </tr>
             </thead>

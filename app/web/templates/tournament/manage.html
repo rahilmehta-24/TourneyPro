@@ -375,16 +375,16 @@
                     <div style="max-height: 480px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
                             <thead style="position: sticky; top: 0; background: var(--bg-secondary); z-index: 10;">
-                                <tr style="border-bottom: 1px solid var(--border-color); text-align: left;">
-                                    <th style="padding: 0.6rem 0.75rem; color: var(--text-muted); font-weight: 600; width: 60px;">Seed</th>
-                                    <th style="padding: 0.6rem 0.75rem; color: var(--text-muted); font-weight: 600;">Player Name</th>
+                                <tr style="border-bottom: 2px solid var(--border-color); background: var(--bg-secondary); text-align: left;">
+                                    <th style="padding: 0.75rem; color: var(--text-primary); font-weight: 700; text-transform: uppercase; font-size: 0.78rem; letter-spacing: 0.05em; width: 60px;">Seed</th>
+                                    <th style="padding: 0.75rem; color: var(--text-primary); font-weight: 700; text-transform: uppercase; font-size: 0.78rem; letter-spacing: 0.05em;">Player Name</th>
                                     {% if tournament.has_categories %}
-                                    <th style="padding: 0.6rem 0.75rem; color: var(--text-muted); font-weight: 600;">Category</th>
+                                    <th style="padding: 0.75rem; color: var(--text-primary); font-weight: 700; text-transform: uppercase; font-size: 0.78rem; letter-spacing: 0.05em;">Category</th>
                                     {% endif %}
-                                    <th style="padding: 0.6rem 0.75rem; color: var(--text-muted); font-weight: 600;">Email</th>
-                                    <th style="padding: 0.6rem 0.75rem; color: var(--text-muted); font-weight: 600; width: 100px;">Payment</th>
+                                    <th style="padding: 0.75rem; color: var(--text-primary); font-weight: 700; text-transform: uppercase; font-size: 0.78rem; letter-spacing: 0.05em;">Email</th>
+                                    <th style="padding: 0.75rem; color: var(--text-primary); font-weight: 700; text-transform: uppercase; font-size: 0.78rem; letter-spacing: 0.05em; width: 100px;">Payment</th>
                                     {% if tournament.status == 'setup' %}
-                                    <th style="padding: 0.6rem 0.75rem; text-align: right; color: var(--text-muted); font-weight: 600; width: 70px;">Action</th>
+                                    <th style="padding: 0.75rem; text-align: right; color: var(--text-primary); font-weight: 700; text-transform: uppercase; font-size: 0.78rem; letter-spacing: 0.05em; width: 70px;">Action</th>
                                     {% endif %}
                                 </tr>
                             </thead>

@@ -287,6 +287,38 @@ h6 {
     box-shadow: var(--shadow-sm);
 }
 
+.navbar .nav-user-actions .navbar-host-btn,
+.navbar .nav-user-actions .btn-outline {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--accent-secondary, #C9A55C) !important;
+    border: 1.5px solid var(--accent-secondary, #C9A55C) !important;
+    background: rgba(201, 165, 92, 0.12) !important;
+    font-weight: 700 !important;
+    font-size: 0.85rem !important;
+    padding: 0.4rem 0.85rem !important;
+    border-radius: var(--radius-md) !important;
+    text-decoration: none !important;
+    transition: all 0.2s ease !important;
+    cursor: pointer;
+}
+
+.navbar .nav-user-actions .navbar-host-btn:hover,
+.navbar .nav-user-actions .btn-outline:hover {
+    background: var(--accent-secondary, #C9A55C) !important;
+    color: var(--accent-primary, #0F3D2E) !important;
+    box-shadow: 0 2px 8px rgba(201, 165, 92, 0.35);
+    border-color: var(--accent-secondary, #C9A55C) !important;
+    transform: translateY(-1px);
+}
+
+.navbar .nav-user-actions .navbar-host-btn:visited,
+.navbar .nav-user-actions .btn-outline:visited,
+.navbar-host-btn:visited {
+    color: var(--accent-secondary, #C9A55C) !important;
+}
+
 .user-profile-badge {
     display: flex;
     align-items: center;
@@ -3653,11 +3685,34 @@ html, body {
     width: 100%;
     overflow-x: auto;
 }
-.table-light th {
+/* Standardized High-Contrast Table Headers */
+.table th,
+.table-light th,
+.data-table th {
     background: var(--bg-secondary);
-    color: var(--text-secondary);
+    color: var(--text-primary) !important;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.85rem 1rem !important;
     border-bottom: 2px solid var(--border-color);
-    text-align: left;
+    vertical-align: middle;
+}
+
+.standings-table th,
+.data-table-dark th {
+    background-color: var(--accent-primary) !important;
+    color: #FDFBF6 !important;
+    font-size: 0.82rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.06em !important;
+    border-bottom: 2.5px solid var(--accent-secondary) !important;
+}
+
+.standings-table th * {
+    color: #FDFBF6 !important;
 }
 .table-hover tbody tr:hover td {
     background: var(--bg-hover);
