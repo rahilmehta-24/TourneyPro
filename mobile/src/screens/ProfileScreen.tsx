@@ -15,12 +15,12 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { User, Bell, Shield, Trash2, LogOut, Award, ChevronRight, UserPlus, X, Trophy, CheckSquare, Square } from 'lucide-react-native';
+import { User, Bell, Shield, Trash2, LogOut, Award, ChevronRight, UserPlus, X, Trophy, CheckSquare, Square, Plus } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 import { useAuthStore } from '../state/authStore';
 import { apiClient } from '../api/client';
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const { user, player, setPlayer, logout, activeRole, setActiveRole } = useAuthStore();
 
@@ -322,15 +322,44 @@ export default function ProfileScreen() {
               <ChevronRight size={16} color={colors.textMuted} style={styles.chevron} />
             </TouchableOpacity>
           ) : (
-            <View style={styles.actionRow}>
-              <Trophy size={18} color={colors.brandGreenCourt} />
-              <View style={{ flex: 1, marginLeft: 10 }}>
-                <Text style={[styles.actionLabel, { marginLeft: 0 }]}>Active Tournament Host</Text>
-                <Text style={styles.settingSub}>
-                  Authorized organizer • {user?.role.toUpperCase()}
-                </Text>
+            <>
+              <View style={styles.actionRow}>
+                <Trophy size={18} color={colors.brandGreenCourt} />
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={[styles.actionLabel, { marginLeft: 0 }]}>Active Tournament Host</Text>
+                  <Text style={styles.settingSub}>
+                    Authorized organizer • {user?.role.toUpperCase()}
+                  </Text>
+                </View>
               </View>
-            </View>
+              <TouchableOpacity
+                style={[
+                  styles.actionRow,
+                  {
+                    borderTopWidth: 1,
+                    borderTopColor: colors.surfaceSecondary,
+                    backgroundColor: colors.brandGreenSubtle,
+                  },
+                ]}
+                onPress={() => navigation?.navigate('Events')}
+              >
+                <Plus size={18} color={colors.brandGreenCourt} />
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text
+                    style={[
+                      styles.actionLabel,
+                      { marginLeft: 0, color: colors.brandGreenDeep, fontWeight: '800' },
+                    ]}
+                  >
+                    + Create & Host New Tournament
+                  </Text>
+                  <Text style={styles.settingSub}>
+                    Open the event creator in the Events center
+                  </Text>
+                </View>
+                <ChevronRight size={16} color={colors.brandGreenCourt} style={styles.chevron} />
+              </TouchableOpacity>
+            </>
           )}
         </View>
 

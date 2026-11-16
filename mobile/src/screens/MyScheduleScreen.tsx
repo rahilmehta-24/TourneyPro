@@ -60,7 +60,7 @@ export default function MyScheduleScreen() {
 
       // 2. Fetch order of play for this tournament
       const oopRes = await apiClient.get(`/tournaments/${activeTourney.slug}/order-of-play`);
-      const serializedCourts = oopRes.data?.courts || [];
+      const serializedCourts = oopRes.data?.courts || oopRes.data?.schedule || [];
 
       const availableCourts: string[] = ['All'];
       const aggregatedMatches: ScheduleMatch[] = [];

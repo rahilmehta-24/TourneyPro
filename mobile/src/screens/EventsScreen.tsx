@@ -9,9 +9,25 @@ import {
   RefreshControl,
   Image,
   ActivityIndicator,
+  Modal,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Search, MapPin, Calendar, Trophy, ChevronRight, Shield, CheckCircle2, KeyRound, LogOut, AlertCircle } from 'lucide-react-native';
+import {
+  Search,
+  MapPin,
+  Calendar,
+  Trophy,
+  ChevronRight,
+  Shield,
+  CheckCircle2,
+  KeyRound,
+  LogOut,
+  AlertCircle,
+  Plus,
+  X,
+  Sparkles,
+} from 'lucide-react-native';
 import { colors } from '../theme/colors';
 import { useAuthStore } from '../state/authStore';
 import { apiClient } from '../api/client';
@@ -40,7 +56,50 @@ export default function EventsScreen({ navigation }: any) {
   const [selectedSurface, setSelectedSurface] = useState('All');
   const { activeRole, setActiveRole, user, logout } = useAuthStore();
 
+  // Create Tournament Modal State
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [createName, setCreateName] = useState('');
+  const [createVenue, setCreateVenue] = useState('');
+  const [createCity, setCreateCity] = useState('');
+  const [createSurface, setCreateSurface] = useState('Hard');
+  const [createStartDate, setCreateStartDate] = useState('');
+  const [createNumCourts, setCreateNumCourts] = useState('2');
+  const [creating, setCreating] = useState(false);
+
   const surfaces = ['All', 'Clay 🧱', 'Hard 🎾', 'Grass 🌱'];
+
+  const handleCreateTournament = async () => {
+    if (!createName.trim() || createName.trim().length < 3) {
+      Alert.alert('Required', 'Please enter a tournament name (at least 3 characters).');
+      return;
+    }
+    setCreating(true);
+    try {
+      const res = await apiClient.post('/tournaments', {
+        name: createName.trim(),
+        venue: createVenue.trim() || 'Baseline Tennis Center',
+        city: createCity.trim() || 'Mumbai',
+        surface: createSurface,
+        start_date: createStartDate.trim() || undefined,
+        num_courts: parseInt(createNumCourts, 10) || 2,
+      });
+      if (res.data?.success) {
+        Alert.alert('Tournament Created!', 'Your tournament has been published and is open for registrations.');
+        setIsCreateModalOpen(false);
+        setCreateName('');
+        setCreateVenue('');
+        setCreateCity('');
+        setCreateStartDate('');
+        await fetchTournaments();
+      } else {
+        Alert.alert('Creation Failed', res.data?.message || 'Could not create tournament');
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err.response?.data?.message || 'Failed to create tournament.');
+    } finally {
+      setCreating(false);
+    }
+  };
 
   const fetchTournaments = async () => {
     try {
@@ -100,6 +159,15 @@ export default function EventsScreen({ navigation }: any) {
         </View>
 
         <View style={styles.headerRight}>
+          {(activeRole === 'admin' || user?.role === 'admin' || user?.role === 'superadmin') && (
+            <TouchableOpacity
+              style={styles.btnHostHeader}
+              onPress={() => setIsCreateModalOpen(true)}
+            >
+              <Plus size={13} color={colors.brandGreenDeep} />
+              <Text style={styles.btnHostHeaderText}>HOST</Text>
+            </TouchableOpacity>
+          )}
           <View style={styles.roleChip}>
             <Text style={styles.roleChipText}>
               {activeRole === 'admin'
@@ -137,6 +205,15 @@ export default function EventsScreen({ navigation }: any) {
             </Text>
             <View style={styles.adminActionsRow}>
               <TouchableOpacity
+                style={[styles.btnAdminAction, { backgroundColor: colors.brandGold, borderColor: colors.brandGold }]}
+                onPress={() => setIsCreateModalOpen(true)}
+              >
+                <Plus size={14} color={colors.brandGreenDeep} />
+                <Text style={[styles.btnAdminActionText, { color: colors.brandGreenDeep, fontWeight: '900' }]}>
+                  Create Event
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
                 style={styles.btnAdminAction}
                 onPress={() => navigation.navigate('My Schedule')}
               >
@@ -161,12 +238,20 @@ export default function EventsScreen({ navigation }: any) {
             <Text style={styles.playerBannerDetail}>
               Explore sanctioned events, register for categories, and view live order of play.
             </Text>
-            <TouchableOpacity
-              style={styles.btnPlayerSchedule}
-              onPress={() => navigation.navigate('My Schedule')}
-            >
-              <Text style={styles.btnPlayerScheduleText}>View Court Schedules →</Text>
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+              <TouchableOpacity
+                style={[styles.btnPlayerSchedule, { flex: 1 }]}
+                onPress={() => navigation.navigate('My Schedule')}
+              >
+                <Text style={styles.btnPlayerScheduleText}>Court Schedules →</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.btnPlayerSchedule, { flex: 1, backgroundColor: colors.brandGreenDeep, borderWidth: 1, borderColor: colors.brandGold }]}
+                onPress={() => setIsCreateModalOpen(true)}
+              >
+                <Text style={[styles.btnPlayerScheduleText, { color: colors.brandGold, fontWeight: '800' }]}>+ Host Tournament</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
@@ -321,6 +406,140 @@ export default function EventsScreen({ navigation }: any) {
           )}
         </View>
       </ScrollView>
+
+      {/* Floating Action Button for Organizers */}
+      {(activeRole === 'admin' || user?.role === 'admin' || user?.role === 'superadmin') && (
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => setIsCreateModalOpen(true)}
+          activeOpacity={0.85}
+        >
+          <Plus size={20} color={colors.brandGreenDeep} />
+          <Text style={styles.fabText}>CREATE EVENT</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Create Tournament Modal */}
+      <Modal
+        visible={isCreateModalOpen}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setIsCreateModalOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Sparkles size={16} color={colors.brandGold} />
+                  <Text style={styles.modalTitle}>HOST TOURNAMENT</Text>
+                </View>
+                <Text style={styles.modalSubtitle}>Sanction & publish an official event</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.modalCloseBtn}
+                onPress={() => setIsCreateModalOpen(false)}
+              >
+                <X size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
+              <Text style={styles.formLabel}>TOURNAMENT NAME *</Text>
+              <TextInput
+                style={styles.formInput}
+                placeholder="e.g. Baseline Championship 2026"
+                placeholderTextColor={colors.textMuted}
+                value={createName}
+                onChangeText={setCreateName}
+              />
+
+              <Text style={styles.formLabel}>VENUE / TENNIS CLUB</Text>
+              <TextInput
+                style={styles.formInput}
+                placeholder="e.g. Baseline Tennis Center"
+                placeholderTextColor={colors.textMuted}
+                value={createVenue}
+                onChangeText={setCreateVenue}
+              />
+
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.formLabel}>CITY</Text>
+                  <TextInput
+                    style={styles.formInput}
+                    placeholder="e.g. Mumbai"
+                    placeholderTextColor={colors.textMuted}
+                    value={createCity}
+                    onChangeText={setCreateCity}
+                  />
+                </View>
+                <View style={{ width: 100 }}>
+                  <Text style={styles.formLabel}>COURTS</Text>
+                  <TextInput
+                    style={styles.formInput}
+                    keyboardType="number-pad"
+                    placeholder="2"
+                    placeholderTextColor={colors.textMuted}
+                    value={createNumCourts}
+                    onChangeText={setCreateNumCourts}
+                  />
+                </View>
+              </View>
+
+              <Text style={styles.formLabel}>START DATE (YYYY-MM-DD)</Text>
+              <TextInput
+                style={styles.formInput}
+                placeholder="YYYY-MM-DD (e.g. 2026-12-01)"
+                placeholderTextColor={colors.textMuted}
+                value={createStartDate}
+                onChangeText={setCreateStartDate}
+              />
+
+              <Text style={styles.formLabel}>SURFACE</Text>
+              <View style={styles.surfacePillsRow}>
+                {['Hard', 'Clay', 'Grass'].map((s) => (
+                  <TouchableOpacity
+                    key={s}
+                    style={[styles.surfacePill, createSurface === s && styles.surfacePillActive]}
+                    onPress={() => setCreateSurface(s)}
+                  >
+                    <Text
+                      style={[
+                        styles.surfacePillText,
+                        createSurface === s && styles.surfacePillTextActive,
+                      ]}
+                    >
+                      {s === 'Hard' ? 'Hard 🎾' : s === 'Clay' ? 'Clay 🧱' : 'Grass 🌱'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalActionsRow}>
+              <TouchableOpacity
+                style={styles.btnModalCancel}
+                onPress={() => setIsCreateModalOpen(false)}
+                disabled={creating}
+              >
+                <Text style={styles.btnModalCancelText}>CANCEL</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.btnModalSubmit}
+                onPress={handleCreateTournament}
+                disabled={creating}
+              >
+                {creating ? (
+                  <ActivityIndicator color={colors.brandGreenDeep} size="small" />
+                ) : (
+                  <Text style={styles.btnModalSubmitText}>PUBLISH EVENT</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -706,5 +925,163 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceSecondary,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  btnHostHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.brandGold,
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+  },
+  btnHostHeaderText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: colors.brandGreenDeep,
+    letterSpacing: 0.8,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 20,
+    backgroundColor: colors.brandGold,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 30,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+  },
+  fabText: {
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 1,
+    color: colors.brandGreenDeep,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalCard: {
+    width: '100%',
+    backgroundColor: colors.surfaceCard,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: colors.borderLight,
+    padding: 20,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+    letterSpacing: 1.2,
+    color: colors.brandGreenDeep,
+  },
+  modalSubtitle: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  modalCloseBtn: {
+    padding: 4,
+  },
+  formLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    color: colors.textSecondary,
+    marginBottom: 6,
+    marginTop: 10,
+  },
+  formInput: {
+    backgroundColor: colors.canvasLight,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 13,
+    color: colors.textPrimary,
+    fontWeight: '600',
+  },
+  surfacePillsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 4,
+  },
+  surfacePill: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    backgroundColor: colors.canvasLight,
+    alignItems: 'center',
+  },
+  surfacePillActive: {
+    backgroundColor: colors.brandGreenDeep,
+    borderColor: colors.brandGreenDeep,
+  },
+  surfacePillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.textSecondary,
+  },
+  surfacePillTextActive: {
+    color: colors.brandGold,
+  },
+  modalActionsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 18,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
+  },
+  btnModalCancel: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    alignItems: 'center',
+    backgroundColor: colors.canvasLight,
+  },
+  btnModalCancelText: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1,
+    color: colors.textSecondary,
+  },
+  btnModalSubmit: {
+    flex: 2,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: colors.brandGold,
+    alignItems: 'center',
+  },
+  btnModalSubmitText: {
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1,
+    color: colors.brandGreenDeep,
   },
 });

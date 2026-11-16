@@ -31,13 +31,16 @@ def get_tournaments():
         entry_fee_disp = f"₹{int(t.entry_fee):,}" if getattr(t, 'entry_fee', None) else "Free"
         reg_count = Registration.query.filter_by(tournament_id=t.id).count()
 
+        venue_disp = getattr(t, 'venue_name', None) or getattr(t, 'court_names', None) or (t.academy.name if getattr(t, 'academy', None) else None) or "Baseline Tennis Center"
+        city_disp = getattr(t, 'city', None) or "Mumbai"
+
         data.append({
             "id": t.id,
             "name": t.name,
             "slug": t.url_slug,
             "surface": getattr(t, 'surface', None) or "Hard",
-            "venue": t.venue_name or t.city or "Baseline Tennis Center",
-            "city": t.city,
+            "venue": venue_disp,
+            "city": city_disp,
             "status": t.status,
             "is_live": t.status in ("in_progress", "live"),
             "dates": dates_disp,
@@ -52,6 +55,117 @@ def get_tournaments():
         "count": len(data),
         "tournaments": data
     }), 200
+
+
+@api_bp.route('/tournaments', methods=['POST'])
+@jwt_required()
+def create_tournament_api():
+    """
+    Mobile tournament creation endpoint for organizers.
+    Enforces RBAC: allows admin, superadmin, or automatically activates
+    regular player into organizer upon hosting their first event.
+    """
+    from flask_jwt_extended import get_jwt_identity
+    from app.services.utils.security import validate_name
+    from slugify import slugify
+
+    current_user_id = get_jwt_identity()
+    user = User.query.get(int(current_user_id)) if current_user_id and str(current_user_id).isdigit() else None
+    if not user:
+        return jsonify({"success": False, "message": "User not authenticated"}), 401
+
+    # If regular player is hosting, promote to admin role
+    if user.role not in ('admin', 'superadmin'):
+        user.role = 'admin'
+        db.session.add(user)
+
+    data = request.get_json() or {}
+    name = (data.get('name') or '').strip()
+    if not name or len(name) < 3:
+        return jsonify({"success": False, "message": "Tournament name must be at least 3 characters"}), 400
+
+    ok, clean_name = validate_name(name, min_len=3, max_len=100, field_name="Tournament Name")
+    if not ok:
+        return jsonify({"success": False, "message": clean_name}), 400
+
+    venue = (data.get('venue') or data.get('venue_name') or 'Baseline Tennis Center').strip()
+    city = (data.get('city') or 'Mumbai').strip()
+    surface = data.get('surface') or 'Hard'
+    description = (data.get('description') or '').strip()
+    num_courts = int(data.get('num_courts') or 2)
+
+    start_date = None
+    end_date = None
+    start_date_str = data.get('start_date')
+    end_date_str = data.get('end_date')
+    if start_date_str:
+        try:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+        except ValueError:
+            pass
+    if end_date_str:
+        try:
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+        except ValueError:
+            pass
+
+    if not start_date:
+        start_date = datetime.utcnow().date()
+    if not end_date or end_date < start_date:
+        end_date = start_date + timedelta(days=2)
+
+    url_slug = slugify(clean_name)
+    existing = Tournament.query.filter_by(url_slug=url_slug).first()
+    if existing:
+        url_slug = f"{url_slug}-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+
+    tournament = Tournament(
+        user_id=user.id,
+        creator_name=user.username or user.email,
+        name=clean_name,
+        url_slug=url_slug,
+        description=description,
+        court_names=venue,
+        has_categories=True,
+        start_date=start_date,
+        end_date=end_date,
+        num_courts=num_courts,
+        court_operating_start="09:00",
+        court_operating_end="19:00",
+        status="upcoming",
+    )
+    db.session.add(tournament)
+    db.session.flush()
+
+    # Automatically add a default Category so registrations & schedule work out of the box
+    default_cat = Category(
+        tournament_id=tournament.id,
+        name="Men's Singles Open",
+        format="single_elimination",
+        entry_fee=500.0,
+        max_participants=32,
+        status="registration_open",
+        surface=surface
+    )
+    db.session.add(default_cat)
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "message": "Tournament created successfully!",
+        "tournament": {
+            "id": tournament.id,
+            "name": tournament.name,
+            "slug": tournament.url_slug,
+            "venue": venue,
+            "city": city,
+            "surface": surface,
+            "status": tournament.status,
+            "dates": f"{start_date.strftime('%d %b')} - {end_date.strftime('%d %b %Y')}",
+            "categoriesCount": 1,
+            "registeredCount": 0
+        }
+    }), 201
 
 
 @api_bp.route('/tournaments/<slug>', methods=['GET'])
@@ -145,7 +259,8 @@ def get_order_of_play_api(slug):
         },
         "active_date": oop_data.get("active_date").isoformat() if oop_data.get("active_date") else None,
         "all_courts": oop_data.get("all_courts", list(courts_dict.keys())),
-        "schedule": serialized_courts
+        "schedule": serialized_courts,
+        "courts": serialized_courts
     }), 200
 
 
@@ -288,7 +403,13 @@ def get_leaderboard():
     gender = request.args.get('gender')
     limit = min(int(request.args.get('limit', 50)), 100)
 
-    query = Player.query
+    query = Player.query.filter(
+        ~Player.name.ilike('Player %'),
+        ~Player.name.ilike('Player_%'),
+        ~Player.name.ilike('Dummy%'),
+        ~Player.name.ilike('Test%'),
+        ~Player.name.ilike('Sample%')
+    )
     if category and category != 'All':
         query = query.filter_by(age_category=category)
     if gender and gender != 'All':
