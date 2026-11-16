@@ -1,12 +1,44 @@
 import axios from 'axios';
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 import { getAccessToken, getRefreshToken, setAccessToken, clearAllAuthTokens, getCourtToken } from '../utils/secureStore';
 
-// Auto-detect Mac/dev server IP when streaming over Wi-Fi to physical Expo Go
-const hostUri = Constants.expoConfig?.hostUri;
-const devIp = hostUri ? hostUri.split(':')[0] : '127.0.0.1';
+/**
+ * Resolves the backend API base URL dynamically across:
+ * 1. Explicit EXPO_PUBLIC_API_URL environment variable
+ * 2. Expo Go / physical device over local Wi-Fi (via hostUri / debuggerHost)
+ * 3. Android Emulator (10.0.2.2 connects to host Mac/PC)
+ * 4. iOS Simulator / Web (127.0.0.1)
+ */
+const resolveApiBaseUrl = (): string => {
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL.replace(/\/+$/, '');
+  }
 
-export const API_BASE_URL = `http://${devIp}:5001/api/v1`;
+  // Check Expo Constants for dev bundler host
+  const hostUri =
+    Constants.expoConfig?.hostUri ||
+    (Constants as any).expoGoConfig?.debuggerHost ||
+    (Constants as any).manifest2?.extra?.expoClient?.hostUri;
+
+  let devIp = '127.0.0.1';
+  if (hostUri) {
+    const rawHost = hostUri.split(':')[0];
+    if (rawHost) {
+      devIp = rawHost;
+    }
+  }
+
+  // On Android, 127.0.0.1 or localhost points to the emulator/device loopback rather than the host computer.
+  // 10.0.2.2 is the official loopback alias pointing to the host machine on the Android emulator.
+  if (Platform.OS === 'android' && (devIp === '127.0.0.1' || devIp === 'localhost' || !hostUri)) {
+    devIp = '10.0.2.2';
+  }
+
+  return `http://${devIp}:5001/api/v1`;
+};
+
+export const API_BASE_URL = resolveApiBaseUrl();
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -34,7 +66,6 @@ apiClient.interceptors.response.use(
 
     // Concurrency conflict detection (HTTP 409)
     if (error.response?.status === 409) {
-      // Return error for screen level toast/alert
       return Promise.reject(error);
     }
 
@@ -62,4 +93,3 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
