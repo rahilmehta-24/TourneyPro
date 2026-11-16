@@ -1,176 +1,266 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Clock, CheckCircle2, ChevronRight, Activity } from 'lucide-react-native';
+import { Clock, CheckCircle2, Activity, Calendar } from 'lucide-react-native';
 import { colors } from '../theme/colors';
+import { apiClient } from '../api/client';
+
+interface ScheduleMatch {
+  id: number;
+  court: string;
+  round_name: string;
+  category_name?: string;
+  time_display?: string;
+  time?: string;
+  is_not_before: boolean;
+  status: string;
+  score1?: string;
+  score2?: string;
+  p1: string;
+  p2: string;
+  winner_id?: number | null;
+  winner_name?: string;
+  p1_id?: number | null;
+  p2_id?: number | null;
+}
 
 export default function MyScheduleScreen() {
   const insets = useSafeAreaInsets();
   const [activeCourt, setActiveCourt] = useState('All');
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [tournamentName, setTournamentName] = useState<string | null>(null);
+  const [courts, setCourts] = useState<string[]>(['All']);
+  const [matches, setMatches] = useState<ScheduleMatch[]>([]);
 
-  const courts = ['All', 'Court 1', 'Court 2'];
+  const fetchSchedule = useCallback(async () => {
+    try {
+      // 1. Fetch available tournaments
+      const tourneyRes = await apiClient.get('/tournaments');
+      const tourneys = tourneyRes.data?.tournaments || [];
 
-  const scheduleMatches = [
-    {
-      id: 1,
-      court: 'Court 1',
-      round: 'Semi-Final',
-      time: '09:00 AM',
-      isNotBefore: false,
-      status: 'in_progress',
-      category: "Men's Singles Open",
-      p1: 'R. Federer (1)',
-      p2: 'R. Nadal (2)',
-      score1: '6  4  •',
-      score2: '4  6  •',
-      currentSet: 'Set 3 (3-2)',
-    },
-    {
-      id: 2,
-      court: 'Court 1',
-      round: 'Semi-Final',
-      time: '11:30 AM',
-      isNotBefore: true,
-      status: 'pending',
-      category: "Men's Singles Open",
-      p1: 'N. Djokovic (3)',
-      p2: 'C. Alcaraz (4)',
-      score1: '-',
-      score2: '-',
-      currentSet: 'To Follow',
-    },
-    {
-      id: 3,
-      court: 'Court 2',
-      round: 'Quarter-Final',
-      time: '09:30 AM',
-      isNotBefore: false,
-      status: 'completed',
-      category: "Boys U-18 Singles",
-      p1: 'A. Sharma (1)',
-      p2: 'V. Patel',
-      score1: '6  6',
-      score2: '3  2',
-      winner: 'A. Sharma',
-    },
-    {
-      id: 4,
-      court: 'Court 2',
-      round: 'Quarter-Final',
-      time: '11:00 AM',
-      isNotBefore: false,
-      status: 'pending',
-      category: "Boys U-18 Singles",
-      p1: 'K. Verma',
-      p2: 'R. Nair',
-      score1: '-',
-      score2: '-',
-      currentSet: 'Next On Court',
-    },
-  ];
+      if (!tourneys || tourneys.length === 0) {
+        setTournamentName(null);
+        setCourts(['All']);
+        setMatches([]);
+        return;
+      }
+
+      // Pick live tournament first, else the first upcoming/available one
+      const activeTourney = tourneys.find((t: any) => t.is_live || t.status === 'ongoing') || tourneys[0];
+      setTournamentName(activeTourney.name);
+
+      // 2. Fetch order of play for this tournament
+      const oopRes = await apiClient.get(`/tournaments/${activeTourney.slug}/order-of-play`);
+      const serializedCourts = oopRes.data?.courts || [];
+
+      const availableCourts: string[] = ['All'];
+      const aggregatedMatches: ScheduleMatch[] = [];
+
+      serializedCourts.forEach((courtGroup: any) => {
+        const courtName = courtGroup.court_name;
+        if (courtName && !availableCourts.includes(courtName)) {
+          availableCourts.push(courtName);
+        }
+
+        const courtMatches = courtGroup.matches || [];
+        courtMatches.forEach((m: any) => {
+          aggregatedMatches.push({
+            id: m.id,
+            court: courtName,
+            round_name: m.round_name || `Round ${m.round}`,
+            category_name: m.category_name || 'Tournament Match',
+            time_display: m.time_display || m.time || 'TBD',
+            time: m.time,
+            is_not_before: !!m.is_not_before,
+            status: m.status || 'pending',
+            score1: m.score1 || '-',
+            score2: m.score2 || '-',
+            p1: m.participant1?.name || 'TBD',
+            p2: m.participant2?.name || 'TBD',
+            p1_id: m.participant1?.id,
+            p2_id: m.participant2?.id,
+            winner_id: m.winner_id,
+          });
+        });
+      });
+
+      setCourts(availableCourts);
+      setMatches(aggregatedMatches);
+    } catch (err) {
+      console.error('Failed to load schedule:', err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSchedule();
+  }, [fetchSchedule]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchSchedule();
+  };
 
   const filteredMatches = activeCourt === 'All'
-    ? scheduleMatches
-    : scheduleMatches.filter((m) => m.court === activeCourt);
+    ? matches
+    : matches.filter((m) => m.court === activeCourt);
+
+  const activeCourtCount = courts.length > 1 ? courts.length - 1 : 0;
 
   return (
     <View style={[styles.container, { paddingTop: Math.max(insets.top, 16) }]}>
       {/* Header */}
       <View style={styles.header}>
-        <View>
+        <View style={{ flex: 1, marginRight: 8 }}>
           <Text style={styles.title}>ORDER OF PLAY</Text>
-          <Text style={styles.subtitle}>TODAY • 15 NOV 2026 • OFFICIAL SCHEDULE</Text>
+          <Text style={styles.subtitle} numberOfLines={1}>
+            {tournamentName ? tournamentName.toUpperCase() : 'OFFICIAL TOURNAMENT SCHEDULE'}
+          </Text>
         </View>
-        <View style={styles.courtBadge}>
-          <Text style={styles.courtBadgeText}>2 COURTS ACTIVE</Text>
-        </View>
+        {activeCourtCount > 0 && (
+          <View style={styles.courtBadge}>
+            <Text style={styles.courtBadgeText}>
+              {activeCourtCount} {activeCourtCount === 1 ? 'COURT' : 'COURTS'} ACTIVE
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Court Selection Tabs */}
-      <View style={styles.tabBar}>
-        {courts.map((court) => (
-          <TouchableOpacity
-            key={court}
-            style={[styles.tab, activeCourt === court && styles.tabActive]}
-            onPress={() => setActiveCourt(court)}
-          >
-            <Text style={[styles.tabText, activeCourt === court && styles.tabTextActive]}>
-              {court.toUpperCase()}
-            </Text>
+      {courts.length > 1 && (
+        <View style={styles.tabBar}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+            {courts.map((court) => (
+              <TouchableOpacity
+                key={court}
+                style={[styles.tab, activeCourt === court && styles.tabActive]}
+                onPress={() => setActiveCourt(court)}
+              >
+                <Text style={[styles.tabText, activeCourt === court && styles.tabTextActive]}>
+                  {court.toUpperCase()}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
+      {loading ? (
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={colors.brandGold} />
+          <Text style={styles.loadingText}>Loading court schedules...</Text>
+        </View>
+      ) : filteredMatches.length === 0 ? (
+        <ScrollView
+          contentContainerStyle={styles.emptyContainer}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brandGold} />}
+        >
+          <View style={styles.emptyIconCircle}>
+            <Calendar size={32} color={colors.brandGold} />
+          </View>
+          <Text style={styles.emptyTitle}>NO MATCHES SCHEDULED</Text>
+          <Text style={styles.emptySub}>
+            The order of play will appear here once published by the tournament director.
+          </Text>
+          <TouchableOpacity style={styles.btnRefresh} onPress={onRefresh}>
+            <Text style={styles.btnRefreshText}>REFRESH SCHEDULE</Text>
           </TouchableOpacity>
-        ))}
-      </View>
+        </ScrollView>
+      ) : (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.list}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brandGold} />}
+        >
+          {filteredMatches.map((m) => {
+            const isLive = m.status === 'in_progress' || m.status === 'live';
+            const isDone = m.status === 'completed';
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.list}>
-        {filteredMatches.map((m) => {
-          const isLive = m.status === 'in_progress';
-          const isDone = m.status === 'completed';
+            return (
+              <View key={m.id} style={[styles.matchCard, isLive && styles.matchCardLive]}>
+                {/* Card Meta */}
+                <View style={styles.cardMeta}>
+                  <View style={styles.courtTag}>
+                    <Text style={styles.courtTagText}>{m.court}</Text>
+                  </View>
+                  <View style={styles.timeTag}>
+                    <Clock size={12} color={isLive ? colors.statusLive : colors.textSecondary} />
+                    <Text style={[styles.timeText, isLive && { color: colors.statusLive, fontWeight: '800' }]}>
+                      {m.is_not_before ? `NB ${m.time_display}` : m.time_display}
+                    </Text>
+                  </View>
+                  {isLive && (
+                    <View style={styles.liveIndicator}>
+                      <Activity size={12} color={colors.statusLive} />
+                      <Text style={styles.liveText}>LIVE</Text>
+                    </View>
+                  )}
+                  {isDone && (
+                    <View style={styles.doneIndicator}>
+                      <CheckCircle2 size={12} color={colors.statusSuccess} />
+                      <Text style={styles.doneText}>FINAL</Text>
+                    </View>
+                  )}
+                </View>
 
-          return (
-            <View key={m.id} style={[styles.matchCard, isLive && styles.matchCardLive]}>
-              {/* Card Meta */}
-              <View style={styles.cardMeta}>
-                <View style={styles.courtTag}>
-                  <Text style={styles.courtTagText}>{m.court}</Text>
+                {/* Category */}
+                <Text style={styles.categoryText}>
+                  {m.category_name} • {m.round_name}
+                </Text>
+
+                {/* Players & Scores */}
+                <View style={styles.scoreboard}>
+                  <View style={styles.playerRow}>
+                    <Text
+                      style={[
+                        styles.playerName,
+                        isDone && m.winner_id != null && m.winner_id === m.p1_id ? styles.playerWinner : undefined,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {m.p1}
+                    </Text>
+                    <Text style={styles.scoreText}>{m.score1}</Text>
+                  </View>
+
+                  <View style={styles.divider} />
+
+                  <View style={styles.playerRow}>
+                    <Text
+                      style={[
+                        styles.playerName,
+                        isDone && m.winner_id != null && m.winner_id === m.p2_id ? styles.playerWinner : undefined,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {m.p2}
+                    </Text>
+                    <Text style={styles.scoreText}>{m.score2}</Text>
+                  </View>
                 </View>
-                <View style={styles.timeTag}>
-                  <Clock size={12} color={isLive ? colors.statusLive : colors.textSecondary} />
-                  <Text style={[styles.timeText, isLive && { color: colors.statusLive, fontWeight: '800' }]}>
-                    {m.isNotBefore ? `NB ${m.time}` : m.time}
-                  </Text>
-                </View>
+
+                {/* Status Footer */}
                 {isLive && (
-                  <View style={styles.liveIndicator}>
-                    <Activity size={12} color={colors.statusLive} />
-                    <Text style={styles.liveText}>LIVE</Text>
-                  </View>
-                )}
-                {isDone && (
-                  <View style={styles.doneIndicator}>
-                    <CheckCircle2 size={12} color={colors.statusSuccess} />
-                    <Text style={styles.doneText}>FINAL</Text>
+                  <View style={styles.liveBanner}>
+                    <Text style={styles.liveBannerText}>Match In Progress</Text>
                   </View>
                 )}
               </View>
-
-              {/* Category */}
-              <Text style={styles.categoryText}>{m.category} • {m.round}</Text>
-
-              {/* Players & Scores */}
-              <View style={styles.scoreboard}>
-                <View style={styles.playerRow}>
-                  <Text style={[styles.playerName, isDone && m.winner?.includes(m.p1.split(' ')[0]) && styles.playerWinner]}>
-                    {m.p1}
-                  </Text>
-                  <Text style={styles.scoreText}>{m.score1}</Text>
-                </View>
-
-                <View style={styles.divider} />
-
-                <View style={styles.playerRow}>
-                  <Text style={[styles.playerName, isDone && m.winner?.includes(m.p2.split(' ')[0]) && styles.playerWinner]}>
-                    {m.p2}
-                  </Text>
-                  <Text style={styles.scoreText}>{m.score2}</Text>
-                </View>
-              </View>
-
-              {/* Status Footer */}
-              {isLive && (
-                <View style={styles.liveBanner}>
-                  <Text style={styles.liveBannerText}>Ongoing: {m.currentSet}</Text>
-                </View>
-              )}
-            </View>
-          );
-        })}
-      </ScrollView>
+            );
+          })}
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -197,9 +287,9 @@ const styles = StyleSheet.create({
     color: colors.brandGreenDeep,
   },
   subtitle: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '700',
-    letterSpacing: 1,
+    letterSpacing: 0.8,
     color: colors.brandGold,
     marginTop: 2,
   },
@@ -219,7 +309,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     backgroundColor: colors.surfaceSecondary,
-    gap: 8,
   },
   tab: {
     paddingVertical: 6,
@@ -242,6 +331,63 @@ const styles = StyleSheet.create({
   list: {
     padding: 20,
     paddingBottom: 30,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    letterSpacing: 0.5,
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+    marginTop: 40,
+  },
+  emptyIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.surfaceSecondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: 1.2,
+    color: colors.brandGreenDeep,
+    marginBottom: 8,
+  },
+  emptySub: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 20,
+  },
+  btnRefresh: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: colors.brandGreenCourt,
+    borderRadius: 8,
+  },
+  btnRefreshText: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1,
+    color: '#FFFFFF',
   },
   matchCard: {
     backgroundColor: colors.surfaceCard,
@@ -330,6 +476,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: colors.textPrimary,
+    flex: 1,
+    marginRight: 12,
   },
   playerWinner: {
     color: colors.brandGreenCourt,
@@ -359,4 +507,3 @@ const styles = StyleSheet.create({
     color: '#B76E00',
   },
 });
-

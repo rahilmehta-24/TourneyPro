@@ -399,7 +399,7 @@ export default function ProfileScreen() {
               <Text style={styles.fieldLabel}>FULL NAME</Text>
               <TextInput
                 style={styles.modalInput}
-                placeholder="e.g. Carlos Alcaraz"
+                placeholder="e.g. Full Name"
                 placeholderTextColor={colors.textMuted}
                 value={adminFullName}
                 onChangeText={setAdminFullName}

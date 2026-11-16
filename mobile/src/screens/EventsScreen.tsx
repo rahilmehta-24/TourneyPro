@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,64 +8,81 @@ import {
   TextInput,
   RefreshControl,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Search, MapPin, Calendar, Trophy, ChevronRight, Shield, CheckCircle2, KeyRound, LogOut } from 'lucide-react-native';
+import { Search, MapPin, Calendar, Trophy, ChevronRight, Shield, CheckCircle2, KeyRound, LogOut, AlertCircle } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 import { useAuthStore } from '../state/authStore';
+import { apiClient } from '../api/client';
+
+export interface TournamentItem {
+  id: number;
+  name: string;
+  slug: string;
+  surface: string;
+  venue: string;
+  city?: string;
+  status: string;
+  is_live: boolean;
+  dates: string;
+  entryFee: string;
+  categoriesCount: number;
+  registeredCount: number;
+}
 
 export default function EventsScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [tournaments, setTournaments] = useState<TournamentItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSurface, setSelectedSurface] = useState('All');
   const { activeRole, setActiveRole, user, logout } = useAuthStore();
 
   const surfaces = ['All', 'Clay 🧱', 'Hard 🎾', 'Grass 🌱'];
 
-  const sampleEvents = [
-    {
-      id: 1,
-      name: 'Baseline National Invitational 2026',
-      slug: 'baseline-championship',
-      dates: 'Nov 15 - 18, 2026',
-      surface: 'Clay 🧱',
-      venue: 'South Mumbai Lawn Tennis Club',
-      status: 'Live & In Progress',
-      entryFee: '₹1,500',
-      categoriesCount: 6,
-      registeredCount: 48,
-    },
-    {
-      id: 2,
-      name: 'Monsoon Clay Masters Open',
-      slug: 'monsoon-clay-masters',
-      dates: 'Dec 02 - 05, 2026',
-      surface: 'Clay 🧱',
-      venue: 'Singhania Sports Academy, Thane',
-      status: 'Registration Open',
-      entryFee: '₹1,000',
-      categoriesCount: 4,
-      registeredCount: 22,
-    },
-    {
-      id: 3,
-      name: 'Deccan Hardcourt Junior Trophy',
-      slug: 'deccan-junior-trophy',
-      dates: 'Dec 12 - 14, 2026',
-      surface: 'Hard 🎾',
-      venue: 'Deccan Gymkhana, Pune',
-      status: 'Upcoming',
-      entryFee: '₹800',
-      categoriesCount: 8,
-      registeredCount: 35,
-    },
-  ];
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 800);
+  const fetchTournaments = async () => {
+    try {
+      const res = await apiClient.get('/tournaments');
+      if (res.data?.success && Array.isArray(res.data.tournaments)) {
+        setTournaments(res.data.tournaments);
+      } else {
+        setTournaments([]);
+      }
+    } catch {
+      setTournaments([]);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  useEffect(() => {
+    fetchTournaments();
+  }, []);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchTournaments();
+    setRefreshing(false);
+  };
+
+  const filteredEvents = tournaments.filter((event) => {
+    const matchesSearch =
+      event.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      event.venue.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (event.city && event.city.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    if (!matchesSearch) return false;
+
+    if (selectedSurface === 'All') return true;
+    if (selectedSurface.includes('Clay')) return (event.surface || '').toLowerCase().includes('clay');
+    if (selectedSurface.includes('Hard')) return (event.surface || '').toLowerCase().includes('hard');
+    if (selectedSurface.includes('Grass')) return (event.surface || '').toLowerCase().includes('grass');
+    return true;
+  });
+
+  const featuredEvent = tournaments.find((t) => t.is_live) || tournaments[0] || null;
 
   return (
     <View style={[styles.container, { paddingTop: Math.max(insets.top, 16) }]}>
@@ -116,20 +133,20 @@ export default function EventsScreen({ navigation }: any) {
               <Text style={styles.adminBannerTitle}>ORGANIZER COMMAND CENTER</Text>
             </View>
             <Text style={styles.adminBannerSub}>
-              3 pending entries awaiting your approval for Baseline National Invitational.
+              Organizer dashboard active. Manage entries, publish draws, and schedule matches.
             </Text>
             <View style={styles.adminActionsRow}>
               <TouchableOpacity
                 style={styles.btnAdminAction}
                 onPress={() => navigation.navigate('My Schedule')}
               >
-                <Text style={styles.btnAdminActionText}>Review Entries (3)</Text>
+                <Text style={styles.btnAdminActionText}>Order of Play</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.btnAdminAction, { backgroundColor: colors.surfaceCard }]}
                 onPress={() => navigation.navigate('Scoring')}
               >
-                <Text style={[styles.btnAdminActionText, { color: colors.brandGreenDeep }]}>Court PINs</Text>
+                <Text style={[styles.btnAdminActionText, { color: colors.brandGreenDeep }]}>Court Scoring</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -139,16 +156,16 @@ export default function EventsScreen({ navigation }: any) {
           <View style={styles.playerBanner}>
             <View style={styles.roleBannerHeader}>
               <CheckCircle2 size={16} color={colors.brandGreenCourt} />
-              <Text style={styles.playerBannerTitle}>MY NEXT MATCH TODAY</Text>
+              <Text style={styles.playerBannerTitle}>TOURNAMENT CIRCUIT</Text>
             </View>
             <Text style={styles.playerBannerDetail}>
-              Men's Singles SF • Court 1 • Scheduled 09:00 AM (vs. R. Nadal)
+              Explore sanctioned events, register for categories, and view live order of play.
             </Text>
             <TouchableOpacity
               style={styles.btnPlayerSchedule}
               onPress={() => navigation.navigate('My Schedule')}
             >
-              <Text style={styles.btnPlayerScheduleText}>View My Court Schedule →</Text>
+              <Text style={styles.btnPlayerScheduleText}>View Court Schedules →</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -157,10 +174,10 @@ export default function EventsScreen({ navigation }: any) {
           <View style={styles.umpireBanner}>
             <View style={styles.roleBannerHeader}>
               <KeyRound size={16} color="#2B6CB0" />
-              <Text style={styles.umpireBannerTitle}>ASSIGNED COURT: COURT 1</Text>
+              <Text style={styles.umpireBannerTitle}>COURT OFFICIAL MODE</Text>
             </View>
             <Text style={styles.umpireBannerSub}>
-              Live Scorekeeper active. Ready to score R. Federer vs R. Nadal.
+              Ready to record official game and tiebreak scores on assigned courts.
             </Text>
             <TouchableOpacity
               style={styles.btnUmpireAction}
@@ -218,63 +235,90 @@ export default function EventsScreen({ navigation }: any) {
           ))}
         </ScrollView>
 
-        {/* Featured Live Banner */}
-        <View style={styles.featuredCard}>
-          <View style={styles.liveTagRow}>
-            <View style={styles.livePulse} />
-            <Text style={styles.liveTagText}>CURRENTLY LIVE • COURT 1 & 2</Text>
+        {/* Featured Live Banner (only if live or upcoming tournament exists) */}
+        {featuredEvent && (
+          <View style={styles.featuredCard}>
+            <View style={styles.liveTagRow}>
+              <View style={styles.livePulse} />
+              <Text style={styles.liveTagText}>
+                {featuredEvent.is_live ? 'CURRENTLY LIVE • OFFICIAL CIRCUIT' : 'FEATURED TOURNAMENT'}
+              </Text>
+            </View>
+            <Text style={styles.featuredTitle}>{featuredEvent.name}</Text>
+            <Text style={styles.featuredMeta}>
+              {featuredEvent.venue} • {featuredEvent.dates || 'Dates TBA'}
+            </Text>
+            <TouchableOpacity
+              style={styles.btnWatchLive}
+              onPress={() => navigation.navigate('My Schedule', { slug: featuredEvent.slug })}
+            >
+              <Text style={styles.btnWatchLiveText}>View Order of Play & Draws</Text>
+              <ChevronRight size={16} color={colors.brandGreenDeep} />
+            </TouchableOpacity>
           </View>
-          <Text style={styles.featuredTitle}>Baseline National Championship</Text>
-          <Text style={styles.featuredMeta}>Men's Singles Quarter-Finals • Center Court</Text>
-          <TouchableOpacity
-            style={styles.btnWatchLive}
-            onPress={() => navigation.navigate('My Schedule')}
-          >
-            <Text style={styles.btnWatchLiveText}>View Order of Play & Draws</Text>
-            <ChevronRight size={16} color={colors.brandGreenDeep} />
-          </TouchableOpacity>
-        </View>
+        )}
 
         {/* Tournament Cards List */}
         <View style={styles.listSection}>
-          <Text style={styles.sectionHeader}>ALL TOURNAMENTS ({sampleEvents.length})</Text>
+          <Text style={styles.sectionHeader}>ALL TOURNAMENTS ({filteredEvents.length})</Text>
 
-          {sampleEvents.map((event) => (
-            <TouchableOpacity
-              key={event.id}
-              style={styles.card}
-              activeOpacity={0.88}
-              onPress={() => navigation.navigate('My Schedule', { slug: event.slug })}
-            >
-              <View style={styles.cardHeader}>
-                <View style={styles.statusBadge}>
-                  <Text style={styles.statusText}>{event.status.toUpperCase()}</Text>
+          {loading ? (
+            <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+              <ActivityIndicator color={colors.brandGreenDeep} size="large" />
+              <Text style={{ marginTop: 12, color: colors.textSecondary, fontSize: 13 }}>
+                Loading circuit events...
+              </Text>
+            </View>
+          ) : filteredEvents.length === 0 ? (
+            <View style={{ backgroundColor: colors.surfaceCard, borderRadius: 12, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: colors.borderLight, marginVertical: 10 }}>
+              <AlertCircle size={32} color={colors.textMuted} style={{ marginBottom: 10 }} />
+              <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textPrimary, marginBottom: 4 }}>
+                No Tournaments Found
+              </Text>
+              <Text style={{ fontSize: 12, color: colors.textSecondary, textAlign: 'center', lineHeight: 18 }}>
+                {tournaments.length === 0
+                  ? 'There are currently no active tournaments in the database. New events will appear here once published by organizers.'
+                  : 'No tournaments match your current filter. Try adjusting your search query or surface filter.'}
+              </Text>
+            </View>
+          ) : (
+            filteredEvents.map((event) => (
+              <TouchableOpacity
+                key={event.id}
+                style={styles.card}
+                activeOpacity={0.88}
+                onPress={() => navigation.navigate('My Schedule', { slug: event.slug })}
+              >
+                <View style={styles.cardHeader}>
+                  <View style={styles.statusBadge}>
+                    <Text style={styles.statusText}>{(event.status || 'Active').toUpperCase()}</Text>
+                  </View>
+                  <Text style={styles.feeBadge}>{event.entryFee} Entry</Text>
                 </View>
-                <Text style={styles.feeBadge}>{event.entryFee} Entry</Text>
-              </View>
 
-              <Text style={styles.cardTitle}>{event.name}</Text>
+                <Text style={styles.cardTitle}>{event.name}</Text>
 
-              <View style={styles.cardRow}>
-                <Calendar size={14} color={colors.textSecondary} />
-                <Text style={styles.cardDetail}>{event.dates}</Text>
-              </View>
-
-              <View style={styles.cardRow}>
-                <MapPin size={14} color={colors.textSecondary} />
-                <Text style={styles.cardDetail}>{event.venue}</Text>
-              </View>
-
-              <View style={styles.cardFooter}>
-                <Text style={styles.categoryCount}>
-                  {event.categoriesCount} Categories • {event.registeredCount} Entries
-                </Text>
-                <View style={styles.cardArrow}>
-                  <ChevronRight size={18} color={colors.brandGreenCourt} />
+                <View style={styles.cardRow}>
+                  <Calendar size={14} color={colors.textSecondary} />
+                  <Text style={styles.cardDetail}>{event.dates || 'Dates TBA'}</Text>
                 </View>
-              </View>
-            </TouchableOpacity>
-          ))}
+
+                <View style={styles.cardRow}>
+                  <MapPin size={14} color={colors.textSecondary} />
+                  <Text style={styles.cardDetail}>{event.venue}</Text>
+                </View>
+
+                <View style={styles.cardFooter}>
+                  <Text style={styles.categoryCount}>
+                    {event.categoriesCount} Categories • {event.registeredCount} Entries
+                  </Text>
+                  <View style={styles.cardArrow}>
+                    <ChevronRight size={18} color={colors.brandGreenCourt} />
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
         </View>
       </ScrollView>
     </View>

@@ -20,9 +20,37 @@ def get_tournaments():
         query = query.filter_by(status=status)
     tournaments = query.all()
 
+    data = []
+    for t in tournaments:
+        dates_disp = ""
+        if t.start_date and t.end_date:
+            dates_disp = f"{t.start_date.strftime('%b %d')} - {t.end_date.strftime('%b %d, %Y')}"
+        elif t.start_date:
+            dates_disp = t.start_date.strftime('%b %d, %Y')
+
+        entry_fee_disp = f"₹{int(t.entry_fee):,}" if getattr(t, 'entry_fee', None) else "Free"
+        reg_count = Registration.query.filter_by(tournament_id=t.id).count()
+
+        data.append({
+            "id": t.id,
+            "name": t.name,
+            "slug": t.url_slug,
+            "surface": getattr(t, 'surface', None) or "Hard",
+            "venue": t.venue_name or t.city or "Baseline Tennis Center",
+            "city": t.city,
+            "status": t.status,
+            "is_live": t.status in ("in_progress", "live"),
+            "dates": dates_disp,
+            "entryFee": entry_fee_disp,
+            "categoriesCount": len(t.categories) if t.categories else 0,
+            "registeredCount": reg_count,
+            "created_at": t.created_at.isoformat() if t.created_at else None
+        })
+
     return jsonify({
         "success": True,
-        "tournaments": tournaments_schema.dump(tournaments)
+        "count": len(data),
+        "tournaments": data
     }), 200
 
 
@@ -248,3 +276,73 @@ def toggle_category_publish(category_id):
         "draw_published": category.draw_published,
         "message": f"Draw {'published' if category.draw_published else 'unpublished'} successfully"
     }), 200
+
+
+@api_bp.route('/leaderboard', methods=['GET'])
+def get_leaderboard():
+    """List genuine ranked players from the registry for mobile leaderboard."""
+    from app.domain.models import Player
+    from sqlalchemy import desc
+
+    category = request.args.get('category')
+    gender = request.args.get('gender')
+    limit = min(int(request.args.get('limit', 50)), 100)
+
+    query = Player.query
+    if category and category != 'All':
+        query = query.filter_by(age_category=category)
+    if gender and gender != 'All':
+        query = query.filter_by(gender=gender)
+
+    players = query.order_by(desc(Player.total_points)).limit(limit).all()
+
+    rankings = []
+    for idx, p in enumerate(players, start=1):
+        total_m = p.matches_played or 0
+        won_m = p.matches_won or 0
+        win_rate = round((won_m / total_m * 100), 1) if total_m > 0 else 0.0
+        rankings.append({
+            "rank": idx,
+            "id": p.id,
+            "name": p.name,
+            "points": int(p.total_points or 0),
+            "age_category": p.age_category,
+            "gender": p.gender,
+            "academy": p.academy or "Independent",
+            "matches_played": total_m,
+            "matches_won": won_m,
+            "win_rate": win_rate
+        })
+
+    return jsonify({
+        "success": True,
+        "count": len(rankings),
+        "rankings": rankings
+    }), 200
+
+
+@api_bp.route('/announcements', methods=['GET'])
+def get_announcements():
+    """List genuine announcements from registered academies & platform notices."""
+    from app.domain.models import AcademyAnnouncement
+    announcements = AcademyAnnouncement.query.order_by(
+        AcademyAnnouncement.created_at.desc()
+    ).limit(20).all()
+
+    data = []
+    for a in announcements:
+        data.append({
+            "id": a.id,
+            "title": a.title,
+            "desc": a.content,
+            "date": a.created_at.strftime("%d %b %Y") if a.created_at else "",
+            "academy_id": a.academy_id,
+            "academy_name": a.academy.name if a.academy else "Baseline Society"
+        })
+
+    return jsonify({
+        "success": True,
+        "count": len(data),
+        "announcements": data
+    }), 200
+

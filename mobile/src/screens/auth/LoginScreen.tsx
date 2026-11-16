@@ -429,7 +429,7 @@ export default function LoginScreen() {
 
             <TextInput
               style={styles.pinInput}
-              placeholder="123456"
+              placeholder="• • • • • •"
               placeholderTextColor={colors.textMuted}
               keyboardType="number-pad"
               maxLength={6}
@@ -459,7 +459,7 @@ export default function LoginScreen() {
         )}
 
         {/* Continue as Spectator */}
-        <View style={styles.demoSection}>
+        <View style={styles.spectatorSection}>
           <TouchableOpacity
             style={styles.btnSpectator}
             onPress={handleSpectatorMode}
@@ -716,47 +716,9 @@ const styles = StyleSheet.create({
     color: colors.brandGreenCourt,
   },
 
-  /* Quick Demo Roles */
-  demoSection: {
+  /* Spectator Action */
+  spectatorSection: {
     marginTop: 6,
-  },
-  demoTitle: {
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1,
-    color: colors.brandGold,
-    marginBottom: 10,
-  },
-  demoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surfaceCard,
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    marginBottom: 8,
-  },
-  demoIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  demoTextCol: {
-    flex: 1,
-  },
-  demoRoleName: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: colors.textPrimary,
-  },
-  demoRoleSub: {
-    fontSize: 11,
-    color: colors.textSecondary,
-    marginTop: 2,
   },
   btnSpectator: {
     backgroundColor: 'transparent',

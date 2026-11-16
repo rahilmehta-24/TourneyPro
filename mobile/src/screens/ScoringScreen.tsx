@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,43 +6,148 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ShieldCheck, Plus, Minus, KeyRound, Award } from 'lucide-react-native';
+import { ShieldCheck, KeyRound, Award, RefreshCw, LogOut } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 import { useAuthStore } from '../state/authStore';
+import { apiClient } from '../api/client';
+
+interface CourtMatch {
+  id: number;
+  court: string;
+  round_name: string;
+  category_name?: string;
+  lock_version?: number;
+  status: string;
+  score1?: string;
+  score2?: string;
+  participant1?: { id?: number; name?: string };
+  participant2?: { id?: number; name?: string };
+}
 
 export default function ScoringScreen() {
   const insets = useSafeAreaInsets();
-  const { courtSession, activeRole, loginCourt } = useAuthStore();
+  const { courtSession, activeRole, loginCourt, logout } = useAuthStore();
   const [pin, setPin] = useState('');
-  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(!!courtSession);
+  const [currentMatch, setCurrentMatch] = useState<CourtMatch | null>(null);
 
   // Scorekeeper state
-  const [p1Games, setP1Games] = useState(5);
-  const [p2Games, setP2Games] = useState(4);
-  const [p1Points, setP1Points] = useState('40');
-  const [p2Points, setP2Points] = useState('30');
+  const [p1Games, setP1Games] = useState(0);
+  const [p2Games, setP2Games] = useState(0);
+  const [p1Points, setP1Points] = useState('0');
+  const [p2Points, setP2Points] = useState('0');
   const [currentSet, setCurrentSet] = useState(1);
   const [server, setServer] = useState<'p1' | 'p2'>('p1');
 
   const pointsList = ['0', '15', '30', '40', 'AD'];
 
-  const handleUnlockPin = () => {
-    if (pin === '1234' || pin === '123456') {
-      setIsUnlocked(true);
-      loginCourt({
-        court: 'Court 1',
-        role: 'official',
-        tournament: {
-          id: 1,
-          name: 'Baseline National Invitational',
-          slug: 'baseline-championship',
-        },
-      }, 'demo_jwt_court_session_token');
-    } else {
-      Alert.alert('Invalid PIN', 'Please enter a valid Court Official access PIN (e.g. 123456)');
+  const fetchActiveMatch = useCallback(async (slug?: string, courtName?: string) => {
+    const currentSlug = slug || courtSession?.tournament?.slug;
+    const currentCourt = courtName || courtSession?.court;
+    if (!currentSlug) return;
+
+    try {
+      const res = await apiClient.get(`/tournaments/${currentSlug}/order-of-play`, {
+        params: currentCourt && currentCourt !== 'All Courts' ? { court: currentCourt } : {},
+      });
+      const courts = res.data?.courts || [];
+      let foundMatch: CourtMatch | null = null;
+
+      for (const courtGroup of courts) {
+        if (!currentCourt || currentCourt === 'All Courts' || courtGroup.court_name === currentCourt) {
+          const match = courtGroup.matches?.find(
+            (m: any) => m.status === 'in_progress' || m.status === 'live' || m.status === 'pending'
+          );
+          if (match) {
+            foundMatch = {
+              id: match.id,
+              court: courtGroup.court_name,
+              round_name: match.round_name,
+              category_name: match.category_name,
+              lock_version: match.lock_version || 1,
+              status: match.status,
+              score1: match.score1,
+              score2: match.score2,
+              participant1: match.participant1,
+              participant2: match.participant2,
+            };
+            break;
+          }
+        }
+      }
+
+      setCurrentMatch(foundMatch);
+      if (foundMatch) {
+        const s1 = parseInt(foundMatch.score1 || '0', 10);
+        const s2 = parseInt(foundMatch.score2 || '0', 10);
+        setP1Games(isNaN(s1) ? 0 : s1);
+        setP2Games(isNaN(s2) ? 0 : s2);
+      }
+    } catch (err) {
+      console.error('Failed to load court match:', err);
     }
+  }, [courtSession]);
+
+  useEffect(() => {
+    if (courtSession) {
+      setIsUnlocked(true);
+      fetchActiveMatch();
+    }
+  }, [courtSession, fetchActiveMatch]);
+
+  const handleUnlockPin = async () => {
+    const cleanPin = pin.trim();
+    if (!cleanPin) {
+      Alert.alert('Required', 'Please enter your court access PIN.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await apiClient.post('/auth/court-login', { pin: cleanPin });
+      if (res.data?.success && res.data?.access_token) {
+        await loginCourt(
+          {
+            court: res.data.court,
+            role: res.data.role,
+            tournament: res.data.tournament,
+          },
+          res.data.access_token
+        );
+        setIsUnlocked(true);
+        fetchActiveMatch(res.data.tournament?.slug, res.data.court);
+      } else {
+        Alert.alert('Access Denied', res.data?.message || 'Invalid access PIN.');
+      }
+    } catch (err: any) {
+      Alert.alert(
+        'Authentication Failed',
+        err.response?.data?.message || 'Invalid or expired court access PIN.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEndSession = async () => {
+    Alert.alert('Lock Court', 'Are you sure you want to exit court scoring mode?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Lock & Exit',
+        style: 'destructive',
+        onPress: async () => {
+          setIsUnlocked(false);
+          setPin('');
+          setCurrentMatch(null);
+          await logout();
+        },
+      },
+    ]);
   };
 
   const incrementPoint = (player: 'p1' | 'p2') => {
@@ -66,6 +171,27 @@ export default function ScoringScreen() {
     }
   };
 
+  const handleBroadcastScore = async () => {
+    if (!currentMatch) {
+      Alert.alert('No Match', 'No match is currently assigned to this court.');
+      return;
+    }
+    setLoading(true);
+    try {
+      await apiClient.post(`/matches/${currentMatch.id}/report`, {
+        score1: String(p1Games),
+        score2: String(p2Games),
+        status: 'in_progress',
+        lock_version: currentMatch.lock_version || 1,
+      });
+      Alert.alert('Score Broadcasted', 'Score synchronized with tournament live center.');
+    } catch (err: any) {
+      Alert.alert('Sync Notice', err.response?.data?.message || 'Could not synchronize score with server.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!isUnlocked && activeRole !== 'admin') {
     return (
       <View style={[styles.container, { paddingTop: Math.max(insets.top, 16) }]}>
@@ -75,7 +201,7 @@ export default function ScoringScreen() {
           </View>
           <Text style={styles.pinTitle}>COURT SCORING MODE</Text>
           <Text style={styles.pinDesc}>
-            Enter the 4 to 6 digit Tournament Access PIN provided by the tournament director.
+            Enter the 4 to 6 digit Tournament Access PIN provided by the tournament director to unlock court scorekeeping.
           </Text>
 
           <TextInput
@@ -89,80 +215,137 @@ export default function ScoringScreen() {
             secureTextEntry
           />
 
-          <TouchableOpacity style={styles.btnUnlock} onPress={handleUnlockPin}>
-            <Text style={styles.btnUnlockText}>UNLOCK COURT SCORING</Text>
+          <TouchableOpacity
+            style={styles.btnUnlock}
+            onPress={handleUnlockPin}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color={colors.brandGold} />
+            ) : (
+              <Text style={styles.btnUnlockText}>UNLOCK COURT SCORING</Text>
+            )}
           </TouchableOpacity>
-
-          <Text style={styles.pinHelp}>Demo PIN: 123456</Text>
         </View>
       </View>
     );
   }
 
+  const courtLabel = courtSession?.court || 'COURT';
+  const tournamentTitle = courtSession?.tournament?.name || 'LIVE TOURNAMENT';
+  const player1Name = currentMatch?.participant1?.name || 'Player 1 (TBD)';
+  const player2Name = currentMatch?.participant2?.name || 'Player 2 (TBD)';
+  const matchCategory = currentMatch
+    ? `${currentMatch.category_name} • ${currentMatch.round_name}`
+    : 'No match currently assigned';
+
   return (
     <View style={[styles.container, { paddingTop: Math.max(insets.top, 16) }]}>
       <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>LIVE SCOREKEEPER</Text>
-          <Text style={styles.subtitle}>COURT 1 • MEN'S SINGLES SF • SET {currentSet}</Text>
+        <View style={{ flex: 1, marginRight: 8 }}>
+          <Text style={styles.title}>{courtLabel.toUpperCase()}</Text>
+          <Text style={styles.subtitle} numberOfLines={1}>
+            {tournamentTitle.toUpperCase()} • SET {currentSet}
+          </Text>
         </View>
-        <View style={styles.lockBadge}>
-          <ShieldCheck size={14} color={colors.statusSuccess} />
-          <Text style={styles.lockBadgeText}>v2 SYNCED</Text>
-        </View>
-      </View>
-
-      <View style={styles.scorerCard}>
-        {/* Player 1 Row */}
-        <View style={[styles.playerScoreRow, server === 'p1' && styles.serverActiveRow]}>
-          <View style={styles.playerInfo}>
-            <Text style={styles.scorerPlayerName}>R. Federer</Text>
-            {server === 'p1' && <Text style={styles.servingBadge}>🎾 SERVING</Text>}
-          </View>
-          <View style={styles.scoreBlocks}>
-            <Text style={styles.gamesBlock}>{p1Games}</Text>
-            <TouchableOpacity style={styles.pointsBlock} onPress={() => incrementPoint('p1')}>
-              <Text style={styles.pointsText}>{p1Points}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={styles.scoreDivider} />
-
-        {/* Player 2 Row */}
-        <View style={[styles.playerScoreRow, server === 'p2' && styles.serverActiveRow]}>
-          <View style={styles.playerInfo}>
-            <Text style={styles.scorerPlayerName}>R. Nadal</Text>
-            {server === 'p2' && <Text style={styles.servingBadge}>🎾 SERVING</Text>}
-          </View>
-          <View style={styles.scoreBlocks}>
-            <Text style={styles.gamesBlock}>{p2Games}</Text>
-            <TouchableOpacity style={styles.pointsBlock} onPress={() => incrementPoint('p2')}>
-              <Text style={styles.pointsText}>{p2Points}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-
-      {/* Tactile Action Controls */}
-      <View style={styles.controlsRow}>
-        <TouchableOpacity
-          style={styles.actionBtnSecondary}
-          onPress={() => {
-            setP1Points('0');
-            setP2Points('0');
-          }}
-        >
-          <Text style={styles.actionBtnSecondaryText}>RESET GAME</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.actionBtnPrimary}
-          onPress={() => Alert.alert('Score Broadcasted', 'Score updated across tournament displays.')}
-        >
-          <Text style={styles.actionBtnPrimaryText}>BROADCAST SCORE</Text>
+        <TouchableOpacity style={styles.lockBadge} onPress={handleEndSession}>
+          <LogOut size={12} color={colors.statusLive} />
+          <Text style={[styles.lockBadgeText, { color: colors.statusLive }]}>EXIT</Text>
         </TouchableOpacity>
       </View>
+
+      {!currentMatch ? (
+        <ScrollView contentContainerStyle={styles.emptyCourtContainer}>
+          <View style={styles.emptyIconCircle}>
+            <Award size={36} color={colors.brandGold} />
+          </View>
+          <Text style={styles.emptyCourtTitle}>COURT ACTIVE & READY</Text>
+          <Text style={styles.emptyCourtSub}>
+            No match is currently assigned to {courtLabel}. Assigned matches will appear here automatically when called by the tournament director.
+          </Text>
+          <TouchableOpacity
+            style={styles.btnCheckMatches}
+            onPress={() => fetchActiveMatch()}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <>
+                <RefreshCw size={14} color="#FFFFFF" />
+                <Text style={styles.btnCheckMatchesText}>CHECK FOR MATCHES</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </ScrollView>
+      ) : (
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 30 }}>
+          <View style={styles.matchMetaBar}>
+            <Text style={styles.matchMetaText}>{matchCategory}</Text>
+          </View>
+
+          <View style={styles.scorerCard}>
+            {/* Player 1 Row */}
+            <View style={[styles.playerScoreRow, server === 'p1' && styles.serverActiveRow]}>
+              <View style={styles.playerInfo}>
+                <Text style={styles.scorerPlayerName} numberOfLines={1}>
+                  {player1Name}
+                </Text>
+                {server === 'p1' && <Text style={styles.servingBadge}>🎾 SERVING</Text>}
+              </View>
+              <View style={styles.scoreBlocks}>
+                <Text style={styles.gamesBlock}>{p1Games}</Text>
+                <TouchableOpacity style={styles.pointsBlock} onPress={() => incrementPoint('p1')}>
+                  <Text style={styles.pointsText}>{p1Points}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.scoreDivider} />
+
+            {/* Player 2 Row */}
+            <View style={[styles.playerScoreRow, server === 'p2' && styles.serverActiveRow]}>
+              <View style={styles.playerInfo}>
+                <Text style={styles.scorerPlayerName} numberOfLines={1}>
+                  {player2Name}
+                </Text>
+                {server === 'p2' && <Text style={styles.servingBadge}>🎾 SERVING</Text>}
+              </View>
+              <View style={styles.scoreBlocks}>
+                <Text style={styles.gamesBlock}>{p2Games}</Text>
+                <TouchableOpacity style={styles.pointsBlock} onPress={() => incrementPoint('p2')}>
+                  <Text style={styles.pointsText}>{p2Points}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          {/* Tactile Action Controls */}
+          <View style={styles.controlsRow}>
+            <TouchableOpacity
+              style={styles.actionBtnSecondary}
+              onPress={() => {
+                setP1Points('0');
+                setP2Points('0');
+              }}
+            >
+              <Text style={styles.actionBtnSecondaryText}>RESET GAME</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionBtnPrimary}
+              onPress={handleBroadcastScore}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color={colors.brandGold} />
+              ) : (
+                <Text style={styles.actionBtnPrimaryText}>BROADCAST SCORE</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -209,7 +392,7 @@ const styles = StyleSheet.create({
     borderColor: colors.borderLight,
     borderRadius: 12,
     fontSize: 24,
-    letterSpacing: 12,
+    letterSpacing: 10,
     textAlign: 'center',
     color: colors.brandGreenDeep,
     fontWeight: '800',
@@ -228,11 +411,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontSize: 12,
     letterSpacing: 1,
-  },
-  pinHelp: {
-    marginTop: 16,
-    fontSize: 11,
-    color: colors.textMuted,
   },
   header: {
     paddingHorizontal: 20,
@@ -261,15 +439,72 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: colors.brandGreenSubtle,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+    backgroundColor: '#FFEAEA',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
     borderRadius: 6,
   },
   lockBadgeText: {
     fontSize: 10,
     fontWeight: '800',
-    color: colors.brandGreenCourt,
+  },
+  emptyCourtContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+    marginTop: 60,
+  },
+  emptyIconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: colors.surfaceSecondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+  },
+  emptyCourtTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+    letterSpacing: 1.2,
+    color: colors.brandGreenDeep,
+    marginBottom: 8,
+  },
+  emptyCourtSub: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  btnCheckMatches: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: colors.brandGreenCourt,
+    borderRadius: 8,
+  },
+  btnCheckMatchesText: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1,
+    color: '#FFFFFF',
+  },
+  matchMetaBar: {
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 4,
+  },
+  matchMetaText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textSecondary,
+    letterSpacing: 0.5,
   },
   scorerCard: {
     margin: 20,
@@ -292,9 +527,10 @@ const styles = StyleSheet.create({
   },
   playerInfo: {
     flex: 1,
+    marginRight: 10,
   },
   scorerPlayerName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '800',
     color: colors.textPrimary,
   },
@@ -372,4 +608,3 @@ const styles = StyleSheet.create({
     color: colors.brandGold,
   },
 });
-
