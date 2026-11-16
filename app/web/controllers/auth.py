@@ -240,8 +240,8 @@ def login():
 
         user = User.query.filter(db.or_(User.username.ilike(username), User.email.ilike(username))).first()
         
-        if user and user.role == 'deleted':
-            flash('This account has been deleted.', 'error')
+        if user and (user.role == 'deleted' or user.username == 'anonymous_registrations' or user.email == 'anonymous@tourneypro.com'):
+            flash('Invalid username or password.', 'error')
             return redirect(url_for('auth.login'))
             
         if user and user.check_password(password):

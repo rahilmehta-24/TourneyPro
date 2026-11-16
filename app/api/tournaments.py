@@ -1,6 +1,6 @@
 from flask import request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from datetime import datetime
+from datetime import datetime, timedelta
 from . import api_bp
 from app.domain.models import (
     db, Tournament, Category, Participant, Group,
@@ -66,7 +66,7 @@ def create_tournament_api():
     regular player into organizer upon hosting their first event.
     """
     from flask_jwt_extended import get_jwt_identity
-    from app.services.utils.security import validate_name
+    from app.services.utils.validation import validate_name
     from slugify import slugify
 
     current_user_id = get_jwt_identity()
@@ -144,8 +144,7 @@ def create_tournament_api():
         format="single_elimination",
         entry_fee=500.0,
         max_participants=32,
-        status="registration_open",
-        surface=surface
+        status="registration_open"
     )
     db.session.add(default_cat)
     db.session.commit()

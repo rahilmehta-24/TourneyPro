@@ -126,7 +126,10 @@ def create_app(config_class=Config):
         if not score_str:
             return ""
         import re
-        return re.sub(r'\((\d+)\)', r'<sup>\1</sup>', score_str)
+        import markupsafe
+        escaped = markupsafe.escape(score_str)
+        formatted = re.sub(r'\((\d+)\)', r'<sup>\1</sup>', str(escaped))
+        return markupsafe.Markup(formatted)
 
     @app.template_filter('display_match_score')
     def display_match_score_filter(match):
@@ -142,8 +145,9 @@ def create_app(config_class=Config):
         if not match:
             return ""
         if isinstance(match, str):
-            return match
-        if isinstance(match, dict):
+            s1 = match
+            s2 = None
+        elif isinstance(match, dict):
             s1 = match.get('score1')
             s2 = match.get('score2')
         else:
@@ -160,16 +164,20 @@ def create_app(config_class=Config):
             return "W/O"
 
         import re
-        if s1_str and s2_str and '-' not in s1_str and '-' not in s2_str:
-            return f"{s1_str} \u2013 {s2_str}"
-        elif s1_str and '-' in s1_str:
-            formatted = re.sub(r'\((\d+)\)', r'<sup>\1</sup>', s1_str)
+        import markupsafe
+        esc_s1 = str(markupsafe.escape(s1_str))
+        esc_s2 = str(markupsafe.escape(s2_str))
+
+        if esc_s1 and esc_s2 and '-' not in s1_str and '-' not in s2_str:
+            return markupsafe.Markup(f"{esc_s1} \u2013 {esc_s2}")
+        elif esc_s1 and '-' in s1_str:
+            formatted = re.sub(r'\((\d+)\)', r'<sup>\1</sup>', esc_s1)
             if ('RET' in s1_str or 'RET' in s2_str) and 'RET' not in formatted:
                 formatted = f"{formatted}, RET"
-            return formatted
-        elif s1_str and s2_str:
-            return f"{s1_str} \u2013 {s2_str}"
-        return s1_str or s2_str
+            return markupsafe.Markup(formatted)
+        elif esc_s1 and esc_s2:
+            return markupsafe.Markup(f"{esc_s1} \u2013 {esc_s2}")
+        return markupsafe.Markup(esc_s1 or esc_s2)
 
     @app.template_filter('participant_players')
     def participant_players_filter(participant):

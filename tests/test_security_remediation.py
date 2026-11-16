@@ -85,6 +85,7 @@ class SecurityRemediationTestCase(unittest.TestCase):
             self.cat_id = self.cat.id
             self.admin1_id = self.admin1.id
             self.admin2_id = self.admin2.id
+            self.tourn_slug = self.tourn.url_slug
 
     def test_api_report_match_bola_protection(self):
         """Verify that Admin 2 cannot report or modify matches in Admin 1's tournament (BOLA prevention)"""
@@ -136,6 +137,124 @@ class SecurityRemediationTestCase(unittest.TestCase):
         )
         # Should be 403 Forbidden due to check_tournament_ownership
         self.assertEqual(res.status_code, 403)
+
+    def test_admin_create_user_superadmin_forbidden(self):
+        """Verify that an admin cannot create a superadmin user via API"""
+        with self.app.app_context():
+            token_admin2 = create_access_token(identity=str(self.admin2_id))
+
+        client = self.app.test_client()
+        headers = {
+            'Authorization': f'Bearer {token_admin2}',
+            'Content-Type': 'application/json'
+        }
+        res = client.post(
+            '/api/v1/admin/users',
+            json={'username': 'hacked_super', 'email': 'hacked@test.com', 'password': 'Password123!', 'role': 'superadmin'},
+            headers=headers
+        )
+        self.assertEqual(res.status_code, 403)
+        self.assertIn("Superadmin privileges required", res.get_json()['message'])
+
+    def test_anonymous_registrations_account_login_rejected(self):
+        """Verify that anonymous proxy user cannot be authenticated"""
+        with self.app.app_context():
+            anon_user = User(username='anonymous_registrations', email='anonymous@tourneypro.com', role='user')
+            anon_user.password_hash = '*disabled*'
+            db.session.add(anon_user)
+            db.session.commit()
+
+        client = self.app.test_client()
+        res = client.post(
+            '/api/v1/auth/login',
+            json={'username': 'anonymous_registrations', 'password': 'random_unused_password_1234'}
+        )
+        self.assertEqual(res.status_code, 401)
+
+    def test_payment_method_free_rejected_on_paid_category(self):
+        """Verify that free payment method is rejected when category entry fee > 0"""
+        with self.app.app_context():
+            cat = Category.query.get(self.cat_id)
+            cat.entry_fee = 150.0
+            from app.domain.models import Player
+            player = Player(user_id=self.admin1_id, name="Test Player", gender="Male", age_category="Open")
+            db.session.add(player)
+            db.session.commit()
+            player_id = player.id
+            token_admin1 = create_access_token(identity=str(self.admin1_id))
+
+        client = self.app.test_client()
+        res = client.post(
+            f'/api/v1/tournaments/{self.tourn_slug}/register',
+            headers={'Authorization': f'Bearer {token_admin1}'},
+            json={
+                'category_id': self.cat_id,
+                'player_id': player_id,
+                'payment_method': 'free'
+            }
+        )
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("requires an entry fee", res.get_json()['message'])
+
+    def test_bola_player_registration_prevented(self):
+        """Verify that user cannot register a player profile owned by another user"""
+        with self.app.app_context():
+            from app.domain.models import Player
+            victim_player = Player(user_id=self.admin1_id, name="Victim Player", gender="Male", age_category="Open")
+            db.session.add(victim_player)
+            db.session.commit()
+            victim_player_id = victim_player.id
+            token_admin2 = create_access_token(identity=str(self.admin2_id))
+
+        client = self.app.test_client()
+        res = client.post(
+            f'/api/v1/tournaments/{self.tourn_slug}/register',
+            headers={'Authorization': f'Bearer {token_admin2}'},
+            json={
+                'category_id': self.cat_id,
+                'player_id': victim_player_id,
+                'payment_method': 'cash'
+            }
+        )
+        self.assertEqual(res.status_code, 403)
+        self.assertIn("You may only register player profiles associated with your account", res.get_json()['message'])
+
+    def test_match_score_filter_xss_escaped(self):
+        """Verify that match score template filters escape raw HTML/script tags"""
+        with self.app.app_context():
+            filt_tennis = self.app.jinja_env.filters['format_tennis_score']
+            filt_display = self.app.jinja_env.filters['display_match_score']
+
+            res1 = filt_tennis('<script>alert(1)</script>')
+            self.assertNotIn('<script>', res1)
+            self.assertIn('&lt;script&gt;', res1)
+
+            res2 = filt_display({'score1': '<script>alert(1)</script>', 'score2': '4'})
+            self.assertNotIn('<script>', res2)
+            self.assertIn('&lt;script&gt;', res2)
+
+    def test_pdf_generator_safe_link_callback(self):
+        """Verify that safe_pdf_link_callback blocks unsafe external or file URIs"""
+        with self.app.app_context():
+            from app.services.pdf.pdf_generator import safe_pdf_link_callback
+            self.assertIsNone(safe_pdf_link_callback('http://169.254.169.254/latest/meta-data', None))
+            self.assertIsNone(safe_pdf_link_callback('https://malicious.test/exploit.png', None))
+            self.assertIsNone(safe_pdf_link_callback('file:///etc/passwd', None))
+            self.assertIsNone(safe_pdf_link_callback('../../../config.py', None))
+
+    def test_mobile_tournament_creation_import_fixed(self):
+        """Verify that POST /api/v1/tournaments imports cleanly and creates tournament"""
+        with self.app.app_context():
+            token_admin1 = create_access_token(identity=str(self.admin1_id))
+
+        client = self.app.test_client()
+        res = client.post(
+            '/api/v1/tournaments',
+            headers={'Authorization': f'Bearer {token_admin1}'},
+            json={'name': 'Spring Security Open'}
+        )
+        self.assertEqual(res.status_code, 201)
+        self.assertTrue(res.get_json()['success'])
 
 if __name__ == '__main__':
     unittest.main()

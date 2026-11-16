@@ -550,7 +550,7 @@ def register_for_tournament(slug):
         anon_user = User.query.filter_by(email=anon_email).first()
         if not anon_user:
             anon_user = User(username="anonymous_registrations", email=anon_email, role="user")
-            anon_user.set_password("random_unused_password_1234")
+            anon_user.password_hash = "*disabled*"
             db.session.add(anon_user)
             db.session.flush()
 

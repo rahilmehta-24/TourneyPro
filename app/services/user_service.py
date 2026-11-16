@@ -125,7 +125,7 @@ def admin_create_user(
             status_code=400,
         )
 
-    if role not in ("superadmin", "admin", "user", "player"):
+    if role not in ("admin", "user", "player"):
         role = "user"
 
     # Check for existing user account to prevent duplicate usernames/emails
