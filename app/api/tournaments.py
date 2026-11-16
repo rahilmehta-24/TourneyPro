@@ -6,7 +6,7 @@ from app.domain.models import (
     db, Tournament, Category, Participant, Group,
     Registration, TournamentStaff, User, InAppNotification
 )
-from app.domain.schemas import tournaments_schema, tournament_schema, category_schema
+from app.domain.schemas import tournament_schema, category_schema
 from app.services.utils.scheduler import get_order_of_play
 from app.services.leaderboard import recalculate_all_group_stats
 

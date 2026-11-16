@@ -239,9 +239,10 @@ def create_app(config_class=Config):
         if request.path.startswith('/static/'):
             response.headers['Cache-Control'] = 'public, max-age=3600'
         elif not request.path.startswith('/api/'):
-            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
-            response.headers['Pragma'] = 'no-cache'
-            response.headers['Expires'] = '0'
+            if 'Cache-Control' not in response.headers:
+                response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+                response.headers['Pragma'] = 'no-cache'
+                response.headers['Expires'] = '0'
         return response
 
     # Inject current_user into templates

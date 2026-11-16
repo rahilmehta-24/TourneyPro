@@ -1,12 +1,10 @@
 import os
 import tempfile
 import unittest
-from datetime import date
 from app import create_app, db
-from app.domain.models import User, Player, Tournament, UserNotificationPreferences, AuditLog
+from app.domain.models import User, Player, UserNotificationPreferences, AuditLog
 from app.services.user_service import (
     register_user,
-    ensure_user_profile,
     MSG_REGISTRATION_CLEAN_WORKSPACE,
     MSG_REGISTRATION_EXISTING_DATA,
     MSG_REGISTRATION_INIT_FAILED
