@@ -240,8 +240,8 @@ def login():
 
         user = User.query.filter(db.or_(User.username.ilike(username), User.email.ilike(username))).first()
         
-        if user and user.role == 'deleted':
-            flash('This account has been deleted.', 'error')
+        if user and (user.role == 'deleted' or user.username == 'anonymous_registrations' or user.email == 'anonymous@tourneypro.com'):
+            flash('Invalid username or password.', 'error')
             return redirect(url_for('auth.login'))
             
         if user and user.check_password(password):
@@ -471,6 +471,81 @@ def revoke_admin(user_id):
         user.role = 'user'
         db.session.commit()
         flash(f'Revoked admin privileges from {user.username}.', 'info')
+    return redirect(url_for('auth.user_management'))
+
+@auth_bp.route('/admin/users/<int:user_id>/delete', methods=['POST'])
+@login_required
+@role_required('superadmin')
+def delete_user(user_id):
+    current_user = get_current_user()
+    if current_user.id == user_id:
+        flash('You cannot delete your own superadmin account.', 'error')
+        return redirect(url_for('auth.user_management'))
+    
+    target_user = User.query.get_or_404(user_id)
+    username = target_user.username
+    try:
+        from app.domain.models import (
+            DeviceRegistration, InAppNotification, UserNotificationPreferences,
+            TournamentStaff, Player, Tournament
+        )
+        
+        # Scrub device tokens, notifications, and preferences
+        DeviceRegistration.query.filter_by(user_id=target_user.id).delete()
+        InAppNotification.query.filter_by(user_id=target_user.id).delete()
+        UserNotificationPreferences.query.filter_by(user_id=target_user.id).delete()
+        TournamentStaff.query.filter_by(user_id=target_user.id).delete()
+        
+        # Unlink associated player profiles to retain tournament records
+        Player.query.filter_by(user_id=target_user.id).update({'user_id': None})
+        
+        # Reassign owned tournaments to active superadmin to preserve tournament data
+        owned_tournaments = Tournament.query.filter_by(user_id=target_user.id).all()
+        for t in owned_tournaments:
+            t.user_id = current_user.id
+            
+        db.session.delete(target_user)
+        db.session.commit()
+        flash(f'User account "{username}" has been permanently deleted.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting user "{username}": {str(e)}', 'error')
+        
+    return redirect(url_for('auth.user_management'))
+
+@auth_bp.route('/admin/users/<int:user_id>/role', methods=['POST'])
+@login_required
+@role_required('superadmin')
+def change_user_role(user_id):
+    current_user = get_current_user()
+    target_user = User.query.get_or_404(user_id)
+    new_role = request.form.get('role', '').strip().lower()
+    
+    if new_role not in ['user', 'admin', 'superadmin']:
+        flash('Invalid role selected.', 'error')
+        return redirect(url_for('auth.user_management'))
+        
+    if target_user.id == current_user.id and new_role != 'superadmin':
+        flash('You cannot demote your own superadmin account.', 'error')
+        return redirect(url_for('auth.user_management'))
+        
+    old_role = target_user.role
+    target_user.role = new_role
+    if new_role in ['admin', 'superadmin']:
+        target_user.admin_requested = False
+        
+    db.session.commit()
+    flash(f'Role for "{target_user.username}" updated from {old_role.upper()} to {new_role.upper()}.', 'success')
+    return redirect(url_for('auth.user_management'))
+
+@auth_bp.route('/admin/users/<int:user_id>/reject_admin', methods=['POST'])
+@login_required
+@role_required('superadmin')
+def reject_admin_request(user_id):
+    user = User.query.get_or_404(user_id)
+    user.admin_requested = False
+    db.session.commit()
+    flash(f'Admin request for {user.username} has been rejected.', 'info')
     return redirect(url_for('auth.user_management'))
 
 @auth_bp.route('/profile')

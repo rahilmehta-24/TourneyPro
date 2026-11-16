@@ -5,13 +5,37 @@ PDF documents using xhtml2pdf in memory.
 """
 
 import io
+import os
 import logging
 from typing import Dict, Optional
-from flask import render_template
+from flask import render_template, current_app
 from xhtml2pdf import pisa
 from pypdf import PdfReader
 
 logger = logging.getLogger(__name__)
+
+
+def safe_pdf_link_callback(uri, rel):
+    """
+    Restricts xhtml2pdf resource resolution strictly to local assets within the
+    application static directory. Blocks external HTTP/HTTPS and arbitrary file traversals.
+    """
+    if not uri:
+        return None
+    lower_uri = uri.lower().strip()
+    if lower_uri.startswith(('http://', 'https://', 'file://', 'ftp://', '//')):
+        logger.warning(f"Blocked unsafe PDF resource fetch attempt: {uri}")
+        return None
+
+    try:
+        static_folder = os.path.abspath(current_app.static_folder or "app/web/static")
+        cleaned_path = uri.replace("/static/", "", 1) if uri.startswith("/static/") else uri.lstrip("/")
+        full_path = os.path.abspath(os.path.join(static_folder, cleaned_path))
+        if full_path.startswith(static_folder) and os.path.exists(full_path):
+            return full_path
+    except Exception as e:
+        logger.error(f"Error resolving PDF resource URI '{uri}': {e}")
+    return None
 
 
 class DrawPdfService:
@@ -69,7 +93,12 @@ class DrawPdfService:
 
         pdf_buffer = io.BytesIO()
         try:
-            pisa_status = pisa.CreatePDF(src=rendered_html, dest=pdf_buffer, encoding="utf-8")
+            pisa_status = pisa.CreatePDF(
+                src=rendered_html,
+                dest=pdf_buffer,
+                encoding="utf-8",
+                link_callback=safe_pdf_link_callback,
+            )
         except Exception as e:
             logger.error(f"xhtml2pdf compiler exception during draw PDF export: {e}", exc_info=True)
             raise RuntimeError(f"xhtml2pdf compilation failure: {e}") from e
@@ -126,7 +155,12 @@ class DrawPdfService:
 
         pdf_buffer = io.BytesIO()
         try:
-            pisa_status = pisa.CreatePDF(src=rendered_html, dest=pdf_buffer, encoding="utf-8")
+            pisa_status = pisa.CreatePDF(
+                src=rendered_html,
+                dest=pdf_buffer,
+                encoding="utf-8",
+                link_callback=safe_pdf_link_callback,
+            )
         except Exception as e:
             logger.error(
                 f"xhtml2pdf compiler exception during Order of Play PDF export: {e}", exc_info=True
@@ -193,7 +227,12 @@ class DrawPdfService:
 
         pdf_buffer = io.BytesIO()
         try:
-            pisa_status = pisa.CreatePDF(src=rendered_html, dest=pdf_buffer, encoding="utf-8")
+            pisa_status = pisa.CreatePDF(
+                src=rendered_html,
+                dest=pdf_buffer,
+                encoding="utf-8",
+                link_callback=safe_pdf_link_callback,
+            )
         except Exception as e:
             logger.error(
                 f"xhtml2pdf compiler exception during participants PDF export: {e}", exc_info=True

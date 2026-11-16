@@ -31,8 +31,8 @@ def login():
     username = str(data['username']).strip()
     user = User.query.filter(db.or_(User.username.ilike(username), User.email.ilike(username))).first()
 
-    if user and user.role == 'deleted':
-        return jsonify({"success": False, "message": "This account has been deleted."}), 401
+    if user and (user.role == 'deleted' or user.username == 'anonymous_registrations' or user.email == 'anonymous@tourneypro.com'):
+        return jsonify({"success": False, "message": "Invalid credentials"}), 401
 
     if user and user.check_password(data['password']):
         reset_rate_limit(f"api_login_{client_ip}")
@@ -615,8 +615,8 @@ def admin_create_user_api():
     """Administrator user creation endpoint with workspace initialization and verification."""
     current_user_id = get_jwt_identity()
     admin_user = User.query.get(int(current_user_id)) if current_user_id and str(current_user_id).isdigit() else None
-    if not admin_user or admin_user.role not in ('superadmin', 'admin'):
-        return jsonify({"success": False, "message": "Forbidden: Administrator privileges required"}), 403
+    if not admin_user or admin_user.role != 'superadmin':
+        return jsonify({"success": False, "message": "Forbidden: Superadmin privileges required"}), 403
 
     data = request.get_json() or {}
     username = data.get('username')

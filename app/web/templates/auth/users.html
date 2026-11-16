@@ -14,11 +14,11 @@
         </button>
     </div>
 
-    <!-- Create User Admin Form Card -->
-    <div id="createUserCard" class="form-section" style="background: var(--bg-card); padding: var(--spacing-lg); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); border: 1px solid var(--border-color); margin-bottom: var(--spacing-xl);">
+    <!-- Create User Admin Form Card (Collapsed by default) -->
+    <div id="createUserCard" class="form-section" style="display: none; background: var(--bg-card); padding: var(--spacing-lg); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); border: 1px solid var(--border-color); margin-bottom: var(--spacing-xl);">
         <div style="border-bottom: 1px solid var(--border-subtle); padding-bottom: var(--spacing-sm); margin-bottom: var(--spacing-md);">
             <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin: 0;">Create New User Account</h2>
-            <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 4px 0 0 0;">Provision a new account with workspace verification and isolation checks.</p>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 4px 0 0 0;">Create and initialize a new user account with assigned role.</p>
         </div>
 
         <form method="POST" action="{{ url_for('auth.create_user_admin') }}">
@@ -46,7 +46,7 @@
                 <div class="form-group">
                     <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Account Role *</label>
                     <select name="role" class="form-control" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-primary); color: var(--text-primary);">
-                        <option value="user">Player / User (Clean Player Workspace)</option>
+                        <option value="user">Player / User</option>
                         <option value="admin">Tournament Organizer / Admin</option>
                     </select>
                 </div>
@@ -54,7 +54,7 @@
 
             <div style="display: flex; justify-content: flex-end; gap: var(--spacing-sm);">
                 <button type="button" class="btn btn-secondary" onclick="document.getElementById('createUserCard').style.display='none';">Cancel</button>
-                <button type="submit" class="btn btn-primary" style="font-weight: 700;">Provision User & Initialize Workspace</button>
+                <button type="submit" class="btn btn-primary" style="font-weight: 700;">Create User</button>
             </div>
         </form>
     </div>
@@ -63,12 +63,12 @@
         <div class="table-container" style="overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%;">
             <table class="standings-table" style="width: 100%; border-collapse: collapse; text-align: left; min-width: 600px;">
                 <thead>
-                    <tr style="border-bottom: 2px solid var(--border-color);">
-                        <th style="padding: var(--spacing-sm); color: var(--text-secondary);">Username</th>
-                        <th style="padding: var(--spacing-sm); color: var(--text-secondary);">Email</th>
-                        <th style="padding: var(--spacing-sm); color: var(--text-secondary);">Role</th>
-                        <th style="padding: var(--spacing-sm); color: var(--text-secondary);">Status</th>
-                        <th style="padding: var(--spacing-sm); color: var(--text-secondary); text-align: right;">Actions</th>
+                    <tr style="border-bottom: 2.5px solid var(--accent-secondary);">
+                        <th style="padding: 0.85rem 1rem; text-align: left; color: #FDFBF6 !important;">Username</th>
+                        <th style="padding: 0.85rem 1rem; text-align: left; color: #FDFBF6 !important;">Email</th>
+                        <th style="padding: 0.85rem 1rem; text-align: left; color: #FDFBF6 !important;">Role</th>
+                        <th style="padding: 0.85rem 1rem; text-align: left; color: #FDFBF6 !important;">Status</th>
+                        <th style="padding: 0.85rem 1rem; text-align: right; color: #FDFBF6 !important;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -100,20 +100,53 @@
                             <span style="color: var(--text-muted); font-size: 0.9rem;">No pending request</span>
                             {% endif %}
                         </td>
-                        <td style="padding: var(--spacing-sm); text-align: right;">
-                            {% if user.role == 'superadmin' %}
-                            <span style="color: var(--text-muted); font-style: italic;">No actions (Superadmin)</span>
-                            {% elif user.role == 'admin' %}
-                            <form method="POST" action="{{ url_for('auth.revoke_admin', user_id=user.id) }}" style="display: inline;">
-                                <button type="submit" class="btn btn-danger btn-small">Revoke Admin</button>
-                            </form>
-                            {% else %}
-                            <form method="POST" action="{{ url_for('auth.grant_admin', user_id=user.id) }}" style="display: inline;">
-                                <button type="submit" class="btn btn-success btn-small" style="background: var(--gradient-success); color: white;">
-                                    {% if user.admin_requested %}Approve Request{% else %}Grant Admin{% endif %}
-                                </button>
-                            </form>
-                            {% endif %}
+                        <td style="padding: 0.85rem 1rem; text-align: right;">
+                            <div style="display: inline-flex; align-items: center; justify-content: flex-end; gap: 0.5rem; flex-wrap: wrap;">
+                                {% if user.admin_requested %}
+                                <form method="POST" action="{{ url_for('auth.grant_admin', user_id=user.id) }}" style="display: inline; margin: 0;">
+                                    <button type="submit" class="btn btn-success btn-small" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; height: 32px; min-height: 32px; display: inline-flex; align-items: center; background: var(--gradient-success); color: white;">
+                                        ✓ Approve
+                                    </button>
+                                </form>
+                                <form method="POST" action="{{ url_for('auth.reject_admin_request', user_id=user.id) }}" style="display: inline; margin: 0;">
+                                    <button type="submit" class="btn btn-secondary btn-small" style="padding: 0.35rem 0.65rem; font-size: 0.8rem; height: 32px; min-height: 32px; display: inline-flex; align-items: center;">
+                                        ✕ Reject
+                                    </button>
+                                </form>
+                                {% elif user.role == 'user' %}
+                                <form method="POST" action="{{ url_for('auth.grant_admin', user_id=user.id) }}" style="display: inline; margin: 0;">
+                                    <button type="submit" class="btn btn-success btn-small" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; height: 32px; min-height: 32px; display: inline-flex; align-items: center; background: var(--gradient-success); color: white;">
+                                        Grant Admin
+                                    </button>
+                                </form>
+                                {% elif user.role == 'admin' %}
+                                <form method="POST" action="{{ url_for('auth.revoke_admin', user_id=user.id) }}" style="display: inline; margin: 0;">
+                                    <button type="submit" class="btn btn-secondary btn-small" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; height: 32px; min-height: 32px; display: inline-flex; align-items: center;">
+                                        Revoke Admin
+                                    </button>
+                                </form>
+                                {% endif %}
+
+                                <!-- Full RBAC Role Switcher -->
+                                <form method="POST" action="{{ url_for('auth.change_user_role', user_id=user.id) }}" style="display: inline-flex; align-items: center; margin: 0;">
+                                    <select name="role" onchange="if(confirm('Change role for {{ user.username }} to ' + this.options[this.selectedIndex].text + '?')) { this.form.submit(); } else { this.value='{{ user.role }}'; }" class="form-input" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; font-weight: 600; border-radius: var(--radius-sm); height: 32px; min-height: 32px; background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); cursor: pointer;" title="Change Role (RBAC)">
+                                        <option value="user" {% if user.role == 'user' %}selected{% endif %}>User / Player</option>
+                                        <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
+                                        <option value="superadmin" {% if user.role == 'superadmin' %}selected{% endif %}>Superadmin</option>
+                                    </select>
+                                </form>
+
+                                <!-- Delete Entry Option -->
+                                {% if user.id != current_user.id %}
+                                <form method="POST" action="{{ url_for('auth.delete_user', user_id=user.id) }}" style="display: inline; margin: 0;" onsubmit="return confirm('Are you sure you want to permanently delete user entry {{ user.username }}? This action cannot be undone.');">
+                                    <button type="submit" class="btn btn-danger btn-small" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; height: 32px; min-height: 32px; display: inline-flex; align-items: center; gap: 4px; background: rgba(220, 38, 38, 0.12); color: #DC2626; border: 1px solid rgba(220, 38, 38, 0.35);" title="Delete User Entry">
+                                        <span>🗑️</span> Delete Entry
+                                    </button>
+                                </form>
+                                {% else %}
+                                <span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic; padding: 0.35rem 0.5rem;">(You)</span>
+                                {% endif %}
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}

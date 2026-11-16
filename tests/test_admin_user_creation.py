@@ -252,6 +252,51 @@ class TestAdminUserCreation(unittest.TestCase):
         self.assertTrue(data['is_clean'])
         self.assertEqual(data['user']['username'], 'daniilmedvedev')
 
+    def test_delete_user_entry_web_flow(self):
+        """Superadmin can delete a user entry, but cannot delete their own account."""
+        with self.client.session_transaction() as sess:
+            sess['user_id'] = self.superadmin.id
+
+        # Create user to delete
+        target = User(username='user_to_delete', email='delete_me@test.com', role='user')
+        target.set_password('Pass123!')
+        db.session.add(target)
+        db.session.commit()
+        target_id = target.id
+
+        # Superadmin deletes target user
+        res_del = self.client.post(f'/admin/users/{target_id}/delete', follow_redirects=True)
+        self.assertEqual(res_del.status_code, 200)
+        self.assertIsNone(User.query.get(target_id))
+
+        # Superadmin tries to delete self -> blocked
+        res_self = self.client.post(f'/admin/users/{self.superadmin.id}/delete', follow_redirects=True)
+        self.assertEqual(res_self.status_code, 200)
+        self.assertIn("cannot delete your own superadmin account", res_self.get_data(as_text=True))
+        self.assertIsNotNone(User.query.get(self.superadmin.id))
+
+    def test_change_user_role_web_flow(self):
+        """Superadmin can update user role to admin or superadmin via RBAC."""
+        with self.client.session_transaction() as sess:
+            sess['user_id'] = self.superadmin.id
+
+        user_rbac = User(username='rbac_user', email='rbac@test.com', role='user')
+        user_rbac.set_password('Pass123!')
+        db.session.add(user_rbac)
+        db.session.commit()
+
+        # Promote to admin
+        res_role = self.client.post(f'/admin/users/{user_rbac.id}/role', data={'role': 'admin'}, follow_redirects=True)
+        self.assertEqual(res_role.status_code, 200)
+        db.session.refresh(user_rbac)
+        self.assertEqual(user_rbac.role, 'admin')
+
+        # Promote to superadmin
+        res_super = self.client.post(f'/admin/users/{user_rbac.id}/role', data={'role': 'superadmin'}, follow_redirects=True)
+        self.assertEqual(res_super.status_code, 200)
+        db.session.refresh(user_rbac)
+        self.assertEqual(user_rbac.role, 'superadmin')
+
 
 if __name__ == '__main__':
     unittest.main()

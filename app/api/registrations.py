@@ -37,6 +37,14 @@ def register_for_tournament(slug):
     if not player:
         return jsonify({"success": False, "message": "Player profile not found"}), 404
 
+    caller = User.query.get(current_user_id)
+    is_authorized = (
+        player.user_id == current_user_id or
+        (caller and (caller.role == 'superadmin' or tournament.user_id == caller.id))
+    )
+    if not is_authorized:
+        return jsonify({"success": False, "message": "Forbidden: You may only register player profiles associated with your account"}), 403
+
     # Duplicate check
     existing = Registration.query.filter_by(
         tournament_id=tournament.id,
@@ -46,19 +54,27 @@ def register_for_tournament(slug):
     if existing:
         return jsonify({"success": False, "message": "Player is already registered for this category"}), 409
 
+    expected_fee = float(category.entry_fee or 0.0)
+    if "doubles" in (category.format or "").lower() or "doubles" in (category.name or "").lower():
+        expected_fee *= 2
+
     payment_method = data.get('payment_method', 'online').strip().lower()
     if payment_method not in ['online', 'cash', 'free']:
         payment_method = 'online'
+
+    if expected_fee > 0 and payment_method == 'free':
+        return jsonify({"success": False, "message": "This category requires an entry fee. Free registration is not permitted."}), 400
+
+    amount_due = expected_fee
 
     transaction_id = data.get('transaction_id', '').strip()
     partner_name = data.get('partner_name', '').strip() or None
     partner_mobile = data.get('partner_mobile', '').strip() or None
     player2_id = data.get('player2_id')
-    amount_due = float(data.get('amount_due', category.entry_fee or 0.0))
 
     payment_status = 'pending'
-    if payment_method == 'free' or (payment_method == 'online' and transaction_id):
-        payment_status = 'paid' if payment_method == 'free' else 'pending'
+    if payment_method == 'free':
+        payment_status = 'paid'
 
     registration = Registration(
         tournament_id=tournament.id,
@@ -181,6 +197,10 @@ def review_registration(registration_id):
 def get_my_registrations():
     """Return all tournament registrations for the currently authenticated user."""
     current_user_id = int(get_jwt_identity())
+    user = User.query.get(current_user_id)
+    if not user or user.username == 'anonymous_registrations' or user.email == 'anonymous@tourneypro.com':
+        return jsonify({"success": False, "message": "Forbidden"}), 403
+
     registrations = Registration.query.filter_by(
         user_id=current_user_id
     ).order_by(Registration.created_at.desc()).all()
