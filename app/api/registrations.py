@@ -45,6 +45,14 @@ def register_for_tournament(slug):
     if not is_authorized:
         return jsonify({"success": False, "message": "Forbidden: You may only register player profiles associated with your account"}), 403
 
+    if player.user_id == current_user_id and caller and not caller.profile_completed:
+        return jsonify({
+            "success": False,
+            "message": f"Player profile is {caller.completion_percentage}% complete. Please complete your profile before registering.",
+            "code": "PROFILE_INCOMPLETE",
+            "completion_percentage": caller.completion_percentage
+        }), 400
+
     # Duplicate check
     existing = Registration.query.filter_by(
         tournament_id=tournament.id,
@@ -76,6 +84,10 @@ def register_for_tournament(slug):
     if payment_method == 'free':
         payment_status = 'paid'
 
+    from app.domain.models import AcademyMember
+    active_mem = AcademyMember.query.filter_by(user_id=current_user_id, membership_status='ACTIVE').first()
+    academy_snapshot_id = active_mem.academy_id if active_mem else None
+
     registration = Registration(
         tournament_id=tournament.id,
         category_id=category.id,
@@ -88,7 +100,8 @@ def register_for_tournament(slug):
         payment_status=payment_status,
         amount_due=amount_due,
         transaction_id=transaction_id,
-        payment_method=payment_method
+        payment_method=payment_method,
+        academy_id_snapshot=academy_snapshot_id
     )
     db.session.add(registration)
     db.session.commit()
@@ -161,28 +174,20 @@ def review_registration(registration_id):
             )
             db.session.add(participant)
 
-        # Notify player
-        notif = InAppNotification(
-            user_id=reg.user_id,
-            title="Registration Approved! 🎾",
-            body=f"Your entry for {tournament.name} ({reg.category.name if reg.category else 'General'}) has been approved.",
-            notification_type="registration_update",
-            reference_type="tournament",
-            reference_id=tournament.id
-        )
-        db.session.add(notif)
+        # Notify player via notification service
+        try:
+            from app.services.notification_service import notify_registration_status
+            notify_registration_status(reg, "approved")
+        except Exception:
+            pass
 
     elif status == 'rejected':
         reason = data.get('reason', 'Entry could not be accepted')
-        notif = InAppNotification(
-            user_id=reg.user_id,
-            title="Registration Update",
-            body=f"Your entry for {tournament.name} was not accepted: {reason}",
-            notification_type="registration_update",
-            reference_type="tournament",
-            reference_id=tournament.id
-        )
-        db.session.add(notif)
+        try:
+            from app.services.notification_service import notify_registration_status
+            notify_registration_status(reg, "rejected", reason=reason)
+        except Exception:
+            pass
 
     db.session.commit()
     return jsonify({

@@ -289,7 +289,7 @@ def admin_create_user(
 def ensure_user_profile(user_id: int) -> Optional[Player]:
     """
     Ensures that a user has an associated Player profile.
-    If missing, securely initializes a clean profile for this user_id.
+    If missing, securely initializes a clean profile shell for this user_id.
     """
     user = db.session.get(User, user_id)
     if not user:
@@ -309,20 +309,26 @@ def ensure_user_profile(user_id: int) -> Optional[Player]:
         db.session.commit()
         return unassigned
 
-    # Initialize a clean player profile
+    # Initialize a clean, unpopulated player profile shell
     current_date = date.today()
     reg_no = f"TP-{current_date.year}-{random.randint(0x1000, 0xFFFF):X}"
     new_player = Player(
         user_id=user.id,
-        name=user.username,
+        name=user.full_name or user.username,
         email=user.email,
-        gender="Male",
-        age_category="Open",
         registration_no=reg_no,
         registration_date=current_date,
         registration_validity=current_date + timedelta(days=365),
-        current_status="Active"
+        current_status="Active",
+        profile_status="complete" if user.profile_completed else "incomplete",
+        total_points=0.0,
+        matches_played=0,
+        matches_won=0,
+        matches_lost=0
     )
+    db.session.add(new_player)
+    db.session.commit()
+    return new_player
     db.session.add(new_player)
 
     prefs = UserNotificationPreferences.query.filter_by(user_id=user.id).first()
@@ -339,7 +345,8 @@ def register_user(
     password: str,
     password_confirm: Optional[str] = None,
     full_name: Optional[str] = None,
-    gender: str = "Male",
+    registration_intent: str = "user",
+    gender: Optional[str] = None,
     dob: Optional[date] = None,
     contact_number: Optional[str] = None,
     nationality: Optional[str] = None,
@@ -350,18 +357,31 @@ def register_user(
     coach: Optional[str] = None,
     academy: Optional[str] = None,
     avatar_url: Optional[str] = None,
+    primary_sport: Optional[str] = "Tennis",
+    skill_level: Optional[str] = None,
+    emergency_contact_name: Optional[str] = None,
+    emergency_contact_phone: Optional[str] = None,
     simulate_init_failure: bool = False,
 ) -> UserCreationResult:
     """
-    Registers a new public user into Baseline Society, initializes their personal
-    workspace & Player profile atomically, and enforces strict data isolation.
+    Registers a new public user into Baseline Society with explicit intent (User vs Player),
+    initializes their personal workspace, supports two-stage onboarding, and enforces strict data isolation.
     """
+    import secrets
+    from datetime import datetime
+    from app.domain.constants import (
+        calculate_canonical_age_category,
+        calculate_profile_completion_percentage,
+    )
     from app.services.utils.validation import (
         validate_username, validate_email, validate_password
     )
 
     username = (username or "").strip()
     email = (email or "").strip().lower()
+    intent = (registration_intent or "user").strip().lower()
+    if intent not in ("user", "player"):
+        intent = "user"
 
     # 1. Mandatory Fields & Username Validation
     ok, u_clean = validate_username(username)
@@ -424,8 +444,19 @@ def register_user(
 
     # 6. Atomic User & Profile Creation
     try:
-        # Default role is ALWAYS 'user' (never admin or superadmin via registration)
-        user = User(username=username, email=email, role='user')
+        # User account created with explicit intent (default: 'user')
+        user = User(
+            username=username,
+            email=email,
+            role=intent,
+            registration_intent=intent,
+            full_name=full_name.strip() if full_name else None,
+            phone_number=contact_number.strip() if contact_number else None,
+            email_verification_token=secrets.token_urlsafe(32),
+            account_status="ACTIVE",
+            profile_completed=False,
+            completion_percentage=0,
+        )
         user.set_password(password)
         db.session.add(user)
         db.session.flush()
@@ -455,40 +486,50 @@ def register_user(
             prefs = UserNotificationPreferences(user_id=actual_user_id)
             db.session.add(prefs)
 
-        if not has_existing_data:
-            # Clean data: create initial Player profile
+        if has_existing_data:
+            existing_player = Player.query.filter_by(user_id=actual_user_id).first()
+            if existing_player:
+                pct_calc = calculate_profile_completion_percentage(
+                    user_name=existing_player.name,
+                    email=existing_player.email,
+                    contact_number=existing_player.contact_number,
+                    dob=existing_player.dob,
+                    gender=existing_player.gender,
+                    primary_sport=existing_player.primary_sport,
+                    skill_level=existing_player.skill_level,
+                    emergency_contact_name=existing_player.emergency_contact_name,
+                    emergency_contact_phone=existing_player.emergency_contact_phone,
+                    avatar_url=existing_player.avatar_url,
+                    bio=existing_player.bio,
+                )
+                user.completion_percentage = pct_calc["percentage"]
+                user.profile_completed = pct_calc["is_complete"]
+                existing_player.profile_status = "complete" if pct_calc["is_complete"] else "incomplete"
+        else:
             display_name = full_name.strip() if full_name else username
             current_date = date.today()
             reg_no = f"TP-{current_date.year}-{random.randint(0x1000, 0xFFFF):X}"
 
-            # Age category calculation if dob is present
-            age_category = "Open"
-            if dob:
-                today = date.today()
-                age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
-                if age <= 8:
-                    age_category = 'U8'
-                elif age <= 10:
-                    age_category = 'U10'
-                elif age <= 12:
-                    age_category = 'U12'
-                elif age <= 14:
-                    age_category = 'U14'
-                elif age <= 16:
-                    age_category = 'U16'
-                elif age <= 18:
-                    age_category = 'U18'
-                elif age >= 45:
-                    age_category = '45+'
-                elif age >= 35:
-                    age_category = '35+'
-                else:
-                    age_category = 'Open'
+            # Calculate canonical age category if dob provided
+            canonical_age = calculate_canonical_age_category(dob) if dob else None
+
+            pct_calc = calculate_profile_completion_percentage(
+                user_name=display_name,
+                email=email,
+                contact_number=contact_number,
+                dob=dob,
+                gender=gender,
+                primary_sport=primary_sport,
+                skill_level=skill_level,
+                emergency_contact_name=emergency_contact_name,
+                emergency_contact_phone=emergency_contact_phone,
+                avatar_url=avatar_url,
+            )
 
             new_player = Player(
                 user_id=actual_user_id,
                 name=display_name,
-                gender=gender if gender in ('Male', 'Female') else 'Male',
+                gender=gender if gender in ('Male', 'Female', 'Other') else None,
                 dob=dob,
                 email=email,
                 contact_number=contact_number.strip() if contact_number else None,
@@ -504,9 +545,20 @@ def register_user(
                 registration_date=current_date,
                 registration_validity=current_date + timedelta(days=365),
                 current_status="Active",
-                age_category=age_category,
+                age_category=canonical_age,
+                profile_status="complete" if pct_calc["is_complete"] else "incomplete",
+                primary_sport=primary_sport or "Tennis",
+                skill_level=skill_level,
+                emergency_contact_name=emergency_contact_name,
+                emergency_contact_phone=emergency_contact_phone,
+                total_points=0.0,
+                matches_played=0,
+                matches_won=0,
+                matches_lost=0
             )
             db.session.add(new_player)
+            user.completion_percentage = pct_calc["percentage"]
+            user.profile_completed = pct_calc["is_complete"]
 
         if simulate_init_failure:
             raise RuntimeError("Simulated profile initialization failure")
@@ -546,5 +598,215 @@ def register_user(
             status_code=500,
             verification_failed=True,
         )
+
+
+def complete_player_profile(
+    user_id: int,
+    full_name: Optional[str] = None,
+    dob: Optional[date] = None,
+    gender: Optional[str] = None,
+    contact_number: Optional[str] = None,
+    primary_sport: Optional[str] = "Tennis",
+    skill_level: Optional[str] = None,
+    emergency_contact_name: Optional[str] = None,
+    emergency_contact_phone: Optional[str] = None,
+    preferred_competition_category: Optional[str] = None,
+    avatar_url: Optional[str] = None,
+    bio: Optional[str] = None,
+    address: Optional[str] = None,
+    height: Optional[str] = None,
+    weight: Optional[str] = None,
+    blood_group: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Completes or updates a player's profile (Stage 2 onboarding), calculating canonical age
+    category, completion score, and updating eligibility flags atomically.
+    """
+    from app.domain.constants import (
+        calculate_canonical_age_category,
+        calculate_profile_completion_percentage,
+    )
+
+    user = db.session.get(User, user_id)
+    if not user:
+        return {"success": False, "message": "User not found.", "status_code": 404}
+
+    player = Player.query.filter_by(user_id=user_id).first()
+    current_date = date.today()
+
+    if not player:
+        # Create player record linked to user
+        reg_no = f"TP-{current_date.year}-{random.randint(0x1000, 0xFFFF):X}"
+        player = Player(
+            user_id=user.id,
+            name=(full_name or user.full_name or user.username).strip(),
+            email=user.email,
+            registration_no=reg_no,
+            registration_date=current_date,
+            registration_validity=current_date + timedelta(days=365),
+            current_status="Active",
+        )
+        db.session.add(player)
+
+    # Update player profile fields
+    if full_name:
+        player.name = full_name.strip()
+        user.full_name = full_name.strip()
+
+    if contact_number:
+        player.contact_number = contact_number.strip()
+        user.phone_number = contact_number.strip()
+
+    if dob:
+        player.dob = dob
+        player.age_category = calculate_canonical_age_category(dob)
+
+    if gender:
+        player.gender = gender.strip()
+
+    if primary_sport:
+        player.primary_sport = primary_sport.strip()
+
+    if skill_level:
+        player.skill_level = skill_level.strip()
+
+    if emergency_contact_name:
+        player.emergency_contact_name = emergency_contact_name.strip()
+
+    if emergency_contact_phone:
+        player.emergency_contact_phone = emergency_contact_phone.strip()
+
+    if preferred_competition_category:
+        player.preferred_competition_category = preferred_competition_category.strip()
+
+    if avatar_url:
+        player.avatar_url = avatar_url.strip()
+
+    if bio:
+        player.bio = bio.strip()
+
+    if address:
+        player.address = address.strip()
+
+    if height:
+        player.height = height.strip()
+
+    if weight:
+        player.weight = weight.strip()
+
+    if blood_group:
+        player.blood_group = blood_group.strip()
+
+    # Calculate completion percentage
+    pct_info = calculate_profile_completion_percentage(
+        user_name=player.name,
+        email=player.email,
+        contact_number=player.contact_number,
+        dob=player.dob,
+        gender=player.gender,
+        primary_sport=player.primary_sport,
+        skill_level=player.skill_level,
+        emergency_contact_name=player.emergency_contact_name,
+        emergency_contact_phone=player.emergency_contact_phone,
+        avatar_url=player.avatar_url,
+        bio=player.bio,
+    )
+
+    user.completion_percentage = pct_info["percentage"]
+    user.profile_completed = pct_info["is_complete"]
+    user.role = "player"  # Upgraded/confirmed as active player
+    player.profile_status = "complete" if pct_info["is_complete"] else "incomplete"
+
+    db.session.commit()
+
+    return {
+        "success": True,
+        "message": "Profile updated successfully.",
+        "percentage": pct_info["percentage"],
+        "completion_percentage": pct_info["percentage"],
+        "is_complete": pct_info["is_complete"],
+        "missing_fields": pct_info["missing_fields"],
+        "age_category": player.age_category,
+        "player": player,
+        "user": user,
+    }
+
+
+def verify_user_email(token: str) -> Dict[str, Any]:
+    """Verifies a user's email via the verification token."""
+    from datetime import datetime
+    if not token or not str(token).strip():
+        return {"success": False, "message": "Invalid verification token.", "status_code": 400}
+
+    user = User.query.filter_by(email_verification_token=token.strip()).first()
+    if not user:
+        return {"success": False, "message": "Verification token expired or invalid.", "status_code": 404}
+
+    user.is_email_verified = True
+    user.email_verified_at = datetime.utcnow()
+    user.email_verification_token = None
+    db.session.commit()
+
+    return {"success": True, "message": "Email verified successfully!", "user": user}
+
+
+def request_password_reset(email: str) -> Dict[str, Any]:
+    """Generates a secure password reset token with 1-hour expiration."""
+    import secrets
+    from datetime import datetime, timedelta
+
+    email = (email or "").strip().lower()
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        # Prevent user enumeration: Return generic success message
+        return {
+            "success": True,
+            "message": "If an account exists with that email, a password reset link has been dispatched.",
+            "token": None
+        }
+
+    token = secrets.token_urlsafe(32)
+    user.password_reset_token = token
+    user.password_reset_expires_at = datetime.utcnow() + timedelta(hours=1)
+    db.session.commit()
+
+    return {
+        "success": True,
+        "message": "Password reset token generated.",
+        "token": token,
+        "user": user
+    }
+
+
+def reset_password_with_token(
+    token: str,
+    new_password: str,
+    password_confirm: Optional[str] = None
+) -> Dict[str, Any]:
+    """Resets user password with token validation and expiration checking."""
+    from datetime import datetime
+    from app.services.utils.validation import validate_password
+
+    if not token or not str(token).strip():
+        return {"success": False, "message": "Invalid reset token.", "status_code": 400}
+
+    if password_confirm is not None and new_password != password_confirm:
+        return {"success": False, "message": "Passwords do not match.", "status_code": 400}
+
+    ok, msg = validate_password(new_password, min_length=8)
+    if not ok:
+        return {"success": False, "message": msg or "Password does not meet complexity requirements.", "status_code": 400}
+
+    user = User.query.filter_by(password_reset_token=token.strip()).first()
+    if not user or not user.password_reset_expires_at or user.password_reset_expires_at < datetime.utcnow():
+        return {"success": False, "message": "Password reset token has expired or is invalid.", "status_code": 400}
+
+    user.set_password(new_password)
+    user.password_reset_token = None
+    user.password_reset_expires_at = None
+    db.session.commit()
+
+    return {"success": True, "message": "Password has been reset successfully. Please log in.", "user": user}
+
 
 

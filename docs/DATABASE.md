@@ -521,3 +521,106 @@ The reconciler only adds missing tables and columns. It never adds or changes co
 | High (never public) | `players.address`, `blood_group`, `dob`, `contact_number`, `email`; `participants.email`, `mobile`, `dob`; `registrations.transaction_id` | Staff-only access; excluded from public schemas and exports unless the organizer needs them |
 | Medium | `players.height`, `weight`, `registration_no`, `coach` | Visible to the player and staff |
 | Public | display name, avatar, statistics, results | Minors (U10 to U18) show display name only |
+
+---
+
+## 5. Baseline Society Federated Schema Extensions (Migration `d2b3c4d5e6f7`)
+
+The Baseline Society adds multi-tenant academy federation, audited score revisions, and real notifications:
+
+### 5.1 New Tables
+
+#### `academy_applications`
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `INTEGER` | PK, Auto | Application identifier |
+| `applicant_id` | `INTEGER` | FK `users.id`, NOT NULL | Submitting user account |
+| `name` | `VARCHAR(150)` | NOT NULL | Requested academy/club name |
+| `description` | `TEXT` | Nullable | Facilities and mission statement |
+| `address` | `VARCHAR(255)` | Nullable | Physical street address |
+| `city` | `VARCHAR(100)` | Nullable | Municipality |
+| `state` | `VARCHAR(100)` | Nullable | Province / State |
+| `country` | `VARCHAR(100)` | Nullable | Country |
+| `contact_email` | `VARCHAR(120)` | NOT NULL | Official contact email |
+| `contact_phone` | `VARCHAR(50)` | Nullable | Facility telephone |
+| `sports_offered` | `VARCHAR(255)` | Nullable | Sports disciplines |
+| `website_url` | `VARCHAR(255)` | Nullable | Official web or social presence |
+| `status` | `VARCHAR(20)` | NOT NULL, DEFAULT `'PENDING'` | `PENDING`, `APPROVED`, `REJECTED` |
+| `reviewed_by_id` | `INTEGER` | FK `users.id`, Nullable | Reviewing superadmin |
+| `reviewed_at` | `DATETIME` | Nullable | Review timestamp |
+| `rejection_reason` | `TEXT` | Nullable | Mandatory feedback on decline |
+| `academy_id` | `INTEGER` | FK `academies.id`, Nullable | Activated academy pointer |
+| `created_at` | `DATETIME` | DEFAULT UTC | Submission timestamp |
+
+#### `match_score_revisions`
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `INTEGER` | PK, Auto | Revision identifier |
+| `match_id` | `INTEGER` | FK `matches.id`, NOT NULL | Target match |
+| `entered_by_user_id` | `INTEGER` | FK `users.id`, NOT NULL | Revising official / admin |
+| `old_score1` | `VARCHAR(50)` | Nullable | Pre-edit score participant 1 |
+| `old_score2` | `VARCHAR(50)` | Nullable | Pre-edit score participant 2 |
+| `new_score1` | `VARCHAR(50)` | Nullable | Post-edit score participant 1 |
+| `new_score2` | `VARCHAR(50)` | Nullable | Post-edit score participant 2 |
+| `old_winner_id` | `INTEGER` | FK `participants.id`, Nullable | Pre-edit winner |
+| `new_winner_id` | `INTEGER` | FK `participants.id`, Nullable | Post-edit winner |
+| `reason` | `TEXT` | NOT NULL | Mandatory audit explanation |
+| `created_at` | `DATETIME` | DEFAULT UTC | Revision timestamp |
+
+#### `in_app_notifications`
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `INTEGER` | PK, Auto | Notification identifier |
+| `user_id` | `INTEGER` | FK `users.id`, NOT NULL | Recipient user |
+| `title` | `VARCHAR(150)` | NOT NULL | Alert title |
+| `body` | `TEXT` | NOT NULL | Alert message |
+| `notification_type` | `VARCHAR(50)` | NOT NULL | `match_call`, `draw_published`, `registration_update`, `academy_announcement` |
+| `reference_type` | `VARCHAR(50)` | Nullable | `match`, `tournament`, `category`, `academy` |
+| `reference_id` | `INTEGER` | Nullable | Entity identifier |
+| `is_read` | `BOOLEAN` | DEFAULT `FALSE` | Read indicator |
+| `read_at` | `DATETIME` | Nullable | Read timestamp |
+| `created_at` | `DATETIME` | DEFAULT UTC | Dispatch timestamp |
+
+#### `user_notification_preferences`
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `INTEGER` | PK, Auto | Preference identifier |
+| `user_id` | `INTEGER` | FK `users.id`, UNIQUE, NOT NULL | Associated user |
+| `notify_match_called` | `BOOLEAN` | DEFAULT `TRUE` | On-court match call alerts |
+| `notify_draw_published` | `BOOLEAN` | DEFAULT `TRUE` | Draw live alerts |
+| `notify_registration_updates`| `BOOLEAN` | DEFAULT `TRUE` | Approval/rejection alerts |
+| `notify_match_results` | `BOOLEAN` | DEFAULT `TRUE` | Match completion alerts |
+| `notify_academy_announcements`| `BOOLEAN` | DEFAULT `TRUE` | Academy governance alerts |
+| `updated_at` | `DATETIME` | DEFAULT UTC | Last change timestamp |
+
+### 5.2 Alterations to Existing Tables
+
+* **`academies`:**
+  - `status VARCHAR(20) DEFAULT 'ACTIVE'`: Lifecycle status (`PENDING`, `ACTIVE`, `REJECTED`, `SUSPENDED`).
+  - `application_id INTEGER FK academy_applications.id`: Originating application.
+  - `verified_by_id INTEGER FK users.id`: Superadmin verifier.
+  - `verified_at DATETIME`: Verification timestamp.
+  - `logo_url VARCHAR(255)`: Uploaded facility emblem.
+* **`academy_members`:**
+  - `membership_status VARCHAR(20) DEFAULT 'ACTIVE'`: `ACTIVE`, `INACTIVE`, `TRANSFERRED`.
+  - `left_at DATETIME`: Date membership ceased.
+  - `transferred_to_academy_id INTEGER FK academies.id`: Destination academy on transfer.
+  - **Constraint:** Partial unique index enforcing single active membership:
+    `uq_one_active_academy_per_user ON academy_members(user_id) WHERE membership_status = 'ACTIVE'`.
+* **`tournaments`:**
+  - `logo_url VARCHAR(255)`: Host emblem uploaded on creation.
+  - `tournament_scope VARCHAR(30) DEFAULT 'intra_academy'`: `intra_academy`, `inter_academy`, `open_individual`.
+  - `registration_scope VARCHAR(30) DEFAULT 'HOST_ACADEMY_ONLY'`.
+* **`registrations`:**
+  - `academy_id_snapshot INTEGER FK academies.id`: Immutable player affiliation at tournament entry.
+  - `reviewed_by_id INTEGER FK users.id`: Reviewing host administrator.
+  - `reviewed_at DATETIME`: Review timestamp.
+  - `rejection_reason TEXT`: Feedback on rejected entries.
+* **`users`:**
+  - `registration_intent VARCHAR(20) DEFAULT 'user'`: Intent (`user` vs `player`).
+  - `profile_completed BOOLEAN DEFAULT FALSE`: Stage 2 onboarding gate.
+  - `completion_percentage INTEGER DEFAULT 0`: Dynamic completion score (0%–100%).
+  - `account_status VARCHAR(20) DEFAULT 'ACTIVE'`: `ACTIVE`, `SUSPENDED`, `DEACTIVATED`.
+  - `is_email_verified BOOLEAN DEFAULT FALSE`, `email_verification_token VARCHAR(100)`, `email_verified_at DATETIME`.
+  - `password_reset_token VARCHAR(100)`.
+

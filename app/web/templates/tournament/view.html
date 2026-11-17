@@ -42,6 +42,9 @@
 
     <div class="page-header" style="margin-bottom: 1.5rem;">
         <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+            {% if tournament.logo_url %}
+            <img src="{{ tournament.logo_url }}" alt="{{ tournament.name }} Logo" style="max-height: 54px; max-width: 90px; border-radius: 8px; object-fit: contain; background: #fff; padding: 2px; border: 1px solid var(--border-color);">
+            {% endif %}
             <h1 class="page-title" style="margin: 0;">{{ tournament.name }}</h1>
             {% if tournament.status == 'in_progress' %}
             <span class="live-indicator-badge" title="Live Scores: Updating automatically"><span class="live-indicator-dot"></span> Live Scores</span>

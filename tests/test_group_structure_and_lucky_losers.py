@@ -252,33 +252,29 @@ class GroupStructureAndLuckyLosersTestCase(unittest.TestCase):
         draft2 = self.client.get(f'/tournaments/{self.slug}/categories/{cat2.id}/draft')
         html2 = draft2.data.decode('utf-8')
         self.assertIn('3 More Player(s) Required for Team 12', html2)
-        self.assertIn('Fill 3 Dummy / TBD Slots', html2)
+        self.assertIn('Zero Dummy Data policy', html2)
 
-        # Fill 3 Dummy slots -> reaches 60 players (12 teams exact)
+        # Attempting to fill Dummy slots is blocked under Zero Dummy Data policy
         dummy_resp = self.client.post(
             f'/tournaments/{self.slug}/categories/{cat2.id}/add-dummy-players',
             data={'count': '3'},
-            follow_redirects=True,
+            follow_redirects=False,
         )
-        self.assertEqual(dummy_resp.status_code, 200)
-        dummy_player = Player.query.filter(Player.name.like('TBD / Dummy Player #%')).first()
-        self.assertIsNotNone(dummy_player)
-        self.assertNotIn('More Player(s) Required', dummy_resp.data.decode('utf-8'))
+        self.assertEqual(dummy_resp.status_code, 400)
 
-        # Replace that Dummy with a real Late-Entry player in place
+        # Register a real Late-Entry player
         late_resp = self.client.post(
             f'/tournaments/{self.slug}/categories/{cat2.id}/quick-late-entry',
             data={
                 'player_name': 'Rohan Late Entry',
                 'player_mobile': '9876543210',
                 'player_gender': 'Male',
-                'replace_dummy_id': str(dummy_player.id),
             },
             follow_redirects=True,
         )
         self.assertEqual(late_resp.status_code, 200)
-        db.session.refresh(dummy_player)
-        self.assertEqual(dummy_player.name, 'Rohan Late Entry')
+        late_player = Player.query.filter_by(name='Rohan Late Entry').first()
+        self.assertIsNotNone(late_player)
 
     def test_03_uneven_lucky_losers_manual_chit_draw_and_r1_rematch_avoidance(self):
         """

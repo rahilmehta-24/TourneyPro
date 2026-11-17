@@ -12,23 +12,30 @@
         <p style="text-align: center; color: var(--text-secondary); margin-bottom: var(--spacing-lg);">Log in to manage your Lawn Tennis Tournaments</p>
         
         <form method="POST" data-turbo="false">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            {% if request.args.get('next') %}
+            <input type="hidden" name="next" value="{{ request.args.get('next') }}"/>
+            {% endif %}
             <div class="form-group">
-                <label for="username" class="form-label">Username</label>
-                <input type="text" id="username" name="username" class="form-input" required autocomplete="username" spellcheck="false" autocapitalize="none" autocorrect="off" placeholder="Enter username">
+                <label for="username" class="form-label">Username or Email</label>
+                <input type="text" id="username" name="username" class="form-input" required autocomplete="username" spellcheck="false" autocapitalize="none" autocorrect="off" placeholder="Enter username or email">
             </div>
             
-            <div class="form-group" style="margin-bottom: var(--spacing-lg);">
-                <label for="password" class="form-label">Password</label>
+            <div class="form-group" style="margin-bottom: var(--spacing-sm);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                    <label for="password" class="form-label" style="margin-bottom: 0;">Password</label>
+                    <a href="{{ url_for('auth.forgot_password') }}" style="font-size: 0.85rem; color: var(--accent-secondary); text-decoration: none;">Forgot Password?</a>
+                </div>
                 <input type="password" id="password" name="password" class="form-input" required autocomplete="current-password" placeholder="Enter password">
             </div>
             
-            <button type="submit" class="btn btn-primary btn-block btn-large" style="margin-bottom: var(--spacing-md); display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;">
+            <button type="submit" class="btn btn-primary btn-block btn-large" style="margin-top: 1rem; margin-bottom: var(--spacing-md); display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; width: 100%;">
                 <svg class="tp-icon" aria-hidden="true"><use href="#icon-log-in"></use></svg> Log In
             </button>
         </form>
         
         <div style="text-align: center; margin-top: var(--spacing-md); color: var(--text-secondary);">
-            Don't have an account? <a href="{{ url_for('auth.register') }}" style="color: var(--accent-primary); text-decoration: none; font-weight: 600;">Register here</a>
+            Don't have an account? <a href="{{ url_for('auth.register', next=request.args.get('next')) if request.args.get('next') else url_for('auth.register') }}" style="color: var(--accent-primary); text-decoration: none; font-weight: 600;">Register here</a>
         </div>
     </div>
 </div>

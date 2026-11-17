@@ -107,7 +107,24 @@ def report_match(match_id):
             winner_id = data.get('winner_id')
             if not winner_id:
                 return jsonify({"success": False, "message": "Winner ID required"}), 400
-                
+
+            if match.status == 'completed':
+                from app.domain.models import MatchScoreRevision
+                reason = data.get('reason') or data.get('edit_reason') or 'Score revised via API'
+                revision = MatchScoreRevision(
+                    match_id=match.id,
+                    edited_by_id=user.id if user else None,
+                    previous_score1=match.score1,
+                    previous_score2=match.score2,
+                    previous_winner_id=match.winner_id,
+                    new_score1=score1,
+                    new_score2=score2,
+                    new_winner_id=winner_id,
+                    reason=reason,
+                    created_at=datetime.utcnow()
+                )
+                db.session.add(revision)
+
             match.winner_id = winner_id
             match.status = 'completed'
             match.completed_at = datetime.utcnow()

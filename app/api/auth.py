@@ -49,7 +49,13 @@ def login():
                 "id": user.id,
                 "username": user.username,
                 "email": user.email,
-                "role": user.role
+                "role": user.role,
+                "full_name": user.full_name,
+                "registration_intent": user.registration_intent,
+                "completion_percentage": user.completion_percentage,
+                "profile_completed": user.profile_completed,
+                "is_email_verified": user.is_email_verified,
+                "account_status": user.account_status
             }
         }), 200
     
@@ -75,7 +81,8 @@ def register():
         password=data['password'],
         password_confirm=data.get('password_confirm'),
         full_name=data.get('full_name') or data.get('name'),
-        gender=data.get('gender', 'Male'),
+        registration_intent=data.get('registration_intent', 'user'),
+        gender=data.get('gender'),
         contact_number=data.get('contact_number')
     )
 
@@ -99,9 +106,96 @@ def register():
             "id": user.id,
             "username": user.username,
             "email": user.email,
-            "role": user.role
+            "role": user.role,
+            "full_name": user.full_name,
+            "registration_intent": user.registration_intent,
+            "completion_percentage": user.completion_percentage,
+            "profile_completed": user.profile_completed,
+            "is_email_verified": user.is_email_verified,
+            "account_status": user.account_status
         }
     }), 201
+
+
+@api_bp.route('/auth/profile/complete', methods=['POST'])
+@jwt_required()
+def complete_profile():
+    """Stage 2 Onboarding: Complete athletic player profile and calculate percentage."""
+    current_user_id = int(get_jwt_identity())
+    data = request.get_json() or {}
+
+    from datetime import datetime
+    dob_val = None
+    if data.get('dob'):
+        try:
+            dob_val = datetime.strptime(str(data['dob']), "%Y-%m-%d").date()
+        except ValueError:
+            return jsonify({"success": False, "message": "Invalid date format for dob (YYYY-MM-DD required)"}), 400
+
+    from app.services.user_service import complete_player_profile
+    res = complete_player_profile(
+        user_id=current_user_id,
+        full_name=data.get('full_name') or data.get('name'),
+        gender=data.get('gender'),
+        dob=dob_val,
+        contact_number=data.get('contact_number') or data.get('phone_number'),
+        primary_sport=data.get('primary_sport', 'Tennis'),
+        skill_level=data.get('skill_level'),
+        preferred_competition_category=data.get('preferred_competition_category'),
+        emergency_contact_name=data.get('emergency_contact_name'),
+        emergency_contact_phone=data.get('emergency_contact_phone'),
+        nationality=data.get('nationality'),
+        height=data.get('height'),
+        weight=data.get('weight'),
+        blood_group=data.get('blood_group'),
+        address=data.get('address'),
+        academy=data.get('academy'),
+        coach=data.get('coach'),
+        avatar_url=data.get('avatar_url'),
+        bio=data.get('bio')
+    )
+    status_code = 200 if res.get('success') else 400
+    return jsonify(res), status_code
+
+
+@api_bp.route('/auth/verify-email', methods=['POST'])
+def verify_email():
+    data = request.get_json() or {}
+    token = data.get('token') or request.args.get('token')
+    if not token:
+        return jsonify({"success": False, "message": "Verification token required"}), 400
+
+    from app.services.user_service import verify_user_email
+    res = verify_user_email(token)
+    status_code = 200 if res.get('success') else 400
+    return jsonify(res), status_code
+
+
+@api_bp.route('/auth/forgot-password', methods=['POST'])
+def forgot_password():
+    data = request.get_json() or {}
+    email = data.get('email', '').strip()
+    if not email:
+        return jsonify({"success": False, "message": "Email is required"}), 400
+
+    from app.services.user_service import request_password_reset
+    res = request_password_reset(email)
+    return jsonify(res), 200
+
+
+@api_bp.route('/auth/reset-password', methods=['POST'])
+def reset_password():
+    data = request.get_json() or {}
+    token = data.get('token')
+    password = data.get('password')
+    password_confirm = data.get('password_confirm')
+    if not token or not password:
+        return jsonify({"success": False, "message": "Token and new password are required"}), 400
+
+    from app.services.user_service import reset_password_with_token
+    res = reset_password_with_token(token, password, password_confirm)
+    status_code = 200 if res.get('success') else 400
+    return jsonify(res), status_code
 
 
 @api_bp.route('/auth/refresh', methods=['POST'])
@@ -208,6 +302,12 @@ def get_current_user_profile():
             "weight": player.weight,
             "blood_group": player.blood_group,
             "current_status": player.current_status,
+            "profile_status": player.profile_status,
+            "primary_sport": player.primary_sport,
+            "skill_level": player.skill_level,
+            "preferred_competition_category": player.preferred_competition_category,
+            "emergency_contact_name": player.emergency_contact_name,
+            "emergency_contact_phone": player.emergency_contact_phone,
             "academy": player.academy,
             "coach": player.coach,
             "avatar_url": player.avatar_url,
@@ -225,6 +325,13 @@ def get_current_user_profile():
             "username": user.username,
             "email": user.email,
             "role": user.role,
+            "full_name": user.full_name,
+            "phone_number": user.phone_number,
+            "registration_intent": user.registration_intent,
+            "completion_percentage": user.completion_percentage,
+            "profile_completed": user.profile_completed,
+            "is_email_verified": user.is_email_verified,
+            "account_status": user.account_status,
             "created_at": user.created_at.isoformat() if user.created_at else None
         },
         "player": player_data

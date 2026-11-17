@@ -51,14 +51,29 @@ tournament_bp = Blueprint("tournament", __name__)
 def create_tournament():
     """Create new tournament"""
     academy_id = request.args.get("academy_id")
+    current_u = get_current_user()
     if request.method == "POST":
         name = request.form.get("name")
-        creator_name = request.form.get("creator_name", "Anonymous")
+        creator_name = (request.form.get("creator_name") or "").strip() or current_u.full_name or current_u.username
         description = request.form.get("description", "")
         payment_upi_id = request.form.get("payment_upi_id", "").strip()
         game_info = request.form.get("game_info", "")
         academy_id = request.form.get("academy_id") or academy_id
         is_internal = request.form.get("is_internal") == "on"
+
+        # Handle custom tournament logo upload
+        logo_url = None
+        if "logo" in request.files:
+            logo_file = request.files.get("logo")
+            if logo_file and logo_file.filename:
+                try:
+                    from app.services.utils.uploads import save_uploaded_logo
+                    logo_url = save_uploaded_logo(logo_file, subfolder="tournaments/logos")
+                except ValueError as e:
+                    flash(str(e), "error")
+                    return render_template(
+                        "tournament/create.html", academy_id=academy_id, formats=TOURNAMENT_FORMATS
+                    )
 
         ok, clean_name = validate_name(name, min_len=3, max_len=100, field_name="Tournament Name")
         if not ok:
@@ -177,6 +192,7 @@ def create_tournament():
             daily_operating_hours=daily_operating_hours,
             num_courts=num_courts,
             court_names=court_names,
+            logo_url=logo_url,
         )
 
         try:
@@ -385,9 +401,19 @@ def register_for_tournament(slug):
     categories = Category.query.filter_by(tournament_id=tournament.id).all()
 
     current_u = get_current_user()
-    player = None
-    if current_u:
-        player = Player.query.filter_by(user_id=current_u.id).first()
+    if not current_u:
+        flash("Please log in or create an account to register for this tournament.", "info")
+        return redirect(url_for("auth.login", next=url_for("tournament.register_for_tournament", slug=slug)))
+
+    if not current_u.profile_completed:
+        pct = current_u.completion_percentage or 0
+        flash(f"Your player profile is {pct}% complete. Please complete your profile before registering.", "warning")
+        return redirect(url_for("auth.complete_profile", next=url_for("tournament.register_for_tournament", slug=slug)))
+
+    player = Player.query.filter_by(user_id=current_u.id).first()
+    if not player:
+        from app.services.user_service import ensure_user_profile
+        player = ensure_user_profile(current_u.id)
 
     if request.method == "POST":
         category_ids = request.form.getlist("category_id", type=int)
@@ -545,18 +571,10 @@ def register_for_tournament(slug):
                 flash("Age or Date of Birth is required.", "error")
                 return redirect(url_for("tournament.register_for_tournament", slug=slug))
 
-        # 1. SMART REGISTRATION: Ensure we have an anonymous dummy user for Registration.user_id
-        anon_email = "anonymous@tourneypro.com"
-        anon_user = User.query.filter_by(email=anon_email).first()
-        if not anon_user:
-            anon_user = User(username="anonymous_registrations", email=anon_email, role="user")
-            anon_user.password_hash = "*disabled*"
-            db.session.add(anon_user)
-            db.session.flush()
+        # 1. VERIFIED USER IDENTITY: Ensure authenticated user owns the registration
+        current_u_id = current_u.id
 
-        current_u_id = current_u.id if current_u else anon_user.id
-
-        # 2. AUTO PROFILE CREATION: Create or link Player profile
+        # 2. AUTO PROFILE CREATION: Link authenticated Player profile
         if player:
             new_player = player
             if participant_mobile and not new_player.contact_number:
@@ -566,39 +584,10 @@ def register_for_tournament(slug):
             if participant_dob and not new_player.dob:
                 new_player.dob = participant_dob
         else:
-            existing_player = None
-            if current_u:
-                existing_player = Player.query.filter_by(user_id=current_u.id).first()
-            if not existing_player and participant_mobile:
-                existing_player = Player.query.filter(
-                    Player.contact_number == participant_mobile
-                ).first()
-            if not existing_player and participant_name and participant_mobile:
-                existing_player = Player.query.filter(
-                    Player.name == participant_name, Player.contact_number == participant_mobile
-                ).first()
-
-            if existing_player:
-                new_player = existing_player
-                if current_u and not new_player.user_id:
-                    new_player.user_id = current_u.id
-                if participant_email and not new_player.email:
-                    new_player.email = participant_email
-                if participant_dob and not new_player.dob:
-                    new_player.dob = participant_dob
-            else:
-                age_cat = determine_age_category(age=participant_age, dob=participant_dob)
-                new_player = Player(
-                    user_id=current_u.id if current_u else None,
-                    name=participant_name,
-                    email=participant_email or None,
-                    contact_number=participant_mobile,
-                    gender=participant_gender,
-                    dob=participant_dob,
-                    age_category=age_cat,
-                )
-                db.session.add(new_player)
-                db.session.flush()
+            new_player = Player.query.filter_by(user_id=current_u.id).first()
+            if not new_player:
+                from app.services.user_service import ensure_user_profile
+                new_player = ensure_user_profile(current_u.id)
 
         # 3. AUTO PROFILE CREATION FOR DOUBLES PARTNERS
         partner_players = {}
@@ -654,6 +643,10 @@ def register_for_tournament(slug):
 
             reg_status = "pending" if amount_due > 0 else "approved"
 
+            from app.domain.models import AcademyMember
+            active_mem = AcademyMember.query.filter_by(user_id=current_u_id, membership_status='ACTIVE').first()
+            academy_snapshot_id = active_mem.academy_id if active_mem else None
+
             reg = Registration(
                 tournament_id=tournament.id,
                 category_id=cat.id,
@@ -667,6 +660,7 @@ def register_for_tournament(slug):
                 transaction_id=transaction_id if amount_due > 0 else None,
                 payment_status="pending" if amount_due > 0 else "paid",
                 payment_method=payment_method if amount_due > 0 else "free",
+                academy_id_snapshot=academy_snapshot_id,
             )
             db.session.add(reg)
 
@@ -778,6 +772,11 @@ def manage_tournament(slug):
                         payment_method=payment_method,
                     )
                     db.session.add(participant)
+                    try:
+                        from app.services.notification_service import notify_registration_status
+                        notify_registration_status(reg, "approved")
+                    except Exception:
+                        pass
                     db.session.commit()
                     method_name = "Online" if payment_method == "online" else "Cash"
                     flash(
@@ -792,6 +791,11 @@ def manage_tournament(slug):
                 if reg:
                     player_name = reg.player.name if reg.player else "player"
                     reg.status = "rejected"
+                    try:
+                        from app.services.notification_service import notify_registration_status
+                        notify_registration_status(reg, "rejected")
+                    except Exception:
+                        pass
                     db.session.commit()
                     flash(f"Registration for {player_name} rejected.", "warning")
                 return redirect(url_for("tournament.manage_tournament", slug=slug) + "#players")
@@ -1407,6 +1411,13 @@ def report_match_result(slug, match_id):
     is_live_update = action == "live_score"
     winner_id = request.form.get("winner_id", type=int) if not is_live_update else None
 
+    is_score_modification = (match.status == "completed")
+    old_score1 = match.score1
+    old_score2 = match.score2
+    old_winner_id = match.winner_id
+    reason = "Standard entry"
+    explanation = None
+
     # Check Day-to-Day and Bracket progression if match is not already completed
     if match.status != "completed":
         from app.services.utils.scheduler import check_match_progression_allowed
@@ -1597,6 +1608,23 @@ def report_match_result(slug, match_id):
             db.session.commit()
             flash("Live score updated successfully.", "success")
             return redirect(url_for("tournament.view_tournament", slug=slug))
+
+        if is_score_modification:
+            from app.domain.models import MatchScoreRevision
+            revision = MatchScoreRevision(
+                match_id=match.id,
+                edited_by_id=current_u.id if current_u else None,
+                previous_score1=old_score1,
+                previous_score2=old_score2,
+                previous_winner_id=old_winner_id,
+                new_score1=score1,
+                new_score2=score2,
+                new_winner_id=winner_id,
+                reason=reason,
+                explanation=explanation,
+                created_at=datetime.utcnow()
+            )
+            db.session.add(revision)
 
         match.winner_id = winner_id
         match.status = "completed"

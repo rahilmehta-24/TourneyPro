@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Complete Your Player Profile - The Baseline Society{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 850px; margin: 0 auto; padding: var(--spacing-xl) var(--spacing-md);">
+    <div class="form-section" style="background: var(--bg-card); padding: var(--spacing-xl); border: 1px solid var(--border-color); border-top: 4px solid var(--accent-primary); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);">
+        
+        <div style="text-align: center; margin-bottom: 1.5rem;">
+            <span class="badge" style="background: var(--accent-secondary-bg); color: var(--accent-secondary-text); padding: 0.35rem 0.85rem; border-radius: 9999px; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">Stage 2 &bull; Player Onboarding</span>
+            <h2 class="form-section-title" style="font-family: var(--font-display); font-weight: 700; margin-top: 0.75rem; margin-bottom: 0.25rem; font-size: 2.15rem; color: var(--text-primary);">Complete Your Player Profile</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Tournament registration requires a 100% verified player profile to ensure age eligibility, category placement, and safety.</p>
+        </div>
+
+        <!-- Completion Percentage Indicator -->
+        <div style="background: var(--bg-secondary); padding: 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <span style="font-weight: 600; color: var(--text-primary);">Profile Readiness Score</span>
+                <span style="font-weight: 800; font-size: 1.2rem; color: var(--accent-primary-text);">{{ user.completion_percentage or 0 }}% Complete</span>
+            </div>
+            <div style="width: 100%; height: 12px; background: var(--border-color); border-radius: 6px; overflow: hidden;">
+                <div style="width: {{ user.completion_percentage or 0 }}%; height: 100%; background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary)); transition: width 0.4s ease;"></div>
+            </div>
+            <div style="margin-top: 0.75rem; display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.85rem; color: var(--text-muted);">
+                <span>{% if user.full_name %}&#10003;{% else %}&#9675;{% endif %} Full Name</span>
+                <span>{% if player and player.gender %}&#10003;{% else %}&#9675;{% endif %} Gender</span>
+                <span>{% if player and player.dob %}&#10003;{% else %}&#9675;{% endif %} Date of Birth</span>
+                <span>{% if user.phone_number or (player and player.contact_number) %}&#10003;{% else %}&#9675;{% endif %} Phone</span>
+                <span>{% if player and player.primary_sport %}&#10003;{% else %}&#9675;{% endif %} Sport &amp; Skill Level</span>
+                <span>{% if player and player.emergency_contact_name %}&#10003;{% else %}&#9675;{% endif %} Emergency Contact</span>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ url_for('auth.complete_profile', next=next_url) if next_url else url_for('auth.complete_profile') }}" data-turbo="false">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            {% if next_url %}
+            <input type="hidden" name="next" value="{{ next_url }}"/>
+            {% endif %}
+
+            <h3 style="margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; color: var(--accent-primary-text);">1. Core Athletic Eligibility</h3>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                <div class="form-group">
+                    <label class="form-label">Full Legal Name *</label>
+                    <input type="text" name="full_name" class="form-input" required value="{{ user.full_name or (player.name if player else user.username) }}" placeholder="e.g. Rahil Mehta">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Gender (Required for Division Bracket) *</label>
+                    <select name="gender" class="form-input" required>
+                        <option value="">Select Gender...</option>
+                        <option value="Male" {% if player and player.gender == 'Male' %}selected{% endif %}>Male</option>
+                        <option value="Female" {% if player and player.gender == 'Female' %}selected{% endif %}>Female</option>
+                        <option value="Other" {% if player and player.gender == 'Other' %}selected{% endif %}>Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Date of Birth (Determines Age Category) *</label>
+                    <input type="date" name="dob" class="form-input" required value="{{ player.dob.isoformat() if player and player.dob else '' }}">
+                    <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.25rem;">Age category cutoff: As of Dec 31st of tournament year.</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Primary Mobile / WhatsApp *</label>
+                    <input type="tel" name="contact_number" class="form-input" required value="{{ user.phone_number or (player.contact_number if player else '') }}" placeholder="e.g. +91 98765 43210">
+                </div>
+            </div>
+
+            <h3 style="margin-top: 1.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; color: var(--accent-primary-text);">2. Competition &amp; Discipline</h3>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                <div class="form-group">
+                    <label class="form-label">Primary Sport *</label>
+                    <select name="primary_sport" class="form-input" required>
+                        <option value="Tennis" {% if not player or player.primary_sport == 'Tennis' %}selected{% endif %}>Tennis</option>
+                        <option value="Pickleball" {% if player and player.primary_sport == 'Pickleball' %}selected{% endif %}>Pickleball</option>
+                        <option value="Badminton" {% if player and player.primary_sport == 'Badminton' %}selected{% endif %}>Badminton</option>
+                        <option value="Table Tennis" {% if player and player.primary_sport == 'Table Tennis' %}selected{% endif %}>Table Tennis</option>
+                        <option value="Squash" {% if player and player.primary_sport == 'Squash' %}selected{% endif %}>Squash</option>
+                        <option value="Padel" {% if player and player.primary_sport == 'Padel' %}selected{% endif %}>Padel</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Skill Level *</label>
+                    <select name="skill_level" class="form-input" required>
+                        <option value="">Select Level...</option>
+                        <option value="Beginner" {% if player and player.skill_level == 'Beginner' %}selected{% endif %}>Beginner</option>
+                        <option value="Intermediate" {% if player and player.skill_level == 'Intermediate' %}selected{% endif %}>Intermediate</option>
+                        <option value="Advanced" {% if player and player.skill_level == 'Advanced' %}selected{% endif %}>Advanced</option>
+                        <option value="Professional" {% if player and player.skill_level == 'Professional' %}selected{% endif %}>Professional</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Preferred Competition Category</label>
+                    <select name="preferred_competition_category" class="form-input">
+                        <option value="">Select Primary Event Category...</option>
+                        {% for cat in competition_categories %}
+                        <option value="{{ cat }}" {% if player and player.preferred_competition_category == cat %}selected{% endif %}>{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Training Academy / Club Affiliation</label>
+                    <input type="text" name="academy" class="form-input" value="{{ player.academy if player and player.academy else '' }}" placeholder="e.g. Apex Tennis Academy">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Coach Name</label>
+                    <input type="text" name="coach" class="form-input" value="{{ player.coach if player and player.coach else '' }}" placeholder="Current Coach">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Nationality</label>
+                    <input type="text" name="nationality" class="form-input" value="{{ player.nationality if player and player.nationality else '' }}" placeholder="e.g. India">
+                </div>
+            </div>
+
+            <h3 style="margin-top: 1.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; color: var(--accent-primary-text);">3. Emergency Contact &amp; Safety Details</h3>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                <div class="form-group">
+                    <label class="form-label">Emergency Contact Name *</label>
+                    <input type="text" name="emergency_contact_name" class="form-input" required value="{{ player.emergency_contact_name if player and player.emergency_contact_name else '' }}" placeholder="Guardian / Parent / Spouse Name">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Emergency Contact Phone *</label>
+                    <input type="tel" name="emergency_contact_phone" class="form-input" required value="{{ player.emergency_contact_phone if player and player.emergency_contact_phone else '' }}" placeholder="e.g. +91 98765 00000">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Blood Group</label>
+                    <select name="blood_group" class="form-input">
+                        <option value="">Select Blood Group...</option>
+                        <option value="A+" {% if player and player.blood_group == 'A+' %}selected{% endif %}>A+</option>
+                        <option value="A-" {% if player and player.blood_group == 'A-' %}selected{% endif %}>A-</option>
+                        <option value="B+" {% if player and player.blood_group == 'B+' %}selected{% endif %}>B+</option>
+                        <option value="B-" {% if player and player.blood_group == 'B-' %}selected{% endif %}>B-</option>
+                        <option value="AB+" {% if player and player.blood_group == 'AB+' %}selected{% endif %}>AB+</option>
+                        <option value="AB-" {% if player and player.blood_group == 'AB-' %}selected{% endif %}>AB-</option>
+                        <option value="O+" {% if player and player.blood_group == 'O+' %}selected{% endif %}>O+</option>
+                        <option value="O-" {% if player and player.blood_group == 'O-' %}selected{% endif %}>O-</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Residential Address</label>
+                    <input type="text" name="address" class="form-input" value="{{ player.address if player and player.address else '' }}" placeholder="City, State, Country">
+                </div>
+            </div>
+
+            <div style="margin-top: 2rem;">
+                <button type="submit" class="btn btn-primary btn-block btn-large" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; font-size: 1.1rem; padding: 0.85rem;">
+                    <svg class="tp-icon" aria-hidden="true"><use href="#icon-check"></use></svg> Save &amp; Complete Player Profile
+                </button>
+                {% if next_url %}
+                <p style="text-align: center; color: var(--text-muted); font-size: 0.85rem; margin-top: 0.75rem;">
+                    <em>Upon saving, you will be automatically returned to your tournament checkout.</em>
+                </p>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

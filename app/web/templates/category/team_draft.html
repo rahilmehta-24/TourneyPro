@@ -82,7 +82,7 @@
     </div>
 
     {% if leftover_players > 0 or dummy_players %}
-    <!-- Leftover Players / Late Entry / Dummy Slot Handler -->
+    <!-- Leftover Players / Late Entry Handler -->
     <div style="background: rgba(201, 165, 92, 0.14); border: 1px solid rgba(122, 95, 30, 0.45); border-left: 5px solid #B45309; border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; margin-bottom: 1.5rem;">
         {% if leftover_players > 0 %}
         <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem;">
@@ -91,7 +91,7 @@
                     <span>⚠️ {{ players_needed_for_next }} More Player(s) Required for Team {{ full_teams + 1 }}</span>
                 </h3>
                 <p style="margin: 0.3rem 0 0 0; font-size: 0.86rem; color: var(--text-secondary); line-height: 1.45;">
-                    You currently have <strong>{{ total_players }} players</strong> ({{ full_teams }} full teams of {{ players_per_team }} + <strong>{{ leftover_players }} leftover</strong>). Before locking your final groups, add <strong>{{ players_needed_for_next }} late-entry player(s)</strong>, fill the remaining slot(s) with <strong>TBD / Dummy</strong> placeholders, or continue with <strong>{{ full_teams }} teams</strong>.
+                    You currently have <strong>{{ total_players }} players</strong> ({{ full_teams }} full teams of {{ players_per_team }} + <strong>{{ leftover_players }} leftover</strong>). Under the Baseline Society Zero Dummy Data policy, all roster slots require genuine competitors. Register <strong>{{ players_needed_for_next }} late-entry player(s)</strong> below, or proceed with <strong>{{ full_teams }} teams</strong>.
                 </p>
                 {% if next_team_options %}
                 <div style="margin-top: 0.45rem; font-size: 0.8rem; color: #78350F;">
@@ -101,15 +101,6 @@
                     {% endfor %}
                 </div>
                 {% endif %}
-            </div>
-            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                <form method="POST" action="{{ url_for('category.add_dummy_players', slug=tournament.url_slug, category_id=category.id) }}" style="margin: 0;">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <input type="hidden" name="count" value="{{ players_needed_for_next }}">
-                    <button type="submit" class="btn btn-secondary" style="font-size: 0.84rem; font-weight: 700; border-color: #B45309; color: #78350F;">
-                        🤖 Fill {{ players_needed_for_next }} Dummy / TBD Slot{{ 's' if players_needed_for_next > 1 else '' }}
-                    </button>
-                </form>
             </div>
         </div>
         {% endif %}
