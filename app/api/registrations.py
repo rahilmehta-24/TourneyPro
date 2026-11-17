@@ -84,6 +84,10 @@ def register_for_tournament(slug):
     if payment_method == 'free':
         payment_status = 'paid'
 
+    from app.domain.models import AcademyMember
+    active_mem = AcademyMember.query.filter_by(user_id=current_user_id, membership_status='ACTIVE').first()
+    academy_snapshot_id = active_mem.academy_id if active_mem else None
+
     registration = Registration(
         tournament_id=tournament.id,
         category_id=category.id,
@@ -96,7 +100,8 @@ def register_for_tournament(slug):
         payment_status=payment_status,
         amount_due=amount_due,
         transaction_id=transaction_id,
-        payment_method=payment_method
+        payment_method=payment_method,
+        academy_id_snapshot=academy_snapshot_id
     )
     db.session.add(registration)
     db.session.commit()

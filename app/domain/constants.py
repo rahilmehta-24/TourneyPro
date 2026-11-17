@@ -57,6 +57,79 @@ VALID_SKILL_LEVELS: Tuple[str, ...] = (
     "Pro",
 )
 
+# ---------------------------------------------------------------------------
+# Platform, Academy & Tournament Roles and Permissions
+# ---------------------------------------------------------------------------
+
+# 1. Platform Roles
+PLATFORM_ROLE_SUPERADMIN = "superadmin"
+PLATFORM_ROLE_SUPPORT = "support"
+PLATFORM_ROLE_USER = "user"
+
+PLATFORM_ROLES: Tuple[str, ...] = (
+    PLATFORM_ROLE_SUPERADMIN,
+    PLATFORM_ROLE_SUPPORT,
+    PLATFORM_ROLE_USER,
+)
+
+# 2. Academy Roles
+ACADEMY_ROLE_OWNER = "owner"
+ACADEMY_ROLE_ADMIN = "admin"
+ACADEMY_ROLE_HEAD_COACH = "head_coach"
+ACADEMY_ROLE_COACH = "coach"
+ACADEMY_ROLE_MEMBER = "member"
+
+ACADEMY_ROLES: Tuple[str, ...] = (
+    ACADEMY_ROLE_OWNER,
+    ACADEMY_ROLE_ADMIN,
+    ACADEMY_ROLE_HEAD_COACH,
+    ACADEMY_ROLE_COACH,
+    ACADEMY_ROLE_MEMBER,
+)
+
+# 3. Tournament Roles
+TOURNAMENT_ROLE_OWNER = "owner"
+TOURNAMENT_ROLE_DIRECTOR = "director"
+TOURNAMENT_ROLE_MANAGER = "manager"
+TOURNAMENT_ROLE_DRAW_ADMIN = "draw_admin"
+TOURNAMENT_ROLE_REFEREE = "referee"
+TOURNAMENT_ROLE_SCORER = "scorer"
+TOURNAMENT_ROLE_PARTICIPANT = "participant"
+TOURNAMENT_ROLE_VIEWER = "viewer"
+
+TOURNAMENT_ROLES: Tuple[str, ...] = (
+    TOURNAMENT_ROLE_OWNER,
+    TOURNAMENT_ROLE_DIRECTOR,
+    TOURNAMENT_ROLE_MANAGER,
+    TOURNAMENT_ROLE_DRAW_ADMIN,
+    TOURNAMENT_ROLE_REFEREE,
+    TOURNAMENT_ROLE_SCORER,
+    TOURNAMENT_ROLE_PARTICIPANT,
+    TOURNAMENT_ROLE_VIEWER,
+)
+
+# Standard Scoped Permission Strings
+PERM_PLATFORM_ACADEMIES_VERIFY = "platform.academies.verify"
+PERM_PLATFORM_ACADEMIES_VIEW = "platform.academies.view"
+PERM_PLATFORM_USERS_VIEW = "platform.users.view"
+PERM_PLATFORM_USERS_MANAGE = "platform.users.manage"
+PERM_PLATFORM_AUDIT_VIEW = "platform.audit.view"
+PERM_PLATFORM_CONFIG_MANAGE = "platform.config.manage"
+
+PERM_ACADEMY_VIEW = "academy.view"
+PERM_ACADEMY_MANAGE = "academy.manage"
+PERM_ACADEMY_MEMBERS_VIEW = "academy.members.view"
+PERM_ACADEMY_MEMBERS_MANAGE = "academy.members.manage"
+PERM_ACADEMY_COACHES_ASSIGN = "academy.coaches.assign"
+
+PERM_TOURNAMENT_CREATE = "tournament.create"
+PERM_TOURNAMENT_VIEW = "tournament.view"
+PERM_TOURNAMENT_MANAGE = "tournament.manage"
+PERM_TOURNAMENT_DRAW_MANAGE = "tournament.draw.manage"
+PERM_TOURNAMENT_REGISTRATION_REVIEW = "tournament.registration.review"
+PERM_TOURNAMENT_SCORE_SUBMIT = "tournament.score.submit"
+PERM_TOURNAMENT_RESULTS_PUBLISH = "tournament.results.publish"
+
 
 def calculate_canonical_age_category(
     dob: Optional[date],

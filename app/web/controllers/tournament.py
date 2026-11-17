@@ -51,14 +51,29 @@ tournament_bp = Blueprint("tournament", __name__)
 def create_tournament():
     """Create new tournament"""
     academy_id = request.args.get("academy_id")
+    current_u = get_current_user()
     if request.method == "POST":
         name = request.form.get("name")
-        creator_name = request.form.get("creator_name", "Anonymous")
+        creator_name = (request.form.get("creator_name") or "").strip() or current_u.full_name or current_u.username
         description = request.form.get("description", "")
         payment_upi_id = request.form.get("payment_upi_id", "").strip()
         game_info = request.form.get("game_info", "")
         academy_id = request.form.get("academy_id") or academy_id
         is_internal = request.form.get("is_internal") == "on"
+
+        # Handle custom tournament logo upload
+        logo_url = None
+        if "logo" in request.files:
+            logo_file = request.files.get("logo")
+            if logo_file and logo_file.filename:
+                try:
+                    from app.services.utils.uploads import save_uploaded_logo
+                    logo_url = save_uploaded_logo(logo_file, subfolder="tournaments/logos")
+                except ValueError as e:
+                    flash(str(e), "error")
+                    return render_template(
+                        "tournament/create.html", academy_id=academy_id, formats=TOURNAMENT_FORMATS
+                    )
 
         ok, clean_name = validate_name(name, min_len=3, max_len=100, field_name="Tournament Name")
         if not ok:
@@ -177,6 +192,7 @@ def create_tournament():
             daily_operating_hours=daily_operating_hours,
             num_courts=num_courts,
             court_names=court_names,
+            logo_url=logo_url,
         )
 
         try:
@@ -627,6 +643,10 @@ def register_for_tournament(slug):
 
             reg_status = "pending" if amount_due > 0 else "approved"
 
+            from app.domain.models import AcademyMember
+            active_mem = AcademyMember.query.filter_by(user_id=current_u_id, membership_status='ACTIVE').first()
+            academy_snapshot_id = active_mem.academy_id if active_mem else None
+
             reg = Registration(
                 tournament_id=tournament.id,
                 category_id=cat.id,
@@ -640,6 +660,7 @@ def register_for_tournament(slug):
                 transaction_id=transaction_id if amount_due > 0 else None,
                 payment_status="pending" if amount_due > 0 else "paid",
                 payment_method=payment_method if amount_due > 0 else "free",
+                academy_id_snapshot=academy_snapshot_id,
             )
             db.session.add(reg)
 
@@ -1380,6 +1401,13 @@ def report_match_result(slug, match_id):
     is_live_update = action == "live_score"
     winner_id = request.form.get("winner_id", type=int) if not is_live_update else None
 
+    is_score_modification = (match.status == "completed")
+    old_score1 = match.score1
+    old_score2 = match.score2
+    old_winner_id = match.winner_id
+    reason = "Standard entry"
+    explanation = None
+
     # Check Day-to-Day and Bracket progression if match is not already completed
     if match.status != "completed":
         from app.services.utils.scheduler import check_match_progression_allowed
@@ -1570,6 +1598,23 @@ def report_match_result(slug, match_id):
             db.session.commit()
             flash("Live score updated successfully.", "success")
             return redirect(url_for("tournament.view_tournament", slug=slug))
+
+        if is_score_modification:
+            from app.domain.models import MatchScoreRevision
+            revision = MatchScoreRevision(
+                match_id=match.id,
+                edited_by_id=current_u.id if current_u else None,
+                previous_score1=old_score1,
+                previous_score2=old_score2,
+                previous_winner_id=old_winner_id,
+                new_score1=score1,
+                new_score2=score2,
+                new_winner_id=winner_id,
+                reason=reason,
+                explanation=explanation,
+                created_at=datetime.utcnow()
+            )
+            db.session.add(revision)
 
         match.winner_id = winner_id
         match.status = "completed"

@@ -9,12 +9,15 @@
             <h1 class="page-title">User Management Dashboard</h1>
             <p class="page-subtitle">Manage user accounts, data workspaces, and permissions</p>
         </div>
+        {% if current_user and current_user.role == 'superadmin' %}
         <button type="button" class="btn btn-primary" onclick="const f = document.getElementById('createUserCard'); f.style.display = f.style.display === 'none' ? 'block' : 'none';" style="display: inline-flex; align-items: center; gap: 8px;">
             <svg class="tp-icon" aria-hidden="true"><use href="#icon-plus"></use></svg> Create New User
         </button>
+        {% endif %}
     </div>
 
     <!-- Create User Admin Form Card (Collapsed by default) -->
+    {% if current_user and current_user.role == 'superadmin' %}
     <div id="createUserCard" class="form-section" style="display: none; background: var(--bg-card); padding: var(--spacing-lg); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); border: 1px solid var(--border-color); margin-bottom: var(--spacing-xl);">
         <div style="border-bottom: 1px solid var(--border-subtle); padding-bottom: var(--spacing-sm); margin-bottom: var(--spacing-md);">
             <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin: 0;">Create New User Account</h2>
@@ -47,6 +50,7 @@
                     <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Account Role *</label>
                     <select name="role" class="form-control" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-primary); color: var(--text-primary);">
                         <option value="user">Player / User</option>
+                        <option value="support">Platform Support</option>
                         <option value="admin">Tournament Organizer / Admin</option>
                     </select>
                 </div>
@@ -58,6 +62,7 @@
             </div>
         </form>
     </div>
+    {% endif %}
 
     <div class="form-section" style="background: var(--bg-card); padding: var(--spacing-lg); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);">
         <div class="table-container" style="overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%;">
@@ -103,6 +108,7 @@
                             {% endif %}
                         </td>
                         <td style="padding: 0.85rem 1rem; text-align: right;">
+                            {% if current_user and current_user.role == 'superadmin' %}
                             <div style="display: inline-flex; align-items: center; justify-content: flex-end; gap: 0.5rem; flex-wrap: wrap;">
                                 {% if user.admin_requested %}
                                 <form method="POST" action="{{ url_for('auth.grant_admin', user_id=user.id) }}" style="display: inline; margin: 0;">
@@ -133,6 +139,7 @@
                                 <form method="POST" action="{{ url_for('auth.change_user_role', user_id=user.id) }}" style="display: inline-flex; align-items: center; margin: 0;">
                                     <select name="role" onchange="if(confirm('Change role for {{ user.username }} to ' + this.options[this.selectedIndex].text + '?')) { this.form.submit(); } else { this.value='{{ user.role }}'; }" class="form-input" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; font-weight: 600; border-radius: var(--radius-sm); height: 32px; min-height: 32px; background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); cursor: pointer;" title="Change Role (RBAC)">
                                         <option value="user" {% if user.role == 'user' %}selected{% endif %}>User / Player</option>
+                                        <option value="support" {% if user.role == 'support' %}selected{% endif %}>Platform Support</option>
                                         <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
                                         <option value="superadmin" {% if user.role == 'superadmin' %}selected{% endif %}>Superadmin</option>
                                     </select>
@@ -149,6 +156,9 @@
                                 <span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic; padding: 0.35rem 0.5rem;">(You)</span>
                                 {% endif %}
                             </div>
+                            {% else %}
+                            <span style="font-size: 0.8rem; color: var(--text-muted); font-style: italic;">View Only (Support)</span>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}

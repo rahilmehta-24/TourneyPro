@@ -240,6 +240,11 @@
                                         <svg class="tp-icon" aria-hidden="true"><use href="#icon-settings"></use></svg> User Management
                                     </a>
                                     {% endif %}
+                                    {% if current_user.role in ['superadmin', 'support'] %}
+                                    <a href="{{ url_for('auth.platform_academy_applications') }}" class="profile-dropdown-item">
+                                        <svg class="tp-icon" aria-hidden="true"><use href="#icon-shield"></use></svg> Academy Verification
+                                    </a>
+                                    {% endif %}
                                     {% if current_user.role in ['admin', 'superadmin'] %}
                                     <a href="{{ url_for('player.admin_players') }}" class="profile-dropdown-item">
                                         <svg class="tp-icon" aria-hidden="true"><use href="#icon-clipboard"></use></svg> Player Directory

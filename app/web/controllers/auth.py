@@ -593,7 +593,7 @@ def request_admin():
 
 @auth_bp.route('/admin/users')
 @login_required
-@role_required('superadmin')
+@role_required('superadmin', 'support')
 def user_management():
     users = User.query.order_by(User.role.desc(), User.username).all()
     return render_template('auth/users.html', users=users)
@@ -694,7 +694,7 @@ def change_user_role(user_id):
     target_user = User.query.get_or_404(user_id)
     new_role = request.form.get('role', '').strip().lower()
     
-    if new_role not in ['user', 'admin', 'superadmin']:
+    if new_role not in ['user', 'support', 'admin', 'superadmin']:
         flash('Invalid role selected.', 'error')
         return redirect(url_for('auth.user_management'))
         
@@ -720,6 +720,51 @@ def reject_admin_request(user_id):
     db.session.commit()
     flash(f'Admin request for {user.username} has been rejected.', 'info')
     return redirect(url_for('auth.user_management'))
+
+@auth_bp.route('/admin/platform/academies/applications')
+@login_required
+@role_required('superadmin', 'support')
+def platform_academy_applications():
+    """Platform Console: View and manage academy verification applications."""
+    from app.domain.models import AcademyApplication
+    status_filter = request.args.get('status')
+    query = AcademyApplication.query
+    if status_filter:
+        query = query.filter_by(status=status_filter.upper())
+    applications = query.order_by(AcademyApplication.created_at.desc()).all()
+    current_user = get_current_user()
+    return render_template(
+        'admin/platform/academy_applications.html',
+        applications=applications,
+        status_filter=status_filter,
+        is_superadmin=(current_user.role == 'superadmin')
+    )
+
+@auth_bp.route('/admin/platform/academies/applications/<int:app_id>/review', methods=['POST'])
+@login_required
+@role_required('superadmin')
+def platform_review_academy_application(app_id):
+    """Platform Superadmin verifies or rejects an academy application."""
+    from app.services.academy_service import review_academy_application
+    current_user = get_current_user()
+    decision = request.form.get('decision', '').strip().upper()
+    rejection_reason = request.form.get('rejection_reason', '').strip()
+
+    try:
+        app_record, academy = review_academy_application(
+            application_id=app_id,
+            reviewer_user=current_user,
+            decision=decision,
+            rejection_reason=rejection_reason
+        )
+        if decision == 'APPROVED':
+            flash(f"Academy '{academy.name}' successfully verified and activated!", "success")
+        else:
+            flash(f"Application for '{app_record.name}' was rejected with reason recorded.", "info")
+    except (ValueError, PermissionError) as e:
+        flash(str(e), "error")
+
+    return redirect(url_for('auth.platform_academy_applications'))
 
 @auth_bp.route('/profile')
 @login_required

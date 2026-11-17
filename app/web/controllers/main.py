@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, current_app, redirect, url_for
 from app.domain.models import Tournament
 from app.core.constants import TOURNAMENT_FORMATS
 from app.web.controllers.auth import get_current_user
@@ -34,3 +34,8 @@ def tournament_list():
     """List all tournaments"""
     tournaments = get_visible_tournaments()
     return render_template('tournament/list.html', tournaments=tournaments, formats=TOURNAMENT_FORMATS)
+
+@main_bp.route('/favicon.ico')
+def favicon():
+    """Favicon endpoint to prevent 404 logs."""
+    return current_app.send_static_file('brand/monogram-on-dark.svg')

@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Academy Application Status - The Baseline Society{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-dark text-white p-3">
+                    <h4 class="mb-0"><i class="bi bi-file-earmark-text me-2"></i>Academy Application Status</h4>
+                </div>
+                <div class="card-body p-4">
+                    {% if not application %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-building display-4 text-muted mb-3 d-block"></i>
+                            <h5>No Academy Application Found</h5>
+                            <p class="text-muted">You have not submitted an academy verification application yet.</p>
+                            <a href="{{ url_for('academy.apply') }}" class="btn btn-primary mt-2">Apply for Academy Verification</a>
+                        </div>
+                    {% else %}
+                        <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+                            <div>
+                                <h3 class="mb-1">{{ application.name }}</h3>
+                                <div class="text-muted small">Submitted on {{ application.created_at.strftime('%B %d, %Y at %H:%M UTC') }}</div>
+                            </div>
+                            <div>
+                                {% if application.status == 'PENDING' %}
+                                    <span class="badge bg-warning text-dark fs-6 px-3 py-2"><i class="bi bi-hourglass-split me-1"></i> PENDING PLATFORM REVIEW</span>
+                                {% elif application.status == 'APPROVED' %}
+                                    <span class="badge bg-success fs-6 px-3 py-2"><i class="bi bi-check-circle me-1"></i> VERIFIED & ACTIVE</span>
+                                {% elif application.status == 'REJECTED' %}
+                                    <span class="badge bg-danger fs-6 px-3 py-2"><i class="bi bi-x-circle me-1"></i> APPLICATION DECLINED</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {% if application.status == 'PENDING' %}
+                            <div class="alert alert-warning">
+                                <h6 class="alert-heading fw-bold mb-1"><i class="bi bi-shield-lock me-1"></i> Under Review</h6>
+                                <p class="mb-0 small">Your application has been received and is currently in the verification queue. Platform superadmins inspect all facility and contact details prior to approving host governance capabilities. You will be notified once reviewed.</p>
+                            </div>
+                        {% elif application.status == 'APPROVED' %}
+                            <div class="alert alert-success">
+                                <h6 class="alert-heading fw-bold mb-1"><i class="bi bi-trophy me-1"></i> Congratulations!</h6>
+                                <p class="mb-2 small">Your academy has been officially verified by The Baseline Society. You have been appointed as Academy Owner and can now organize sanctioned tournaments, register players, and manage your courts.</p>
+                                {% if application.academy %}
+                                    <a href="{{ url_for('academy.dashboard', slug=application.academy.url_slug) }}" class="btn btn-success btn-sm">Go to Academy Dashboard</a>
+                                {% endif %}
+                            </div>
+                        {% elif application.status == 'REJECTED' %}
+                            <div class="alert alert-danger">
+                                <h6 class="alert-heading fw-bold mb-1"><i class="bi bi-exclamation-triangle me-1"></i> Application Not Approved</h6>
+                                <p class="mb-2 small"><strong>Reason provided by platform reviewer:</strong></p>
+                                <blockquote class="blockquote fs-6 text-dark bg-white p-2 rounded mb-2 border-start border-4 border-danger">
+                                    {{ application.rejection_reason or 'Application did not meet verification criteria.' }}
+                                </blockquote>
+                                <p class="mb-0 small text-muted">You may address the issues noted above and submit a new application when ready.</p>
+                            </div>
+                        {% endif %}
+
+                        <h6 class="fw-bold text-uppercase text-muted small mt-4 mb-3">Submitted Details</h6>
+                        <dl class="row small mb-0">
+                            <dt class="col-sm-4 text-muted">Contact Email:</dt>
+                            <dd class="col-sm-8">{{ application.contact_email }}</dd>
+
+                            <dt class="col-sm-4 text-muted">Contact Phone:</dt>
+                            <dd class="col-sm-8">{{ application.contact_phone or '—' }}</dd>
+
+                            <dt class="col-sm-4 text-muted">Location:</dt>
+                            <dd class="col-sm-8">
+                                {{ [application.address, application.city, application.state, application.country] | select | join(', ') or '—' }}
+                            </dd>
+
+                            <dt class="col-sm-4 text-muted">Sports Offered:</dt>
+                            <dd class="col-sm-8">{{ application.sports_offered or '—' }}</dd>
+
+                            <dt class="col-sm-4 text-muted">Website:</dt>
+                            <dd class="col-sm-8">
+                                {% if application.website_url %}
+                                    <a href="{{ application.website_url }}" target="_blank" rel="noopener">{{ application.website_url }}</a>
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </dd>
+                        </dl>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-light p-3 text-end">
+                    <a href="{{ url_for('academy.index') }}" class="btn btn-outline-secondary">Browse Academies</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
