@@ -288,6 +288,18 @@ class User(db.Model):
         from werkzeug.security import check_password_hash
         return check_password_hash(self.password_hash, password)
 
+    @property
+    def is_authenticated(self):
+        return True
+
+    @property
+    def is_active(self):
+        return self.account_status == 'ACTIVE'
+
+    @property
+    def is_anonymous(self):
+        return False
+
 class Player(db.Model):
     __tablename__ = 'players'
 

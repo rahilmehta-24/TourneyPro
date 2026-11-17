@@ -202,6 +202,49 @@ class Phase4AcademyMembershipTestCase(unittest.TestCase):
         current_active = get_user_active_academy_membership(player_user.id)
         self.assertEqual(current_active.academy_id, acad_b.id)
 
+    def test_05_academy_dashboard_join_and_transfer_buttons(self):
+        """Verify dashboard displays Join Academy, Transfer Membership, or Membership Badge based on auth state."""
+        owner = self._create_user("dash_owner", "dash_owner@example.com")
+        visitor = self._create_user("dash_visitor", "dash_visitor@example.com")
+        acad = self._create_active_academy("City Tennis", "city-tennis", owner)
+        db.session.commit()
+
+        # 1. Anonymous visitor -> sees "Log in to Join"
+        res_anon = self.client.get("/academies/city-tennis")
+        self.assertEqual(res_anon.status_code, 200)
+        self.assertIn("Log in to Join", res_anon.get_data(as_text=True))
+        self.assertNotIn("Transfer Membership", res_anon.get_data(as_text=True))
+
+        # 2. Logged in visitor without existing membership -> sees "Join Academy"
+        with self.client.session_transaction() as sess:
+            sess["user_id"] = visitor.id
+
+        res_logged = self.client.get("/academies/city-tennis")
+        self.assertEqual(res_logged.status_code, 200)
+        html_logged = res_logged.get_data(as_text=True)
+        self.assertIn("Join Academy", html_logged)
+        self.assertNotIn("Log in to Join", html_logged)
+
+        # 3. Logged in member of another academy -> sees "Transfer Membership"
+        other_acad = self._create_active_academy("Other Club", "other-club", owner)
+        add_academy_member(other_acad.id, visitor.id)
+        db.session.commit()
+
+        res_transfer = self.client.get("/academies/city-tennis")
+        self.assertEqual(res_transfer.status_code, 200)
+        html_transfer = res_transfer.get_data(as_text=True)
+        self.assertIn("Transfer Membership", html_transfer)
+        self.assertNotIn("Log in to Join", html_transfer)
+
+        # 4. Enrolled member -> sees "You are a Member"
+        transfer_user_academy_membership(visitor.id, acad.id)
+        db.session.commit()
+        res_member = self.client.get("/academies/city-tennis")
+        self.assertEqual(res_member.status_code, 200)
+        html_member = res_member.get_data(as_text=True)
+        self.assertIn("You are a Member", html_member)
+        self.assertNotIn("Join Academy", html_member)
+
 
 if __name__ == '__main__':
     unittest.main()
