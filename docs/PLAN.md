@@ -127,6 +127,85 @@ Phase 2 focuses on modernizing tournament venues with real-time score feeds and 
   10. Security regression tests and CI scans (`bandit`, `pip-audit`).
 * **Exit criteria:** all High findings closed, regression tests in CI, documentation and code in agreement.
 
+#### WP 2.6: Leaderboard Qualification & Active Competitor Filtering
+* **Objective:** Ensure only genuine, active competitors appear on public and mobile leaderboards; eliminate 0-point inactive player clutter.
+* **Scope:**
+  * **Leaderboard Qualification Rule:** A player is included on the leaderboard ONLY IF:
+    1. `Player.total_points > 0` (points earned through verified tournament wins or placement), OR
+    2. The player has registered for at least one tournament (`Registration.status` in `['submitted', 'under_review', 'approved']` or has a linked `Participant` / `PlayerTournamentRecord`).
+  * **Exclusion of Newly Registered Inactive Profiles:** When a user registers an account and their initial profile is created, they have 0 points and 0 registrations. They must remain excluded from leaderboard queries until they register for an event or compete.
+  * **Empty State:** When no qualified competitors match a selected category/gender filter, render a clean, context-specific empty state: *"No ranked players yet. Players will appear on the leaderboard once they register for a tournament or earn points."*
+
+#### WP 2.7: Multi-Role Architecture: Admin & Host as Active Competitor
+* **Objective:** Seamlessly support users holding administrative roles (Academy Owner, Tournament Host, Platform Admin) who also actively play in tournaments.
+* **Scope:**
+  * **Unified Single Identity:** An admin who also plays uses ONE persistent user account and profile. Their administrative abilities (hosting, court allocation, staff management) come from scoped role assignments, while their competitive credentials stem from their linked `Player` record.
+  * **Multi-Tournament Participation:**
+    1. An Admin/Host can register and compete as a player in **other tournaments** (hosted by different academies/organizers).
+    2. An Admin/Host can also register and compete in **their own tournament**, provided category and tournament eligibility rules permit it.
+  * **Strict Conflict-of-Interest & Anti-Cheat Guards:**
+    1. **Self-Scoring Prohibition:** If an admin is an active competitor in Match M (Singles, Doubles, or Team Rubber), they are strictly prohibited from scoring or officiating Match M (`HTTP 403 Forbidden`). An independent official, neutral umpire, or court PIN session must record the score.
+    2. **Self-Approval Auditability:** An admin registering for their own tournament cannot silently override entry fees, seeds, or draw placement without audit logging (`AuditLog` records actor, target, action, and rationale).
+    3. **Leaderboard Neutrality:** Administrative roles yield zero competitive points. Admin-players earn rankings strictly through on-court match outcomes and verified tournament finishes under the identical rules applying to all competitors.
+
+#### WP 2.8: Two-Stage Onboarding & Context-Preserving Tournament Profile Gateway
+* **Objective:** Ensure user account creation is distinct from player profile completion, provide visibility with a profile completion percentage, enforce player-only validation gates, and enable seamless context-preserving redirects during tournament registration.
+* **Scope:**
+  * **Registration Role Intent Selector:**
+    * At registration, the user chooses their primary intent: *"Registering as a User (General / Spectator / Organizer)"* or *"Registering as a Player (Competitor / Athlete)"*.
+    * Default role is `user`. Selecting `player` sets the initial role to `player` and triggers player profile completion requirements.
+  * **Profile Completion Percentage (0%–100%):**
+    * Dynamic completion score displayed prominently on User Profile, Dashboard, and Account Settings:
+      - 30%: Core Account Information (Full Name, Normalized Email, Contact Phone).
+      - 35%: Athletic Eligibility Essentials (Verified Date of Birth, Gender, Age Category calculation).
+      - 20%: Sports & Skill Details (Primary Sport, Playing Hand, Skill Level).
+      - 15%: Supporting Details (Emergency Contact, Bio/Avatar URL, City/Address).
+    * Clear visual progress bar and checklist highlighting missing fields.
+  * **Context-Preserving Tournament Registration Gateway:**
+    * When a user attempts to enter a tournament at `/tournaments/<slug>/register`:
+      1. **Profile Already Complete:** The user immediately proceeds to category selection and payment without delay or extra clicks.
+      2. **Profile Incomplete (or Role is `user`):** The system intercepts the request with a helpful notification: *"Please complete your player profile before registering for this tournament."* It automatically redirects to `/profile/edit?next=/tournaments/<slug>/register`.
+      3. **Seamless Return:** Upon saving the required player fields (reaching 100% required completion), the system automatically redirects the user straight back to `/tournaments/<slug>/register`.
+  * **Role-Based Validation Scope:**
+    * Profile completion is strictly mandatory **only for competitors (`player`)**.
+    * Standard users (organizers, desk staff, fans, spectators) can browse, view draws, track live scores, and manage tournaments without being forced to fill in athletic eligibility data.
+
+#### WP 2.9: Canonical Standardization of Competition & Age Categories
+* **Objective:** Establish a single authoritative source of truth for Competition Categories and Age Categories across the entire platform, eliminating fragmented or hardcoded string variations.
+* **Canonical Competition Categories (10):**
+  1. Men's Singles
+  2. Women's Singles
+  3. Boys' Singles
+  4. Girls' Singles
+  5. Men's Doubles
+  6. Women's Doubles
+  7. Mixed Doubles
+  8. Boys' Doubles
+  9. Girls' Doubles
+  10. Team Event
+* **Canonical Age Categories (14):**
+  1. Under 8
+  2. Under 10
+  3. Under 12
+  4. Under 14
+  5. Under 16
+  6. Under 18
+  7. Under 21
+  8. Open
+  9. Veterans 35+
+  10. Veterans 40+
+  11. Veterans 45+
+  12. Veterans 50+
+  13. Veterans 55+
+  14. Veterans 60+
+* **System-Wide Enforcement & Reuse:**
+  * **Centralized Constants:** Defined as immutable tuples in `app/domain/constants.py` (`COMPETITION_CATEGORIES`, `AGE_CATEGORIES`).
+  * **Tournament Category Creation:** Dropdown selection in `/tournaments/<slug>/category/add` strictly validated against canonical lists.
+  * **Player Profile & Onboarding:** Automatic calculation from verified Date of Birth to canonical Age Category; selection of primary competition categories during profile completion.
+  * **Tournament Registration:** Server-side validation matching a player's verified age and gender against category eligibility criteria before entry acceptance.
+  * **Leaderboard Filters:** Synchronized filter dropdowns on web (`app/web/controllers/leaderboard.py`) and mobile REST API (`/api/v1/leaderboard`), replacing incomplete or legacy `['U8', 'U10', 'U12', 'U14', 'U18', 'Open']` filters.
+  * **PDF & CSV Exports:** Exact standard naming on bracket sheets, order-of-play matrices, and participant rosters.
+
 ---
 
 ## 4. Phase 3: Communication & Automated Payments (🗓️ PLANNED)
