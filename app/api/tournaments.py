@@ -402,12 +402,27 @@ def get_leaderboard():
     gender = request.args.get('gender')
     limit = min(int(request.args.get('limit', 50)), 100)
 
+    # Leaderboard Qualification Filter:
+    # A player must have earned ranking points (> 0) OR have registered in a tournament/match.
+    from app.domain.models import Participant
+    registered_p1 = db.session.query(Participant.player_id).filter(Participant.player_id.isnot(None))
+    registered_p2 = db.session.query(Participant.player2_id).filter(Participant.player2_id.isnot(None))
+
+    qualification_filter = db.or_(
+        Player.total_points > 0,
+        Player.matches_played > 0,
+        Player.id.in_(registered_p1),
+        Player.id.in_(registered_p2)
+    )
+
     query = Player.query.filter(
+        qualification_filter,
         ~Player.name.ilike('Player %'),
         ~Player.name.ilike('Player_%'),
         ~Player.name.ilike('Dummy%'),
         ~Player.name.ilike('Test%'),
-        ~Player.name.ilike('Sample%')
+        ~Player.name.ilike('Sample%'),
+        ~Player.name.ilike('TBD%')
     )
     if category and category != 'All':
         query = query.filter_by(age_category=category)

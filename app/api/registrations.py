@@ -45,6 +45,14 @@ def register_for_tournament(slug):
     if not is_authorized:
         return jsonify({"success": False, "message": "Forbidden: You may only register player profiles associated with your account"}), 403
 
+    if player.user_id == current_user_id and caller and not caller.profile_completed:
+        return jsonify({
+            "success": False,
+            "message": f"Player profile is {caller.completion_percentage}% complete. Please complete your profile before registering.",
+            "code": "PROFILE_INCOMPLETE",
+            "completion_percentage": caller.completion_percentage
+        }), 400
+
     # Duplicate check
     existing = Registration.query.filter_by(
         tournament_id=tournament.id,

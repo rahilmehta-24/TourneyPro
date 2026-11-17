@@ -257,7 +257,10 @@ def login():
             ensure_user_profile(user.id)
 
             flash(f'Welcome back, {user.username}!', 'success')
-            # Step 4: Redirect authenticated user to their own profile dashboard
+            next_url = request.args.get('next') or request.form.get('next')
+            if next_url and next_url.startswith('/') and not next_url.startswith('//'):
+                return redirect(next_url)
+            # Redirect authenticated user to their own profile dashboard
             return redirect(url_for('player.dashboard'))
         else:
             flash('Invalid username or password.', 'error')
@@ -269,13 +272,15 @@ def register():
     if get_current_user():
         return redirect(url_for('player.dashboard'))
 
+    next_url = request.args.get('next') or request.form.get('next') or ''
+
     if request.method == 'POST':
         from app.services.utils.rate_limiter import check_rate_limit, get_client_ip, reset_rate_limit
         client_ip = get_client_ip()
         allowed, retry_after = check_rate_limit(f"web_register_{client_ip}", max_requests=10, window_seconds=60)
         if not allowed:
             flash(f"Too many registration attempts. Please wait {retry_after} seconds before trying again.", "error")
-            return render_template('auth/register.html')
+            return render_template('auth/register.html', next_url=next_url)
 
         username = request.form.get('username', '').strip()
         email = request.form.get('email', '').strip()
@@ -283,39 +288,42 @@ def register():
         password_confirm = request.form.get('password_confirm')
         name = request.form.get('name', username).strip() or username
         contact_number = request.form.get('contact_number', '').strip()
+        registration_intent = request.form.get('registration_intent', 'user').strip().lower()
+        if registration_intent not in ('user', 'player'):
+            registration_intent = 'user'
 
         ok, u_clean = validate_username(username)
         if not ok:
             flash(u_clean, 'error')
-            return render_template('auth/register.html')
+            return render_template('auth/register.html', next_url=next_url)
         username = u_clean
 
         ok, e_clean = validate_email(email, required=True)
         if not ok:
             flash(e_clean, 'error')
-            return render_template('auth/register.html')
+            return render_template('auth/register.html', next_url=next_url)
         email = e_clean
 
         ok, p_clean = validate_password(password, min_length=8)
         if not ok:
             flash(p_clean, 'error')
-            return render_template('auth/register.html')
+            return render_template('auth/register.html', next_url=next_url)
 
         if password_confirm is not None and password != password_confirm:
             flash('Passwords do not match. Please verify your password.', 'error')
-            return render_template('auth/register.html')
+            return render_template('auth/register.html', next_url=next_url)
 
         ok, n_clean = validate_name(name, min_len=2, field_name="Full Name")
         if not ok:
             flash(n_clean, 'error')
-            return render_template('auth/register.html')
+            return render_template('auth/register.html', next_url=next_url)
         name = n_clean
 
         if contact_number:
             ok, mob_clean = validate_mobile(contact_number, required=False)
             if not ok:
                 flash(mob_clean, 'error')
-                return render_template('auth/register.html')
+                return render_template('auth/register.html', next_url=next_url)
             contact_number = mob_clean
 
         dob_str = request.form.get('dob', '').strip()
@@ -324,7 +332,7 @@ def register():
             ok, dob_res = validate_dob(dob_str, field_name="Date of Birth")
             if not ok:
                 flash(dob_res, 'error')
-                return render_template('auth/register.html')
+                return render_template('auth/register.html', next_url=next_url)
             dob = dob_res
 
         from app.services.user_service import register_user
@@ -334,7 +342,8 @@ def register():
             password=password,
             password_confirm=password_confirm,
             full_name=name,
-            gender=request.form.get('gender', 'Male'),
+            registration_intent=registration_intent,
+            gender=request.form.get('gender'),
             dob=dob,
             contact_number=contact_number,
             nationality=request.form.get('nationality'),
@@ -348,13 +357,177 @@ def register():
 
         if not result.success:
             flash(result.message, 'error')
-            return render_template('auth/register.html')
+            return render_template('auth/register.html', next_url=next_url)
 
         reset_rate_limit(f"web_register_{client_ip}")
         flash(result.message, result.category)
+        if next_url and next_url.startswith('/') and not next_url.startswith('//'):
+            return redirect(url_for('auth.login', next=next_url))
         return redirect(url_for('auth.login'))
 
-    return render_template('auth/register.html')
+    return render_template('auth/register.html', next_url=next_url)
+
+@auth_bp.route('/profile/complete', methods=['GET', 'POST'])
+@login_required
+def complete_profile():
+    """Stage 2 Profile Completion Gateway."""
+    user = get_current_user()
+    next_url = request.args.get('next') or request.form.get('next') or ''
+
+    player = Player.query.filter_by(user_id=user.id).first()
+
+    from app.domain.constants import COMPETITION_CATEGORIES, AGE_CATEGORIES
+
+    if request.method == 'POST':
+        full_name = request.form.get('full_name', user.full_name or user.username).strip()
+        gender = request.form.get('gender', '').strip()
+        dob_str = request.form.get('dob', '').strip()
+        contact_number = request.form.get('contact_number', '').strip()
+        primary_sport = request.form.get('primary_sport', 'Tennis').strip()
+        skill_level = request.form.get('skill_level', '').strip()
+        preferred_competition_category = request.form.get('preferred_competition_category', '').strip()
+        emergency_contact_name = request.form.get('emergency_contact_name', '').strip()
+        emergency_contact_phone = request.form.get('emergency_contact_phone', '').strip()
+        nationality = request.form.get('nationality', '').strip()
+        height = request.form.get('height', '').strip()
+        weight = request.form.get('weight', '').strip()
+        blood_group = request.form.get('blood_group', '').strip()
+        address = request.form.get('address', '').strip()
+        academy = request.form.get('academy', '').strip()
+        coach = request.form.get('coach', '').strip()
+
+        ok, n_clean = validate_name(full_name, min_len=2, field_name="Full Name")
+        if not ok:
+            flash(n_clean, 'error')
+            return render_template(
+                'auth/complete_profile.html',
+                user=user,
+                player=player,
+                next_url=next_url,
+                competition_categories=COMPETITION_CATEGORIES,
+                age_categories=AGE_CATEGORIES
+            )
+
+        if not gender or gender not in ('Male', 'Female', 'Other'):
+            flash('Please select a valid gender.', 'error')
+            return render_template(
+                'auth/complete_profile.html',
+                user=user,
+                player=player,
+                next_url=next_url,
+                competition_categories=COMPETITION_CATEGORIES,
+                age_categories=AGE_CATEGORIES
+            )
+
+        ok, dob_clean = validate_dob(dob_str, field_name="Date of Birth")
+        if not ok:
+            flash(dob_clean, 'error')
+            return render_template(
+                'auth/complete_profile.html',
+                user=user,
+                player=player,
+                next_url=next_url,
+                competition_categories=COMPETITION_CATEGORIES,
+                age_categories=AGE_CATEGORIES
+            )
+
+        ok, mob_clean = validate_mobile(contact_number, required=True, field_name="Mobile Number")
+        if not ok:
+            flash(mob_clean, 'error')
+            return render_template(
+                'auth/complete_profile.html',
+                user=user,
+                player=player,
+                next_url=next_url,
+                competition_categories=COMPETITION_CATEGORIES,
+                age_categories=AGE_CATEGORIES
+            )
+
+        from app.services.user_service import complete_player_profile
+        res = complete_player_profile(
+            user_id=user.id,
+            full_name=n_clean,
+            gender=gender,
+            dob=dob_clean,
+            contact_number=mob_clean,
+            primary_sport=primary_sport,
+            skill_level=skill_level or None,
+            preferred_competition_category=preferred_competition_category or None,
+            emergency_contact_name=emergency_contact_name or None,
+            emergency_contact_phone=emergency_contact_phone or None,
+            nationality=nationality or None,
+            height=height or None,
+            weight=weight or None,
+            blood_group=blood_group or None,
+            address=address or None,
+            academy=academy or None,
+            coach=coach or None,
+        )
+
+        if not res.get("success"):
+            flash(res.get("message", "Profile completion failed."), "error")
+            return render_template(
+                'auth/complete_profile.html',
+                user=user,
+                player=player,
+                next_url=next_url,
+                competition_categories=COMPETITION_CATEGORIES,
+                age_categories=AGE_CATEGORIES
+            )
+
+        flash(res.get("message"), "success")
+        if next_url and next_url.startswith('/') and not next_url.startswith('//'):
+            return redirect(next_url)
+        return redirect(url_for('player.dashboard'))
+
+    return render_template(
+        'auth/complete_profile.html',
+        user=user,
+        player=player,
+        next_url=next_url,
+        competition_categories=COMPETITION_CATEGORIES,
+        age_categories=AGE_CATEGORIES
+    )
+
+@auth_bp.route('/verify-email/<token>')
+def verify_email(token):
+    from app.services.user_service import verify_user_email
+    res = verify_user_email(token)
+    if res.get("success"):
+        flash(res.get("message"), "success")
+    else:
+        flash(res.get("message"), "error")
+    return redirect(url_for('auth.login'))
+
+@auth_bp.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip()
+        ok, e_clean = validate_email(email, required=True)
+        if not ok:
+            flash(e_clean, 'error')
+            return render_template('auth/forgot_password.html')
+
+        from app.services.user_service import request_password_reset
+        res = request_password_reset(e_clean)
+        flash(res.get("message"), "info")
+        return redirect(url_for('auth.login'))
+    return render_template('auth/forgot_password.html')
+
+@auth_bp.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    if request.method == 'POST':
+        password = request.form.get('password')
+        password_confirm = request.form.get('password_confirm')
+        from app.services.user_service import reset_password_with_token
+        res = reset_password_with_token(token, password, password_confirm)
+        if res.get("success"):
+            flash(res.get("message"), "success")
+            return redirect(url_for('auth.login'))
+        else:
+            flash(res.get("message"), "error")
+            return render_template('auth/reset_password.html', token=token)
+    return render_template('auth/reset_password.html', token=token)
 
 @auth_bp.route('/logout')
 def logout():

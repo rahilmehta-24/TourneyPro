@@ -385,9 +385,19 @@ def register_for_tournament(slug):
     categories = Category.query.filter_by(tournament_id=tournament.id).all()
 
     current_u = get_current_user()
-    player = None
-    if current_u:
-        player = Player.query.filter_by(user_id=current_u.id).first()
+    if not current_u:
+        flash("Please log in or create an account to register for this tournament.", "info")
+        return redirect(url_for("auth.login", next=url_for("tournament.register_for_tournament", slug=slug)))
+
+    if not current_u.profile_completed:
+        pct = current_u.completion_percentage or 0
+        flash(f"Your player profile is {pct}% complete. Please complete your profile before registering.", "warning")
+        return redirect(url_for("auth.complete_profile", next=url_for("tournament.register_for_tournament", slug=slug)))
+
+    player = Player.query.filter_by(user_id=current_u.id).first()
+    if not player:
+        from app.services.user_service import ensure_user_profile
+        player = ensure_user_profile(current_u.id)
 
     if request.method == "POST":
         category_ids = request.form.getlist("category_id", type=int)
@@ -545,18 +555,10 @@ def register_for_tournament(slug):
                 flash("Age or Date of Birth is required.", "error")
                 return redirect(url_for("tournament.register_for_tournament", slug=slug))
 
-        # 1. SMART REGISTRATION: Ensure we have an anonymous dummy user for Registration.user_id
-        anon_email = "anonymous@tourneypro.com"
-        anon_user = User.query.filter_by(email=anon_email).first()
-        if not anon_user:
-            anon_user = User(username="anonymous_registrations", email=anon_email, role="user")
-            anon_user.password_hash = "*disabled*"
-            db.session.add(anon_user)
-            db.session.flush()
+        # 1. VERIFIED USER IDENTITY: Ensure authenticated user owns the registration
+        current_u_id = current_u.id
 
-        current_u_id = current_u.id if current_u else anon_user.id
-
-        # 2. AUTO PROFILE CREATION: Create or link Player profile
+        # 2. AUTO PROFILE CREATION: Link authenticated Player profile
         if player:
             new_player = player
             if participant_mobile and not new_player.contact_number:
@@ -566,39 +568,10 @@ def register_for_tournament(slug):
             if participant_dob and not new_player.dob:
                 new_player.dob = participant_dob
         else:
-            existing_player = None
-            if current_u:
-                existing_player = Player.query.filter_by(user_id=current_u.id).first()
-            if not existing_player and participant_mobile:
-                existing_player = Player.query.filter(
-                    Player.contact_number == participant_mobile
-                ).first()
-            if not existing_player and participant_name and participant_mobile:
-                existing_player = Player.query.filter(
-                    Player.name == participant_name, Player.contact_number == participant_mobile
-                ).first()
-
-            if existing_player:
-                new_player = existing_player
-                if current_u and not new_player.user_id:
-                    new_player.user_id = current_u.id
-                if participant_email and not new_player.email:
-                    new_player.email = participant_email
-                if participant_dob and not new_player.dob:
-                    new_player.dob = participant_dob
-            else:
-                age_cat = determine_age_category(age=participant_age, dob=participant_dob)
-                new_player = Player(
-                    user_id=current_u.id if current_u else None,
-                    name=participant_name,
-                    email=participant_email or None,
-                    contact_number=participant_mobile,
-                    gender=participant_gender,
-                    dob=participant_dob,
-                    age_category=age_cat,
-                )
-                db.session.add(new_player)
-                db.session.flush()
+            new_player = Player.query.filter_by(user_id=current_u.id).first()
+            if not new_player:
+                from app.services.user_service import ensure_user_profile
+                new_player = ensure_user_profile(current_u.id)
 
         # 3. AUTO PROFILE CREATION FOR DOUBLES PARTNERS
         partner_players = {}

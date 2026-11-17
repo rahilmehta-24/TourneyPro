@@ -140,7 +140,10 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="6" style="padding: 2rem; text-align: center; color: var(--text-muted);">No players found matching the criteria.</td>
+                    <td colspan="6" style="padding: 2.5rem 1rem; text-align: center; color: var(--text-muted);">
+                        No ranked players found matching the criteria.<br>
+                        <small style="display:inline-block; margin-top:0.35rem;">Only players who have registered for tournaments or earned ranking points appear on the official leaderboard.</small>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>

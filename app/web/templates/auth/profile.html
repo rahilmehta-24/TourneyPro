@@ -17,8 +17,21 @@
                 <span>{{ user.username }}</span>
             </div>
             <div>
+                <strong>Full Name:</strong>
+                <span>{{ user.full_name or 'Not set' }}</span>
+            </div>
+            <div>
                 <strong>Email:</strong>
                 <span>{{ user.email }}</span>
+                {% if user.is_email_verified %}
+                <span class="badge" style="background: var(--success); color: white; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">Verified</span>
+                {% else %}
+                <span class="badge" style="background: var(--warning); color: black; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">Unverified</span>
+                {% endif %}
+            </div>
+            <div>
+                <strong>Phone Number:</strong>
+                <span>{{ user.phone_number or 'Not set' }}</span>
             </div>
             <div>
                 <strong>Role:</strong>
@@ -27,10 +40,37 @@
                 </span>
             </div>
             <div>
+                <strong>Account Status:</strong>
+                <span class="badge" style="background: var(--accent-secondary); color: white; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem;">
+                    {{ user.account_status or 'ACTIVE' }}
+                </span>
+            </div>
+            <div>
                 <strong>Member Since:</strong>
-                <span>{{ user.created_at.strftime('%B %d, %Y') }}</span>
+                <span>{{ user.created_at.strftime('%B %d, %Y') if user.created_at else 'N/A' }}</span>
             </div>
         </div>
+    </div>
+
+    <!-- Profile Completion Readiness -->
+    <div class="card" style="max-width: 600px; margin: 0 auto 2rem auto; padding: 2rem; border-top: 4px solid var(--accent-primary);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+            <h2 style="margin-bottom: 0;">Player Profile Readiness</h2>
+            <span style="font-weight: 800; font-size: 1.25rem; color: var(--accent-primary-text);">{{ user.completion_percentage or 0 }}%</span>
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
+            Tournament participation requires a 100% complete player profile with verified age, sport discipline, and emergency contact.
+        </p>
+        <div style="width: 100%; height: 12px; background: var(--border-color); border-radius: 6px; overflow: hidden; margin-bottom: 1.25rem;">
+            <div style="width: {{ user.completion_percentage or 0 }}%; height: 100%; background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));"></div>
+        </div>
+        <a href="{{ url_for('auth.complete_profile') }}" class="btn btn-primary" style="display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; text-decoration: none; width: 100%; padding: 0.75rem;">
+            {% if user.profile_completed %}
+            <span>&#9998; Update Player Profile</span>
+            {% else %}
+            <span>&#9873; Complete Player Profile ({{ 100 - (user.completion_percentage or 0) }}% remaining)</span>
+            {% endif %}
+        </a>
     </div>
 
     <div class="card" style="max-width: 600px; margin: 0 auto 2rem auto; padding: 2rem;">
