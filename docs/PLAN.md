@@ -206,6 +206,30 @@ Phase 2 focuses on modernizing tournament venues with real-time score feeds and 
   * **Leaderboard Filters:** Synchronized filter dropdowns on web (`app/web/controllers/leaderboard.py`) and mobile REST API (`/api/v1/leaderboard`), replacing incomplete or legacy `['U8', 'U10', 'U12', 'U14', 'U18', 'Open']` filters.
   * **PDF & CSV Exports:** Exact standard naming on bracket sheets, order-of-play matrices, and participant rosters.
 
+#### WP 2.10: Edge-Case Protocols & Operational Governance
+* **Objective:** Codify explicit operational handling for edge cases identified during architectural stress-testing:
+* **1. Doubles & Team Partner Profile Incompletion:**
+  * When Player 1 enters a Doubles or Team event, only Player 1 must possess a 100% completed profile to submit registration.
+  * If the nominated partner (Player 2) has an incomplete profile, the entry is accepted and stored in the backend.
+  * Player 2 cannot see personalized bracket cards, career statistics, or personal standings until their profile is completed. Once completed, all historical data seamlessly activates.
+* **2. Dynamic Age Selection (Dec 31 Calendar Year Cutoff):**
+  * Player age is calculated using the international standard: `tournament_year - birth_year` as of December 31st of the tournament year.
+  * The registration form dynamically displays *only* the categories the player is eligible for based on their verified DOB.
+  * Team Events are exempt from single-age restrictions (supporting mixed-age team rosters across rubbers).
+* **3. Incomplete Team League Rosters (No Dummy Players):**
+  * Eliminates `/add-dummy-players`. If a team cannot field a player for a rubber (Singles 1, Doubles, Singles 2):
+    * The Team Captain can nominate an unrostered registered player from their academy as a late-entry substitute before match lock-in, subject to **mandatory tournament organizer approval**.
+    * If no substitute is approved, the opponent is awarded a Walkover (WO) for that specific rubber, and the rest of the tie proceeds normally.
+* **4. Academy Transfers During Active Events:**
+  * Transfers take effect immediately for future events.
+  * Active, in-progress, or pre-registered tournament records remain permanently locked to Academy A via the registration-time affiliation snapshot.
+* **5. Withdrawals After Draw Generation:**
+  * Before the 1st match in that category begins: The host organizer can approve a substitute from the Waitlist / Lucky Loser pool.
+  * After the 1st match begins (or if no waitlist exists): Opponents advance via Walkover (WO).
+* **6. Platform Support vs Platform Super Admin Boundaries:**
+  * **Platform Support:** Read/assist access for account recovery, OTP/token resends, application status lookup, and public tournament operations. Strictly forbidden from approving/rejecting academy applications, altering platform security configs, viewing private academy finances, or overriding match scores.
+  * **Platform Super Admin:** Full platform governance, academy verification, security monitoring, and audited overrides.
+
 ---
 
 ## 4. Phase 3: Communication & Automated Payments (🗓️ PLANNED)
