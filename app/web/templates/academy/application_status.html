@@ -3,94 +3,181 @@
 {% block title %}Academy Application Status - The Baseline Society{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-dark text-white p-3">
-                    <h4 class="mb-0"><i class="bi bi-file-earmark-text me-2"></i>Academy Application Status</h4>
+<div class="container" style="max-width: 860px; margin: 1.5rem auto 3rem auto; padding: 0 1rem;">
+    <!-- Breadcrumb -->
+    <div style="margin-bottom: 1.25rem;">
+        <a href="{{ url_for('academy.index') }}" style="color: var(--text-muted); text-decoration: none; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 600;">
+            ← Back to Academies
+        </a>
+    </div>
+
+    <!-- Main Card -->
+    <div class="card shadow-sm border-0" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-md);">
+        <!-- Card Header Banner -->
+        <div style="background: var(--gradient-court); color: #FFFFFF; padding: 1.5rem 2rem; border-bottom: 3px solid var(--accent-secondary); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <span style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent-secondary); font-weight: 700;">The Baseline Society</span>
+                <h2 style="margin: 0.2rem 0 0 0; color: #FFFFFF; font-family: var(--font-display); font-size: 1.75rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
+                    🏛️ Academy Verification Status
+                </h2>
+            </div>
+            {% if application %}
+                {% if application.status == 'PENDING' %}
+                    <span style="background: rgba(201, 165, 92, 0.22); color: #FDFBF6; border: 1.5px solid var(--accent-secondary); font-size: 0.8rem; font-weight: 800; padding: 0.45rem 1rem; border-radius: 9999px; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 0.4rem;">
+                        ⏳ UNDER REVIEW
+                    </span>
+                {% elif application.status == 'APPROVED' %}
+                    <span style="background: var(--accent-success); color: #FFFFFF; font-size: 0.8rem; font-weight: 800; padding: 0.45rem 1rem; border-radius: 9999px; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 0.4rem;">
+                        ✓ VERIFIED & ACTIVE
+                    </span>
+                {% elif application.status == 'REJECTED' %}
+                    <span style="background: var(--accent-danger); color: #FFFFFF; font-size: 0.8rem; font-weight: 800; padding: 0.45rem 1rem; border-radius: 9999px; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 0.4rem;">
+                        ✗ APPLICATION DECLINED
+                    </span>
+                {% endif %}
+            {% endif %}
+        </div>
+
+        <!-- Card Body -->
+        <div style="padding: 2rem;">
+            {% if not application %}
+                <div style="text-align: center; padding: 3rem 1rem;">
+                    <div style="font-size: 3.5rem; margin-bottom: 1rem;">🏫</div>
+                    <h3 style="font-family: var(--font-display); font-size: 1.85rem; color: var(--text-primary); margin-bottom: 0.5rem;">No Academy Application Found</h3>
+                    <p style="color: var(--text-secondary); max-width: 460px; margin: 0 auto 1.75rem auto; font-size: 0.95rem; line-height: 1.5;">
+                        You have not submitted an academy verification application yet. Apply to get your sports facility sanctioned.
+                    </p>
+                    <a href="{{ url_for('academy.apply') }}" class="btn btn-primary" style="padding: 0.7rem 1.6rem; font-weight: 700; text-decoration: none;">
+                        Apply for Academy Verification
+                    </a>
                 </div>
-                <div class="card-body p-4">
-                    {% if not application %}
-                        <div class="text-center py-5">
-                            <i class="bi bi-building display-4 text-muted mb-3 d-block"></i>
-                            <h5>No Academy Application Found</h5>
-                            <p class="text-muted">You have not submitted an academy verification application yet.</p>
-                            <a href="{{ url_for('academy.apply') }}" class="btn btn-primary mt-2">Apply for Academy Verification</a>
-                        </div>
-                    {% else %}
-                        <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
-                            <div>
-                                <h3 class="mb-1">{{ application.name }}</h3>
-                                <div class="text-muted small">Submitted on {{ application.created_at.strftime('%B %d, %Y at %H:%M UTC') }}</div>
-                            </div>
-                            <div>
-                                {% if application.status == 'PENDING' %}
-                                    <span class="badge bg-warning text-dark fs-6 px-3 py-2"><i class="bi bi-hourglass-split me-1"></i> PENDING PLATFORM REVIEW</span>
-                                {% elif application.status == 'APPROVED' %}
-                                    <span class="badge bg-success fs-6 px-3 py-2"><i class="bi bi-check-circle me-1"></i> VERIFIED & ACTIVE</span>
-                                {% elif application.status == 'REJECTED' %}
-                                    <span class="badge bg-danger fs-6 px-3 py-2"><i class="bi bi-x-circle me-1"></i> APPLICATION DECLINED</span>
-                                {% endif %}
-                            </div>
-                        </div>
+            {% else %}
+                <!-- Title & Submission Date -->
+                <div style="padding-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); margin-bottom: 1.5rem;">
+                    <h1 style="margin: 0 0 0.35rem 0; font-family: var(--font-display); font-size: 2.15rem; color: var(--text-primary); font-weight: 600;">
+                        {{ application.name }}
+                    </h1>
+                    <div style="color: var(--text-muted); font-size: 0.9rem;">
+                        Submitted on <strong>{{ application.created_at.strftime('%B %d, %Y') }}</strong> at {{ application.created_at.strftime('%I:%M %p UTC') }}
+                    </div>
+                </div>
 
-                        {% if application.status == 'PENDING' %}
-                            <div class="alert alert-warning">
-                                <h6 class="alert-heading fw-bold mb-1"><i class="bi bi-shield-lock me-1"></i> Under Review</h6>
-                                <p class="mb-0 small">Your application has been received and is currently in the verification queue. Platform superadmins inspect all facility and contact details prior to approving host governance capabilities. You will be notified once reviewed.</p>
-                            </div>
-                        {% elif application.status == 'APPROVED' %}
-                            <div class="alert alert-success">
-                                <h6 class="alert-heading fw-bold mb-1"><i class="bi bi-trophy me-1"></i> Congratulations!</h6>
-                                <p class="mb-2 small">Your academy has been officially verified by The Baseline Society. You have been appointed as Academy Owner and can now organize sanctioned tournaments, register players, and manage your courts.</p>
-                                {% if application.academy %}
-                                    <a href="{{ url_for('academy.dashboard', slug=application.academy.url_slug) }}" class="btn btn-success btn-sm">Go to Academy Dashboard</a>
-                                {% endif %}
-                            </div>
-                        {% elif application.status == 'REJECTED' %}
-                            <div class="alert alert-danger">
-                                <h6 class="alert-heading fw-bold mb-1"><i class="bi bi-exclamation-triangle me-1"></i> Application Not Approved</h6>
-                                <p class="mb-2 small"><strong>Reason provided by platform reviewer:</strong></p>
-                                <blockquote class="blockquote fs-6 text-dark bg-white p-2 rounded mb-2 border-start border-4 border-danger">
-                                    {{ application.rejection_reason or 'Application did not meet verification criteria.' }}
-                                </blockquote>
-                                <p class="mb-0 small text-muted">You may address the issues noted above and submit a new application when ready.</p>
-                            </div>
+                <!-- Status Banner Box -->
+                {% if application.status == 'PENDING' %}
+                    <div style="background: rgba(201, 165, 92, 0.14); border: 1px solid rgba(122, 95, 30, 0.35); border-left: 5px solid var(--accent-secondary); border-radius: var(--radius-md); padding: 1.25rem 1.5rem; margin-bottom: 2rem;">
+                        <div style="font-weight: 700; color: #7A5F1E; font-size: 1.05rem; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.45rem;">
+                            🛡️ Under Platform Review
+                        </div>
+                        <p style="margin: 0; color: var(--text-secondary); font-size: 0.92rem; line-height: 1.55;">
+                            Your verification application has been received and is currently in the verification queue. Platform Superadmins inspect facility legitimacy and contact details before sanctioning host permissions. You will receive an in-app notification once reviewed.
+                        </p>
+                    </div>
+                {% elif application.status == 'APPROVED' %}
+                    <div style="background: rgba(4, 120, 87, 0.12); border: 1px solid rgba(4, 120, 87, 0.35); border-left: 5px solid var(--accent-success); border-radius: var(--radius-md); padding: 1.25rem 1.5rem; margin-bottom: 2rem;">
+                        <div style="font-weight: 700; color: #065F46; font-size: 1.05rem; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.45rem;">
+                            🏆 Congratulations! Application Verified & Active
+                        </div>
+                        <p style="margin: 0 0 1rem 0; color: var(--text-secondary); font-size: 0.92rem; line-height: 1.55;">
+                            Your academy has been officially verified by The Baseline Society. You have been appointed as Academy Owner and can now organize sanctioned tournaments, register players, and manage your facility.
+                        </p>
+                        {% if application.academy %}
+                            <a href="{{ url_for('academy.dashboard', slug=application.academy.url_slug) }}" class="btn btn-primary" style="padding: 0.6rem 1.4rem; font-size: 0.92rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.45rem; text-decoration: none;">
+                                Go to Academy Dashboard →
+                            </a>
                         {% endif %}
+                    </div>
+                {% elif application.status == 'REJECTED' %}
+                    <div style="background: rgba(220, 38, 38, 0.08); border: 1px solid rgba(220, 38, 38, 0.3); border-left: 5px solid var(--accent-danger); border-radius: var(--radius-md); padding: 1.25rem 1.5rem; margin-bottom: 2rem;">
+                        <div style="font-weight: 700; color: #991B1B; font-size: 1.05rem; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.45rem;">
+                            ⚠️ Application Declined
+                        </div>
+                        <div style="background: var(--bg-card); border: 1px solid rgba(220, 38, 38, 0.25); border-radius: 6px; padding: 0.9rem 1.15rem; margin: 0.75rem 0; font-size: 0.92rem;">
+                            <strong style="color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 0.25rem;">Reviewer Feedback:</strong>
+                            <span style="color: var(--accent-danger); font-weight: 600;">{{ application.rejection_reason or 'Application did not meet verification criteria.' }}</span>
+                        </div>
+                        <p style="margin: 0; color: var(--text-muted); font-size: 0.88rem;">
+                            You may address the issues noted above and submit a new application when ready.
+                        </p>
+                    </div>
+                {% endif %}
 
-                        <h6 class="fw-bold text-uppercase text-muted small mt-4 mb-3">Submitted Details</h6>
-                        <dl class="row small mb-0">
-                            <dt class="col-sm-4 text-muted">Contact Email:</dt>
-                            <dd class="col-sm-8">{{ application.contact_email }}</dd>
+                <!-- Key-Value Information Grid -->
+                <div style="margin-top: 1.5rem;">
+                    <h3 style="font-size: 0.92rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 1rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border-color);">
+                        Submitted Application Details
+                    </h3>
 
-                            <dt class="col-sm-4 text-muted">Contact Phone:</dt>
-                            <dd class="col-sm-8">{{ application.contact_phone or '—' }}</dd>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; background: var(--bg-secondary); padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                        <div style="background: var(--bg-card); padding: 1rem 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                            <div style="font-size: 0.76rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px;">Contact Email</div>
+                            <div style="font-size: 0.98rem; font-weight: 600; color: var(--text-primary); margin-top: 0.3rem; word-break: break-all;">
+                                {{ application.contact_email }}
+                            </div>
+                        </div>
 
-                            <dt class="col-sm-4 text-muted">Location:</dt>
-                            <dd class="col-sm-8">
+                        <div style="background: var(--bg-card); padding: 1rem 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                            <div style="font-size: 0.76rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px;">Contact Phone</div>
+                            <div style="font-size: 0.98rem; font-weight: 600; color: var(--text-primary); margin-top: 0.3rem;">
+                                {{ application.contact_phone or '—' }}
+                            </div>
+                        </div>
+
+                        <div style="background: var(--bg-card); padding: 1rem 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); grid-column: 1 / -1;">
+                            <div style="font-size: 0.76rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px;">Facility Location</div>
+                            <div style="font-size: 0.98rem; font-weight: 600; color: var(--text-primary); margin-top: 0.3rem; line-height: 1.5;">
                                 {{ [application.address, application.city, application.state, application.country] | select | join(', ') or '—' }}
-                            </dd>
+                            </div>
+                        </div>
 
-                            <dt class="col-sm-4 text-muted">Sports Offered:</dt>
-                            <dd class="col-sm-8">{{ application.sports_offered or '—' }}</dd>
+                        <div style="background: var(--bg-card); padding: 1rem 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                            <div style="font-size: 0.76rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px;">Sports Offered</div>
+                            <div style="font-size: 0.98rem; font-weight: 600; color: var(--text-primary); margin-top: 0.3rem;">
+                                {{ application.sports_offered or '—' }}
+                            </div>
+                        </div>
 
-                            <dt class="col-sm-4 text-muted">Website:</dt>
-                            <dd class="col-sm-8">
+                        <div style="background: var(--bg-card); padding: 1rem 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                            <div style="font-size: 0.76rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px;">Official Website</div>
+                            <div style="font-size: 0.98rem; font-weight: 600; color: var(--text-primary); margin-top: 0.3rem;">
                                 {% if application.website_url %}
-                                    <a href="{{ application.website_url }}" target="_blank" rel="noopener">{{ application.website_url }}</a>
+                                    <a href="{{ application.website_url }}" target="_blank" rel="noopener" style="color: var(--accent-primary-text); text-decoration: underline;">{{ application.website_url }}</a>
                                 {% else %}
                                     —
                                 {% endif %}
-                            </dd>
-                        </dl>
-                    {% endif %}
+                            </div>
+                        </div>
+
+                        {% if application.description %}
+                        <div style="background: var(--bg-card); padding: 1rem 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); grid-column: 1 / -1;">
+                            <div style="font-size: 0.76rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px;">Description & Mission</div>
+                            <div style="font-size: 0.95rem; color: var(--text-secondary); margin-top: 0.35rem; line-height: 1.55;">
+                                {{ application.description }}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
-                <div class="card-footer bg-light p-3 text-end">
-                    <a href="{{ url_for('academy.index') }}" class="btn btn-outline-secondary">Browse Academies</a>
-                </div>
+            {% endif %}
+        </div>
+
+        <!-- Footer Action Bar -->
+        {% if application %}
+        <div style="background: var(--bg-secondary); border-top: 1px solid var(--border-color); padding: 1.25rem 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div style="font-size: 0.88rem; color: var(--text-muted);">
+                Reference ID: <strong>#{{ application.id }}</strong>
+            </div>
+            <div style="display: flex; gap: 0.75rem;">
+                <a href="{{ url_for('academy.index') }}" class="btn btn-secondary" style="padding: 0.55rem 1.35rem; font-size: 0.9rem; font-weight: 600; text-decoration: none;">
+                    Browse All Academies
+                </a>
+                {% if application.status == 'REJECTED' %}
+                    <a href="{{ url_for('academy.apply') }}" class="btn btn-primary" style="padding: 0.55rem 1.35rem; font-size: 0.9rem; font-weight: 600; text-decoration: none;">
+                        Submit New Application
+                    </a>
+                {% endif %}
             </div>
         </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

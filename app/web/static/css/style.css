@@ -3604,10 +3604,17 @@ html, body {
 }
 
 .bg-primary { background: var(--gradient-court) !important; color: #FDFBF6 !important; }
+.bg-dark { background: var(--gradient-court) !important; color: #FDFBF6 !important; }
+.card-header.bg-dark, .card-header.bg-primary { background: var(--gradient-court) !important; color: #FDFBF6 !important; }
+.card-header.bg-dark h1, .card-header.bg-dark h2, .card-header.bg-dark h3, .card-header.bg-dark h4, .card-header.bg-dark h5,
+.card-header.bg-primary h1, .card-header.bg-primary h2, .card-header.bg-primary h3, .card-header.bg-primary h4, .card-header.bg-primary h5 {
+    color: #FDFBF6 !important;
+}
 .bg-light { background: var(--bg-secondary) !important; color: var(--text-primary); }
 .bg-white { background: var(--bg-card) !important; color: var(--text-primary); }
 .text-primary { color: var(--accent-primary-text) !important; }
 .text-white { color: #FDFBF6 !important; }
+.text-white-50 { color: rgba(253, 251, 246, 0.78) !important; }
 .text-dark { color: var(--text-primary) !important; }
 .card-subtitle { color: var(--text-muted); font-size: 0.85rem; }
 .card-text { color: var(--text-secondary); }
