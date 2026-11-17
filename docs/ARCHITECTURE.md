@@ -391,3 +391,43 @@ The existing CSS is desktop-first (`max-width` media queries at 768 px and 640 p
 | Print / PDF | `@media print` | White paper, no animation or shadows, repeated table headers |
 
 Also verify 200 % browser zoom and large system-font settings, and provide a `vh` fallback before every `dvh`/`svh` declaration for older browsers.
+
+---
+
+## 9. Baseline Society Multi-Academy Federation & Identity Architecture
+
+The Baseline Society extends TourneyPro into a federated platform for sports academies, verified facilities, and tournament organizers:
+
+### 9.1 Real Identity, Two-Stage Onboarding & Profile Percentage
+* **Stage 1 (Auth Account):** Authenticated user account with explicit `registration_intent` (`user` vs `player`). `user` accounts participate in platforms, support, or administration without polluting player rankings. `player` accounts initialize an onboarding shell profile.
+* **Stage 2 (Profile Completion):** Evaluates 7 key athletic attributes (full name, phone, gender, date of birth, contact number, address, skill level) to generate a dynamic 0%–100% completion percentage.
+* **Gated Entry Invariant:** Submitting tournament registration requires 100% profile completion for Player 1, with context-preserving redirects to `/auth/profile/complete?next=...` preventing broken user journeys.
+
+### 9.2 Three-Tier Scoped RBAC & Platform Support Boundary
+* **Scoped Authority:** Evaluated via `app/services/rbac_service.py` across three decoupled tiers: `Platform != Academy != Tournament`.
+* **Platform Support Boundary:** Support roles can assist logins, view token status, and search public schedules, but are strictly blocked from approving academies, managing user accounts, modifying security configurations, or overriding match scores.
+* **Sporting Integrity & Self-Scoring Ban:** Fail-closed anti-conflict rule: Any user who is a participant in a match (or partner) is strictly forbidden from scoring or finalizing that match (`HTTP 403 Forbidden`), even if they are the Tournament Owner or Superadmin.
+
+### 9.3 Academy Verification & Single Active Membership Invariant
+* **Verification Workflow:** Academies submit verification applications (`AcademyApplication`), reviewed and approved by Platform Superadmins with mandatory audit logging and rejection feedback.
+* **Single Active Membership Rule:** An authenticated user may hold exactly ONE active academy membership across the platform (`membership_status = 'ACTIVE'`). Enforced at the service layer and via database partial indexes (`uq_one_active_academy_per_user`). Joining a new academy prompts or executes an audited transactional transfer, archiving past affiliations with `membership_status = 'TRANSFERRED'` and timestamped `left_at`.
+
+### 9.4 Tournament Scopes & Historical Affiliation Snapshots
+* **Tournament Scopes:** `intra_academy` (restricted to host academy members), `inter_academy` (invited verified academies), and `open_individual` (open registration).
+* **Affiliation Snapshot:** When a player registers for a tournament, `Registration.academy_id_snapshot` immutably captures their active academy at the moment of entry. Subsequent academy transfers do not rewrite historical tournament records.
+* **Non-Membership Invariant:** Entering a tournament hosted by another academy NEVER creates an academy membership at the host facility.
+
+### 9.5 Audited Scoring & Score Revisions
+* **MatchScoreRevision:** Any edit to a completed match score records an immutable revision entry capturing `entered_by_user_id`, previous scores, old winner, new winner, timestamp, and mandatory audit reason.
+
+### 9.6 Real Event In-App Notifications Pipeline
+* **Central Notification Service (`app/services/notification_service.py`):**
+  - Manages `InAppNotification` records.
+  - Respects athlete opt-outs via `UserNotificationPreferences` (`notify_match_called`, `notify_draw_published`, `notify_registration_updates`, `notify_match_results`, `notify_academy_announcements`).
+  - High-level dispatchers trigger alerts for registration approvals/rejections, academy verification decisions, draw publications, and on-court match calls.
+
+### 9.7 Unified Leaderboard Qualification Engine & Zero Dummy Data
+* **Qualification Filter:** Players appear on the official leaderboard only if they have earned ranking points (`total_points > 0`), completed matches (`matches_played > 0`), or actively participated in a sanctioned tournament. Unqualified zero-history accounts are excluded.
+* **Unified Service Query:** Both web SSR (`/leaderboard`) and mobile REST API (`/api/v1/leaderboard`) consume `get_qualified_leaderboard_query()`.
+* **Zero Dummy Data Enforcement:** Deprecates placeholder generators (`/add-dummy-players` returns `HTTP 400`). All team rubbers and draw slots require genuine competitors.
+

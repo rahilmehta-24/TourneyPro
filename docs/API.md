@@ -318,6 +318,125 @@ Defined in [`app/domain/schemas.py`](app/domain/schemas.py). Schemas are split b
 
 ---
 
+### 4.5 Academy Federation, Notifications & Leaderboard
+
+#### 4.5.1 Browse Verified Academies
+* **Endpoint:** `GET /api/v1/academies`
+* **Access:** Public
+* **Query Parameters:** `city` (optional), `state` (optional), `sport` (optional).
+* **Response (200 OK):**
+  ```json
+  {
+    "success": true,
+    "academies": [
+      {
+        "id": 1,
+        "name": "Apex Tennis Academy",
+        "url_slug": "apex-tennis-academy",
+        "city": "Ahmedabad",
+        "state": "Gujarat",
+        "status": "ACTIVE",
+        "logo_url": "/static/uploads/tournaments/logos/apex.png"
+      }
+    ]
+  }
+  ```
+
+#### 4.5.2 Apply for Academy Verification
+* **Endpoint:** `POST /api/v1/academies/apply`
+* **Access:** Authenticated (`Authorization: Bearer <token>`)
+* **Request Payload:** `name` (required), `contact_email` (required), `description`, `address`, `city`, `state`, `country`, `contact_phone`, `sports_offered`, `website_url`.
+* **Response (201 Created):**
+  ```json
+  {
+    "success": true,
+    "message": "Academy verification application submitted",
+    "application_id": 4
+  }
+  ```
+
+#### 4.5.3 Check Academy Application Status
+* **Endpoint:** `GET /api/v1/academies/application-status`
+* **Access:** Authenticated (`Authorization: Bearer <token>`)
+* **Response (200 OK):**
+  ```json
+  {
+    "success": true,
+    "application": {
+      "id": 4,
+      "name": "Apex Tennis Academy",
+      "status": "PENDING",
+      "submitted_at": "2026-11-17T10:00:00Z",
+      "rejection_reason": null
+    }
+  }
+  ```
+
+#### 4.5.4 In-App Notifications Feed
+* **Endpoint:** `GET /api/v1/notifications`
+* **Access:** Authenticated (`Authorization: Bearer <token>`)
+* **Response (200 OK):**
+  ```json
+  {
+    "success": true,
+    "unread_count": 2,
+    "notifications": [
+      {
+        "id": 12,
+        "title": "Registration Approved! 🎾",
+        "body": "Your entry for National Open (Men's Singles) has been approved.",
+        "notification_type": "registration_update",
+        "is_read": false,
+        "created_at": "2026-11-17T10:30:00Z"
+      }
+    ]
+  }
+  ```
+
+#### 4.5.5 Mark Notification Read
+* **Endpoint:** `POST /api/v1/notifications/<id>/read`
+* **Access:** Authenticated (`Authorization: Bearer <token>`)
+* **Response (200 OK):**
+  ```json
+  {
+    "success": true,
+    "message": "Notification marked as read"
+  }
+  ```
+
+#### 4.5.6 Notification Preferences
+* **Endpoint:** `GET /api/v1/users/notification-preferences` & `PUT /api/v1/users/notification-preferences`
+* **Access:** Authenticated (`Authorization: Bearer <token>`)
+* **Payload (PUT):** `notify_match_called`, `notify_draw_published`, `notify_registration_updates`, `notify_match_results`, `notify_academy_announcements`.
+
+#### 4.5.7 Qualified Official Leaderboard
+* **Endpoint:** `GET /api/v1/leaderboard`
+* **Access:** Public
+* **Query Parameters:** `category` (optional, canonical Age Category), `gender` (optional), `limit` (default 50, max 100).
+* **Qualification Rule:** Only players with `total_points > 0`, `matches_played > 0`, or active tournament participation are included. Zero-history and dummy accounts are excluded.
+* **Response (200 OK):**
+  ```json
+  {
+    "success": true,
+    "rankings": [
+      {
+        "rank": 1,
+        "id": 42,
+        "name": "Rafael Nadal",
+        "points": 1450,
+        "age_category": "Open",
+        "gender": "Male",
+        "academy": "Apex Tennis Academy",
+        "matches_played": 14,
+        "matches_won": 13,
+        "win_rate": 92.9
+      }
+    ]
+  }
+  ```
+
+---
+
 ## 5. Rate Limits (required hardening)
 
 | Scope | Limit | Key |
