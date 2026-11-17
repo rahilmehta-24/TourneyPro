@@ -42,8 +42,16 @@ export default function () {
       },
     });
 
-    // If test-tournament exists, fetch details and order of play
-    const detailsRes = http.get(getApiUrl('/tournaments/test-tournament'), {
+    // Extract first tournament slug dynamically if available (e.g. the-blossom-cup or test-tournament)
+    let slug = 'the-blossom-cup';
+    try {
+      const body = JSON.parse(res.body);
+      if (body.tournaments && body.tournaments.length > 0 && body.tournaments[0].slug) {
+        slug = body.tournaments[0].slug;
+      }
+    } catch (e) {}
+
+    const detailsRes = http.get(getApiUrl(`/tournaments/${slug}`), {
       headers: CONFIG.DEFAULT_HEADERS,
       tags: { name: 'GET /api/v1/tournaments/:slug' },
     });
