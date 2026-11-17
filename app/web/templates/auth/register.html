@@ -18,22 +18,22 @@
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
                 <div class="form-group">
                     <label for="username" class="form-label">Username *</label>
-                    <input type="text" id="username" name="username" class="form-input" required minlength="3" maxlength="30" pattern="[a-zA-Z0-9_.-]+" placeholder="e.g. rahil_mehta">
+                    <input type="text" id="username" name="username" class="form-input" required minlength="3" maxlength="30" pattern="[a-zA-Z0-9_.-]+" autocomplete="username" spellcheck="false" autocapitalize="none" autocorrect="off" placeholder="e.g. rahil_mehta">
                 </div>
                 
                 <div class="form-group">
                     <label for="email" class="form-label">Email Address *</label>
-                    <input type="email" id="email" name="email" class="form-input" required placeholder="Enter your email">
+                    <input type="email" id="email" name="email" class="form-input" required autocomplete="email" placeholder="Enter your email">
                 </div>
                 
                 <div class="form-group">
                     <label for="password" class="form-label">Password *</label>
-                    <input type="password" id="password" name="password" class="form-input" required minlength="8" placeholder="Minimum 8 characters">
+                    <input type="password" id="password" name="password" class="form-input" required minlength="8" autocomplete="new-password" placeholder="Minimum 8 characters">
                 </div>
 
                 <div class="form-group">
                     <label for="password_confirm" class="form-label">Confirm Password *</label>
-                    <input type="password" id="password_confirm" name="password_confirm" class="form-input" required minlength="8" placeholder="Re-enter your password">
+                    <input type="password" id="password_confirm" name="password_confirm" class="form-input" required minlength="8" autocomplete="new-password" placeholder="Re-enter your password">
                 </div>
             </div>
 
@@ -44,7 +44,7 @@
                 <!-- Basic Info -->
                 <div class="form-group">
                     <label class="form-label">Full Name *</label>
-                    <input type="text" name="name" class="form-input" required minlength="2" maxlength="100" placeholder="Your full name">
+                    <input type="text" name="name" class="form-input" required minlength="2" maxlength="100" autocomplete="name" placeholder="Your full name">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Gender *</label>
@@ -112,8 +112,8 @@
                 </div>
             </div>
             
-            <button type="submit" class="btn btn-primary btn-block btn-large" style="margin-top: 1.5rem; margin-bottom: var(--spacing-md);">
-                <span class="btn-icon">🚀</span> Complete Registration
+            <button type="submit" class="btn btn-primary btn-block btn-large" style="margin-top: 1.5rem; margin-bottom: var(--spacing-md); display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;">
+                <svg class="tp-icon" aria-hidden="true"><use href="#icon-send"></use></svg> Complete Registration
             </button>
         </form>
         

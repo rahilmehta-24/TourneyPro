@@ -14,16 +14,16 @@
         <form method="POST" data-turbo="false">
             <div class="form-group">
                 <label for="username" class="form-label">Username</label>
-                <input type="text" id="username" name="username" class="form-input" required placeholder="Enter username">
+                <input type="text" id="username" name="username" class="form-input" required autocomplete="username" spellcheck="false" autocapitalize="none" autocorrect="off" placeholder="Enter username">
             </div>
             
             <div class="form-group" style="margin-bottom: var(--spacing-lg);">
                 <label for="password" class="form-label">Password</label>
-                <input type="password" id="password" name="password" class="form-input" required placeholder="Enter password">
+                <input type="password" id="password" name="password" class="form-input" required autocomplete="current-password" placeholder="Enter password">
             </div>
             
-            <button type="submit" class="btn btn-primary btn-block btn-large" style="margin-bottom: var(--spacing-md);">
-                <span class="btn-icon">🔓</span> Log In
+            <button type="submit" class="btn btn-primary btn-block btn-large" style="margin-bottom: var(--spacing-md); display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;">
+                <svg class="tp-icon" aria-hidden="true"><use href="#icon-log-in"></use></svg> Log In
             </button>
         </form>
         

@@ -293,7 +293,7 @@ function initCreateTournamentPage() {
         const startVal = startInput.value;
         if (!startVal) {
             if (container) {
-                container.innerHTML = '';
+                container.replaceChildren();
                 container.style.display = 'none';
             }
             if (emptyPrompt) emptyPrompt.style.display = 'block';
@@ -320,7 +320,7 @@ function initCreateTournamentPage() {
         }
 
         if (!container) return;
-        container.innerHTML = '';
+        container.replaceChildren();
         container.style.display = 'grid';
         if (emptyPrompt) emptyPrompt.style.display = 'none';
 

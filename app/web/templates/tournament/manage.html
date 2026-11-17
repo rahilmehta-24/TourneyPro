@@ -916,7 +916,7 @@ function copyShareLink(url, btn) {
         function renderDays(origin) {
             const startVal = startInput.value;
             if (!startVal) {
-                container.innerHTML = '';
+                container.replaceChildren();
                 container.style.display = 'none';
                 if (emptyPrompt) emptyPrompt.style.display = 'block';
                 return;
@@ -960,7 +960,7 @@ function copyShareLink(url, btn) {
                 });
             }
 
-            container.innerHTML = '';
+            container.replaceChildren();
             container.style.display = 'grid';
             if (emptyPrompt) emptyPrompt.style.display = 'none';
 

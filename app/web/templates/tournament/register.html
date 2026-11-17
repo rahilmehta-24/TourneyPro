@@ -383,7 +383,7 @@ function updateForm() {
         container.querySelectorAll('input, select').forEach(input => {
             existingData[input.name] = input.value;
         });
-        container.innerHTML = '';
+        container.replaceChildren();
     }
 
     let totalFee = 0.0;

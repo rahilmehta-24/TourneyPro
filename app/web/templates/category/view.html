@@ -2378,9 +2378,7 @@ function renderBracketConnectors() {
             bracket.insertBefore(svg, bracket.firstChild);
         }
 
-        while (svg.firstChild) {
-            svg.removeChild(svg.firstChild);
-        }
+        svg.replaceChildren();
 
         const bracketRect = bracket.getBoundingClientRect();
         if (bracketRect.width === 0 || bracketRect.height === 0) return;
