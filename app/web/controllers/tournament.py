@@ -772,6 +772,11 @@ def manage_tournament(slug):
                         payment_method=payment_method,
                     )
                     db.session.add(participant)
+                    try:
+                        from app.services.notification_service import notify_registration_status
+                        notify_registration_status(reg, "approved")
+                    except Exception:
+                        pass
                     db.session.commit()
                     method_name = "Online" if payment_method == "online" else "Cash"
                     flash(
@@ -786,6 +791,11 @@ def manage_tournament(slug):
                 if reg:
                     player_name = reg.player.name if reg.player else "player"
                     reg.status = "rejected"
+                    try:
+                        from app.services.notification_service import notify_registration_status
+                        notify_registration_status(reg, "rejected")
+                    except Exception:
+                        pass
                     db.session.commit()
                     flash(f"Registration for {player_name} rejected.", "warning")
                 return redirect(url_for("tournament.manage_tournament", slug=slug) + "#players")

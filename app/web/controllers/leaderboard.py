@@ -14,36 +14,12 @@ def view_leaderboard():
     gender_filter = request.args.get('gender', 'All')
 
     from app.domain.constants import AGE_CATEGORIES
+    from app.services.leaderboard import get_qualified_leaderboard_query
 
-    # Leaderboard Qualification Filter:
-    # Player must have earned points (> 0) OR registered in a tournament/match.
-    # Unqualified new users with 0 points/participations are excluded from leaderboard rankings.
-    registered_p1 = db.session.query(Participant.player_id).filter(Participant.player_id.isnot(None))
-    registered_p2 = db.session.query(Participant.player2_id).filter(Participant.player2_id.isnot(None))
-
-    qualification_filter = db.or_(
-        Player.total_points > 0,
-        Player.matches_played > 0,
-        Player.id.in_(registered_p1),
-        Player.id.in_(registered_p2)
-    )
-
-    query = Player.query.filter(
-        qualification_filter,
-        ~Player.name.ilike('Player %'),
-        ~Player.name.ilike('Player_%'),
-        ~Player.name.ilike('Dummy%'),
-        ~Player.name.ilike('Test%'),
-        ~Player.name.ilike('Sample%'),
-        ~Player.name.ilike('TBD%')
-    )
-
-    if category_filter != 'All':
-        query = query.filter_by(age_category=category_filter)
-    if gender_filter != 'All':
-        query = query.filter_by(gender=gender_filter)
-
-    players = query.order_by(desc(Player.total_points), desc(Player.matches_won), Player.name).all()
+    players = get_qualified_leaderboard_query(
+        category_filter=category_filter,
+        gender_filter=gender_filter
+    ).all()
 
     categories = AGE_CATEGORIES
     genders = ['Male', 'Female', 'Other']

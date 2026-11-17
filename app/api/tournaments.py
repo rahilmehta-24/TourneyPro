@@ -367,20 +367,11 @@ def toggle_category_publish(category_id):
 
     # If published, push in-app alerts to all approved registrants
     if category.draw_published:
-        registrations = Registration.query.filter_by(
-            category_id=category.id,
-            status='approved'
-        ).all()
-        for reg in registrations:
-            notif = InAppNotification(
-                user_id=reg.user_id,
-                title="Draws Published! 🏆",
-                body=f"Draws for {category.name} in {tournament.name} are now live. View your schedule on Baseline.",
-                notification_type="draw_published",
-                reference_type="category",
-                reference_id=category.id
-            )
-            db.session.add(notif)
+        try:
+            from app.services.notification_service import notify_draw_published
+            notify_draw_published(category)
+        except Exception:
+            pass
 
     db.session.commit()
 
@@ -402,34 +393,12 @@ def get_leaderboard():
     gender = request.args.get('gender')
     limit = min(int(request.args.get('limit', 50)), 100)
 
-    # Leaderboard Qualification Filter:
-    # A player must have earned ranking points (> 0) OR have registered in a tournament/match.
-    from app.domain.models import Participant
-    registered_p1 = db.session.query(Participant.player_id).filter(Participant.player_id.isnot(None))
-    registered_p2 = db.session.query(Participant.player2_id).filter(Participant.player2_id.isnot(None))
+    from app.services.leaderboard import get_qualified_leaderboard_query
 
-    qualification_filter = db.or_(
-        Player.total_points > 0,
-        Player.matches_played > 0,
-        Player.id.in_(registered_p1),
-        Player.id.in_(registered_p2)
-    )
-
-    query = Player.query.filter(
-        qualification_filter,
-        ~Player.name.ilike('Player %'),
-        ~Player.name.ilike('Player_%'),
-        ~Player.name.ilike('Dummy%'),
-        ~Player.name.ilike('Test%'),
-        ~Player.name.ilike('Sample%'),
-        ~Player.name.ilike('TBD%')
-    )
-    if category and category != 'All':
-        query = query.filter_by(age_category=category)
-    if gender and gender != 'All':
-        query = query.filter_by(gender=gender)
-
-    players = query.order_by(desc(Player.total_points)).limit(limit).all()
+    players = get_qualified_leaderboard_query(
+        category_filter=category,
+        gender_filter=gender
+    ).limit(limit).all()
 
     rankings = []
     for idx, p in enumerate(players, start=1):

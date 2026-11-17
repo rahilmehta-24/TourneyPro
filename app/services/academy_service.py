@@ -141,6 +141,14 @@ def review_academy_application(
             explanation=f"Rejection reason: {reason}"
         )
         db.session.add(audit)
+
+        # Notify applicant
+        try:
+            from app.services.notification_service import notify_academy_application_status
+            notify_academy_application_status(app_record, "REJECTED", reason)
+        except Exception:
+            pass
+
         db.session.commit()
         return app_record, None
 
@@ -201,6 +209,14 @@ def review_academy_application(
         explanation=f"Academy '{academy.name}' activated with slug '{slug}' for owner {app_record.applicant.username}"
     )
     db.session.add(audit)
+
+    # Notify applicant
+    try:
+        from app.services.notification_service import notify_academy_application_status
+        notify_academy_application_status(app_record, "APPROVED")
+    except Exception:
+        pass
+
     db.session.commit()
 
     return app_record, academy

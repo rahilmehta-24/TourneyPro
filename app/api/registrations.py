@@ -174,28 +174,20 @@ def review_registration(registration_id):
             )
             db.session.add(participant)
 
-        # Notify player
-        notif = InAppNotification(
-            user_id=reg.user_id,
-            title="Registration Approved! 🎾",
-            body=f"Your entry for {tournament.name} ({reg.category.name if reg.category else 'General'}) has been approved.",
-            notification_type="registration_update",
-            reference_type="tournament",
-            reference_id=tournament.id
-        )
-        db.session.add(notif)
+        # Notify player via notification service
+        try:
+            from app.services.notification_service import notify_registration_status
+            notify_registration_status(reg, "approved")
+        except Exception:
+            pass
 
     elif status == 'rejected':
         reason = data.get('reason', 'Entry could not be accepted')
-        notif = InAppNotification(
-            user_id=reg.user_id,
-            title="Registration Update",
-            body=f"Your entry for {tournament.name} was not accepted: {reason}",
-            notification_type="registration_update",
-            reference_type="tournament",
-            reference_id=tournament.id
-        )
-        db.session.add(notif)
+        try:
+            from app.services.notification_service import notify_registration_status
+            notify_registration_status(reg, "rejected", reason=reason)
+        except Exception:
+            pass
 
     db.session.commit()
     return jsonify({
