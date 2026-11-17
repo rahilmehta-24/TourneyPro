@@ -64,7 +64,13 @@ class MobileApiTestCase(unittest.TestCase):
             db.session.add(self.owner)
 
             # Seed Player User
-            self.player_user = User(username="player1", email="player1@baseline.local", role="user")
+            self.player_user = User(
+                username="player1",
+                email="player1@baseline.local",
+                role="user",
+                profile_completed=True,
+                completion_percentage=100
+            )
             self.player_user.set_password("pass123")
             db.session.add(self.player_user)
 

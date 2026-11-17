@@ -29,8 +29,12 @@
                         </div>
                     </div>
                     <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                        <a href="{{ url_for('player.view_player', player_id=player.id) }}" class="btn btn-secondary btn-small">👁️ View Public Profile</a>
-                        <button onclick="document.getElementById('editProfileForm-{{ player.id }}').style.display='block'" class="btn btn-primary btn-small">✏️ Edit Details</button>
+                        <a href="{{ url_for('player.view_player', player_id=player.id) }}" class="btn btn-secondary btn-small" style="display: inline-flex; align-items: center; gap: 0.35rem;">
+                            <svg class="tp-icon" aria-hidden="true"><use href="#icon-eye"></use></svg> View Public Profile
+                        </a>
+                        <button onclick="document.getElementById('editProfileForm-{{ player.id }}').style.display='block'" class="btn btn-primary btn-small" style="display: inline-flex; align-items: center; gap: 0.35rem;">
+                            <svg class="tp-icon" aria-hidden="true"><use href="#icon-edit"></use></svg> Edit Details
+                        </button>
                     </div>
                 </div>
 
@@ -178,7 +182,9 @@
                         </div>
                     {% else %}
                         <div style="text-align: center; padding: 2rem; background: var(--bg-secondary); border-radius: var(--radius-md); margin-top: 1rem;">
-                            <div style="font-size: 2rem; margin-bottom: 0.5rem; opacity: 0.5;">🎾</div>
+                            <div style="font-size: 2.5rem; margin-bottom: 0.5rem; opacity: 0.6; color: var(--accent-secondary);">
+                                <svg class="tp-icon" style="width: 2.5rem; height: 2.5rem;" aria-hidden="true"><use href="#icon-tennis"></use></svg>
+                            </div>
                             <p style="margin: 0; color: var(--text-secondary);">No tournaments played yet.</p>
                         </div>
                     {% endif %}
@@ -210,7 +216,7 @@
                     {% if data.assigned_teams %}
                     <div style="margin-bottom: 2rem;">
                         <h4 style="margin-top: 0; margin-bottom: 1rem; color: var(--text-primary); border-bottom: 2px solid var(--accent-secondary); padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
-                            <span>🛡️</span> My Assigned Teams & Squads
+                            <svg class="tp-icon" aria-hidden="true"><use href="#icon-shield"></use></svg> My Assigned Teams & Squads
                         </h4>
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
                             {% for item in data.assigned_teams %}
@@ -256,7 +262,7 @@
                         <!-- Upcoming Matches -->
                         <div>
                             <h4 style="margin-top: 0; margin-bottom: 1rem; color: var(--text-primary); border-bottom: 2px solid var(--accent-primary); padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
-                                <span>⏳</span> Upcoming Matches
+                                <svg class="tp-icon" aria-hidden="true"><use href="#icon-calendar"></use></svg> Upcoming Matches
                             </h4>
                             {% if data.upcoming_matches %}
                                 <div style="display: flex; flex-direction: column; gap: 1rem;">
@@ -272,8 +278,8 @@
                                             <span style="{% if match.participant2_id in data.participant_ids %}color: var(--accent-primary-text);{% endif %}">{{ match.participant2.name if match.participant2 else 'TBD' }}</span>
                                         </div>
                                         <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-top: 0.5rem;">
-                                            <span style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 0.2rem 0.5rem; border-radius: 4px;">📅 {{ match.scheduled_time|ist('%b %d, %I:%M %p IST') if match.scheduled_time else 'TBD' }}</span>
-                                            <span style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 0.2rem 0.5rem; border-radius: 4px;">🏟️ {{ match.court_name or 'TBD' }}</span>
+                                            <span style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 0.35rem;"><svg class="tp-icon" aria-hidden="true"><use href="#icon-calendar"></use></svg> {{ match.scheduled_time|ist('%b %d, %I:%M %p IST') if match.scheduled_time else 'TBD' }}</span>
+                                            <span style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 0.35rem;"><svg class="tp-icon" aria-hidden="true"><use href="#icon-landmark"></use></svg> {{ match.court_name or 'TBD' }}</span>
                                         </div>
                                     </div>
                                 {% endfor %}
@@ -286,7 +292,7 @@
                         <!-- Match History -->
                         <div>
                             <h4 style="margin-top: 0; margin-bottom: 1rem; color: var(--text-primary); border-bottom: 2px solid var(--accent-success); padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
-                                <span>✅</span> Recent Match History
+                                <svg class="tp-icon" aria-hidden="true" style="stroke: var(--accent-success);"><use href="#icon-check-circle"></use></svg> Recent Match History
                             </h4>
                             {% if data.match_history %}
                                 <div style="display: flex; flex-direction: column; gap: 1rem;">
@@ -299,11 +305,11 @@
                                         <div style="display: flex; justify-content: space-between; align-items: center; font-weight: bold;">
                                             <span style="{% if match.winner_id == match.participant1_id %}color: var(--accent-success);{% elif match.participant1_id in data.participant_ids %}color: var(--error);{% endif %}">
                                                 {{ match.participant1.name if match.participant1 else 'TBD' }}
-                                                {% if match.winner_id == match.participant1_id %}🏆{% endif %}
+                                                {% if match.winner_id == match.participant1_id %}<svg class="tp-icon" aria-hidden="true" style="stroke: var(--accent-secondary); margin-left: 2px;"><use href="#icon-trophy"></use></svg>{% endif %}
                                             </span>
                                             <span style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 0.2rem 0.5rem; border-radius: 4px; font-family: monospace;">{{ match.score1 or '-' }} : {{ match.score2 or '-' }}</span>
                                             <span style="{% if match.winner_id == match.participant2_id %}color: var(--accent-success);{% elif match.participant2_id in data.participant_ids %}color: var(--error);{% endif %}">
-                                                {% if match.winner_id == match.participant2_id %}🏆{% endif %}
+                                                {% if match.winner_id == match.participant2_id %}<svg class="tp-icon" aria-hidden="true" style="stroke: var(--accent-secondary); margin-right: 2px;"><use href="#icon-trophy"></use></svg>{% endif %}
                                                 {{ match.participant2.name if match.participant2 else 'TBD' }}
                                             </span>
                                         </div>

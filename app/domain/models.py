@@ -30,6 +30,7 @@ class Tournament(db.Model):
     # Academy Integration
     academy_id = db.Column(db.Integer, db.ForeignKey('academies.id'), nullable=True)
     is_internal = db.Column(db.Boolean, default=False)
+    logo_url = db.Column(db.String(255), nullable=True)
 
     # Court scheduling & Multi-day fields
     start_date = db.Column(db.Date)                                    # Tournament start date
@@ -230,6 +231,25 @@ class MatchAttachment(db.Model):
     match = db.relationship('Match', backref=db.backref('attachments', cascade='all, delete-orphan'))
     participant = db.relationship('Participant', backref=db.backref('attachments', cascade='all, delete-orphan'))
 
+class MatchScoreRevision(db.Model):
+    __tablename__ = 'match_score_revisions'
+
+    id = db.Column(db.Integer, primary_key=True)
+    match_id = db.Column(db.Integer, db.ForeignKey('matches.id', ondelete='CASCADE'), nullable=False)
+    edited_by_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    previous_score1 = db.Column(db.String(50), nullable=True)
+    previous_score2 = db.Column(db.String(50), nullable=True)
+    previous_winner_id = db.Column(db.Integer, nullable=True)
+    new_score1 = db.Column(db.String(50), nullable=True)
+    new_score2 = db.Column(db.String(50), nullable=True)
+    new_winner_id = db.Column(db.Integer, nullable=True)
+    reason = db.Column(db.String(255), nullable=False)
+    explanation = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    match = db.relationship('Match', backref=db.backref('score_revisions', cascade='all, delete-orphan'))
+    edited_by = db.relationship('User')
+
 class User(db.Model):
     __tablename__ = 'users'
 
@@ -237,9 +257,22 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
-    role = db.Column(db.String(20), default='user')  # 'superadmin', 'admin', 'user'
+    role = db.Column(db.String(20), default='user')  # 'superadmin', 'admin', 'user', 'player'
     admin_requested = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Identity & Two-Stage Onboarding extensions
+    full_name = db.Column(db.String(120), nullable=True)
+    phone_number = db.Column(db.String(20), nullable=True)
+    is_email_verified = db.Column(db.Boolean, default=False)
+    email_verification_token = db.Column(db.String(100), nullable=True, index=True)
+    email_verified_at = db.Column(db.DateTime, nullable=True)
+    password_reset_token = db.Column(db.String(100), nullable=True)
+    password_reset_expires_at = db.Column(db.DateTime, nullable=True)
+    registration_intent = db.Column(db.String(20), default='user')  # 'user', 'player'
+    profile_completed = db.Column(db.Boolean, default=False)
+    completion_percentage = db.Column(db.Integer, default=0)
+    account_status = db.Column(db.String(20), default='ACTIVE')  # 'ACTIVE', 'SUSPENDED', 'DEACTIVATED'
 
     tournaments = db.relationship('Tournament', backref='owner', lazy=True)
     players = db.relationship('Player', backref='owner', lazy=True)
@@ -255,6 +288,18 @@ class User(db.Model):
         from werkzeug.security import check_password_hash
         return check_password_hash(self.password_hash, password)
 
+    @property
+    def is_authenticated(self):
+        return True
+
+    @property
+    def is_active(self):
+        return self.account_status == 'ACTIVE'
+
+    @property
+    def is_anonymous(self):
+        return False
+
 class Player(db.Model):
     __tablename__ = 'players'
 
@@ -267,7 +312,7 @@ class Player(db.Model):
     contact_number = db.Column(db.String(50), nullable=True)
     height = db.Column(db.String(50), nullable=True)
     weight = db.Column(db.String(50), nullable=True)
-    gender = db.Column(db.String(20), nullable=False) # e.g. Boys, Girls, Mens, Womens
+    gender = db.Column(db.String(20), nullable=False, default='Male') # e.g. Male, Female, Other
     blood_group = db.Column(db.String(10), nullable=True)
     nationality = db.Column(db.String(100), nullable=True)
     address = db.Column(db.Text, nullable=True)
@@ -277,7 +322,7 @@ class Player(db.Model):
     registration_date = db.Column(db.Date, nullable=True)
     registration_validity = db.Column(db.Date, nullable=True)
     current_status = db.Column(db.String(50), default='Active')
-    age_category = db.Column(db.String(20), nullable=False) # e.g. U8, U10, U12, U14, U18, Open
+    age_category = db.Column(db.String(50), nullable=False, default='Open') # Canonical Age Category
     avatar_url = db.Column(db.String(500), nullable=True)
     bio = db.Column(db.Text, nullable=True)
     total_points = db.Column(db.Float, default=0.0)
@@ -285,6 +330,14 @@ class Player(db.Model):
     matches_won = db.Column(db.Integer, default=0)
     matches_lost = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Onboarding & Athletic profile extensions
+    profile_status = db.Column(db.String(20), default='incomplete')  # 'incomplete', 'complete'
+    emergency_contact_name = db.Column(db.String(100), nullable=True)
+    emergency_contact_phone = db.Column(db.String(20), nullable=True)
+    primary_sport = db.Column(db.String(50), default='Tennis')
+    skill_level = db.Column(db.String(20), nullable=True)
+    preferred_competition_category = db.Column(db.String(50), nullable=True)
 
     # Relationships
     tournament_records = db.relationship('PlayerTournamentRecord', backref='player', lazy=True, cascade='all, delete-orphan')
@@ -325,8 +378,9 @@ def estimate_dob_from_age(age):
         return None
 
 def determine_age_category(age=None, dob=None):
-    if dob and age is None:
-        age = calculate_age_from_dob(dob)
+    from app.domain.constants import calculate_canonical_age_category
+    if dob:
+        return calculate_canonical_age_category(dob)
     if age is None:
         return 'Open'
     try:
@@ -334,24 +388,9 @@ def determine_age_category(age=None, dob=None):
     except (ValueError, TypeError):
         return 'Open'
 
-    if age_int <= 8:
-        return 'U8'
-    elif age_int <= 10:
-        return 'U10'
-    elif age_int <= 12:
-        return 'U12'
-    elif age_int <= 14:
-        return 'U14'
-    elif age_int <= 16:
-        return 'U16'
-    elif age_int <= 18:
-        return 'U18'
-    elif age_int >= 45:
-        return '45+'
-    elif age_int >= 35:
-        return '35+'
-    else:
-        return 'Open'
+    from datetime import date
+    synthetic_dob = date(date.today().year - age_int, 1, 1)
+    return calculate_canonical_age_category(synthetic_dob)
 
 class PlayerTournamentRecord(db.Model):
     __tablename__ = 'player_tournament_records'
@@ -428,6 +467,7 @@ class Registration(db.Model):
     amount_due = db.Column(db.Float, default=0.0)
     transaction_id = db.Column(db.String(100)) # User's submitted UPI transaction ID
     payment_method = db.Column(db.String(50), nullable=True) # online, cash, free
+    academy_id_snapshot = db.Column(db.Integer, db.ForeignKey('academies.id'), nullable=True) # Snapshot of player's academy at registration
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships
@@ -436,6 +476,7 @@ class Registration(db.Model):
     user = db.relationship('User', backref=db.backref('registrations', cascade='all, delete-orphan'))
     player = db.relationship('Player', foreign_keys=[player_id])
     player2 = db.relationship('Player', foreign_keys=[player2_id])
+    academy_snapshot = db.relationship('Academy', foreign_keys=[academy_id_snapshot])
 
 class Academy(db.Model):
     __tablename__ = 'academies'
@@ -445,10 +486,23 @@ class Academy(db.Model):
     url_slug = db.Column(db.String(200), unique=True, nullable=False)
     description = db.Column(db.Text)
     owner_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    status = db.Column(db.String(20), default='PENDING', nullable=False) # PENDING, ACTIVE, REJECTED, SUSPENDED
+    address = db.Column(db.String(255), nullable=True)
+    city = db.Column(db.String(100), nullable=True)
+    state = db.Column(db.String(100), nullable=True)
+    country = db.Column(db.String(100), nullable=True)
+    contact_email = db.Column(db.String(120), nullable=True)
+    contact_phone = db.Column(db.String(20), nullable=True)
+    sports_offered = db.Column(db.Text, nullable=True)
+    website_url = db.Column(db.String(255), nullable=True)
+    logo_url = db.Column(db.String(255), nullable=True)
+    verified_at = db.Column(db.DateTime, nullable=True)
+    verified_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships
-    owner = db.relationship('User', backref='owned_academies')
+    owner = db.relationship('User', foreign_keys=[owner_id], backref='owned_academies')
+    verifier = db.relationship('User', foreign_keys=[verified_by_id])
     tournaments = db.relationship('Tournament', backref='academy', lazy=True)
     announcements = db.relationship('AcademyAnnouncement', backref='academy', lazy=True, cascade='all, delete-orphan')
     members = db.relationship('AcademyMember', backref='academy', lazy=True, cascade='all, delete-orphan')
@@ -459,10 +513,43 @@ class AcademyMember(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     academy_id = db.Column(db.Integer, db.ForeignKey('academies.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    role = db.Column(db.String(50), default='member')  # admin, coach, member
+    role = db.Column(db.String(50), default='member')  # owner, admin, head_coach, coach, member
+    membership_status = db.Column(db.String(20), default='ACTIVE', nullable=False) # ACTIVE, INACTIVE, TRANSFERRED, REMOVED
     joined_at = db.Column(db.DateTime, default=datetime.utcnow)
+    left_at = db.Column(db.DateTime, nullable=True)
 
     user = db.relationship('User', backref=db.backref('academy_memberships', cascade='all, delete-orphan'))
+
+    __table_args__ = (
+        db.Index('idx_academy_members_user_status', 'user_id', 'membership_status'),
+    )
+
+class AcademyApplication(db.Model):
+    __tablename__ = 'academy_applications'
+
+    id = db.Column(db.Integer, primary_key=True)
+    applicant_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    address = db.Column(db.String(255), nullable=True)
+    city = db.Column(db.String(100), nullable=True)
+    state = db.Column(db.String(100), nullable=True)
+    country = db.Column(db.String(100), nullable=True)
+    contact_email = db.Column(db.String(120), nullable=False)
+    contact_phone = db.Column(db.String(20), nullable=True)
+    sports_offered = db.Column(db.Text, nullable=True)
+    website_url = db.Column(db.String(255), nullable=True)
+    status = db.Column(db.String(20), default='PENDING', nullable=False)  # PENDING, APPROVED, REJECTED
+    reviewed_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    reviewed_at = db.Column(db.DateTime, nullable=True)
+    rejection_reason = db.Column(db.Text, nullable=True)
+    academy_id = db.Column(db.Integer, db.ForeignKey('academies.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    applicant = db.relationship('User', foreign_keys=[applicant_id], backref='academy_applications')
+    reviewer = db.relationship('User', foreign_keys=[reviewed_by_id])
+    academy = db.relationship('Academy', foreign_keys=[academy_id])
 
 class AcademyAnnouncement(db.Model):
     __tablename__ = 'academy_announcements'

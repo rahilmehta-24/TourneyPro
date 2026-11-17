@@ -48,12 +48,19 @@ The Baseline Society enforces a dual authentication model tailored to its hybrid
 The Baseline Society enforces a multi-tiered authorization model separating platform-wide system roles from tournament-scoped staff and temporary court umpires:
 
 ### 2.1 Platform System Roles (`users.role`)
-1. **`superadmin`:** Platform administrators with global override authority across all tournaments, user accounts, audit trails, and database sync tools.
-2. **`admin`:** Tournament organizers and academy directors authorized to create tournaments, configure categories, manage finances, and oversee operations.
-3. **`user` / `player`:** Registered athletes, coaches, and team captains who self-register, manage player profiles, submit nominations, and compete.
-4. **Guest (Unauthenticated Public):** Public spectators capable of browsing tournaments, viewing public brackets, tracking live scores, and downloading published Draw & Order of Play PDFs.
+1. **`superadmin`:** Platform administrators with global override authority across all tournaments, verified academies, user accounts, audit trails, and platform configurations.
+2. **`support`:** Platform support technicians authorized to assist users with login recovery, OTP/token resends, application status lookups, and viewing public schedules. **Strictly Forbidden:** Approving/rejecting academy applications, modifying user roles, altering platform security configs, viewing private academy financials, or overriding match scores.
+3. **`admin`:** Tournament organizers and academy directors authorized to create tournaments, configure categories, manage finances, and oversee operations.
+4. **`user` / `player`:** Registered athletes, coaches, and team captains who self-register, manage player profiles, submit nominations, and compete.
+5. **Guest (Unauthenticated Public):** Public spectators capable of browsing tournaments, viewing public brackets, tracking live scores, and downloading published Draw & Order of Play PDFs.
 
-### 2.2 Tournament-Scoped Roles
+### 2.2 Academy-Scoped Roles (`academy_members.role`)
+* **`owner`:** Primary facility authority appointed upon verified application approval. Manages facility profile, courts, coaches, rosters, and inter-academy tournament participation.
+* **`admin`:** Facility managers appointed by the owner to manage rosters and court schedules.
+* **`head_coach` / `coach`:** Instructors with roster assignment and squad training permissions.
+* **`player`:** Athletes affiliated with the academy.
+
+### 2.3 Tournament-Scoped Roles
 Roles are ranked; a higher rank includes every lower-rank capability. The check is **fail-closed**: unknown roles never pass.
 
 | Rank | Role | Stored in | Capability |
@@ -92,10 +99,22 @@ Volunteer chair umpires can score on court tablets without an account. The PIN i
 | Appoint Tournament Staff | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
 | Generate 6-Digit Court Access PIN | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
 | Report Live Match Scores | ❌ | ❌ | ❌ | ✅ (assigned court only) | ✅ | ✅ | ✅ | ✅ |
-| Override Score (Competitor in Match) | ❌ (Blocked) | ❌ (Blocked) | ❌ (Blocked) | ❌ (Blocked) | ❌ (Blocked) | ❌ (Blocked) | ❌ (Blocked) | ✅ |
+| Score Own Match (Competitor in Match) | ❌ (Blocked) | ❌ (Blocked) | ❌ (Blocked) | ❌ (Blocked) | ❌ (Blocked) | ❌ (Blocked) | ❌ (Blocked) | ❌ (Blocked) |
 | Elevate Platform User to Admin | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 
-> **Note:** a superadmin can override a score only through an audited action that records a reason. Superadmin is never exempt from logging.
+> **Note:** The competitor self-scoring ban is **fail-closed and absolute**. Even if a player is the Tournament Host or Platform Superadmin, they are strictly prohibited from scoring their own matches (`HTTP 403 Forbidden`). Neutral scorers, umpires, or assigned court PINs must report the score.
+
+### 2.5 Two-Stage Onboarding & Registration Intent
+* **Stage 1 Registration:** New accounts register with `registration_intent`:
+  - `user`: Default account for organizers, officials, and support staff. Does not create shell player records.
+  - `player`: Immediately initializes a player profile shell for athletic competition.
+* **Stage 2 Completion Metric:** Evaluates 7 core profile fields (`full_name`, `phone_number`, `dob`, `gender`, `contact_number`, `address`, `skill_level`) to compute dynamic `completion_percentage` (0% to 100%).
+* **Tournament Gate:** When submitting entry for a tournament, Player 1 must have 100% profile completion. If incomplete, the user is redirected to `/auth/profile/complete?next=...` with context preservation.
+
+### 2.6 Single Active Academy Membership Invariant
+* An authenticated user may hold only **one active academy membership** across the platform (`membership_status = 'ACTIVE'`).
+* Joining a new academy prompts or executes an audited transactional transfer, archiving previous memberships as `TRANSFERRED` with timestamped `left_at`.
+* Enforced at the application service level in `app/services/academy_service.py` and via database partial indexes (`uq_one_active_academy_per_user`).
 
 ---
 

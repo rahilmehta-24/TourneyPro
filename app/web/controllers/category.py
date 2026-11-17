@@ -602,6 +602,12 @@ def toggle_publish_draw(slug, category_id):
         abort(404)
 
     category.draw_published = not bool(category.draw_published)
+    if category.draw_published:
+        try:
+            from app.services.notification_service import notify_draw_published
+            notify_draw_published(category)
+        except Exception:
+            pass
     db.session.commit()
 
     status_label = "published and is now visible to the public" if category.draw_published else "unpublished (saved as draft)"
@@ -2251,60 +2257,11 @@ def quick_late_entry_player(slug, category_id):
 @role_required('admin', 'superadmin')
 def add_dummy_players(slug, category_id):
     """
-    Create placeholder 'TBD / Dummy Player' slots to complete a partial team
-    before final groups are formed; can later be replaced via Late Entry.
+    Deprecated under Baseline Society Zero Dummy Data policy.
+    Dummy/placeholder players cannot be generated. Genuine players must register.
     """
-    from app.domain.models import Registration
-
-    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
-    check_tournament_ownership(tournament)
-    category = Category.query.get_or_404(category_id)
-
-    if category.status != 'setup':
-        flash('Cannot modify players once matches are in progress.', 'error')
-        return redirect(url_for('category.team_draft_view', slug=slug, category_id=category_id))
-
-    k = category.max_players_per_team or 5
-    _, _, _, total_players = _collect_draft_pool(category)
-    leftover = total_players % k
-    default_needed = (k - leftover) if leftover > 0 else 1
-
-    count = request.form.get('count', type=int) or default_needed
-    count = max(1, min(k, count))
-
-    try:
-        current_u = get_current_user()
-        existing_dummies = Player.query.filter(Player.name.like('TBD / Dummy Player #%')).count()
-        created_names = []
-        default_gender = category.gender if category.gender in ('Male', 'Female', 'Boys', 'Girls') else 'Male'
-
-        for i in range(1, count + 1):
-            label = f"TBD / Dummy Player #{existing_dummies + i}"
-            dummy = Player(
-                name=label,
-                gender=default_gender,
-                age_category=category.age_category or 'Open',
-            )
-            db.session.add(dummy)
-            db.session.flush()
-
-            reg = Registration(
-                tournament_id=tournament.id,
-                category_id=category.id,
-                user_id=current_u.id,
-                player_id=dummy.id,
-                status='approved',
-                payment_status='pending',
-                payment_method='cash',
-            )
-            db.session.add(reg)
-            created_names.append(label)
-
-        db.session.commit()
-        flash(f'Added {len(created_names)} Dummy/TBD slot(s) to complete full team(s). You can replace them anytime via Late Entry!', 'info')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Failed to add dummy slots: {str(e)}', 'error')
-
-    return redirect(url_for('category.team_draft_view', slug=slug, category_id=category_id))
+    flash('Dummy player generation is disabled under Baseline Society Zero Dummy Data policy. Please register genuine players.', 'error')
+    if request.is_json:
+        return {'success': False, 'message': 'Dummy player generation is disabled under Baseline Society Zero Dummy Data policy. Please register genuine players.'}, 400
+    return redirect(url_for('category.team_draft_view', slug=slug, category_id=category_id)), 400
 

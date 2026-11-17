@@ -1,6 +1,5 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, make_response
 from app.domain.models import db, Player, PlayerTournamentRecord, Participant
-from sqlalchemy import desc
 from app.web.controllers.auth import login_required, role_required, get_current_user, check_player_ownership
 from datetime import datetime
 import openpyxl
@@ -13,16 +12,16 @@ def view_leaderboard():
     category_filter = request.args.get('category', 'All')
     gender_filter = request.args.get('gender', 'All')
 
-    query = Player.query
-    if category_filter != 'All':
-        query = query.filter_by(age_category=category_filter)
-    if gender_filter != 'All':
-        query = query.filter_by(gender=gender_filter)
+    from app.domain.constants import AGE_CATEGORIES
+    from app.services.leaderboard import get_qualified_leaderboard_query
 
-    players = query.order_by(desc(Player.total_points)).all()
+    players = get_qualified_leaderboard_query(
+        category_filter=category_filter,
+        gender_filter=gender_filter
+    ).all()
 
-    categories = ['U8', 'U10', 'U12', 'U14', 'U18', 'Open']
-    genders = ['Boys', 'Girls', 'Mens', 'Womens', 'Mix']
+    categories = AGE_CATEGORIES
+    genders = ['Male', 'Female', 'Other']
 
     # Map rounds for dropdown
     rounds = ['Round 1', 'Round 2', 'Round 3', 'Round 4', 'Quarter-Final', 'Semi-Final', 'Runner-Up', 'Winner']

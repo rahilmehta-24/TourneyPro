@@ -44,10 +44,28 @@ class AdminApprovalBoxTestCase(unittest.TestCase):
         User.query.delete()
         db.session.commit()
 
-        # Create admin user
-        self.admin = User(username='admin_tester', email='admin_tester@example.com', role='admin')
+        # Create admin user with completed profile
+        self.admin = User(
+            username='admin_tester',
+            email='admin_tester@example.com',
+            role='admin',
+            profile_completed=True,
+            completion_percentage=100
+        )
         self.admin.set_password('pass123')
         db.session.add(self.admin)
+        db.session.flush()
+
+        self.admin_player = Player(
+            user_id=self.admin.id,
+            name='Admin Tester',
+            email='admin_tester@example.com',
+            gender='Male',
+            age_category='Open',
+            contact_number='9876543299',
+            profile_status='complete'
+        )
+        db.session.add(self.admin_player)
         db.session.commit()
 
         # Create tournament
@@ -76,6 +94,9 @@ class AdminApprovalBoxTestCase(unittest.TestCase):
         db.session.commit()
 
         # Log in client as admin
+        self._login()
+
+    def _login(self):
         with self.client.session_transaction() as sess:
             sess['_user_id'] = str(self.admin.id)
             sess['user_id'] = self.admin.id
@@ -292,6 +313,7 @@ class AdminApprovalBoxTestCase(unittest.TestCase):
 
     def test_06_public_registration_renders_online_and_cash_options(self):
         """Public registration page offers Online (with QR) and Cash options when fee > 0"""
+        self._login()
         self.tournament.status = 'registration'
         self.tournament.payment_upi_id = 'tourney@okhdfcbank'
         db.session.commit()
@@ -308,6 +330,7 @@ class AdminApprovalBoxTestCase(unittest.TestCase):
 
     def test_07_public_registration_submit_online_with_utr(self):
         """Public user registers choosing Online payment and providing valid UTR"""
+        self._login()
         self.tournament.status = 'registration'
         self.tournament.payment_upi_id = 'tourney@okhdfcbank'
         db.session.commit()
@@ -337,6 +360,7 @@ class AdminApprovalBoxTestCase(unittest.TestCase):
 
     def test_08_public_registration_submit_cash_without_utr(self):
         """Public user registers choosing Cash payment without requiring UTR"""
+        self._login()
         self.tournament.status = 'registration'
         self.tournament.payment_upi_id = 'tourney@okhdfcbank'
         db.session.commit()

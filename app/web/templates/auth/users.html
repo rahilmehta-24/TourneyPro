@@ -9,12 +9,15 @@
             <h1 class="page-title">User Management Dashboard</h1>
             <p class="page-subtitle">Manage user accounts, data workspaces, and permissions</p>
         </div>
+        {% if current_user and current_user.role == 'superadmin' %}
         <button type="button" class="btn btn-primary" onclick="const f = document.getElementById('createUserCard'); f.style.display = f.style.display === 'none' ? 'block' : 'none';" style="display: inline-flex; align-items: center; gap: 8px;">
-            <span>+</span> Create New User
+            <svg class="tp-icon" aria-hidden="true"><use href="#icon-plus"></use></svg> Create New User
         </button>
+        {% endif %}
     </div>
 
     <!-- Create User Admin Form Card (Collapsed by default) -->
+    {% if current_user and current_user.role == 'superadmin' %}
     <div id="createUserCard" class="form-section" style="display: none; background: var(--bg-card); padding: var(--spacing-lg); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); border: 1px solid var(--border-color); margin-bottom: var(--spacing-xl);">
         <div style="border-bottom: 1px solid var(--border-subtle); padding-bottom: var(--spacing-sm); margin-bottom: var(--spacing-md);">
             <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin: 0;">Create New User Account</h2>
@@ -25,28 +28,29 @@
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
                 <div class="form-group">
                     <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Username *</label>
-                    <input type="text" name="username" class="form-control" required placeholder="e.g. rogerfederer" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-primary); color: var(--text-primary);">
+                    <input type="text" name="username" class="form-control" required autocomplete="username" spellcheck="false" autocapitalize="none" autocorrect="off" placeholder="e.g. rogerfederer" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-primary); color: var(--text-primary);">
                 </div>
 
                 <div class="form-group">
                     <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Email Address *</label>
-                    <input type="email" name="email" class="form-control" required placeholder="e.g. roger@baseline.org" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-primary); color: var(--text-primary);">
+                    <input type="email" name="email" class="form-control" required autocomplete="email" placeholder="e.g. roger@baseline.org" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-primary); color: var(--text-primary);">
                 </div>
 
                 <div class="form-group">
                     <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Password *</label>
-                    <input type="password" name="password" class="form-control" required placeholder="Minimum 6 characters" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-primary); color: var(--text-primary);">
+                    <input type="password" name="password" class="form-control" required autocomplete="new-password" placeholder="Minimum 6 characters" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-primary); color: var(--text-primary);">
                 </div>
 
                 <div class="form-group">
                     <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Full Name (Optional)</label>
-                    <input type="text" name="full_name" class="form-control" placeholder="e.g. Full Name" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-primary); color: var(--text-primary);">
+                    <input type="text" name="full_name" class="form-control" autocomplete="name" placeholder="e.g. Full Name" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-primary); color: var(--text-primary);">
                 </div>
 
                 <div class="form-group">
                     <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Account Role *</label>
                     <select name="role" class="form-control" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-primary); color: var(--text-primary);">
                         <option value="user">Player / User</option>
+                        <option value="support">Platform Support</option>
                         <option value="admin">Tournament Organizer / Admin</option>
                     </select>
                 </div>
@@ -58,6 +62,7 @@
             </div>
         </form>
     </div>
+    {% endif %}
 
     <div class="form-section" style="background: var(--bg-card); padding: var(--spacing-lg); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);">
         <div class="table-container" style="overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%;">
@@ -95,22 +100,25 @@
                         </td>
                         <td style="padding: var(--spacing-sm);">
                             {% if user.admin_requested %}
-                            <span style="color: var(--accent-warning); font-size: 0.9rem; font-weight: 600;">⚠️ Admin Requested</span>
+                            <span style="color: var(--accent-warning); font-size: 0.9rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem;">
+                                <svg class="tp-icon" aria-hidden="true" style="stroke: var(--accent-warning);"><use href="#icon-alert"></use></svg> Admin Requested
+                            </span>
                             {% else %}
                             <span style="color: var(--text-muted); font-size: 0.9rem;">No pending request</span>
                             {% endif %}
                         </td>
                         <td style="padding: 0.85rem 1rem; text-align: right;">
+                            {% if current_user and current_user.role == 'superadmin' %}
                             <div style="display: inline-flex; align-items: center; justify-content: flex-end; gap: 0.5rem; flex-wrap: wrap;">
                                 {% if user.admin_requested %}
                                 <form method="POST" action="{{ url_for('auth.grant_admin', user_id=user.id) }}" style="display: inline; margin: 0;">
-                                    <button type="submit" class="btn btn-success btn-small" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; height: 32px; min-height: 32px; display: inline-flex; align-items: center; background: var(--gradient-success); color: white;">
-                                        ✓ Approve
+                                    <button type="submit" class="btn btn-success btn-small" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; height: 32px; min-height: 32px; display: inline-flex; align-items: center; gap: 0.35rem; background: var(--gradient-success); color: white;">
+                                        <svg class="tp-icon" aria-hidden="true"><use href="#icon-check"></use></svg> Approve
                                     </button>
                                 </form>
                                 <form method="POST" action="{{ url_for('auth.reject_admin_request', user_id=user.id) }}" style="display: inline; margin: 0;">
-                                    <button type="submit" class="btn btn-secondary btn-small" style="padding: 0.35rem 0.65rem; font-size: 0.8rem; height: 32px; min-height: 32px; display: inline-flex; align-items: center;">
-                                        ✕ Reject
+                                    <button type="submit" class="btn btn-secondary btn-small" style="padding: 0.35rem 0.65rem; font-size: 0.8rem; height: 32px; min-height: 32px; display: inline-flex; align-items: center; gap: 0.35rem;">
+                                        <svg class="tp-icon" aria-hidden="true"><use href="#icon-x"></use></svg> Reject
                                     </button>
                                 </form>
                                 {% elif user.role == 'user' %}
@@ -131,6 +139,7 @@
                                 <form method="POST" action="{{ url_for('auth.change_user_role', user_id=user.id) }}" style="display: inline-flex; align-items: center; margin: 0;">
                                     <select name="role" onchange="if(confirm('Change role for {{ user.username }} to ' + this.options[this.selectedIndex].text + '?')) { this.form.submit(); } else { this.value='{{ user.role }}'; }" class="form-input" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; font-weight: 600; border-radius: var(--radius-sm); height: 32px; min-height: 32px; background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); cursor: pointer;" title="Change Role (RBAC)">
                                         <option value="user" {% if user.role == 'user' %}selected{% endif %}>User / Player</option>
+                                        <option value="support" {% if user.role == 'support' %}selected{% endif %}>Platform Support</option>
                                         <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
                                         <option value="superadmin" {% if user.role == 'superadmin' %}selected{% endif %}>Superadmin</option>
                                     </select>
@@ -140,13 +149,16 @@
                                 {% if user.id != current_user.id %}
                                 <form method="POST" action="{{ url_for('auth.delete_user', user_id=user.id) }}" style="display: inline; margin: 0;" onsubmit="return confirm('Are you sure you want to permanently delete user entry {{ user.username }}? This action cannot be undone.');">
                                     <button type="submit" class="btn btn-danger btn-small" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; height: 32px; min-height: 32px; display: inline-flex; align-items: center; gap: 4px; background: rgba(220, 38, 38, 0.12); color: #DC2626; border: 1px solid rgba(220, 38, 38, 0.35);" title="Delete User Entry">
-                                        <span>🗑️</span> Delete Entry
+                                        <svg class="tp-icon" aria-hidden="true"><use href="#icon-trash-2"></use></svg> Delete Entry
                                     </button>
                                 </form>
                                 {% else %}
                                 <span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic; padding: 0.35rem 0.5rem;">(You)</span>
                                 {% endif %}
                             </div>
+                            {% else %}
+                            <span style="font-size: 0.8rem; color: var(--text-muted); font-style: italic;">View Only (Support)</span>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}

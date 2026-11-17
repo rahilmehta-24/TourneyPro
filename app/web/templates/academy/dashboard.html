@@ -10,17 +10,27 @@
             <h1 class="display-4 fw-bold mb-3">{{ academy.name }}</h1>
             <p class="lead mb-4">{{ academy.description }}</p>
             
-            {% if not is_member and current_user.is_authenticated %}
-                <a href="{{ url_for('academy.join', slug=academy.url_slug) }}" class="btn btn-light btn-lg px-5 text-primary fw-bold">Join Academy</a>
-            {% elif not current_user.is_authenticated %}
-                <a href="{{ url_for('auth.login') }}" class="btn btn-light btn-lg px-5 text-primary fw-bold">Log in to Join</a>
-            {% else %}
-                <span class="badge bg-light text-primary fs-6 px-3 py-2">
-                    <i class="bi bi-check-circle-fill me-2"></i>You are a {{ member_role|title }}
-                </span>
-                {% if member_role == 'admin' %}
-                    <a href="{{ url_for('academy.members', slug=academy.url_slug) }}" class="btn btn-outline-light ms-3">Manage Members</a>
+            {% if current_user %}
+                {% if not is_member %}
+                    {% if active_membership_elsewhere %}
+                        <a href="{{ url_for('academy.join', slug=academy.url_slug) }}" class="btn btn-warning btn-lg px-4 fw-bold">
+                            <i class="bi bi-arrow-left-right me-1"></i>Transfer Membership Here
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('academy.join', slug=academy.url_slug) }}" class="btn btn-light btn-lg px-5 text-primary fw-bold">
+                            <i class="bi bi-person-plus-fill me-1"></i>Join Academy
+                        </a>
+                    {% endif %}
+                {% else %}
+                    <span class="badge bg-light text-primary fs-6 px-3 py-2">
+                        <i class="bi bi-check-circle-fill me-2"></i>You are a {{ member_role|title }}
+                    </span>
+                    {% if member_role in ['admin', 'owner', 'superadmin'] %}
+                        <a href="{{ url_for('academy.members', slug=academy.url_slug) }}" class="btn btn-outline-light ms-3">Manage Members</a>
+                    {% endif %}
                 {% endif %}
+            {% else %}
+                <a href="{{ url_for('auth.login') }}" class="btn btn-light btn-lg px-5 text-primary fw-bold">Log in to Join</a>
             {% endif %}
         </div>
     </div>
@@ -99,8 +109,36 @@
     <!-- Non-member view -->
     <div class="text-center py-5">
         <i class="bi bi-lock display-1 text-muted mb-3 d-block"></i>
-        <h3>Private Academy Hub</h3>
-        <p class="text-muted lead">You must be a member of this academy to view announcements and internal tournaments.</p>
+        <h3 class="fw-bold">Private Academy Hub</h3>
+        <p class="text-muted lead mb-4">You must be a member of this academy to view announcements, rosters, and internal tournaments.</p>
+        
+        {% if current_user %}
+            {% if active_membership_elsewhere %}
+                <div class="alert alert-warning d-inline-block text-start mb-4 shadow-sm" style="max-width: 540px;">
+                    <div class="d-flex align-items-center mb-1">
+                        <i class="bi bi-info-circle-fill fs-5 text-warning me-2"></i>
+                        <span class="fw-bold">Currently Registered Elsewhere</span>
+                    </div>
+                    <p class="small mb-0 text-muted">
+                        You are active with <strong>{{ active_membership_elsewhere.academy.name if active_membership_elsewhere.academy else 'another academy' }}</strong>. 
+                        You can transfer your active membership here in one click.
+                    </p>
+                </div>
+                <div>
+                    <a href="{{ url_for('academy.join', slug=academy.url_slug) }}" class="btn btn-warning btn-lg px-4 fw-bold">
+                        <i class="bi bi-arrow-left-right me-1"></i>Transfer Membership to {{ academy.name }}
+                    </a>
+                </div>
+            {% else %}
+                <a href="{{ url_for('academy.join', slug=academy.url_slug) }}" class="btn btn-primary btn-lg px-5 fw-bold shadow-sm">
+                    <i class="bi bi-person-plus-fill me-1"></i>Join {{ academy.name }}
+                </a>
+            {% endif %}
+        {% else %}
+            <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg px-5 fw-bold">
+                <i class="bi bi-box-arrow-in-right me-1"></i>Log in to Join
+            </a>
+        {% endif %}
     </div>
     {% endif %}
 </div>

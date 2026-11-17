@@ -28,7 +28,7 @@
         </div>
     </div>
 
-    <form method="POST" class="tournament-form">
+    <form method="POST" enctype="multipart/form-data" class="tournament-form">
         <div class="form-section">
             <h2 class="form-section-title">Basic Information</h2>
             
@@ -47,6 +47,12 @@
                 <label for="name" class="form-label">Tournament Name *</label>
                 <input type="text" id="name" name="name" class="form-input" required minlength="3" maxlength="100"
                     placeholder="e.g., Summer Championship 2024">
+            </div>
+
+            <div class="form-group">
+                <label for="logo" class="form-label">Host / Tournament Custom Logo</label>
+                <input type="file" id="logo" name="logo" class="form-control" accept="image/png, image/jpeg, image/webp, image/svg+xml">
+                <small class="text-muted d-block mt-1">Upload a custom tournament or host emblem (PNG, JPG, WEBP, or SVG, max 5MB). Stored securely and displayed on tournament badges and draws.</small>
             </div>
 
             <div class="form-group">
@@ -293,7 +299,7 @@ function initCreateTournamentPage() {
         const startVal = startInput.value;
         if (!startVal) {
             if (container) {
-                container.innerHTML = '';
+                container.replaceChildren();
                 container.style.display = 'none';
             }
             if (emptyPrompt) emptyPrompt.style.display = 'block';
@@ -320,7 +326,7 @@ function initCreateTournamentPage() {
         }
 
         if (!container) return;
-        container.innerHTML = '';
+        container.replaceChildren();
         container.style.display = 'grid';
         if (emptyPrompt) emptyPrompt.style.display = 'none';
 

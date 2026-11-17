@@ -30,30 +30,102 @@
 </div>
 
 <div class="container">
-    <section class="formats-section">
-        <h2 class="section-title">Tournament Formats</h2>
-        <div class="formats-grid">
+    <!-- Active & Featured Tournaments Carousel Section -->
+    {% if tournaments %}
+    <section class="featured-tournaments-section" style="margin-top: 2.5rem; margin-bottom: 3rem;">
+        <div class="section-header-row">
+            <div>
+                <span class="section-eyebrow">On the Courts</span>
+                <h2 class="section-title" style="margin: 0.2rem 0;">Active & Featured Tournaments</h2>
+                <p class="section-subtitle">Follow live draws, register for open events, or explore past champions.</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <a href="{{ url_for('main.tournament_list') }}" class="view-all-link">
+                    View All <span aria-hidden="true">&rarr;</span>
+                </a>
+            </div>
+        </div>
+        <div class="tournaments-carousel-track" id="tournamentsCarouselTrack">
+            {% for t in tournaments %}
+            <div class="tournament-carousel-card">
+                <div class="tournament-card-top">
+                    <span class="status-badge status-{{ t.status }}">
+                        {% if t.status == 'in_progress' %}
+                            <span class="live-dot"></span> Live
+                        {% elif t.status == 'registration' %}
+                            ✓ Open
+                        {% elif t.status == 'completed' %}
+                            Completed
+                        {% else %}
+                            {{ t.status.replace('_', ' ').title() }}
+                        {% endif %}
+                    </span>
+                    <span class="tournament-type-pill">{{ t.tournament_type.title() if t.tournament_type else 'Tennis' }}</span>
+                </div>
+                <h3 class="tournament-card-title">{{ t.name }}</h3>
+                <div class="tournament-card-meta">
+                    {% if t.start_date %}
+                    <span class="meta-item">
+                        <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-calendar"></use></svg>
+                        {{ t.start_date.strftime('%b %d, %Y') }}
+                    </span>
+                    {% endif %}
+                    {% if t.categories %}
+                    <span class="meta-item">
+                        <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-trophy"></use></svg>
+                        {{ t.categories|length }} Divisions
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="tournament-card-actions">
+                    <a href="{{ url_for('tournament.view_tournament', slug=t.url_slug) }}" class="btn btn-secondary btn-small" style="flex: 1; text-align: center;">
+                        View Draws
+                    </a>
+                    {% if t.status == 'registration' %}
+                    <a href="{{ url_for('tournament.register_for_tournament', slug=t.url_slug) }}" class="btn btn-primary btn-small" style="background-color: var(--accent-success); border-color: var(--accent-success); flex: 1; text-align: center;">
+                        Register
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <!-- Mobile Carousel Pagination Dots -->
+        <div class="carousel-dots-indicator mobile-only" id="tournamentsCarouselDots" role="tablist" aria-label="Tournaments Carousel Pagination"></div>
+    </section>
+    {% endif %}
+
+    <!-- Tournament Formats Section -->
+    <section class="formats-section" style="margin-bottom: 3.5rem;">
+        <div class="section-header-row">
+            <div>
+                <span class="section-eyebrow">Championship Engines</span>
+                <h2 class="section-title" style="margin: 0.2rem 0;">Tournament Formats</h2>
+                <p class="section-subtitle">Championship-tested structures tailored for singles, doubles, and team play.</p>
+            </div>
+        </div>
+        <div class="formats-carousel-track" id="formatsCarouselTrack">
             {% for format_key, format_info in formats.items() %}
             {% if format_key not in ['double_elimination', 'doubles_elimination'] %}
-            <div class="format-card clickable" onclick="openFormatModal('{{ format_key }}')" style="cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; position: relative;">
+            <div class="format-card clickable carousel-card" onclick="openFormatModal('{{ format_key }}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter')openFormatModal('{{ format_key }}')">
                 <div class="format-icon">{{ format_info.icon }}</div>
                 <h3 class="format-name">{{ format_info.name }}</h3>
                 <p class="format-description">{{ format_info.description }}</p>
-                <div class="format-card-action" style="color: var(--accent-primary-text); font-size: 0.85rem; font-weight: bold;">View Details &rarr;</div>
+                <div class="format-card-action">View Details &rarr;</div>
             </div>
             {% endif %}
             {% endfor %}
         </div>
+        <!-- Mobile Carousel Pagination Dots -->
+        <div class="carousel-dots-indicator mobile-only" id="formatsCarouselDots" role="tablist" aria-label="Formats Carousel Pagination"></div>
     </section>
-
-    
 </div>
 
 <!-- Format Detail Modals -->
 {% for format_key, format_info in formats.items() %}
 {% if format_key not in ['double_elimination', 'doubles_elimination'] %}
 <div id="modal-{{ format_key }}" class="modal" role="dialog" aria-modal="true" style="display: none; position: fixed; inset: 0; background: rgba(11, 43, 32, 0.52); backdrop-filter: blur(4px); z-index: 1000; justify-content: center; align-items: center; padding: 1rem;">
-    <div class="modal-content" style="background: var(--bg-card); max-width: 500px; width: 100%; border-radius: var(--radius-lg); padding: 2rem; position: relative; border-top: 4px solid var(--accent-secondary);">
+    <div class="modal-content" style="background: var(--bg-card); max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; border-radius: var(--radius-lg); padding: 2rem; position: relative; border-top: 4px solid var(--accent-secondary); box-shadow: var(--shadow-lg);">
         <button type="button" onclick="closeFormatModal('{{ format_key }}')" aria-label="Close modal" style="position: absolute; top: 1rem; right: 1rem; background: transparent; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer; line-height: 1;">&times;</button>
         <div style="font-size: 3rem; margin-bottom: 1rem;">{{ format_info.icon }}</div>
         <h2 style="margin-bottom: 1rem; color: var(--text-primary);">{{ format_info.name }}</h2>
@@ -81,7 +153,7 @@
             </ul>
         </div>
         
-        <button onclick="closeFormatModal('{{ format_key }}')" class="btn btn-secondary btn-block">Close</button>
+        <button type="button" onclick="closeFormatModal('{{ format_key }}')" class="btn btn-secondary btn-block">Close</button>
     </div>
 </div>
 {% endif %}
@@ -95,7 +167,7 @@
         const modal = document.getElementById('modal-' + formatKey);
         if (modal) {
             modal.style.display = 'flex';
-            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+            document.body.style.overflow = 'hidden';
         }
     }
     
@@ -107,12 +179,62 @@
         }
     }
     
-    // Close modal on outside click
-    window.onclick = function(event) {
+    window.addEventListener('click', function(event) {
         if (event.target.classList.contains('modal')) {
             event.target.style.display = 'none';
             document.body.style.overflow = 'auto';
         }
+    });
+
+    // Touch carousel pagination dots helper
+    function setupCarouselPagination(trackId, dotsContainerId) {
+        const track = document.getElementById(trackId);
+        const dotsContainer = document.getElementById(dotsContainerId);
+        if (!track || !dotsContainer) return;
+
+        const cards = Array.from(track.children);
+        if (cards.length <= 1) {
+            dotsContainer.style.display = 'none';
+            return;
+        }
+
+        dotsContainer.innerHTML = '';
+        cards.forEach((card, index) => {
+            const dot = document.createElement('button');
+            dot.type = 'button';
+            dot.className = 'carousel-dot' + (index === 0 ? ' active' : '');
+            dot.setAttribute('aria-label', 'Go to slide ' + (index + 1));
+            dot.addEventListener('click', () => {
+                card.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            });
+            dotsContainer.appendChild(dot);
+        });
+
+        // IntersectionObserver for tracking active card
+        if ('IntersectionObserver' in window) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+                        const index = cards.indexOf(entry.target);
+                        if (index !== -1) {
+                            const dots = dotsContainer.querySelectorAll('.carousel-dot');
+                            dots.forEach((d, i) => d.classList.toggle('active', i === index));
+                        }
+                    }
+                });
+            }, { root: track, threshold: 0.5 });
+
+            cards.forEach(card => observer.observe(card));
+        }
     }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        setupCarouselPagination('formatsCarouselTrack', 'formatsCarouselDots');
+        setupCarouselPagination('tournamentsCarouselTrack', 'tournamentsCarouselDots');
+    });
+    document.addEventListener('turbo:load', () => {
+        setupCarouselPagination('formatsCarouselTrack', 'formatsCarouselDots');
+        setupCarouselPagination('tournamentsCarouselTrack', 'tournamentsCarouselDots');
+    });
 </script>
 {% endblock %}

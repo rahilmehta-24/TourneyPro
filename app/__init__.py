@@ -38,7 +38,8 @@ def create_app(config_class=Config):
 
     # Create upload folder
     try:
-        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+        upload_folder = app.config.get('UPLOAD_FOLDER') or os.path.join(app.root_path, 'web', 'static', 'uploads')
+        os.makedirs(upload_folder, exist_ok=True)
     except OSError:
         pass
 
@@ -47,36 +48,40 @@ def create_app(config_class=Config):
         if not os.environ.get('VERCEL'):
             try:
                 db.create_all()
-                # Ensure newly added columns exist on existing tables in SQLite/Postgres
+                # Dynamically synchronize missing columns across all tables in SQLite / PostgreSQL
+                import logging
                 from sqlalchemy import inspect, text
                 inspector = inspect(db.engine)
-                tables = inspector.get_table_names()
-                if 'registrations' in tables:
-                    reg_cols = [c['name'] for c in inspector.get_columns('registrations')]
-                    if 'payment_method' not in reg_cols:
-                        with db.engine.begin() as conn:
-                            conn.execute(text("ALTER TABLE registrations ADD COLUMN payment_method VARCHAR(50)"))
-                if 'participants' in tables:
-                    part_cols = [c['name'] for c in inspector.get_columns('participants')]
-                    if 'payment_status' not in part_cols:
-                        with db.engine.begin() as conn:
-                            conn.execute(text("ALTER TABLE participants ADD COLUMN payment_status VARCHAR(20) DEFAULT 'paid'"))
-                    if 'payment_method' not in part_cols:
-                        with db.engine.begin() as conn:
-                            conn.execute(text("ALTER TABLE participants ADD COLUMN payment_method VARCHAR(50)"))
-                if 'categories' in tables:
-                    cat_cols = [c['name'] for c in inspector.get_columns('categories')]
-                    if 'draw_published' not in cat_cols:
-                        with db.engine.begin() as conn:
-                            conn.execute(text("ALTER TABLE categories ADD COLUMN draw_published BOOLEAN DEFAULT FALSE"))
-                    if 'group_structure_mode' not in cat_cols:
-                        with db.engine.begin() as conn:
-                            conn.execute(text("ALTER TABLE categories ADD COLUMN group_structure_mode VARCHAR(20) DEFAULT 'auto'"))
-                if 'matches' in tables:
-                    match_cols = [c['name'] for c in inspector.get_columns('matches')]
-                    if 'lock_version' not in match_cols:
-                        with db.engine.begin() as conn:
-                            conn.execute(text("ALTER TABLE matches ADD COLUMN lock_version INTEGER DEFAULT 1"))
+                db_tables = set(inspector.get_table_names())
+
+                for table_name, table in db.metadata.tables.items():
+                    if table_name not in db_tables:
+                        continue
+                    existing_cols = {c["name"] for c in inspector.get_columns(table_name)}
+                    for col in table.columns:
+                        if col.name not in existing_cols:
+                            try:
+                                col_type_sql = col.type.compile(db.engine.dialect)
+                                default_sql = ""
+                                if col.server_default is not None:
+                                    arg = col.server_default.arg
+                                    default_text = arg.text if hasattr(arg, "text") else str(arg)
+                                    default_sql = f" DEFAULT {default_text}"
+                                elif col.default is not None and hasattr(col.default, "arg") and not callable(col.default.arg):
+                                    val = col.default.arg
+                                    if isinstance(val, bool):
+                                        default_sql = f" DEFAULT {'TRUE' if val else 'FALSE'}"
+                                    elif isinstance(val, (int, float)):
+                                        default_sql = f" DEFAULT {val}"
+                                    elif isinstance(val, str):
+                                        default_sql = f" DEFAULT '{val}'"
+
+                                sql = f"ALTER TABLE {table_name} ADD COLUMN {col.name} {col_type_sql}{default_sql}"
+                                with db.engine.begin() as conn:
+                                    conn.execute(text(sql))
+                                logging.info(f"[Auto-Migrate] Added missing column {table_name}.{col.name}")
+                            except Exception as col_err:
+                                logging.warning(f"Could not auto-add column {table_name}.{col.name}: {col_err}")
 
                 from app.web.controllers.auth import bootstrap_superadmin
                 bootstrap_superadmin()

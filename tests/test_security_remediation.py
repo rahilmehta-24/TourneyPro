@@ -44,7 +44,13 @@ class SecurityRemediationTestCase(unittest.TestCase):
             db.session.commit()
 
             # Admin 1 (Owner)
-            self.admin1 = User(username='admin1', email='admin1@test.com', role='admin')
+            self.admin1 = User(
+                username='admin1',
+                email='admin1@test.com',
+                role='admin',
+                profile_completed=True,
+                completion_percentage=100
+            )
             self.admin1.set_password('pass1')
             db.session.add(self.admin1)
 

@@ -3,122 +3,74 @@
 {% block title %}Register - The Baseline Society{% endblock %}
 
 {% block content %}
-<div class="container" style="max-width: 900px; margin: 0 auto; padding: var(--spacing-xl) var(--spacing-md);">
-    <div class="form-section" style="background: var(--bg-card); padding: var(--spacing-lg); border: 1px solid var(--border-color); border-top: 4px solid var(--accent-secondary); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);">
+<div class="container auth-form-container" style="max-width: 650px; margin: 0 auto; width: 100%;">
+    <div class="form-section" style="background: var(--bg-card); border: 1px solid var(--border-color); border-top: 4px solid var(--accent-secondary); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);">
         <div style="text-align: center; margin-bottom: 0.75rem;">
             <img src="{{ url_for('static', filename='brand/monogram-on-light.svg') }}" alt="" width="48" height="50" style="display: inline-block; height: 48px; width: auto;">
         </div>
-        <h2 class="form-section-title" style="font-family: var(--font-display); font-weight: 600; text-align: center; margin-bottom: var(--spacing-sm); font-size: 2.15rem; color: var(--text-primary);">Create Account &amp; Profile</h2>
-        <p style="text-align: center; color: var(--text-secondary); margin-bottom: var(--spacing-lg);">Join The Baseline Society tournament club &amp; player registry</p>
+        <h2 class="form-section-title" style="font-family: var(--font-display); font-weight: 600; text-align: center; margin-bottom: var(--spacing-sm); font-size: 2.15rem; color: var(--text-primary);">Create Your Account</h2>
+        <p style="text-align: center; color: var(--text-secondary); margin-bottom: var(--spacing-lg);">Join The Baseline Society sports tournament network</p>
         
-        <form method="POST" data-turbo="false" enctype="multipart/form-data" onsubmit="var btn=this.querySelector('button[type=submit]'); if(btn.dataset.submitted) return false; btn.dataset.submitted='true'; btn.disabled=true; btn.innerHTML='<span class=\'btn-icon\'>⏳</span> Creating Account...';">
+        <form method="POST" action="{{ url_for('auth.register', next=next_url) if next_url else url_for('auth.register') }}" data-turbo="false" onsubmit="var btn=this.querySelector('button[type=submit]'); if(btn.dataset.submitted) return false; btn.dataset.submitted='true'; btn.disabled=true; btn.innerHTML='<span class=\'btn-icon\'>⏳</span> Creating Account...';">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <h3 style="margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; color: var(--accent-primary-text);">1. Account Details</h3>
+            {% if next_url %}
+            <input type="hidden" name="next" value="{{ next_url }}"/>
+            {% endif %}
+
+            <!-- Registration Intent Selector -->
+            <div style="background: var(--bg-secondary); padding: 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 1.5rem;">
+                <label class="form-label" style="font-weight: 600; margin-bottom: 0.5rem; display: block;">Are you registering primarily as:</label>
+                <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 500;">
+                        <input type="radio" name="registration_intent" value="user" checked style="accent-color: var(--accent-primary);">
+                        <span><strong>Standard User</strong> (Default &mdash; Fan, Parent, Viewer, Tournament Director)</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 500;">
+                        <input type="radio" name="registration_intent" value="player" style="accent-color: var(--accent-primary);">
+                        <span><strong>Player / Competitor</strong> (Compete in tournaments, earn points, track rankings)</span>
+                    </label>
+                </div>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem; margin-bottom: 0;">
+                    <em>Note: Selecting "Player" will guide you through Stage 2 profile completion to unlock tournament entry.</em>
+                </p>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label for="name" class="form-label">Full Name *</label>
+                <input type="text" id="name" name="name" class="form-input" required minlength="2" maxlength="100" autocomplete="name" placeholder="e.g. Rahil Mehta">
+            </div>
             
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
                 <div class="form-group">
                     <label for="username" class="form-label">Username *</label>
-                    <input type="text" id="username" name="username" class="form-input" required minlength="3" maxlength="30" pattern="[a-zA-Z0-9_.-]+" placeholder="e.g. rahil_mehta">
+                    <input type="text" id="username" name="username" class="form-input" required minlength="3" maxlength="30" pattern="[a-zA-Z0-9_.-]+" autocomplete="username" spellcheck="false" autocapitalize="none" autocorrect="off" placeholder="e.g. rahil_mehta">
                 </div>
                 
                 <div class="form-group">
                     <label for="email" class="form-label">Email Address *</label>
-                    <input type="email" id="email" name="email" class="form-input" required placeholder="Enter your email">
+                    <input type="email" id="email" name="email" class="form-input" required autocomplete="email" placeholder="you@example.com">
                 </div>
-                
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
                 <div class="form-group">
                     <label for="password" class="form-label">Password *</label>
-                    <input type="password" id="password" name="password" class="form-input" required minlength="8" placeholder="Minimum 8 characters">
+                    <input type="password" id="password" name="password" class="form-input" required minlength="8" autocomplete="new-password" placeholder="Minimum 8 characters">
                 </div>
 
                 <div class="form-group">
                     <label for="password_confirm" class="form-label">Confirm Password *</label>
-                    <input type="password" id="password_confirm" name="password_confirm" class="form-input" required minlength="8" placeholder="Re-enter your password">
-                </div>
-            </div>
-
-            <h3 style="margin-top: 2rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; color: var(--accent-primary-text);">2. Player Profile Setup</h3>
-            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.5rem;">This will automatically generate your primary Player Portfolio. System fields like Registration Number will be auto-generated.</p>
-            
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
-                <!-- Basic Info -->
-                <div class="form-group">
-                    <label class="form-label">Full Name *</label>
-                    <input type="text" name="name" class="form-input" required minlength="2" maxlength="100" placeholder="Your full name">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Gender *</label>
-                    <select name="gender" class="form-input" required>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Date of Birth *</label>
-                    <input type="date" name="dob" class="form-input" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Contact Number</label>
-                    <input type="tel" name="contact_number" class="form-input" pattern="[0-9+ -]{10,15}" placeholder="e.g. +91 98765 43210">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Nationality</label>
-                    <input type="text" name="nationality" class="form-input" placeholder="Your country">
-                </div>
-                
-                <!-- Physical Attributes -->
-                <div class="form-group">
-                    <label class="form-label">Height (cm/in)</label>
-                    <input type="text" name="height" class="form-input" placeholder="e.g. 180cm">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Weight (kg/lbs)</label>
-                    <input type="text" name="weight" class="form-input" placeholder="e.g. 75kg">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Blood Group</label>
-                    <select name="blood_group" class="form-input">
-                        <option value="">Select...</option>
-                        <option value="A+">A+</option>
-                        <option value="A-">A-</option>
-                        <option value="B+">B+</option>
-                        <option value="B-">B-</option>
-                        <option value="AB+">AB+</option>
-                        <option value="AB-">AB-</option>
-                        <option value="O+">O+</option>
-                        <option value="O-">O-</option>
-                    </select>
-                </div>
-                
-                <!-- Tennis Info -->
-                <div class="form-group">
-                    <label class="form-label">Coach Name</label>
-                    <input type="text" name="coach" class="form-input" placeholder="Current Coach">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Academy Name</label>
-                    <input type="text" name="academy" class="form-input" placeholder="Training Academy">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Profile Photo (Optional)</label>
-                    <input type="file" name="profile_photo" class="form-input" accept="image/*">
-                </div>
-                
-                <!-- Address -->
-                <div class="form-group" style="grid-column: 1 / -1;">
-                    <label class="form-label">Full Address</label>
-                    <textarea name="address" class="form-input" rows="2" placeholder="Your residential address"></textarea>
+                    <input type="password" id="password_confirm" name="password_confirm" class="form-input" required minlength="8" autocomplete="new-password" placeholder="Re-enter your password">
                 </div>
             </div>
             
-            <button type="submit" class="btn btn-primary btn-block btn-large" style="margin-top: 1.5rem; margin-bottom: var(--spacing-md);">
-                <span class="btn-icon">🚀</span> Complete Registration
+            <button type="submit" class="btn btn-primary btn-block btn-large" style="margin-top: 1rem; margin-bottom: var(--spacing-md); display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; width: 100%;">
+                <svg class="tp-icon" aria-hidden="true"><use href="#icon-send"></use></svg> Create Account
             </button>
         </form>
         
         <div style="text-align: center; margin-top: var(--spacing-md); color: var(--text-secondary);">
-            Already have an account? <a href="{{ url_for('auth.login') }}" style="color: var(--accent-primary); text-decoration: none; font-weight: 600;">Log in here</a>
+            <p>Already have an account? <a href="{{ url_for('auth.login', next=next_url) if next_url else url_for('auth.login') }}" style="color: var(--accent-secondary); font-weight: 600;">Sign in here</a></p>
         </div>
     </div>
 </div>

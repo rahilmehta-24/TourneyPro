@@ -21,7 +21,15 @@
 | **Match Progression Locking** | ✅ Production | `app/services/utils/scheduler.py` | `Match` |
 | **Smart Guest Registration** | ✅ Production | `app/web/controllers/tournament.py` | `Registration`, `Player`, `Participant` |
 | **Global Player Registry** | ✅ Production | `app/web/controllers/player.py` | `Player`, `PlayerTournamentRecord` |
-| **Academy Portals** | ✅ Production | `app/web/controllers/academy.py` | `Academy`, `AcademyMember`, `AcademyAnnouncement` |
+| **Academy Portals & Verification** | ✅ Production | `app/services/academy_service.py`, `app/web/controllers/academy.py` | `Academy`, `AcademyMember`, `AcademyApplication` |
+| **Single Active Academy Membership** | ✅ Production | `app/services/academy_service.py` | `AcademyMember` (`membership_status`, `left_at`) |
+| **Two-Stage Onboarding & Gated Entry** | ✅ Production | `app/services/user_service.py`, `app/web/controllers/auth.py` | `User` (`registration_intent`, `completion_percentage`) |
+| **Custom Tournament Logos & Scopes** | ✅ Production | `app/services/utils/uploads.py`, `app/web/controllers/tournament.py` | `Tournament` (`logo_url`, `tournament_scope`), `Academy` |
+| **Historical Affiliation Snapshot** | ✅ Production | `app/web/controllers/tournament.py`, `app/api/registrations.py` | `Registration` (`academy_id_snapshot`) |
+| **Audited Match Score Revisions** | ✅ Production | `app/web/controllers/tournament.py`, `app/api/matches.py` | `MatchScoreRevision`, `Match` |
+| **In-App Notifications Pipeline** | ✅ Production | `app/services/notification_service.py` | `InAppNotification`, `UserNotificationPreferences` |
+| **Qualified Leaderboard Engine** | ✅ Production | `app/services/leaderboard.py`, `app/web/controllers/leaderboard.py` | `Player`, `Participant`, `Match` |
+| **Zero Dummy Data Enforcement** | ✅ Production | `app/web/controllers/category.py` | `Player`, `Category`, `Registration` |
 | **Vector PDF Export Suite** | ✅ Production | `app/services/pdf/` | `DrawExportAdapter`, `DrawPdfService` |
 | **Role-Based Access Control (RBAC)** | ✅ Production | `app/web/controllers/auth.py` | `User`, `TournamentStaff`, `Match` |
 | **Tournament Staff & Court PIN Mode** | ✅ Production | `app/web/controllers/tournament.py`, `auth.py` | `TournamentStaff`, `Tournament` |

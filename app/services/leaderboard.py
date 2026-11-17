@@ -187,3 +187,36 @@ def recalculate_all_group_stats(category_id):
             winner.group_points += 3
 
     db.session.commit()
+
+
+def get_qualified_leaderboard_query(category_filter=None, gender_filter=None):
+    """
+    Unified query helper for SSR and REST API leaderboard.
+    A player is qualified if they have earned ranking points (> 0)
+    or have actively registered/participated in a tournament.
+    Excludes dummy/placeholder players and unqualified zero-history accounts.
+    """
+    from sqlalchemy import desc
+    registered_p1 = db.session.query(Participant.player_id).filter(Participant.player_id.isnot(None))
+    registered_p2 = db.session.query(Participant.player2_id).filter(Participant.player2_id.isnot(None))
+
+    qualification_filter = db.or_(
+        Player.total_points > 0,
+        Player.matches_played > 0,
+        Player.id.in_(registered_p1),
+        Player.id.in_(registered_p2)
+    )
+
+    query = Player.query.filter(
+        qualification_filter,
+        ~Player.name.ilike('Dummy%'),
+        ~Player.name.ilike('TBD%')
+    )
+
+    if category_filter and category_filter != 'All':
+        query = query.filter_by(age_category=category_filter)
+    if gender_filter and gender_filter != 'All':
+        query = query.filter_by(gender=gender_filter)
+
+    return query.order_by(desc(Player.total_points), desc(Player.matches_won), Player.name)
+
