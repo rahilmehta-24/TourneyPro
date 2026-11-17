@@ -368,7 +368,6 @@ def register_user(
     initializes their personal workspace, supports two-stage onboarding, and enforces strict data isolation.
     """
     import secrets
-    from datetime import datetime
     from app.domain.constants import (
         calculate_canonical_age_category,
         calculate_profile_completion_percentage,

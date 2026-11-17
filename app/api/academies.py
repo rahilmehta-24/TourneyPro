@@ -7,14 +7,13 @@ from flask import request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
 from app.api import api_bp
-from app.domain.models import Academy, AcademyMember, AcademyApplication, User
+from app.domain.models import Academy, AcademyApplication, User
 from app.services.academy_service import (
     submit_academy_application,
     review_academy_application,
     add_academy_member,
     transfer_user_academy_membership,
     leave_academy_membership,
-    get_user_active_academy_membership,
 )
 from app.services.rbac_service import has_permission
 from app.domain.constants import PERM_PLATFORM_ACADEMIES_VERIFY, PERM_PLATFORM_ACADEMIES_VIEW

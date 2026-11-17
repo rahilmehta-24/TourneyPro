@@ -1,6 +1,5 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, make_response
 from app.domain.models import db, Player, PlayerTournamentRecord, Participant
-from sqlalchemy import desc
 from app.web.controllers.auth import login_required, role_required, get_current_user, check_player_ownership
 from datetime import datetime
 import openpyxl

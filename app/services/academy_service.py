@@ -5,15 +5,13 @@ The Baseline Society
 
 import re
 from datetime import datetime
-from typing import Optional, Dict, Any, List, Tuple
-from sqlalchemy import and_
+from typing import Optional, Dict, Any, Tuple
 from app import db
-from app.domain.models import Academy, AcademyMember, AcademyApplication, User, AuditLog, Registration
+from app.domain.models import Academy, AcademyMember, AcademyApplication, User, AuditLog
 from app.domain.constants import (
     PERM_PLATFORM_ACADEMIES_VERIFY,
     PERM_ACADEMY_MEMBERS_MANAGE,
     ACADEMY_ROLE_OWNER,
-    ACADEMY_ROLE_ADMIN,
     ACADEMY_ROLE_MEMBER,
 )
 from app.services.rbac_service import has_permission

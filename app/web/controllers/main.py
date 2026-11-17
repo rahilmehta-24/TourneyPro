@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, current_app, redirect, url_for
+from flask import Blueprint, render_template, current_app
 from app.domain.models import Tournament
 from app.core.constants import TOURNAMENT_FORMATS
 from app.web.controllers.auth import get_current_user

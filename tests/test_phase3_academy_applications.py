@@ -6,15 +6,8 @@ Academy Applications and Platform Superadmin Verification.
 import os
 import tempfile
 import unittest
-from datetime import datetime
 from app import create_app, db
-from app.domain.models import User, Academy, AcademyMember, AcademyApplication, AuditLog
-from app.domain.constants import (
-    PLATFORM_ROLE_SUPERADMIN,
-    PLATFORM_ROLE_SUPPORT,
-    PLATFORM_ROLE_USER,
-    PERM_PLATFORM_ACADEMIES_VERIFY,
-)
+from app.domain.models import User, Academy, AcademyMember, AuditLog
 from app.services.academy_service import (
     submit_academy_application,
     review_academy_application,

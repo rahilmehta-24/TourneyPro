@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from . import api_bp
 from app.domain.models import (
     db, Tournament, Category, Participant, Group,
-    Registration, TournamentStaff, User, InAppNotification
+    Registration, TournamentStaff, User
 )
 from app.domain.schemas import tournament_schema, category_schema
 from app.services.utils.scheduler import get_order_of_play
@@ -386,8 +386,6 @@ def toggle_category_publish(category_id):
 @api_bp.route('/leaderboard', methods=['GET'])
 def get_leaderboard():
     """List genuine ranked players from the registry for mobile leaderboard."""
-    from app.domain.models import Player
-    from sqlalchemy import desc
 
     category = request.args.get('category')
     gender = request.args.get('gender')

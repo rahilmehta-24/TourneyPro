@@ -4,7 +4,7 @@ from datetime import datetime
 from . import api_bp
 from app.domain.models import (
     db, Tournament, Category, Player, Participant, Registration,
-    TournamentStaff, User, InAppNotification
+    TournamentStaff, User
 )
 from app.domain.schemas import registration_schema, registrations_schema
 

@@ -5,31 +5,21 @@ The Baseline Society
 
 from typing import Optional, Dict, Any, Callable
 from functools import wraps
-from flask import abort, g, session, has_request_context
+from flask import abort, session, has_request_context
 from app import db
 from app.domain.models import User, Tournament, TournamentStaff, Academy, AcademyMember, Match, Player
 from app.domain.constants import (
     PLATFORM_ROLE_SUPERADMIN,
     PLATFORM_ROLE_SUPPORT,
-    PLATFORM_ROLE_USER,
-    PERM_PLATFORM_ACADEMIES_VERIFY,
     PERM_PLATFORM_ACADEMIES_VIEW,
     PERM_PLATFORM_USERS_VIEW,
-    PERM_PLATFORM_USERS_MANAGE,
-    PERM_PLATFORM_AUDIT_VIEW,
-    PERM_PLATFORM_CONFIG_MANAGE,
     PERM_ACADEMY_VIEW,
-    PERM_ACADEMY_MANAGE,
     PERM_ACADEMY_MEMBERS_VIEW,
-    PERM_ACADEMY_MEMBERS_MANAGE,
     PERM_ACADEMY_COACHES_ASSIGN,
     PERM_TOURNAMENT_CREATE,
     PERM_TOURNAMENT_VIEW,
-    PERM_TOURNAMENT_MANAGE,
     PERM_TOURNAMENT_DRAW_MANAGE,
-    PERM_TOURNAMENT_REGISTRATION_REVIEW,
     PERM_TOURNAMENT_SCORE_SUBMIT,
-    PERM_TOURNAMENT_RESULTS_PUBLISH,
 )
 
 

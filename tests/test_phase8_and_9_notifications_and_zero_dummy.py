@@ -6,11 +6,11 @@ Results, Qualified Leaderboard, Notifications Pipeline & Zero Dummy-Data Enforce
 import os
 import tempfile
 import unittest
-from datetime import date, datetime
+from datetime import date
 from app import create_app, db
 from app.domain.models import (
     User, Player, Tournament, Category, Registration, Participant, Match,
-    InAppNotification, UserNotificationPreferences, AcademyApplication
+    UserNotificationPreferences, AcademyApplication
 )
 from app.services.notification_service import (
     send_notification,

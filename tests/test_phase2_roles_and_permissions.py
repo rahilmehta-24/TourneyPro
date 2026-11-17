@@ -6,16 +6,12 @@ Platform Roles, Permissions, Scoped Evaluator, and Anti-Conflict Self-Scoring De
 import os
 import tempfile
 import unittest
-from datetime import date, datetime, timedelta
 from app import create_app, db
 from app.domain.models import (
     User, Player, Tournament, Category, Match, Participant,
     TournamentStaff, Academy, AcademyMember
 )
 from app.domain.constants import (
-    PLATFORM_ROLE_SUPERADMIN,
-    PLATFORM_ROLE_SUPPORT,
-    PLATFORM_ROLE_USER,
     PERM_PLATFORM_ACADEMIES_VERIFY,
     PERM_PLATFORM_ACADEMIES_VIEW,
     PERM_PLATFORM_USERS_VIEW,
@@ -25,8 +21,6 @@ from app.domain.constants import (
     PERM_ACADEMY_MANAGE,
     PERM_ACADEMY_MEMBERS_MANAGE,
     PERM_ACADEMY_MEMBERS_VIEW,
-    PERM_ACADEMY_COACHES_ASSIGN,
-    PERM_TOURNAMENT_CREATE,
     PERM_TOURNAMENT_MANAGE,
     PERM_TOURNAMENT_DRAW_MANAGE,
     PERM_TOURNAMENT_SCORE_SUBMIT,

@@ -6,13 +6,12 @@ Two-Stage Onboarding, Profile Completion, and Zero-Dummy Gated Tournament Entry.
 import os
 import tempfile
 import unittest
-from datetime import date, datetime
+from datetime import date
 from app import create_app, db
-from app.domain.models import User, Player, Tournament, Category, Participant, Registration
+from app.domain.models import User, Player, Tournament, Category
 from app.domain.constants import (
     COMPETITION_CATEGORIES, AGE_CATEGORIES,
-    calculate_canonical_age_category,
-    calculate_profile_completion_percentage
+    calculate_canonical_age_category
 )
 from app.services.user_service import (
     register_user, complete_player_profile,

@@ -12,7 +12,7 @@ from datetime import datetime
 from app import create_app, db
 from app.domain.models import (
     User, Player, Tournament, Category, Match, Participant, Registration,
-    Academy, AcademyMember, MatchScoreRevision, AuditLog
+    Academy, AcademyMember, MatchScoreRevision
 )
 from app.services.academy_service import add_academy_member
 

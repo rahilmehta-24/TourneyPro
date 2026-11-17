@@ -1,9 +1,8 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
 import csv
-from datetime import datetime
 from app import db
 from app.domain.models import Academy, AcademyMember, AcademyAnnouncement, AcademyApplication, Tournament, User
-from app.web.controllers.auth import login_required, get_current_user, check_academy_access
+from app.web.controllers.auth import login_required, get_current_user
 from app.services.academy_service import (
     submit_academy_application,
     add_academy_member,
@@ -12,7 +11,7 @@ from app.services.academy_service import (
     get_user_active_academy_membership,
 )
 from app.services.rbac_service import has_permission
-from app.domain.constants import PERM_ACADEMY_MEMBERS_MANAGE, PERM_PLATFORM_ACADEMIES_VERIFY
+from app.domain.constants import PERM_ACADEMY_MEMBERS_MANAGE
 
 academy_bp = Blueprint('academy', __name__, url_prefix='/academies')
 
