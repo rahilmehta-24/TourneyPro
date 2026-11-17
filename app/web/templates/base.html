@@ -182,7 +182,7 @@
             </a>
 
             <!-- Mobile Toggle -->
-            <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle navigation menu" aria-expanded="false" style="display: none;">
+            <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle navigation menu" aria-expanded="false">
                 <svg class="tp-icon" aria-hidden="true" style="font-size: 1.25rem;"><use href="#icon-menu"></use></svg>
             </button>
 
@@ -309,25 +309,35 @@
     <!-- Mobile Sticky Bottom Quick Bar (< 768px) -->
     <nav class="mobile-bottom-bar" id="mobileBottomBar" aria-label="Mobile Navigation">
         <a href="{{ url_for('main.index') }}" class="mobile-bottom-item {% if request.endpoint == 'main.index' %}active{% endif %}">
-            <span class="mobile-bottom-icon">🏠</span>
+            <span class="mobile-bottom-icon">
+                <svg class="mobile-bottom-svg" aria-hidden="true"><use href="#icon-home"></use></svg>
+            </span>
             <span class="mobile-bottom-label">Home</span>
         </a>
         <a href="{{ url_for('main.tournament_list') }}" class="mobile-bottom-item {% if request.endpoint and 'tournament' in request.endpoint and request.endpoint != 'tournament.order_of_play' %}active{% endif %}">
-            <span class="mobile-bottom-icon">🏆</span>
+            <span class="mobile-bottom-icon">
+                <svg class="mobile-bottom-svg" aria-hidden="true"><use href="#icon-trophy"></use></svg>
+            </span>
             <span class="mobile-bottom-label">Tourneys</span>
         </a>
         <a href="{{ url_for('leaderboard.view_leaderboard') }}" class="mobile-bottom-item {% if request.endpoint == 'leaderboard.view_leaderboard' %}active{% endif %}">
-            <span class="mobile-bottom-icon">📊</span>
+            <span class="mobile-bottom-icon">
+                <svg class="mobile-bottom-svg" aria-hidden="true"><use href="#icon-bar-chart"></use></svg>
+            </span>
             <span class="mobile-bottom-label">Rankings</span>
         </a>
         {% if current_user %}
         <a href="{{ url_for('player.dashboard') }}" class="mobile-bottom-item {% if request.endpoint == 'player.dashboard' %}active{% endif %}">
-            <span class="mobile-bottom-icon">🎾</span>
+            <span class="mobile-bottom-icon">
+                <svg class="mobile-bottom-svg" aria-hidden="true"><use href="#icon-tennis"></use></svg>
+            </span>
             <span class="mobile-bottom-label">Dashboard</span>
         </a>
         {% else %}
         <a href="{{ url_for('auth.login') }}" class="mobile-bottom-item {% if request.endpoint == 'auth.login' %}active{% endif %}">
-            <span class="mobile-bottom-icon">👤</span>
+            <span class="mobile-bottom-icon">
+                <svg class="mobile-bottom-svg" aria-hidden="true"><use href="#icon-user"></use></svg>
+            </span>
             <span class="mobile-bottom-label">Sign In</span>
         </a>
         {% endif %}
