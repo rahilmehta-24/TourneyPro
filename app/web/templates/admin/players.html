@@ -64,7 +64,9 @@
                 </table>
             {% else %}
                 <div style="text-align: center; padding: 3rem 1rem; color: var(--text-secondary);">
-                    <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;">🔍</div>
+                    <div style="margin-bottom: 1rem; color: var(--text-muted); opacity: 0.5;">
+                        <svg class="tp-icon" style="width: 44px; height: 44px;"><use href="#icon-search"></use></svg>
+                    </div>
                     <h3>No players found.</h3>
                     {% if search_query %}
                         <p>Try adjusting your search criteria.</p>

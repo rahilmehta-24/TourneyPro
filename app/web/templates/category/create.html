@@ -22,41 +22,57 @@
         <!-- QUICK SPORT & SCORING PRESETS -->
         <div style="margin-bottom: 1.75rem; background: var(--bg-secondary); padding: 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
-                <label style="display: block; font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin: 0;">
-                    ⚡ Quick Sport &amp; Format Presets (Optional)
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin: 0;">
+                    <svg class="tp-icon tp-icon-sm" style="color: var(--accent-secondary);"><use href="#icon-zap"></use></svg>
+                    <span>Quick Sport &amp; Format Presets (Optional)</span>
                 </label>
-                <span style="font-size: 0.78rem; color: var(--text-muted);">1-Click Auto-Configuration</span>
+                <span style="font-size: 0.78rem; color: var(--text-muted);">Auto-Configuration</span>
             </div>
             <p style="margin: 0 0 1rem; color: var(--text-secondary); font-size: 0.82rem;">Click a preset to instantly configure tournament format, sets, and points, or fill manually below.</p>
             
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem;">
                 <!-- Preset 1: Standard Tennis -->
                 <button type="button" class="preset-btn" onclick="applyPreset('tennis_standard', this)" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.75rem; text-align: left; cursor: pointer; transition: all 0.15s;">
-                    <div style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.2rem; color: var(--text-primary);">🎾 Standard Tennis</div>
+                    <div style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.2rem; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                        <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-tennis"></use></svg>
+                        <span>Standard Tennis</span>
+                    </div>
                     <div style="font-size: 0.78rem; color: var(--text-secondary);">Knockout • Best of 3 Sets • 6 Games</div>
                 </button>
 
                 <!-- Preset 2: Fast4 Tennis -->
                 <button type="button" class="preset-btn" onclick="applyPreset('tennis_fast4', this)" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.75rem; text-align: left; cursor: pointer; transition: all 0.15s;">
-                    <div style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.2rem; color: var(--text-primary);">⚡ Fast4 Tennis</div>
+                    <div style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.2rem; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                        <svg class="tp-icon tp-icon-sm" style="color: var(--accent-secondary);"><use href="#icon-zap"></use></svg>
+                        <span>Fast4 Tennis</span>
+                    </div>
                     <div style="font-size: 0.78rem; color: var(--text-secondary);">Knockout • Best of 3 Sets • 4 Games</div>
                 </button>
 
                 <!-- Preset 3: Badminton 21-pt -->
                 <button type="button" class="preset-btn" onclick="applyPreset('badminton', this)" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.75rem; text-align: left; cursor: pointer; transition: all 0.15s;">
-                    <div style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.2rem; color: var(--text-primary);">🏸 Badminton / TT</div>
+                    <div style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.2rem; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                        <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-target"></use></svg>
+                        <span>Badminton / TT</span>
+                    </div>
                     <div style="font-size: 0.78rem; color: var(--text-secondary);">Knockout • Points • 21 Pts</div>
                 </button>
 
                 <!-- Preset 4: Pickleball 11-pt -->
                 <button type="button" class="preset-btn" onclick="applyPreset('pickleball', this)" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.75rem; text-align: left; cursor: pointer; transition: all 0.15s;">
-                    <div style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.2rem; color: var(--text-primary);">🏓 Pickleball</div>
+                    <div style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.2rem; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                        <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-tennis"></use></svg>
+                        <span>Pickleball</span>
+                    </div>
                     <div style="font-size: 0.78rem; color: var(--text-secondary);">Knockout • Points • 11 Pts</div>
                 </button>
 
                 <!-- Preset 5: Group Stage + Knockout -->
                 <button type="button" class="preset-btn" onclick="applyPreset('group_stage', this)" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.75rem; text-align: left; cursor: pointer; transition: all 0.15s;">
-                    <div style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.2rem; color: var(--text-primary);">🎪 Group Stage</div>
+                    <div style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.2rem; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                        <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-grid"></use></svg>
+                        <span>Group Stage</span>
+                    </div>
                     <div style="font-size: 0.78rem; color: var(--text-secondary);">Groups (7 Games) + Knockout</div>
                 </button>
             </div>
@@ -100,9 +116,9 @@
             <label for="format">Tournament Format *</label>
             <select id="format" name="format" class="form-input" required onchange="toggleGroupStageFields()">
                 <option value="">Select a format</option>
-                <option value="single_elimination">🏆 Knockout (Single Elimination)</option>
-                <option value="group_stage">🎪 Group Stage + Knockout</option>
-                <option value="round_robin">🔄 Round Robin (League)</option>
+                <option value="single_elimination">Knockout (Single Elimination)</option>
+                <option value="group_stage">Group Stage + Knockout</option>
+                <option value="round_robin">Round Robin (League)</option>
             </select>
         </div>
 
@@ -176,8 +192,9 @@
         <!-- CATEGORY DATES & OPERATING HOURS (Item 5) -->
         <div style="margin-top: 1.5rem; margin-bottom: 1.5rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
-                <label style="display: block; font-size: 1rem; font-weight: 700; color: var(--text-primary); margin: 0;">
-                    📅 Category Dates &amp; Daily Operating Hours *
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 1rem; font-weight: 700; color: var(--text-primary); margin: 0;">
+                    <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-calendar"></use></svg>
+                    <span>Category Dates &amp; Daily Operating Hours *</span>
                 </label>
                 <span style="font-size: 0.78rem; color: var(--text-muted); background: var(--bg-card); padding: 0.2rem 0.5rem; border-radius: 9999px; border: 1px solid var(--border-color);">
                     Required for Order of Play
@@ -230,11 +247,13 @@
             <!-- Dynamic Table of Spanned Dates -->
             <div id="spannedDatesContainer" style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; flex-wrap: wrap; gap: 0.5rem;">
-                    <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary);">
-                        ⏰ Daily Match Windows Across Spanned Dates
+                    <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                        <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-clock"></use></svg>
+                        <span>Daily Match Windows Across Spanned Dates</span>
                     </span>
-                    <button type="button" class="btn btn-secondary btn-small" onclick="applyDefaultTimesToAllDates()" style="font-size: 0.75rem; padding: 0.2rem 0.55rem;">
-                        ⚡ Apply Defaults to All Days
+                    <button type="button" class="btn btn-secondary btn-small" onclick="applyDefaultTimesToAllDates()" style="font-size: 0.75rem; padding: 0.2rem 0.55rem; display: inline-flex; align-items: center; gap: 4px;">
+                        <svg class="tp-icon tp-icon-sm"><use href="#icon-refresh"></use></svg>
+                        <span>Apply Defaults to All Days</span>
                     </button>
                 </div>
                 <div id="spannedDatesList" style="display: flex; flex-direction: column; gap: 0.5rem;">
@@ -304,8 +323,9 @@
             <!-- Interactive What-If Structure Calculator Preview -->
             <div id="create-structure-preview-box" style="margin-top: 1rem; background: var(--bg-secondary); border: 1px dashed var(--border-strong); border-radius: var(--radius-md); padding: 1rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.65rem;">
-                    <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary);">
-                        🧮 Live Structure Simulator (Optional What-If Check)
+                    <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                        <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-grid"></use></svg>
+                        <span>Live Structure Simulator (Optional What-If Check)</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 0.5rem;">
                         <label for="sim_expected_players" style="font-size: 0.8rem; color: var(--text-secondary); margin: 0;">Est. Players:</label>

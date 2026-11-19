@@ -665,11 +665,13 @@
     </script>
 </head>
 <body class="pdf-export-mode" id="print-body">
+    {% include 'components/icons.html' %}
     <!-- Floating Print Actions Bar (Hidden during actual print) -->
     <div class="print-actions-bar no-print" style="position: fixed; top: 16px; right: 24px; z-index: 9999; display: flex; gap: 12px; align-items: center; background: rgba(253, 251, 246, 0.96); backdrop-filter: blur(10px); padding: 8px 18px; border-radius: 9999px; box-shadow: 0 4px 20px rgba(11, 43, 32, 0.14); border: 1.5px solid #0F3D2E; border-bottom: 2.5px solid #C9A55C;">
-        <span style="color: #0B2B20; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.3px;">📄 Print / PDF Preview</span>
+        <span style="color: #0B2B20; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.3px;">Document Print Preview</span>
         <button type="button" onclick="window.print()" style="background: #0F3D2E; color: #FDFBF6; border: none; padding: 6px 16px; border-radius: 9999px; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(15, 61, 46, 0.28); transition: transform 0.15s ease;">
-            <span>🖨️ Print / Save as PDF</span>
+            <svg class="tp-icon tp-icon-sm" style="color: #FDFBF6;"><use href="#icon-printer"></use></svg>
+            <span>Print / Save as PDF</span>
         </button>
     </div>
     <main class="main-content" style="padding-top: 0;">

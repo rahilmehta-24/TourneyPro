@@ -3,7 +3,7 @@
     <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
         <div>
             <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-                <span style="font-size: 1.25rem;">🧩</span>
+                <svg class="tp-icon" style="color: var(--accent-primary);"><use href="#icon-grid"></use></svg>
                 <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text-primary);">
                     Group &amp; Knockout Structure Options ({{ structure_team_count }} Teams / Entries, Top {{ category.qualifiers_per_group or 2 }}/Group)
                 </h3>
@@ -27,8 +27,8 @@
                         {{ opt.badge }}
                     </span>
                     {% if is_active %}
-                    <span style="font-size: 0.72rem; font-weight: 800; color: #065F46; background: rgba(5, 150, 105, 0.18); padding: 0.18rem 0.5rem; border-radius: 9999px;">
-                        ✓ Selected
+                    <span style="font-size: 0.72rem; font-weight: 700; color: #065F46; background: rgba(5, 150, 105, 0.14); padding: 0.18rem 0.5rem; border-radius: 9999px; display: inline-flex; align-items: center; gap: 3px;">
+                        <svg class="tp-icon tp-icon-sm"><use href="#icon-check"></use></svg> Selected
                     </span>
                     {% endif %}
                 </div>
@@ -42,10 +42,10 @@
 
                 <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; font-size: 0.76rem; color: var(--text-muted);">
                     <span style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 0.15rem 0.45rem; border-radius: 4px;">
-                        Sizes: <strong>[{{ opt.sizes_label }}]</strong>
+                        Sizes: <strong class="tabular-nums">[{{ opt.sizes_label }}]</strong>
                     </span>
                     <span style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 0.15rem 0.45rem; border-radius: 4px;">
-                        Group Ties: <strong>{{ opt.group_ties }}</strong>
+                        Group Ties: <strong class="tabular-nums">{{ opt.group_ties }}</strong>
                     </span>
                     <span style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 0.15rem 0.45rem; border-radius: 4px;">
                         Bracket: <strong>{{ opt.target_bracket }} ({{ opt.knockout_label }})</strong>
@@ -59,8 +59,8 @@
                 <input type="hidden" name="allow_lucky_losers" value="{{ 'true' if opt.allow_lucky_losers else 'false' }}">
                 <input type="hidden" name="qualifiers_per_group" value="{{ opt.qualifiers_per_group }}">
                 <input type="hidden" name="next_target" value="{{ structure_next_target or 'draft' }}">
-                <button type="submit" class="btn {% if is_active %}btn-secondary{% else %}btn-primary{% endif %}" style="width: 100%; font-size: 0.84rem; font-weight: 700;" {% if is_active %}disabled{% endif %}>
-                    {% if is_active %}✓ Currently Active{% else %}Apply This Structure{% endif %}
+                <button type="submit" class="btn {% if is_active %}btn-secondary{% else %}btn-primary{% endif %}" style="width: 100%; font-size: 0.84rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 4px;" {% if is_active %}disabled{% endif %}>
+                    {% if is_active %}<svg class="tp-icon tp-icon-sm"><use href="#icon-check"></use></svg> Currently Active{% else %}Apply This Structure{% endif %}
                 </button>
             </form>
         </div>
