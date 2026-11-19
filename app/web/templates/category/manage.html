@@ -329,7 +329,7 @@
                     <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Competition Format *</label>
                     <select id="format" name="format" class="form-input" required style="width: 100%;" onchange="toggleGroupStageFields()">
                         <option value="single_elimination" {% if category.format in ['single_elimination', 'doubles_elimination'] %}selected{% endif %}>Knockout (Single Elimination)</option>
-                        <option value="group_stage" {% if category.format == 'group_stage' %}selected{% endif %}>Group Stage + Knockout</option>
+                        <option value="group_stage" {% if category.format == 'group_stage' %}selected{% else %}disabled style="color: var(--text-muted);"{% endif %}>Group Stage + Knockout {% if category.format != 'group_stage' %}(Under Development — Coming Soon){% endif %}</option>
                         <option value="round_robin" {% if category.format in ['round_robin', 'doubles_round_robin'] %}selected{% endif %}>Round Robin (League)</option>
                     </select>
                 </div>

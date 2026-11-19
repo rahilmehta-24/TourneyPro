@@ -108,7 +108,10 @@
         <div class="formats-carousel-track" id="formatsCarouselTrack">
             {% for format_key, format_info in formats.items() %}
             {% if format_key not in ['double_elimination', 'doubles_elimination'] %}
-            <div class="format-card clickable carousel-card" onclick="openFormatModal('{{ format_key }}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter')openFormatModal('{{ format_key }}')">
+            <div class="format-card clickable carousel-card" onclick="openFormatModal('{{ format_key }}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter')openFormatModal('{{ format_key }}')" style="position: relative;">
+                {% if format_info.badge or format_info.is_locked %}
+                <span class="badge" style="position: absolute; top: 12px; right: 12px; background: rgba(217, 119, 6, 0.15); color: #B45309; border: 1px solid rgba(217, 119, 6, 0.35); padding: 3px 8px; border-radius: 9999px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">{{ format_info.badge or 'Coming Soon' }}</span>
+                {% endif %}
                 <div class="format-icon-badge">
                     {% if format_key == 'single_elimination' %}
                         <svg class="tp-icon format-svg-icon" aria-hidden="true"><use href="#icon-bracket"></use></svg>
@@ -154,7 +157,18 @@
                 <svg class="tp-icon format-svg-icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>
             {% endif %}
         </div>
-        <h2 style="margin-bottom: 0.75rem; color: var(--text-primary); font-family: var(--font-display); font-size: 1.75rem;">{{ format_info.name }}</h2>
+        <h2 style="margin-bottom: 0.75rem; color: var(--text-primary); font-family: var(--font-display); font-size: 1.75rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+            <span>{{ format_info.name }}</span>
+            {% if format_info.badge or format_info.is_locked %}
+            <span style="background: rgba(217, 119, 6, 0.15); color: #B45309; border: 1px solid rgba(217, 119, 6, 0.35); padding: 3px 10px; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">{{ format_info.badge or 'Coming Soon' }}</span>
+            {% endif %}
+        </h2>
+        {% if format_info.is_locked %}
+        <div style="background: rgba(217, 119, 6, 0.10); border: 1px solid rgba(217, 119, 6, 0.30); border-radius: var(--radius-md); padding: 0.75rem 1rem; margin-bottom: 1.25rem; font-size: 0.85rem; color: #92400E; display: flex; align-items: center; gap: 0.5rem;">
+            <svg class="tp-icon tp-icon-sm" style="color: #B45309; flex-shrink: 0;"><use href="#icon-clock"></use></svg>
+            <span><strong>Under Active Development:</strong> This format is currently locked for new tournament setups while advanced team league scheduling and scoring features are being finalized. Coming soon!</span>
+        </div>
+        {% endif %}
         <p style="color: var(--text-secondary); margin-bottom: 1.25rem; line-height: 1.6; font-size: 0.95rem;">{{ format_info.description }}</p>
         
         <div class="format-rules-box">

@@ -220,7 +220,12 @@
                 </div>
             </div>
             <div class="meta-row">
-                <span class="meta-item"><svg class="icon icon-xs" style="margin-right: 2px;"><use href="#icon-trophy"></use></svg>{{ formats[category.format].name }}</span>
+                <span class="meta-item">
+                    <svg class="icon icon-xs" style="margin-right: 2px;"><use href="#icon-trophy"></use></svg>{{ formats[category.format].name }}
+                    {% if category.format == 'group_stage' or formats[category.format].is_locked %}
+                    <span style="background: rgba(217, 119, 6, 0.15); color: #B45309; border: 1px solid rgba(217, 119, 6, 0.35); padding: 1px 7px; border-radius: 9999px; font-size: 0.7rem; font-weight: 700; margin-left: 5px;">Under Development</span>
+                    {% endif %}
+                </span>
                 <span class="meta-item">
                     {% if category.format == 'group_stage' %}
                     <svg class="icon icon-xs" style="margin-right: 2px;"><use href="#icon-tennis"></use></svg>{{ category.total_games or 7 }} Games/Rubber (Team Tie: First to {{ ((category.total_games or 7) * 3) // 2 + 1 }})

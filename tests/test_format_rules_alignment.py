@@ -409,3 +409,56 @@ class FormatRulesAlignmentTestCase(unittest.TestCase):
         self.assertEqual(standings[0]["played"], 1)
         self.assertEqual(standings[0]["sets_won"], 2)
         self.assertEqual(standings[0]["games_won"], 12)
+
+    def test_group_stage_is_locked_and_coming_soon_metadata(self):
+        """Verify Group Stage format is flagged as locked / under development with Coming Soon badge."""
+        from app.services.format_engine import get_all_formats
+
+        formats = get_all_formats()
+        gs = formats.get("group_stage")
+        self.assertIsNotNone(gs)
+        self.assertTrue(gs.get("is_locked"))
+        self.assertEqual(gs.get("status"), "under_development")
+        self.assertEqual(gs.get("badge"), "Coming Soon")
+
+    def test_create_category_rejects_locked_group_stage_format(self):
+        """Verify attempting to create a category with format='group_stage' is rejected."""
+        from app.domain.models import User
+
+        # Setup admin user
+        admin = User.query.filter_by(username="admin_user_test").first()
+        if not admin:
+            admin = User(username="admin_user_test", email="admin_test@test.com", role="admin")
+            admin.set_password("password123")
+            db.session.add(admin)
+            db.session.commit()
+
+        t = Tournament(
+            name="Locked GS Test", url_slug="locked-gs-test", status="setup", user_id=admin.id
+        )
+        db.session.add(t)
+        db.session.commit()
+
+        client = self.app.test_client()
+        with client.session_transaction() as sess:
+            sess["_user_id"] = str(admin.id)
+            sess["user_id"] = admin.id
+            sess["role"] = "admin"
+
+        response = client.post(
+            f"/tournaments/{t.url_slug}/categories/new",
+            data={
+                "name": "Men's Group Stage",
+                "format": "group_stage",
+                "gender": "Mens",
+                "age_category": "Open",
+            },
+            follow_redirects=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        # Should NOT have created a category
+        cat = Category.query.filter_by(tournament_id=t.id, name="Men's Group Stage").first()
+        self.assertIsNone(cat)
+        self.assertIn(
+            "Group Stage + Knockout is currently under development", response.get_data(as_text=True)
+        )

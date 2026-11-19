@@ -67,13 +67,14 @@
                     <div style="font-size: 0.78rem; color: var(--text-secondary);">Knockout • Points • 11 Pts</div>
                 </button>
 
-                <!-- Preset 5: Group Stage + Knockout -->
-                <button type="button" class="preset-btn" onclick="applyPreset('group_stage', this)" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.75rem; text-align: left; cursor: pointer; transition: all 0.15s;">
+                <!-- Preset 5: Group Stage + Knockout (Under Development - Coming Soon) -->
+                <button type="button" class="preset-btn" onclick="alert('Group Stage + Knockout is currently under development (Coming Soon). Please choose Knockout or Round Robin.'); return false;" style="background: var(--bg-card); border: 1px dashed var(--border-color); border-radius: var(--radius-md); padding: 0.75rem; text-align: left; cursor: not-allowed; opacity: 0.6; position: relative;">
+                    <span style="position: absolute; top: 8px; right: 8px; background: rgba(217, 119, 6, 0.15); color: #B45309; border: 1px solid rgba(217, 119, 6, 0.35); padding: 1px 6px; border-radius: 9999px; font-size: 0.68rem; font-weight: 700; text-transform: uppercase;">Coming Soon</span>
                     <div style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.2rem; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
-                        <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-grid"></use></svg>
+                        <svg class="tp-icon tp-icon-sm" style="color: var(--text-muted);"><use href="#icon-grid"></use></svg>
                         <span>Group Stage</span>
                     </div>
-                    <div style="font-size: 0.78rem; color: var(--text-secondary);">Groups (7 Games) + Knockout</div>
+                    <div style="font-size: 0.78rem; color: var(--text-muted);">Under Development (Coming Soon)</div>
                 </button>
             </div>
         </div>
@@ -117,7 +118,7 @@
             <select id="format" name="format" class="form-input" required onchange="toggleGroupStageFields()">
                 <option value="">Select a format</option>
                 <option value="single_elimination">Knockout (Single Elimination)</option>
-                <option value="group_stage">Group Stage + Knockout</option>
+                <option value="group_stage" disabled style="color: var(--text-muted);">Group Stage + Knockout (Under Development — Coming Soon)</option>
                 <option value="round_robin">Round Robin (League)</option>
             </select>
         </div>

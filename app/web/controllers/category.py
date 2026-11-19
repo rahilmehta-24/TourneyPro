@@ -284,6 +284,17 @@ def create_category(slug):
             sub_format = request.form.get("sub_format")
             if sub_format == "doubles":
                 format_type = "doubles_round_robin"
+
+        user = get_current_user()
+        if format_type == "group_stage" and getattr(user, "role", "") != "superadmin":
+            flash(
+                "Group Stage + Knockout is currently under development (Coming Soon). Please choose Knockout or Round Robin.",
+                "error",
+            )
+            return render_template(
+                "category/create.html", tournament=tournament, formats=TOURNAMENT_FORMATS
+            )
+
         max_participants = request.form.get("max_participants", type=int)
         gender = request.form.get("gender", "Unspecified")
         age_category = request.form.get("age_category", "Unspecified")
