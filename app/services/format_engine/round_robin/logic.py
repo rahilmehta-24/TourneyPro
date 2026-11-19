@@ -2,6 +2,7 @@ import re
 from app.services.format_engine.base import TournamentFormat
 from app.domain.models import Match, Participant, db
 
+
 class RoundRobinFormat(TournamentFormat):
     name = "Round Robin (League)"
     description = "Everyone plays everyone. Rankings are based on matches won followed by head-to-head and mini-league tiebreakers."
@@ -16,12 +17,12 @@ class RoundRobinFormat(TournamentFormat):
         for i in range(len(participants)):
             for j in range(i + 1, len(participants)):
                 match = {
-                    'round': 1,
-                    'match_number': match_number,
-                    'participant1_id': participants[i].id,
-                    'participant2_id': participants[j].id,
-                    'bracket_type': 'main',
-                    'match_type': 'round_robin'
+                    "round": 1,
+                    "match_number": match_number,
+                    "participant1_id": participants[i].id,
+                    "participant2_id": participants[j].id,
+                    "bracket_type": "main",
+                    "match_type": "round_robin",
                 }
                 matches.append(match)
                 match_number += 1
@@ -39,15 +40,22 @@ class RoundRobinFormat(TournamentFormat):
         Returns: (sets_won, sets_lost, games_won, games_lost, points_won, points_lost)
         Handles match tiebreaks like [10-7] as 1 set and 1 game.
         """
-        is_p1 = (match.participant1_id == p_id)
+        is_p1 = match.participant1_id == p_id
         s1_raw = str(match.score1 or "").strip()
         s2_raw = str(match.score2 or "").strip()
 
         # Check walkover/retirement
-        is_wo = any(term in (s1_raw + s2_raw).lower() for term in ['w/o', 'walkover', 'ret', 'default'])
+        is_wo = any(
+            term in (s1_raw + s2_raw).lower() for term in ["w/o", "walkover", "ret", "default"]
+        )
 
         # Check if numeric single point score (e.g. "11", "5")
-        if s1_raw.isdigit() and (not s2_raw or s2_raw.isdigit()) and ',' not in s1_raw and '-' not in s1_raw:
+        if (
+            s1_raw.isdigit()
+            and (not s2_raw or s2_raw.isdigit())
+            and "," not in s1_raw
+            and "-" not in s1_raw
+        ):
             p1_pts = int(s1_raw)
             p2_pts = int(s2_raw) if s2_raw.isdigit() else 0
             pw = p1_pts if is_p1 else p2_pts
@@ -63,15 +71,15 @@ class RoundRobinFormat(TournamentFormat):
         games_lost = 0
 
         # Try parsing comma-separated sets
-        set_tokens = [t.strip() for t in re.split(r'[,/]+', s1_raw) if t.strip()]
+        set_tokens = [t.strip() for t in re.split(r"[,/]+", s1_raw) if t.strip()]
         for token in set_tokens:
-            m = re.search(r'\[?(\d+)[-: ](\d+)\]?', token)
+            m = re.search(r"\[?(\d+)[-: ](\d+)\]?", token)
             if m:
                 g1, g2 = int(m.group(1)), int(m.group(2))
                 gw = g1 if is_p1 else g2
                 gl = g2 if is_p1 else g1
                 # Super tiebreak: e.g. [10-7] or any set where scores >= 10 and in brackets or diff >= 2
-                if '[' in token or ']' in token or (g1 >= 10 or g2 >= 10):
+                if "[" in token or "]" in token or (g1 >= 10 or g2 >= 10):
                     if gw > gl:
                         sets_won += 1
                         games_won += 1
@@ -109,36 +117,52 @@ class RoundRobinFormat(TournamentFormat):
         if len(tied_stats) <= 1:
             return tied_stats
 
-        tied_ids = {s['participant'].id for s in tied_stats}
+        tied_ids = {s["participant"].id for s in tied_stats}
 
         # 2-way tie: Direct Head-to-Head
         if len(tied_stats) == 2:
-            p1_id = tied_stats[0]['participant'].id
-            p2_id = tied_stats[1]['participant'].id
-            h2h_match = next((
-                m for m in matches
-                if m.status == 'completed' and m.winner_id and
-                ((m.participant1_id == p1_id and m.participant2_id == p2_id) or
-                 (m.participant1_id == p2_id and m.participant2_id == p1_id))
-            ), None)
+            p1_id = tied_stats[0]["participant"].id
+            p2_id = tied_stats[1]["participant"].id
+            h2h_match = next(
+                (
+                    m
+                    for m in matches
+                    if m.status == "completed"
+                    and m.winner_id
+                    and (
+                        (m.participant1_id == p1_id and m.participant2_id == p2_id)
+                        or (m.participant1_id == p2_id and m.participant2_id == p1_id)
+                    )
+                ),
+                None,
+            )
 
             if h2h_match:
                 if h2h_match.winner_id == p1_id:
+                    tied_stats[0]["tiebreak"] = "Head-to-head"
+                    tied_stats[1]["tiebreak"] = "Head-to-head"
                     return [tied_stats[0], tied_stats[1]]
                 elif h2h_match.winner_id == p2_id:
+                    tied_stats[0]["tiebreak"] = "Head-to-head"
+                    tied_stats[1]["tiebreak"] = "Head-to-head"
                     return [tied_stats[1], tied_stats[0]]
 
         # 3-way or more: Mini-league among tied players
         if len(tied_stats) >= 3:
+            for s in tied_stats:
+                s["tiebreak"] = "Mini-league"
             mini_matches = [
-                m for m in matches
-                if m.status == 'completed' and m.winner_id and
-                m.participant1_id in tied_ids and m.participant2_id in tied_ids
+                m
+                for m in matches
+                if m.status == "completed"
+                and m.winner_id
+                and m.participant1_id in tied_ids
+                and m.participant2_id in tied_ids
             ]
 
             mini_stats = {}
             for s in tied_stats:
-                pid = s['participant'].id
+                pid = s["participant"].id
                 m_wins = 0
                 m_sets_w, m_sets_l = 0, 0
                 m_games_w, m_games_l = 0, 0
@@ -154,23 +178,23 @@ class RoundRobinFormat(TournamentFormat):
                             m_games_l += gl
 
                 mini_stats[pid] = {
-                    'mini_wins': m_wins,
-                    'mini_set_diff': m_sets_w - m_sets_l,
-                    'mini_game_diff': m_games_w - m_games_l,
+                    "mini_wins": m_wins,
+                    "mini_set_diff": m_sets_w - m_sets_l,
+                    "mini_game_diff": m_games_w - m_games_l,
                 }
 
             # Sort tied_stats by mini-league criteria
             def mini_key(s):
-                pid = s['participant'].id
+                pid = s["participant"].id
                 ms = mini_stats[pid]
                 return (
-                    -ms['mini_wins'],
-                    -ms['mini_set_diff'],
-                    -ms['mini_game_diff'],
-                    -s['set_diff'],
-                    -s['game_diff'],
-                    -(s['points']),
-                    (s['participant'].manual_seed or s['participant'].seed or 999)
+                    -ms["mini_wins"],
+                    -ms["mini_set_diff"],
+                    -ms["mini_game_diff"],
+                    -s["set_diff"],
+                    -s["game_diff"],
+                    -(s["points"]),
+                    (s["participant"].manual_seed or s["participant"].seed or 999),
                 )
 
             sorted_mini = sorted(tied_stats, key=mini_key)
@@ -180,9 +204,9 @@ class RoundRobinFormat(TournamentFormat):
             current_grp = []
             last_key = None
             for s in sorted_mini:
-                pid = s['participant'].id
+                pid = s["participant"].id
                 ms = mini_stats[pid]
-                key = (ms['mini_wins'], ms['mini_set_diff'], ms['mini_game_diff'])
+                key = (ms["mini_wins"], ms["mini_set_diff"], ms["mini_game_diff"])
                 if last_key is None or key == last_key:
                     current_grp.append(s)
                 else:
@@ -201,31 +225,31 @@ class RoundRobinFormat(TournamentFormat):
         # Fallback for remaining ties: overall set_diff, game_diff, points, seed
         def fallback_key(s):
             return (
-                -s['set_diff'],
-                -s['game_diff'],
-                -s['points'],
-                (s['participant'].manual_seed or s['participant'].seed or 999)
+                -s["set_diff"],
+                -s["game_diff"],
+                -s["points"],
+                (s["participant"].manual_seed or s["participant"].seed or 999),
             )
 
         return sorted(tied_stats, key=fallback_key)
 
     @classmethod
-    def calculate_final_rankings(cls, category):
+    def calculate_final_rankings(cls, category, commit=True):
         participants = Participant.query.filter_by(category_id=category.id).all()
         if not participants:
-            return
+            return []
 
         matches = Match.query.filter(
-            Match.category_id == category.id,
-            Match.parent_match_id.is_(None)
+            Match.category_id == category.id, Match.parent_match_id.is_(None)
         ).all()
 
-        completed_matches = [m for m in matches if m.status == 'completed' and m.winner_id]
+        completed_matches = [m for m in matches if m.status == "completed" and m.winner_id]
 
         stats_list = []
         for p in participants:
             p_matches = [
-                m for m in completed_matches
+                m
+                for m in completed_matches
                 if m.participant1_id == p.id or m.participant2_id == p.id
             ]
 
@@ -248,39 +272,56 @@ class RoundRobinFormat(TournamentFormat):
             p.group_losses = losses
             p.group_points = total_pts
 
-            stats_list.append({
-                'participant': p,
-                'wins': wins,
-                'losses': losses,
-                'points': total_pts,
-                'set_diff': sets_w - sets_l,
-                'game_diff': games_w - games_l,
-            })
+            stats_list.append(
+                {
+                    "participant": p,
+                    "played": len(p_matches),
+                    "wins": wins,
+                    "losses": losses,
+                    "points": total_pts,
+                    "display_pts": wins * 3,
+                    "sets_won": sets_w,
+                    "sets_lost": sets_l,
+                    "games_won": games_w,
+                    "games_lost": games_l,
+                    "set_diff": sets_w - sets_l,
+                    "game_diff": games_w - games_l,
+                    "tiebreak": "—",
+                }
+            )
 
         # Group by matches won (Priority 1: Matches won DESC)
-        stats_list.sort(key=lambda s: -s['wins'])
+        stats_list.sort(key=lambda s: -s["wins"])
 
         # Group tied participants by wins
         tied_groups = []
         cur_grp = []
         last_wins = None
         for s in stats_list:
-            if last_wins is None or s['wins'] == last_wins:
+            if last_wins is None or s["wins"] == last_wins:
                 cur_grp.append(s)
             else:
                 tied_groups.append(cur_grp)
                 cur_grp = [s]
-            last_wins = s['wins']
+            last_wins = s["wins"]
         if cur_grp:
             tied_groups.append(cur_grp)
 
         # Resolve each tied group
         final_ordered = []
         for grp in tied_groups:
-            final_ordered.extend(cls.break_round_robin_tie(grp, completed_matches))
+            if len(grp) == 1:
+                final_ordered.append(grp[0])
+            else:
+                final_ordered.extend(cls.break_round_robin_tie(grp, completed_matches))
 
         # Assign final_rank
         for i, s in enumerate(final_ordered):
-            s['participant'].final_rank = i + 1
+            s["rank"] = i + 1
+            if commit:
+                s["participant"].final_rank = i + 1
 
-        db.session.commit()
+        if commit:
+            db.session.commit()
+
+        return final_ordered

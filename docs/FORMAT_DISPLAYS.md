@@ -10,8 +10,8 @@ This document visualizes and describes how each of the **6 tournament formats** 
 |---|---|---|---|
 | **`single_elimination`** | **Binary Tree Bracket** (R16 $\rightarrow$ QF $\rightarrow$ SF $\rightarrow$ Final) | Printable Draw PDF, Schedule View | Hover path highlighting, Match Report modal, Seed badges |
 | **`doubles_elimination`** | **Binary Tree Bracket** (Pairs) | Order of Play, PDF Draw Sheet | Dual-player badges, Partner profile links |
-| **`double_elimination`** | **Dual Split Bracket** (Winners + Losers + Grand Finals) | Losers drop-in indicators, Reset Match | Winners/Losers bracket toggle, Grand Finals Reset |
-| **`round_robin`** | **League Table + Cross Matrix Grid** | Fixture Cards list, Standings table | Inline score editing grid, Report modal |
+| **`double_elimination`** | **Dual Split Bracket** (Winners + Losers + Grand Finals) | Losers drop-in indicators (⇄ mirrored rounds), Reset Match, Rankings bands | Winners/Losers bracket toggle, Grand Finals Reset |
+| **`round_robin`** | **League Table + Cross Matrix Grid** | Fixture Cards list, Standings table, Tiebreak notes | Inline score editing grid, Report modal |
 | **`doubles_round_robin`** | **Pairs League Table + Cross Matrix** | Fixture Cards list, Standings table | Team pair stats, Dual-player sync |
 | **`group_stage`** | **Group Cards (A–D) + Knockout Tree** | 3-Rubber Team ties, Standings tables | Expandable rubbers accordion, Qualification badges |
 
@@ -56,6 +56,25 @@ Seed   Player Name                            Set Breakdown
 - **Interactive Hover Path**: Hovering the cursor over any match card dynamically traces and illuminates the athlete's route through past and future rounds (`highlightPlayerPath`).
 - **Score Display**: Set scores are rendered in distinct boxes with the winner's set highlighted in forest green (`var(--primary)`).
 
+### 1.3 Bye Display (non-power-of-2 fields)
+When $N < B$, empty Round 1 slots render as **dimmed Bye cards**. The seed advances automatically, and the card shows no court or time. Byes are not counted in the fixture total ($N-1$).
+
+```
+┌──────────────────────┐
+│ #1  C. Alcaraz       │──► advances (Bye)     [ muted card, no score ]
+│     BYE              │
+└──────────────────────┘
+```
+
+### 1.4 Podium Panel
+| Position | Band shown | Stored `final_rank` |
+|---|---|:---:|
+| Champion | 1st | `1` |
+| Runner-up | 2nd | `2` |
+| Semi-finalists | 3–4 | `3` |
+| Quarter-finalists | 5–8 | `5` |
+| Round of 16 | 9–16 | `9` |
+
 ---
 
 ## 2. Doubles Elimination View
@@ -72,8 +91,8 @@ Seed   Player Name                            Set Breakdown
 │    M. Purcell / J. Thompson  5 4 │                                               ├──│ #1 R. Bopanna / M. Ebden     6 7 │
 └──────────────────────────────────┘                                               │  │ #2 R. Ram / J. Salisbury     4 5 │
 ┌──────────────────────────────────┐                                               │  └──────────────────────────────────┘
-│ #3 M. Granollers / H. Zeballos   │────┐                                          │  🏆 CHAMPIONS: Bopanna / Ebden
-│    S. Bolelli / A. Vavassori     │    │  ┌──────────────────────────────────┐    │
+│ #3 M.Granollers / H.Zeballos 6 4 │────┐                                          │  🏆 CHAMPIONS: Bopanna / Ebden
+│    S. Bolelli / A. Vavassori 7 6 │    │  ┌──────────────────────────────────┐    │
 └──────────────────────────────────┘    ├──│ #2 R. Ram / J. Salisbury     6 6 │────┘
 ┌──────────────────────────────────┐    │  │    S. Bolelli / A. Vavassori 3 4 │
 │ #2 R. Ram / J. Salisbury     6 6 │────┘  └──────────────────────────────────┘
@@ -84,6 +103,8 @@ Seed   Player Name                            Set Breakdown
 ### 2.2 Key Display Details
 - **Dual Name Anchor**: Renders both partner names separated by a slash (`/`). Clicking either name opens that athlete's verified profile.
 - **Badge Indicators**: Seed tags reflect the combined team seed.
+- **Podium**: Both partners are listed per place, with the same bands as Single Elimination (1, 2, 3, 5, 9).
+- **Validation badge**: A player already registered in another pair in the same category is flagged at registration, not at draw time.
 
 ---
 
@@ -138,6 +159,21 @@ The Double Elimination view renders **three dedicated bracket tiers** on a singl
      └────────────────────────────────────┘             └────────────────────────────────────┘
 ```
 
+### 3.1 Drop-In Indicators
+- Players dropping from Winners carry a **↓WRn** tag (e.g. `↓WR2`) and occupy the **top slot** (`participant1`) of the Losers match.
+- Mirrored rounds (even Winners rounds, such as WR2) show a **⇄** icon in the round header. This is the anti-rematch ordering.
+- Byes in the Losers Bracket render as dimmed Bye cards. Void matches (both feeders were byes) are hidden.
+
+### 3.2 Rankings Panel (example above, $B = 8$)
+| Place | Competitor | Round lost | `final_rank` |
+|:---:|---|---|:---:|
+| 1st | Aryan Shah | n/a (champion) | `1` |
+| 2nd | Manas Dhamne | Grand Finals | `2` |
+| 3rd | Yuvan Nandal | Losers Final (LR4) | `3` |
+| 4th | Rethin Pranav | LR3 | `4` |
+| 5th–6th | Vansh Nandal, Rushil Khosla | LR2 | `5` |
+| 7th–8th | Kriish Tyagi, Daksh Prasad | LR1 | `7` |
+
 ---
 
 ## 4. Round Robin (League) View
@@ -145,16 +181,17 @@ The Double Elimination view renders **three dedicated bracket tiers** on a singl
 The Round Robin category display is divided into a **Live Standings Table**, a **Cross-Matrix Grid**, and the **Upcoming Fixtures List**.
 
 ### 4.1 Standings Leaderboard Table
+**Ranking order:** matches won first. `Pts` (3 per win) is for display only and is not a ranking criterion. The Tiebreak column states how a tie was broken.
 ```
-┌──────┬────────────────────────┬─────────┬────────┬────────┬────────┬────────┬────────┐
-│ Rank │ Competitor             │ Played  │ Won    │ Lost   │ Sets   │ Games  │ Points │
-├──────┼────────────────────────┼─────────┼────────┼────────┼────────┼────────┼────────┤
-│  🥇1 │ Somdev Devvarman       │    4    │   4    │   0    │  8–1   │  52–24 │   12   │
-│  🥈2 │ Ramkumar Ramanathan    │    4    │   3    │   1    │  6–3   │  46–32 │    9   │
-│  🥉3 │ Saketh Myneni          │    4    │   2    │   2    │  5–5   │  41–40 │    6   │
-│   4  │ Jeevan Nedunchezhiyan  │    4    │   1    │   3    │  3–6   │  30–44 │    3   │
-│   5  │ Yuki Bhambri           │    4    │   0    │   4    │  1–8   │  22–51 │    0   │
-└──────┴────────────────────────┴─────────┴────────┴────────┴────────┴────────┴────────┘
+┌────────┬──────────────────────────┬──────────┬───────┬────────┬──────────┬───────────┬────────┬──────────────┐
+│  Rank  │ Competitor               │  Played  │  Won  │  Lost  │   Sets   │   Games   │  Pts   │   Tiebreak   │
+├────────┼──────────────────────────┼──────────┼───────┼────────┼──────────┼───────────┼────────┼──────────────┤
+│   🥇1   │ Somdev Devvarman         │    4     │   4   │   0    │   8–0    │   48–24   │   12   │      —       │
+│   🥈2   │ Ramkumar Ramanathan      │    4     │   3   │   1    │   6–2    │   45–34   │   9    │      —       │
+│   🥉3   │ Saketh Myneni            │    4     │   2   │   2    │   4–4    │   41–39   │   6    │      —       │
+│   4    │ Jeevan Nedunchezhiyan    │    4     │   1   │   3    │   2–6    │   31–44   │   3    │      —       │
+│   5    │ Yuki Bhambri             │    4     │   0   │   4    │   0–8    │   24–48   │   0    │      —       │
+└────────┴──────────────────────────┴──────────┴───────┴────────┴──────────┴───────────┴────────┴──────────────┘
 ```
 
 ### 4.2 Cross-Matrix Results Grid
@@ -170,13 +207,27 @@ The Round Robin category display is divided into a **Live Standings Table**, a *
 └────────────────────────┴──────────────┴──────────────┴──────────────┴──────────────┴──────────────┘
 ```
 
+### 4.3 Tiebreak Display (3-way tie example)
+Asha beat Ben, Ben beat Chen, Chen beat Asha. Head-to-head runs in a circle, so the **mini-league** (set difference) decides.
+
+```
+┌──────┬──────────┬─────┬────────┬─────────┬──────────────────────┐
+│ Rank │ Player   │  W  │ Sets ± │ Games ± │ Tiebreak             │
+├──────┼──────────┼─────┼────────┼─────────┼──────────────────────┤
+│  1   │ Asha     │  1  │   +1   │   +6    │ Mini-league (sets)   │
+│  2   │ Ben      │  1  │    0   │   −4    │ Mini-league (sets)   │
+│  3   │ Chen     │  1  │   −1   │   −2    │ Mini-league (sets)   │
+└──────┴──────────┴─────┴────────┴─────────┴──────────────────────┘
+```
+Tiebreak labels: `Head-to-head` (two-way), `Mini-league` (three or more), `Overall`, `Lots`.
+
 - **Interactive Admin Matrix**: Tournament directors and superadmins can input scores directly into empty grid cells and click **"Save Entries"** to recalculate standings in real time.
 
 ---
 
 ## 5. Doubles Round Robin View
 
-Combines pair names with the league standings format:
+Combines pair names with the league standings format. Ranking and tiebreak labels follow Round Robin (wins first):
 
 ```
 ┌──────┬──────────────────────────────────┬────┬───┬───┬────────┬────────┬───────┐
@@ -193,45 +244,44 @@ Combines pair names with the league standings format:
 
 ## 6. Group Stage + Knockout View
 
-### 6.1 Multi-Group Card Layout
+### 6.1 Multi-Group Card Layout (Team League Mode)
+In team league formats (`max_players_per_team > 1`), group cards and standings display the **Team Name** and **Captain Name** rather than individual player names:
+
 ```
-┌──────────────────────────────────────────────┐  ┌──────────────────────────────────────────────┐
-│ GROUP A                          [Court 1]   │  │ GROUP B                          [Court 2]   │
-├──────────────────────────────────────────────┤  ├──────────────────────────────────────────────┤
-│ Q  Pos  Player            MP  W  L  Diff Pts │  │ Q  Pos  Player            MP  W  L  Diff Pts │
-│ 🟢  1   Iga Swiatek        3  3  0   +14  18 │  │ 🟢  1   Aryna Sabalenka    3  3  0   +16  18 │
-│ 🟢  2   Ons Jabeur         3  2  1    +4  15 │  │ 🟢  2   Maria Sakkari      3  2  1    +3  14 │
-│ ──  3   Barbora Krejcikova 3  1  2    -5  11 │  │ ──  3   Madison Keys       3  1  2    -6  10 │
-│ ──  4   Paula Badosa       3  0  3   -13   6 │  │ ──  4   Emma Navarro       3  0  3   -13   7 │
-└──────────────────────────────────────────────┘  └──────────────────────────────────────────────┘
-┌──────────────────────────────────────────────┐  ┌──────────────────────────────────────────────┐
-│ GROUP C                          [Court 3]   │  │ GROUP D                          [Court 4]   │
-├──────────────────────────────────────────────┤  ├──────────────────────────────────────────────┤
-│ Q  Pos  Player            MP  W  L  Diff Pts │  │ Q  Pos  Player            MP  W  L  Diff Pts │
-│ 🟢  1   Coco Gauff         3  3  0   +12  18 │  │ 🟢  1   Elena Rybakina     3  3  0   +15  18 │
-│ 🟢  2   Daria Kasatkina    3  2  1    +2  13 │  │ 🟢  2   Jessica Pegula     3  2  1    +5  15 │
-│ ──  3   M. Vondrousova     3  1  2    -3  12 │  │ ──  3   Qinwen Zheng       3  1  2    -4  11 │
-│ ──  4   Jelena Ostapenko   3  0  3   -11   7 │  │ ──  4   Danielle Collins   3  0  3   -16   6 │
-└──────────────────────────────────────────────┘  └──────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────┐  ┌────────────────────────────────────────────────────────┐
+│ GROUP A                                      [Court 1] │  │ GROUP B                                      [Court 2] │
+├────────────────────────────────────────────────────────┤  ├────────────────────────────────────────────────────────┤
+│ Q  Pos  Team / Captain              MP  W  L   GD   GW │  │ Q  Pos  Team / Captain              MP  W  L   GD   GW │
+│ 🟢   1   Baseline Warriors (R.Bopanna)3  3  0  +14   40│  │ 🟢   1   Net Aces (S. Nagal)         3  3  0  +16   42│
+│ 🟢   2   Court Masters (L. Paes)     3  2  1   +4   34│  │ 🟢   2   Spin Wizards (M. Bhupathi)  3  2  1   +3   33│
+│ ──   3   Volley Kings (S. Myneni)    3  1  2   -5   28│  │ ──   3   Deuce Dynamos (R.Ramanathan)3  1  2   -6   26│
+│ ──   4   Drop Shot Club (P. Raja)    3  0  3  -13   23│  │ ──   4   Ace Hitters (Y. Bhambri)    3  0  3  -13   21│
+└────────────────────────────────────────────────────────┘  └────────────────────────────────────────────────────────┘
 ```
+*(In individual singles competitions, the column displays individual player names).*
+
+**Columns:** `MP` matches played, `W`/`L` wins and losses, `GD` games differential, `GW` total games won. Ranking follows the group tiebreak order: wins, head-to-head, games differential, games won, fewest losses.
 
 - **🟢 Qualifier Indicators**: Highlights top $q$ finishers who advance directly into the Knockout Stage.
 
-### 6.2 Team League Mode (3-Rubber Accordion Tie View)
-When `max_players_per_team > 1`, match fixtures render as composite ties featuring **3 distinct rubbers** with the $T=7$ summation scoreline:
+### 6.2 Team League Mode (3-Rubber Accordion Tie View: 1 Singles + 2 Doubles)
+When `max_players_per_team > 1`, match fixtures render as composite ties featuring **3 distinct rubbers (1 Singles and 2 Doubles)** with the $T=7$ summation scoreline:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │ Fixture #2: Baseline Warriors vs Net Aces                           [Court 1] [12 - 9] │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
-│ ▼ Rubber 1 (Singles):   Rohan Bopanna (Tier A)   def.  Sumit Nagal (Tier A)        4–3 │
-│ ▼ Rubber 2 (Doubles):   Ebden / Myneni (B+C)     def.  Bhambri / Ramanathan (B+C)  4–3 │
-│ ▼ Rubber 3 (Singles):   Manas Dhamne (Tier D)    def.  Aryan Shah (Tier D)         4–3 │
+│ ▼ Rubber 1 (Singles):   Rohan Bopanna (Tier A)        def.  Sumit Nagal (Tier A)        4–3 │
+│ ▼ Rubber 2 (Doubles 1): M. Ebden / S. Myneni (B+C)    def.  Y. Bhambri / R. Ramanathan  4–3 │
+│ ▼ Rubber 3 (Doubles 2): M. Dhamne / D. Prasad (D+E)   def.  A. Shah / R. Khosla (D+E)   4–3 │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
+- **Running tie total**: The header shows games won against the target of **11**. Once a team reaches 11, any remaining rubbers are greyed out as dead rubbers.
+- **Match tiebreak**: A `3–3` rubber shows `4–3 (TB 7-5)` for the deciding 7-point tiebreak.
+
 ### 6.3 Knockout Stage (Playoff Bracket)
-Once group matches complete, the top qualifiers are seeded into the binary bracket below the groups:
+Once group matches complete, the top qualifiers are seeded into the binary bracket below the groups. Group winners and runners-up from the same group sit in opposite halves. Any **Lucky Loser** is tagged **LL** with its ranking metrics on hover.
 
 ```
   Quarter-Finals (Knockout)                  Semi-Finals                       Final
@@ -259,7 +309,43 @@ Once group matches complete, the top qualifiers are seeded into the binary brack
 
 ### 7.1 Match Scoring Modal (`openMatchModal`)
 Clicking any match card opens the unified Scoring Modal:
-- **Set Score Inputs**: Inputs for Set 1, Set 2, Set 3 with Tiebreak point recording.
-- **Scoring Format Switch**: Supports Games mode (tennis sets) or Points mode (squash/table tennis).
+- **Set Score Inputs**: Set 1, Set 2, Set 3, with tiebreak point recording.
+- **Match Tiebreak**: Optional `[10-7]` entry in place of a final set. It counts as one set and one game for the winner.
+- **Scoring Format Switch**: Games mode (tennis sets), Points mode (squash/table tennis), or Team Tie mode ($T=7$ rubbers).
 - **Match Status Action**: Single-click toggles between **Pending**, **Live Scoring**, and **Complete Match**.
-- **Audit Reason Field**: Mandatory reason & explanation inputs for score revisions and bracket resets.
+- **Special Results**: **Walkover (W/O)** and **Retirement** options. The opponent is awarded the win, and in league formats those games and sets are excluded from tiebreak calculations.
+- **Audit Reason Field**: Mandatory reason and explanation for score revisions and bracket resets.
+
+---
+
+## 8. Display Conventions
+
+### 8.1 Status Legend
+| Status | Style | Marker |
+|---|---|:---:|
+| Pending | Grey | ○ |
+| Live | Blue | ● |
+| Completed | Green, winner in bold | ✓ |
+| Bye | Muted italic `BYE` | — |
+| Walkover | Amber `W/O` | ⚑ |
+
+Color is never the only signal. Every status has a marker.
+
+### 8.2 Names and Scores
+- Singles: `(3) A. Shah`. Doubles: `(3) A. Shah / B. Rao`.
+- Tennis scores as `6-4 6-3`, match tiebreaks as `[10-7]`, numeric mode as a single number per side.
+
+### 8.3 Verification Footer
+Every category page ends with computed checks, shown as ✓/✗:
+
+| Format | Checks |
+|---|---|
+| Single / Doubles Elim | Matches $= N-1$, byes held by top seeds, seeds 1 and 2 in opposite halves, seeds 1–4 in different quarters |
+| Double Elim | Losers matches $= B-2$, fixtures $2N-2$ or $2N-1$, no drop-in rematch (for $B \ge 16$) |
+| Round Robin / Doubles RR | Fixtures $= N(N-1)/2$, each player plays $N-1$, ranking starts with wins |
+| Group Stage | Group sizes sum to $N$, $B$ is a power of 2, $L = B - Gq$, tie total $= 21$ games |
+
+### 8.4 Responsive Behavior
+- Brackets scroll horizontally inside their own container, so the page body never scrolls sideways.
+- Standings tables and the cross-matrix collapse to cards under 600px.
+- Light and dark themes use the same status markers.

@@ -8,16 +8,17 @@ from app.services.format_engine.double_elimination.logic import DoubleEliminatio
 from app.services.format_engine.round_robin.logic import RoundRobinFormat
 from app.services.format_engine.doubles_round_robin.logic import DoublesRoundRobinFormat
 
+
 class FormatRulesAlignmentTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.db_fd, cls.db_path = tempfile.mkstemp(suffix='.db')
+        cls.db_fd, cls.db_path = tempfile.mkstemp(suffix=".db")
         os.close(cls.db_fd)
 
         class TestConfig:
             TESTING = True
-            SECRET_KEY = 'test-secret'
-            SQLALCHEMY_DATABASE_URI = f'sqlite:///{cls.db_path}'
+            SECRET_KEY = "test-secret"
+            SQLALCHEMY_DATABASE_URI = f"sqlite:///{cls.db_path}"
             SQLALCHEMY_TRACK_MODIFICATIONS = False
             WTF_CSRF_ENABLED = False
             UPLOAD_FOLDER = tempfile.mkdtemp()
@@ -53,7 +54,9 @@ class FormatRulesAlignmentTestCase(unittest.TestCase):
         db.session.add(t)
         db.session.flush()
 
-        cat = Category(tournament_id=t.id, name="RR League", format="round_robin", status="in_progress")
+        cat = Category(
+            tournament_id=t.id, name="RR League", format="round_robin", status="in_progress"
+        )
         db.session.add(cat)
         db.session.flush()
 
@@ -64,19 +67,40 @@ class FormatRulesAlignmentTestCase(unittest.TestCase):
         db.session.commit()
 
         m1 = Match(
-            tournament_id=t.id, category_id=cat.id, round=1, match_number=1,
-            participant1_id=pA.id, participant2_id=pB.id, winner_id=pA.id,
-            score1="6-4, 4-6, [10-8]", score2="4-6, 6-4, 8-10", status="completed"
+            tournament_id=t.id,
+            category_id=cat.id,
+            round=1,
+            match_number=1,
+            participant1_id=pA.id,
+            participant2_id=pB.id,
+            winner_id=pA.id,
+            score1="6-4, 4-6, [10-8]",
+            score2="4-6, 6-4, 8-10",
+            status="completed",
         )
         m2 = Match(
-            tournament_id=t.id, category_id=cat.id, round=1, match_number=2,
-            participant1_id=pA.id, participant2_id=pC.id, winner_id=pA.id,
-            score1="6-0, 6-0", score2="0-6, 0-6", status="completed"
+            tournament_id=t.id,
+            category_id=cat.id,
+            round=1,
+            match_number=2,
+            participant1_id=pA.id,
+            participant2_id=pC.id,
+            winner_id=pA.id,
+            score1="6-0, 6-0",
+            score2="0-6, 0-6",
+            status="completed",
         )
         m3 = Match(
-            tournament_id=t.id, category_id=cat.id, round=1, match_number=3,
-            participant1_id=pB.id, participant2_id=pC.id, winner_id=pB.id,
-            score1="50", score2="0", status="completed"
+            tournament_id=t.id,
+            category_id=cat.id,
+            round=1,
+            match_number=3,
+            participant1_id=pB.id,
+            participant2_id=pC.id,
+            winner_id=pB.id,
+            score1="50",
+            score2="0",
+            status="completed",
         )
         db.session.add_all([m1, m2, m3])
         db.session.commit()
@@ -102,7 +126,9 @@ class FormatRulesAlignmentTestCase(unittest.TestCase):
         db.session.add(t)
         db.session.flush()
 
-        cat = Category(tournament_id=t.id, name="RR H2H", format="round_robin", status="in_progress")
+        cat = Category(
+            tournament_id=t.id, name="RR H2H", format="round_robin", status="in_progress"
+        )
         db.session.add(cat)
         db.session.flush()
 
@@ -114,34 +140,70 @@ class FormatRulesAlignmentTestCase(unittest.TestCase):
         db.session.commit()
 
         m1 = Match(
-            tournament_id=t.id, category_id=cat.id, round=1, match_number=1,
-            participant1_id=p1.id, participant2_id=p2.id, winner_id=p1.id,
-            score1="6-4, 6-4", status="completed"
+            tournament_id=t.id,
+            category_id=cat.id,
+            round=1,
+            match_number=1,
+            participant1_id=p1.id,
+            participant2_id=p2.id,
+            winner_id=p1.id,
+            score1="6-4, 6-4",
+            status="completed",
         )
         m2 = Match(
-            tournament_id=t.id, category_id=cat.id, round=1, match_number=2,
-            participant1_id=p1.id, participant2_id=p3.id, winner_id=p1.id,
-            score1="6-2, 6-2", status="completed"
+            tournament_id=t.id,
+            category_id=cat.id,
+            round=1,
+            match_number=2,
+            participant1_id=p1.id,
+            participant2_id=p3.id,
+            winner_id=p1.id,
+            score1="6-2, 6-2",
+            status="completed",
         )
         m3 = Match(
-            tournament_id=t.id, category_id=cat.id, round=1, match_number=3,
-            participant1_id=p1.id, participant2_id=p4.id, winner_id=p4.id,
-            score1="4-6, 4-6", status="completed"
+            tournament_id=t.id,
+            category_id=cat.id,
+            round=1,
+            match_number=3,
+            participant1_id=p1.id,
+            participant2_id=p4.id,
+            winner_id=p4.id,
+            score1="4-6, 4-6",
+            status="completed",
         )
         m4 = Match(
-            tournament_id=t.id, category_id=cat.id, round=1, match_number=4,
-            participant1_id=p2.id, participant2_id=p3.id, winner_id=p2.id,
-            score1="6-0, 6-0", status="completed"
+            tournament_id=t.id,
+            category_id=cat.id,
+            round=1,
+            match_number=4,
+            participant1_id=p2.id,
+            participant2_id=p3.id,
+            winner_id=p2.id,
+            score1="6-0, 6-0",
+            status="completed",
         )
         m5 = Match(
-            tournament_id=t.id, category_id=cat.id, round=1, match_number=5,
-            participant1_id=p2.id, participant2_id=p4.id, winner_id=p2.id,
-            score1="6-0, 6-0", status="completed"
+            tournament_id=t.id,
+            category_id=cat.id,
+            round=1,
+            match_number=5,
+            participant1_id=p2.id,
+            participant2_id=p4.id,
+            winner_id=p2.id,
+            score1="6-0, 6-0",
+            status="completed",
         )
         m6 = Match(
-            tournament_id=t.id, category_id=cat.id, round=1, match_number=6,
-            participant1_id=p3.id, participant2_id=p4.id, winner_id=p3.id,
-            score1="6-3, 6-3", status="completed"
+            tournament_id=t.id,
+            category_id=cat.id,
+            round=1,
+            match_number=6,
+            participant1_id=p3.id,
+            participant2_id=p4.id,
+            winner_id=p3.id,
+            score1="6-3, 6-3",
+            status="completed",
         )
         db.session.add_all([m1, m2, m3, m4, m5, m6])
         db.session.commit()
@@ -164,12 +226,16 @@ class FormatRulesAlignmentTestCase(unittest.TestCase):
         db.session.add(t)
         db.session.flush()
 
-        cat = Category(tournament_id=t.id, name="SE Draw", format="single_elimination", status="in_progress")
+        cat = Category(
+            tournament_id=t.id, name="SE Draw", format="single_elimination", status="in_progress"
+        )
         db.session.add(cat)
         db.session.flush()
 
         participants = [
-            Participant(tournament_id=t.id, category_id=cat.id, name=f"Player {i+1}", manual_seed=i+1)
+            Participant(
+                tournament_id=t.id, category_id=cat.id, name=f"Player {i + 1}", manual_seed=i + 1
+            )
             for i in range(8)
         ]
         db.session.add_all(participants)
@@ -178,7 +244,7 @@ class FormatRulesAlignmentTestCase(unittest.TestCase):
         matches_data = SingleEliminationFormat.generate(cat, participants)
         matches = []
         for md in matches_data:
-            md['category_id'] = cat.id
+            md["category_id"] = cat.id
             m = Match(**md, tournament_id=t.id)
             db.session.add(m)
             matches.append(m)
@@ -208,9 +274,11 @@ class FormatRulesAlignmentTestCase(unittest.TestCase):
 
         SingleEliminationFormat.calculate_final_rankings(cat)
 
-        ranks = {p.name: p.final_rank for p in Participant.query.filter_by(category_id=cat.id).all()}
+        ranks = {
+            p.name: p.final_rank for p in Participant.query.filter_by(category_id=cat.id).all()
+        }
 
-        self.assertEqual(ranks['Player 1'], 1)
+        self.assertEqual(ranks["Player 1"], 1)
         sf_losers = [p.final_rank for p in participants if p.final_rank == 3]
         self.assertEqual(len(sf_losers), 2)
         qf_losers = [p.final_rank for p in participants if p.final_rank == 5]
@@ -225,12 +293,16 @@ class FormatRulesAlignmentTestCase(unittest.TestCase):
         db.session.add(t)
         db.session.flush()
 
-        cat = Category(tournament_id=t.id, name="DE Draw", format="double_elimination", status="in_progress")
+        cat = Category(
+            tournament_id=t.id, name="DE Draw", format="double_elimination", status="in_progress"
+        )
         db.session.add(cat)
         db.session.flush()
 
         participants = [
-            Participant(tournament_id=t.id, category_id=cat.id, name=f"Player {i+1}", manual_seed=i+1)
+            Participant(
+                tournament_id=t.id, category_id=cat.id, name=f"Player {i + 1}", manual_seed=i + 1
+            )
             for i in range(8)
         ]
         db.session.add_all(participants)
@@ -238,12 +310,14 @@ class FormatRulesAlignmentTestCase(unittest.TestCase):
 
         matches_data = DoubleEliminationFormat.generate(cat, participants)
         for md in matches_data:
-            md['category_id'] = cat.id
+            md["category_id"] = cat.id
             m = Match(**md, tournament_id=t.id)
             db.session.add(m)
         db.session.commit()
 
-        w_r2_m1 = Match.query.filter_by(category_id=cat.id, bracket_type='winners', round=2, match_number=1).first()
+        w_r2_m1 = Match.query.filter_by(
+            category_id=cat.id, bracket_type="winners", round=2, match_number=1
+        ).first()
         w_r2_m1.participant1_id = participants[0].id
         w_r2_m1.participant2_id = participants[1].id
         w_r2_m1.winner_id = participants[0].id
@@ -252,10 +326,86 @@ class FormatRulesAlignmentTestCase(unittest.TestCase):
         DoubleEliminationFormat.advance_match(w_r2_m1, cat, participants[0].id)
         db.session.commit()
 
-        lr2_m2 = Match.query.filter_by(category_id=cat.id, bracket_type='losers', round=2, match_number=2).first()
+        lr2_m2 = Match.query.filter_by(
+            category_id=cat.id, bracket_type="losers", round=2, match_number=2
+        ).first()
         self.assertIsNotNone(lr2_m2)
         self.assertEqual(lr2_m2.participant1_id, participants[1].id)
 
     def test_doubles_round_robin_min_participants(self):
         """Verify Doubles Round Robin minimum participants is 3 pairs."""
         self.assertEqual(DoublesRoundRobinFormat.min_participants, 3)
+
+    def test_participant_captain_name_resolution(self):
+        """Verify Participant.captain_name resolves captain or primary player."""
+        from app.domain.models import Player, TeamMember
+
+        t = Tournament(name="Captain Test", url_slug="captain-test", status="in_progress")
+        db.session.add(t)
+        db.session.flush()
+
+        cat = Category(
+            tournament_id=t.id, name="Team League", format="group_stage", max_players_per_team=5
+        )
+        db.session.add(cat)
+        db.session.flush()
+
+        p1 = Player(name="Rohan Bopanna", gender="M", email="rohan@example.com")
+        p2 = Player(name="Matthew Ebden", gender="M", email="matthew@example.com")
+        db.session.add_all([p1, p2])
+        db.session.flush()
+
+        team_part = Participant(tournament_id=t.id, category_id=cat.id, name="Baseline Warriors")
+        db.session.add(team_part)
+        db.session.flush()
+
+        tm1 = TeamMember(
+            participant_id=team_part.id, player_id=p1.id, role="captain", tier="A", roster_order=1
+        )
+        tm2 = TeamMember(
+            participant_id=team_part.id, player_id=p2.id, role="member", tier="B", roster_order=2
+        )
+        db.session.add_all([tm1, tm2])
+        db.session.commit()
+
+        self.assertEqual(team_part.captain_name, "Rohan Bopanna")
+
+    def test_round_robin_standings_and_tiebreak_label(self):
+        """Verify Round Robin get_standings returns full stats and tiebreak labels."""
+        t = Tournament(name="RR Stats Test", url_slug="rr-stats-test", status="in_progress")
+        db.session.add(t)
+        db.session.flush()
+
+        cat = Category(
+            tournament_id=t.id, name="RR Stats League", format="round_robin", status="in_progress"
+        )
+        db.session.add(cat)
+        db.session.flush()
+
+        pA = Participant(tournament_id=t.id, category_id=cat.id, name="Asha")
+        pB = Participant(tournament_id=t.id, category_id=cat.id, name="Ben")
+        db.session.add_all([pA, pB])
+        db.session.commit()
+
+        m = Match(
+            tournament_id=t.id,
+            category_id=cat.id,
+            round=1,
+            match_number=1,
+            participant1_id=pA.id,
+            participant2_id=pB.id,
+            winner_id=pA.id,
+            score1="6-4, 6-4",
+            score2="4-6, 4-6",
+            status="completed",
+        )
+        db.session.add(m)
+        db.session.commit()
+
+        standings = RoundRobinFormat.calculate_final_rankings(cat, commit=False)
+        self.assertEqual(len(standings), 2)
+        self.assertEqual(standings[0]["participant"].name, "Asha")
+        self.assertEqual(standings[0]["wins"], 1)
+        self.assertEqual(standings[0]["played"], 1)
+        self.assertEqual(standings[0]["sets_won"], 2)
+        self.assertEqual(standings[0]["games_won"], 12)
