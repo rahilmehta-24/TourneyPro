@@ -84,7 +84,10 @@
 
         <!-- TOURNAMENT DURATION & OPERATING TIMINGS -->
         <div class="form-section">
-            <h2 class="form-section-title">📅 Tournament Duration &amp; Daily Operating Timings</h2>
+            <h2 class="form-section-title" style="display: flex; align-items: center; gap: 8px;">
+                <svg class="tp-icon" style="color: var(--accent-primary);"><use href="#icon-calendar"></use></svg>
+                <span>Tournament Duration &amp; Daily Operating Timings</span>
+            </h2>
             <p style="color: var(--text-secondary); font-size: 0.875rem; margin-top: -0.5rem; margin-bottom: 1.25rem;">
                 Specify what is the duration of the tournament along with the daily start and cutoff timings for each day. This ensures the <strong>Order of Play</strong> automatically arranges fixtures without congestion, court clashes, or scheduling chaos.
             </p>
@@ -128,7 +131,7 @@
 
                 <!-- Active Duration Summary -->
                 <div id="durationSummaryBadge" style="background: rgba(201, 165, 92, 0.16); border: 1px solid rgba(122, 95, 30, 0.35); border-radius: var(--radius-sm); padding: 0.55rem 0.85rem; display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-primary);">
-                    <span style="font-size: 1.1rem;">🗓️</span>
+                    <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-calendar"></use></svg>
                     <span id="durationSummaryText"><strong>2 Days Duration:</strong> Loading dates...</span>
                 </div>
             </div>
@@ -159,15 +162,17 @@
             <div id="dynamicDailyScheduleBox" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; margin-top: 0.5rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.65rem;">
                     <div>
-                        <h4 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 0.35rem;">
-                            ⏰ Operating Timings for Each Day (Order of Play Schedule Protection)
+                        <h4 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 0.45rem;">
+                            <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-clock"></use></svg>
+                            <span>Operating Timings for Each Day</span>
                         </h4>
                         <p style="margin: 0.2rem 0 0; font-size: 0.8rem; color: var(--text-secondary);">
                             Set exact start and cutoff times for each day of the duration so Order of Play schedules matches cleanly without chaos.
                         </p>
                     </div>
-                    <button type="button" class="btn btn-secondary" id="applyDefaultsBtn" style="font-size: 0.78rem; padding: 0.3rem 0.75rem; border-radius: var(--radius-sm);">
-                        🔄 Apply Default Timings to All Days
+                    <button type="button" class="btn btn-secondary" id="applyDefaultsBtn" style="font-size: 0.78rem; padding: 0.3rem 0.75rem; border-radius: var(--radius-sm); display: inline-flex; align-items: center; gap: 4px;">
+                        <svg class="tp-icon tp-icon-sm"><use href="#icon-refresh"></use></svg>
+                        <span>Apply Default Timings to All Days</span>
                     </button>
                 </div>
 
@@ -176,7 +181,7 @@
                 </div>
 
                 <div id="dailyScheduleEmptyPrompt" style="display: none; color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 1.25rem 0;">
-                    📅 Select Start Date and Duration above to view each tournament day's timings.
+                    Select Start Date and Duration above to view each tournament day's timings.
                 </div>
 
                 <input type="hidden" name="daily_operating_hours" id="dailyOperatingHoursJson">
@@ -185,9 +190,9 @@
 
         <div class="form-actions">
             <a href="{{ url_for('main.index') }}" class="btn btn-secondary">Cancel</a>
-            <button type="submit" class="btn btn-primary btn-large">
-                <span class="btn-icon">🚀</span>
-                Create Tournament
+            <button type="submit" class="btn btn-primary btn-large" style="display: inline-flex; align-items: center; gap: 6px;">
+                <svg class="tp-icon tp-icon-sm"><use href="#icon-plus"></use></svg>
+                <span>Create Tournament</span>
             </button>
         </div>
     </form>

@@ -634,6 +634,23 @@ def register_for_tournament(slug):
                 p2_obj.contact_number if p2_obj else partners_data.get(cat.id, {}).get("mobile")
             )
 
+            is_cat_doubles = ("Doubles" in cat.name or (cat.format and "doubles" in cat.format.lower()))
+            if is_cat_doubles:
+                if p2_id and p2_id == new_player.id:
+                    flash(f"Registration failed for {cat.name}: A player cannot partner with themselves in a doubles event.", "error")
+                    return redirect(url_for('tournament.register_tournament', slug=slug))
+                if p2_id:
+                    dup_reg = Participant.query.filter(
+                        Participant.category_id == cat.id,
+                        db.or_(
+                            Participant.player_id.in_([new_player.id, p2_id]),
+                            Participant.player2_id.in_([new_player.id, p2_id])
+                        )
+                    ).first()
+                    if dup_reg:
+                        flash(f"Registration failed for {cat.name}: One or both players are already registered in this doubles event.", "error")
+                        return redirect(url_for('tournament.register_tournament', slug=slug))
+
             cat_fee = cat.entry_fee or 0.0
             amount_due = (
                 cat_fee * 2

@@ -4,19 +4,22 @@ from datetime import datetime
 
 db = SQLAlchemy()
 
+
 class Tournament(db.Model):
-    __tablename__ = 'tournaments'
+    __tablename__ = "tournaments"
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     creator_name = db.Column(db.String(100))
     name = db.Column(db.String(200), nullable=False)
     url_slug = db.Column(db.String(200), unique=True, nullable=False)
     description = db.Column(db.Text)
     game_info = db.Column(db.String(200))
     format = db.Column(db.String(50))  # Legacy field, kept for backward compatibility
-    tournament_type = db.Column(db.String(20), default='single_stage')
-    status = db.Column(db.String(20), default='setup')  # setup, registration, in_progress, completed
+    tournament_type = db.Column(db.String(20), default="single_stage")
+    status = db.Column(
+        db.String(20), default="setup"
+    )  # setup, registration, in_progress, completed
     max_participants = db.Column(db.Integer)
     is_private = db.Column(db.Boolean, default=False)
     has_categories = db.Column(db.Boolean, default=False)  # True if using category system
@@ -25,107 +28,140 @@ class Tournament(db.Model):
     completed_at = db.Column(db.DateTime)
     num_sets = db.Column(db.Integer, default=1)  # 1, 2 or 3 sets
     games_per_set = db.Column(db.Integer, default=6)  # games to win a set
-    payment_upi_id = db.Column(db.String(100)) # Admin's UPI ID for manual payments
+    payment_upi_id = db.Column(db.String(100))  # Admin's UPI ID for manual payments
     registration_closes_at = db.Column(db.DateTime)
     # Academy Integration
-    academy_id = db.Column(db.Integer, db.ForeignKey('academies.id'), nullable=True)
+    academy_id = db.Column(db.Integer, db.ForeignKey("academies.id"), nullable=True)
     is_internal = db.Column(db.Boolean, default=False)
     logo_url = db.Column(db.String(255), nullable=True)
 
     # Court scheduling & Multi-day fields
-    start_date = db.Column(db.Date)                                    # Tournament start date
-    end_date = db.Column(db.Date)                                      # Tournament end date
+    start_date = db.Column(db.Date)  # Tournament start date
+    end_date = db.Column(db.Date)  # Tournament end date
     num_courts = db.Column(db.Integer, default=1)
     court_names = db.Column(db.Text)  # JSON or comma-separated list of court names
-    court_operating_start = db.Column(db.String(5), default='08:00')  # Default HH:MM e.g. '09:00'
-    court_operating_end = db.Column(db.String(5), default='20:00')    # Default HH:MM e.g. '19:00'
-    daily_operating_hours = db.Column(db.Text)                         # JSON mapping date -> {"start": "HH:MM", "end": "HH:MM"}
-    avg_match_duration = db.Column(db.Integer, default=60)             # minutes
-    court_buffer_minutes = db.Column(db.Integer, default=10)           # buffer between matches on same court
-    min_rest_minutes = db.Column(db.Integer, default=30)               # rest buffer between matches for multi-category player
-    max_matches_per_player_day = db.Column(db.Integer, default=3)      # safety match capping per day per player
+    court_operating_start = db.Column(db.String(5), default="08:00")  # Default HH:MM e.g. '09:00'
+    court_operating_end = db.Column(db.String(5), default="20:00")  # Default HH:MM e.g. '19:00'
+    daily_operating_hours = db.Column(
+        db.Text
+    )  # JSON mapping date -> {"start": "HH:MM", "end": "HH:MM"}
+    avg_match_duration = db.Column(db.Integer, default=60)  # minutes
+    court_buffer_minutes = db.Column(db.Integer, default=10)  # buffer between matches on same court
+    min_rest_minutes = db.Column(
+        db.Integer, default=30
+    )  # rest buffer between matches for multi-category player
+    max_matches_per_player_day = db.Column(
+        db.Integer, default=3
+    )  # safety match capping per day per player
 
     # Relationships
-    categories = db.relationship('Category', backref='tournament', lazy=True, cascade='all, delete-orphan')
-    participants = db.relationship('Participant', backref='tournament', lazy=True, cascade='all, delete-orphan')
-    matches = db.relationship('Match', backref='tournament', lazy=True, cascade='all, delete-orphan')
-    settings = db.relationship('TournamentSettings', backref='tournament', uselist=False, cascade='all, delete-orphan')
+    categories = db.relationship(
+        "Category", backref="tournament", lazy=True, cascade="all, delete-orphan"
+    )
+    participants = db.relationship(
+        "Participant", backref="tournament", lazy=True, cascade="all, delete-orphan"
+    )
+    matches = db.relationship(
+        "Match", backref="tournament", lazy=True, cascade="all, delete-orphan"
+    )
+    settings = db.relationship(
+        "TournamentSettings", backref="tournament", uselist=False, cascade="all, delete-orphan"
+    )
+
 
 class Category(db.Model):
-    __tablename__ = 'categories'
+    __tablename__ = "categories"
 
     id = db.Column(db.Integer, primary_key=True)
-    tournament_id = db.Column(db.Integer, db.ForeignKey('tournaments.id'), nullable=False)
+    tournament_id = db.Column(db.Integer, db.ForeignKey("tournaments.id"), nullable=False)
     name = db.Column(db.String(200), nullable=False)  # e.g., "Men's Singles", "Women's Doubles"
-    gender = db.Column(db.String(50), default='Unspecified')
-    age_category = db.Column(db.String(50), default='Unspecified')
-    format = db.Column(db.String(50), nullable=False)  # single_elimination, double_elimination, round_robin, group_stage
-    status = db.Column(db.String(20), default='setup')  # setup, in_progress, completed
+    gender = db.Column(db.String(50), default="Unspecified")
+    age_category = db.Column(db.String(50), default="Unspecified")
+    format = db.Column(
+        db.String(50), nullable=False
+    )  # single_elimination, double_elimination, round_robin, group_stage
+    status = db.Column(db.String(20), default="setup")  # setup, in_progress, completed
     max_participants = db.Column(db.Integer)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     started_at = db.Column(db.DateTime)
     completed_at = db.Column(db.DateTime)
     num_sets = db.Column(db.Integer, default=1)  # 1, 2 or 3 sets
     games_per_set = db.Column(db.Integer, default=6)  # games to win a set
-    entry_fee = db.Column(db.Float, default=0.0) # Entry fee per person
+    entry_fee = db.Column(db.Float, default=0.0)  # Entry fee per person
 
     # Group stage specific fields
     has_group_stage = db.Column(db.Boolean, default=False)
     num_groups = db.Column(db.Integer)
     teams_per_group = db.Column(db.Integer)
-    matches_per_team_pair = db.Column(db.Integer, default=1)  # Custom matches between teams in group
+    matches_per_team_pair = db.Column(
+        db.Integer, default=1
+    )  # Custom matches between teams in group
     qualifiers_per_group = db.Column(db.Integer)  # How many advance to knockout
     allow_lucky_losers = db.Column(db.Boolean, default=False)
-    group_structure_mode = db.Column(db.String(20), default='auto')  # 'auto' (recommend from N) or 'manual'
+    group_structure_mode = db.Column(
+        db.String(20), default="auto"
+    )  # 'auto' (recommend from N) or 'manual'
     max_players_per_team = db.Column(db.Integer)
     total_games = db.Column(db.Integer)
-    scoring_format = db.Column(db.String(20), default='games') # 'games' or 'points'
+    scoring_format = db.Column(db.String(20), default="games")  # 'games' or 'points'
     points_to_win = db.Column(db.Integer, default=11)
 
     # Court scheduling fields
-    start_date = db.Column(db.Date)                                    # Category start date
-    end_date = db.Column(db.Date)                                      # Category end date
-    start_time = db.Column(db.String(5), default='09:00')              # Default daily start HH:MM
-    end_time = db.Column(db.String(5), default='19:00')                # Default daily end HH:MM
-    daily_schedule = db.Column(db.Text)                                # JSON mapping date -> {"start": "HH:MM", "end": "HH:MM"}
+    start_date = db.Column(db.Date)  # Category start date
+    end_date = db.Column(db.Date)  # Category end date
+    start_time = db.Column(db.String(5), default="09:00")  # Default daily start HH:MM
+    end_time = db.Column(db.String(5), default="19:00")  # Default daily end HH:MM
+    daily_schedule = db.Column(db.Text)  # JSON mapping date -> {"start": "HH:MM", "end": "HH:MM"}
     num_courts = db.Column(db.Integer, default=1)
-    court_names = db.Column(db.Text)  # JSON or comma-separated list of court names e.g. 'Court 1, Court 2'
+    court_names = db.Column(
+        db.Text
+    )  # JSON or comma-separated list of court names e.g. 'Court 1, Court 2'
     start_date_time = db.Column(db.DateTime)
-    avg_match_duration = db.Column(db.Integer, default=60)             # minutes
-    preferred_start_day = db.Column(db.Integer, default=1)             # Day 1, Day 2, etc.
-    pin_finals_to_last_day = db.Column(db.Boolean, default=True)       # Keep final match on the concluding tournament day
+    avg_match_duration = db.Column(db.Integer, default=60)  # minutes
+    preferred_start_day = db.Column(db.Integer, default=1)  # Day 1, Day 2, etc.
+    pin_finals_to_last_day = db.Column(
+        db.Boolean, default=True
+    )  # Keep final match on the concluding tournament day
     draw_published = db.Column(db.Boolean, default=False, nullable=False)
 
     # Relationships
-    participants = db.relationship('Participant', backref='category', lazy=True, cascade='all, delete-orphan')
-    matches = db.relationship('Match', backref='category', lazy=True, cascade='all, delete-orphan')
-    groups = db.relationship('Group', backref='category', lazy=True, cascade='all, delete-orphan')
+    participants = db.relationship(
+        "Participant", backref="category", lazy=True, cascade="all, delete-orphan"
+    )
+    matches = db.relationship("Match", backref="category", lazy=True, cascade="all, delete-orphan")
+    groups = db.relationship("Group", backref="category", lazy=True, cascade="all, delete-orphan")
+
 
 class Group(db.Model):
-    __tablename__ = 'groups'
+    __tablename__ = "groups"
 
     id = db.Column(db.Integer, primary_key=True)
-    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey("categories.id"), nullable=False)
     name = db.Column(db.String(50), nullable=False)  # "Group A", "Group B", etc.
     start_time = db.Column(db.String(10), nullable=True)  # e.g. "09:00", "11:30"
     assigned_courts = db.Column(db.String(100), nullable=True)  # e.g. "Court 1, Court 2, Court 3"
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships
-    participants = db.relationship('Participant', backref='group', lazy=True)
-    matches = db.relationship('Match', backref='group', lazy=True)
+    participants = db.relationship("Participant", backref="group", lazy=True)
+    matches = db.relationship("Match", backref="group", lazy=True)
+
 
 class Participant(db.Model):
-    __tablename__ = 'participants'
+    __tablename__ = "participants"
 
     id = db.Column(db.Integer, primary_key=True)
-    tournament_id = db.Column(db.Integer, db.ForeignKey('tournaments.id'), nullable=False)
-    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'))  # Nullable for backward compatibility
-    group_id = db.Column(db.Integer, db.ForeignKey('groups.id'))  # For group stage
-    player_id = db.Column(db.Integer, db.ForeignKey('players.id')) # Link to global player
-    player2_id = db.Column(db.Integer, db.ForeignKey('players.id')) # Link to global player 2 for Doubles
-    partner_name = db.Column(db.String(100)) # Name of partner for Doubles (Self Registration)
-    partner_mobile = db.Column(db.String(20)) # Mobile of partner for Doubles (Self Registration)
+    tournament_id = db.Column(db.Integer, db.ForeignKey("tournaments.id"), nullable=False)
+    category_id = db.Column(
+        db.Integer, db.ForeignKey("categories.id")
+    )  # Nullable for backward compatibility
+    group_id = db.Column(db.Integer, db.ForeignKey("groups.id"))  # For group stage
+    player_id = db.Column(db.Integer, db.ForeignKey("players.id"))  # Link to global player
+    player2_id = db.Column(
+        db.Integer, db.ForeignKey("players.id")
+    )  # Link to global player 2 for Doubles
+    partner_name = db.Column(db.String(100))  # Name of partner for Doubles (Self Registration)
+    partner_mobile = db.Column(db.String(20))  # Mobile of partner for Doubles (Self Registration)
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120))
     mobile = db.Column(db.String(20))
@@ -143,74 +179,123 @@ class Participant(db.Model):
     group_points = db.Column(db.Integer, default=0)
 
     # Payment info
-    payment_status = db.Column(db.String(20), default='paid')
-    payment_method = db.Column(db.String(50), nullable=True) # online, cash, free
+    payment_status = db.Column(db.String(20), default="paid")
+    payment_method = db.Column(db.String(50), nullable=True)  # online, cash, free
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    @property
+    def captain_name(self):
+        """Returns the captain name for team participants or player name for individual participants."""
+        if hasattr(self, "team_members") and self.team_members:
+            cap = next(
+                (
+                    m.player.name
+                    for m in self.team_members
+                    if getattr(m, "role", "") == "captain" and m.player
+                ),
+                None,
+            )
+            if cap:
+                return cap
+            tier_a = next(
+                (
+                    m.player.name
+                    for m in self.team_members
+                    if getattr(m, "tier", "") == "A" and m.player
+                ),
+                None,
+            )
+            if tier_a:
+                return tier_a
+            if self.team_members[0].player:
+                return self.team_members[0].player.name
+        if hasattr(self, "player") and self.player:
+            return self.player.name
+        return None
+
+
 class Match(db.Model):
-    __tablename__ = 'matches'
+    __tablename__ = "matches"
 
     id = db.Column(db.Integer, primary_key=True)
-    tournament_id = db.Column(db.Integer, db.ForeignKey('tournaments.id'), nullable=False)
-    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'))  # Nullable for backward compatibility
-    group_id = db.Column(db.Integer, db.ForeignKey('groups.id'))  # For group stage matches
+    tournament_id = db.Column(db.Integer, db.ForeignKey("tournaments.id"), nullable=False)
+    category_id = db.Column(
+        db.Integer, db.ForeignKey("categories.id")
+    )  # Nullable for backward compatibility
+    group_id = db.Column(db.Integer, db.ForeignKey("groups.id"))  # For group stage matches
     round = db.Column(db.Integer, nullable=False)
     match_number = db.Column(db.Integer, nullable=False)
-    participant1_id = db.Column(db.Integer, db.ForeignKey('participants.id'))
-    participant2_id = db.Column(db.Integer, db.ForeignKey('participants.id'))
-    winner_id = db.Column(db.Integer, db.ForeignKey('participants.id'))
+    participant1_id = db.Column(db.Integer, db.ForeignKey("participants.id"))
+    participant2_id = db.Column(db.Integer, db.ForeignKey("participants.id"))
+    winner_id = db.Column(db.Integer, db.ForeignKey("participants.id"))
     score1 = db.Column(db.String(50))
     score2 = db.Column(db.String(50))
-    bracket_type = db.Column(db.String(20), default='main')  # main, winners, losers
-    match_type = db.Column(db.String(20), default='knockout')  # knockout, group_stage, round_robin
-    status = db.Column(db.String(20), default='pending')        # pending, in_progress, completed
+    bracket_type = db.Column(db.String(20), default="main")  # main, winners, losers
+    match_type = db.Column(db.String(20), default="knockout")  # knockout, group_stage, round_robin
+    status = db.Column(db.String(20), default="pending")  # pending, in_progress, completed
     scheduled_time = db.Column(db.DateTime)
-    scheduled_date = db.Column(db.Date)                        # Match calendar day
-    scheduled_end_time = db.Column(db.DateTime)                # Estimated finish time
-    is_not_before = db.Column(db.Boolean, default=False)       # True if match is 'Not Before (Followed By)'
-    court_name = db.Column(db.String(100))                     # e.g. "Court 1", assigned by scheduler
+    scheduled_date = db.Column(db.Date)  # Match calendar day
+    scheduled_end_time = db.Column(db.DateTime)  # Estimated finish time
+    is_not_before = db.Column(
+        db.Boolean, default=False
+    )  # True if match is 'Not Before (Followed By)'
+    court_name = db.Column(db.String(100))  # e.g. "Court 1", assigned by scheduler
     completed_at = db.Column(db.DateTime)
     lock_version = db.Column(db.Integer, default=1, nullable=False)
-    
+
     # Match-specific scoring overrides (only for knockout)
-    scoring_format = db.Column(db.String(20)) # 'games', 'points', or None to inherit
+    scoring_format = db.Column(db.String(20))  # 'games', 'points', or None to inherit
     num_sets = db.Column(db.Integer)
     games_per_set = db.Column(db.Integer)
     points_to_win = db.Column(db.Integer)
 
     # Rubber & sub-match hierarchy
-    parent_match_id = db.Column(db.Integer, db.ForeignKey('matches.id', ondelete='CASCADE'), nullable=True)
+    parent_match_id = db.Column(
+        db.Integer, db.ForeignKey("matches.id", ondelete="CASCADE"), nullable=True
+    )
     rubber_type = db.Column(db.String(20), nullable=True)  # 'singles', 'doubles_1', 'doubles_2'
-    rubber_number = db.Column(db.Integer, nullable=True)   # 1, 2, 3
+    rubber_number = db.Column(db.Integer, nullable=True)  # 1, 2, 3
 
     # Specific player assignments for the rubber
-    p1_player1_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=True)
-    p1_player2_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=True)
-    p2_player1_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=True)
-    p2_player2_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=True)
+    p1_player1_id = db.Column(db.Integer, db.ForeignKey("players.id"), nullable=True)
+    p1_player2_id = db.Column(db.Integer, db.ForeignKey("players.id"), nullable=True)
+    p2_player1_id = db.Column(db.Integer, db.ForeignKey("players.id"), nullable=True)
+    p2_player2_id = db.Column(db.Integer, db.ForeignKey("players.id"), nullable=True)
 
     # Relationships for participants
-    participant1 = db.relationship('Participant', foreign_keys=[participant1_id], backref='matches_as_p1')
-    participant2 = db.relationship('Participant', foreign_keys=[participant2_id], backref='matches_as_p2')
-    winner = db.relationship('Participant', foreign_keys=[winner_id], backref='matches_won')
+    participant1 = db.relationship(
+        "Participant", foreign_keys=[participant1_id], backref="matches_as_p1"
+    )
+    participant2 = db.relationship(
+        "Participant", foreign_keys=[participant2_id], backref="matches_as_p2"
+    )
+    winner = db.relationship("Participant", foreign_keys=[winner_id], backref="matches_won")
 
     # Sub-matches relationship and player rubber relationships
-    sub_matches = db.relationship('Match', backref=db.backref('parent_fixture', remote_side=[id]), cascade='all, delete-orphan', passive_deletes=True)
-    p1_player1 = db.relationship('Player', foreign_keys=[p1_player1_id])
-    p1_player2 = db.relationship('Player', foreign_keys=[p1_player2_id])
-    p2_player1 = db.relationship('Player', foreign_keys=[p2_player1_id])
-    p2_player2 = db.relationship('Player', foreign_keys=[p2_player2_id])
+    sub_matches = db.relationship(
+        "Match",
+        backref=db.backref("parent_fixture", remote_side=[id]),
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    p1_player1 = db.relationship("Player", foreign_keys=[p1_player1_id])
+    p1_player2 = db.relationship("Player", foreign_keys=[p1_player2_id])
+    p2_player1 = db.relationship("Player", foreign_keys=[p2_player1_id])
+    p2_player2 = db.relationship("Player", foreign_keys=[p2_player2_id])
 
     __table_args__ = (
-        db.Index('idx_matches_category_round_num', 'category_id', 'round', 'match_number'),
+        db.Index("idx_matches_category_round_num", "category_id", "round", "match_number"),
     )
 
+
 class TournamentSettings(db.Model):
-    __tablename__ = 'tournament_settings'
+    __tablename__ = "tournament_settings"
 
     id = db.Column(db.Integer, primary_key=True)
-    tournament_id = db.Column(db.Integer, db.ForeignKey('tournaments.id'), unique=True, nullable=False)
+    tournament_id = db.Column(
+        db.Integer, db.ForeignKey("tournaments.id"), unique=True, nullable=False
+    )
     allow_self_registration = db.Column(db.Boolean, default=False)
     require_check_in = db.Column(db.Boolean, default=False)
     allow_match_attachments = db.Column(db.Boolean, default=False)
@@ -219,24 +304,34 @@ class TournamentSettings(db.Model):
     custom_round_labels = db.Column(db.Text)  # JSON string
     registration_fields = db.Column(db.Text)  # JSON string
 
+
 class MatchAttachment(db.Model):
-    __tablename__ = 'match_attachments'
+    __tablename__ = "match_attachments"
 
     id = db.Column(db.Integer, primary_key=True)
-    match_id = db.Column(db.Integer, db.ForeignKey('matches.id'), nullable=False)
-    participant_id = db.Column(db.Integer, db.ForeignKey('participants.id'), nullable=False)
+    match_id = db.Column(db.Integer, db.ForeignKey("matches.id"), nullable=False)
+    participant_id = db.Column(db.Integer, db.ForeignKey("participants.id"), nullable=False)
     file_path = db.Column(db.String(500), nullable=False)
     uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    match = db.relationship('Match', backref=db.backref('attachments', cascade='all, delete-orphan'))
-    participant = db.relationship('Participant', backref=db.backref('attachments', cascade='all, delete-orphan'))
+    match = db.relationship(
+        "Match", backref=db.backref("attachments", cascade="all, delete-orphan")
+    )
+    participant = db.relationship(
+        "Participant", backref=db.backref("attachments", cascade="all, delete-orphan")
+    )
+
 
 class MatchScoreRevision(db.Model):
-    __tablename__ = 'match_score_revisions'
+    __tablename__ = "match_score_revisions"
 
     id = db.Column(db.Integer, primary_key=True)
-    match_id = db.Column(db.Integer, db.ForeignKey('matches.id', ondelete='CASCADE'), nullable=False)
-    edited_by_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    match_id = db.Column(
+        db.Integer, db.ForeignKey("matches.id", ondelete="CASCADE"), nullable=False
+    )
+    edited_by_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
     previous_score1 = db.Column(db.String(50), nullable=True)
     previous_score2 = db.Column(db.String(50), nullable=True)
     previous_winner_id = db.Column(db.Integer, nullable=True)
@@ -247,17 +342,20 @@ class MatchScoreRevision(db.Model):
     explanation = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    match = db.relationship('Match', backref=db.backref('score_revisions', cascade='all, delete-orphan'))
-    edited_by = db.relationship('User')
+    match = db.relationship(
+        "Match", backref=db.backref("score_revisions", cascade="all, delete-orphan")
+    )
+    edited_by = db.relationship("User")
+
 
 class User(db.Model):
-    __tablename__ = 'users'
+    __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
-    role = db.Column(db.String(20), default='user')  # 'superadmin', 'admin', 'user', 'player'
+    role = db.Column(db.String(20), default="user")  # 'superadmin', 'admin', 'user', 'player'
     admin_requested = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -269,23 +367,33 @@ class User(db.Model):
     email_verified_at = db.Column(db.DateTime, nullable=True)
     password_reset_token = db.Column(db.String(100), nullable=True)
     password_reset_expires_at = db.Column(db.DateTime, nullable=True)
-    registration_intent = db.Column(db.String(20), default='user')  # 'user', 'player'
+    registration_intent = db.Column(db.String(20), default="user")  # 'user', 'player'
     profile_completed = db.Column(db.Boolean, default=False)
     completion_percentage = db.Column(db.Integer, default=0)
-    account_status = db.Column(db.String(20), default='ACTIVE')  # 'ACTIVE', 'SUSPENDED', 'DEACTIVATED'
+    account_status = db.Column(
+        db.String(20), default="ACTIVE"
+    )  # 'ACTIVE', 'SUSPENDED', 'DEACTIVATED'
 
-    tournaments = db.relationship('Tournament', backref='owner', lazy=True)
-    players = db.relationship('Player', backref='owner', lazy=True)
-    devices = db.relationship('DeviceRegistration', backref='user', lazy=True, cascade='all, delete-orphan')
-    notifications = db.relationship('InAppNotification', backref='user', lazy=True, cascade='all, delete-orphan')
-    notification_preferences = db.relationship('UserNotificationPreferences', backref='user', uselist=False, cascade='all, delete-orphan')
+    tournaments = db.relationship("Tournament", backref="owner", lazy=True)
+    players = db.relationship("Player", backref="owner", lazy=True)
+    devices = db.relationship(
+        "DeviceRegistration", backref="user", lazy=True, cascade="all, delete-orphan"
+    )
+    notifications = db.relationship(
+        "InAppNotification", backref="user", lazy=True, cascade="all, delete-orphan"
+    )
+    notification_preferences = db.relationship(
+        "UserNotificationPreferences", backref="user", uselist=False, cascade="all, delete-orphan"
+    )
 
     def set_password(self, password):
         from werkzeug.security import generate_password_hash
+
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
         from werkzeug.security import check_password_hash
+
         return check_password_hash(self.password_hash, password)
 
     @property
@@ -294,17 +402,18 @@ class User(db.Model):
 
     @property
     def is_active(self):
-        return self.account_status == 'ACTIVE'
+        return self.account_status == "ACTIVE"
 
     @property
     def is_anonymous(self):
         return False
 
+
 class Player(db.Model):
-    __tablename__ = 'players'
+    __tablename__ = "players"
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     name = db.Column(db.String(100), nullable=False)
     registration_no = db.Column(db.String(100), nullable=True)
     dob = db.Column(db.Date, nullable=True)
@@ -312,7 +421,7 @@ class Player(db.Model):
     contact_number = db.Column(db.String(50), nullable=True)
     height = db.Column(db.String(50), nullable=True)
     weight = db.Column(db.String(50), nullable=True)
-    gender = db.Column(db.String(20), nullable=False, default='Male') # e.g. Male, Female, Other
+    gender = db.Column(db.String(20), nullable=False, default="Male")  # e.g. Male, Female, Other
     blood_group = db.Column(db.String(10), nullable=True)
     nationality = db.Column(db.String(100), nullable=True)
     address = db.Column(db.Text, nullable=True)
@@ -321,8 +430,10 @@ class Player(db.Model):
     registration_details = db.Column(db.Text, nullable=True)
     registration_date = db.Column(db.Date, nullable=True)
     registration_validity = db.Column(db.Date, nullable=True)
-    current_status = db.Column(db.String(50), default='Active')
-    age_category = db.Column(db.String(50), nullable=False, default='Open') # Canonical Age Category
+    current_status = db.Column(db.String(50), default="Active")
+    age_category = db.Column(
+        db.String(50), nullable=False, default="Open"
+    )  # Canonical Age Category
     avatar_url = db.Column(db.String(500), nullable=True)
     bio = db.Column(db.Text, nullable=True)
     total_points = db.Column(db.Float, default=0.0)
@@ -332,16 +443,20 @@ class Player(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Onboarding & Athletic profile extensions
-    profile_status = db.Column(db.String(20), default='incomplete')  # 'incomplete', 'complete'
+    profile_status = db.Column(db.String(20), default="incomplete")  # 'incomplete', 'complete'
     emergency_contact_name = db.Column(db.String(100), nullable=True)
     emergency_contact_phone = db.Column(db.String(20), nullable=True)
-    primary_sport = db.Column(db.String(50), default='Tennis')
+    primary_sport = db.Column(db.String(50), default="Tennis")
     skill_level = db.Column(db.String(20), nullable=True)
     preferred_competition_category = db.Column(db.String(50), nullable=True)
 
     # Relationships
-    tournament_records = db.relationship('PlayerTournamentRecord', backref='player', lazy=True, cascade='all, delete-orphan')
-    participants = db.relationship('Participant', foreign_keys='Participant.player_id', backref='player', lazy=True)
+    tournament_records = db.relationship(
+        "PlayerTournamentRecord", backref="player", lazy=True, cascade="all, delete-orphan"
+    )
+    participants = db.relationship(
+        "Participant", foreign_keys="Participant.player_id", backref="player", lazy=True
+    )
 
     @property
     def mobile(self):
@@ -355,16 +470,24 @@ class Player(db.Model):
     def age(self):
         if self.dob:
             from datetime import date
+
             today = date.today()
-            return today.year - self.dob.year - ((today.month, today.day) < (self.dob.month, self.dob.day))
+            return (
+                today.year
+                - self.dob.year
+                - ((today.month, today.day) < (self.dob.month, self.dob.day))
+            )
         return None
+
 
 def calculate_age_from_dob(dob):
     if not dob:
         return None
     from datetime import date
+
     today = date.today()
     return today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+
 
 def estimate_dob_from_age(age):
     if age is None:
@@ -372,121 +495,153 @@ def estimate_dob_from_age(age):
     try:
         age_int = int(age)
         from datetime import date
+
         today = date.today()
         return date(today.year - age_int, 1, 1)
     except (ValueError, TypeError):
         return None
 
+
 def determine_age_category(age=None, dob=None):
     from app.domain.constants import calculate_canonical_age_category
+
     if dob:
         return calculate_canonical_age_category(dob)
     if age is None:
-        return 'Open'
+        return "Open"
     try:
         age_int = int(age)
     except (ValueError, TypeError):
-        return 'Open'
+        return "Open"
 
     from datetime import date
+
     synthetic_dob = date(date.today().year - age_int, 1, 1)
     return calculate_canonical_age_category(synthetic_dob)
 
+
 class PlayerTournamentRecord(db.Model):
-    __tablename__ = 'player_tournament_records'
+    __tablename__ = "player_tournament_records"
 
     id = db.Column(db.Integer, primary_key=True)
-    player_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=False)
+    player_id = db.Column(db.Integer, db.ForeignKey("players.id"), nullable=False)
     tournament_name = db.Column(db.String(200), nullable=False)
-    level = db.Column(db.String(50), default='Regular') # Regular, State, National
-    round_reached = db.Column(db.String(50)) # Round 1, Round 2, QF, SF, Runner-up, Winner
+    level = db.Column(db.String(50), default="Regular")  # Regular, State, National
+    round_reached = db.Column(db.String(50))  # Round 1, Round 2, QF, SF, Runner-up, Winner
     points_earned = db.Column(db.Float, default=0.0)
     is_manual = db.Column(db.Boolean, default=False)
     date_recorded = db.Column(db.DateTime, default=datetime.utcnow)
 
+
 class PlayerCategoryTier(db.Model):
-    __tablename__ = 'player_category_tiers'
+    __tablename__ = "player_category_tiers"
 
     id = db.Column(db.Integer, primary_key=True)
-    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=False)
-    player_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey("categories.id"), nullable=False)
+    player_id = db.Column(db.Integer, db.ForeignKey("players.id"), nullable=False)
     tier = db.Column(db.String(10), nullable=False)  # 'A', 'B', 'C', 'D', 'E'
-    role = db.Column(db.String(20), default='player')  # 'captain', 'vice_captain', 'player'
+    role = db.Column(db.String(20), default="player")  # 'captain', 'vice_captain', 'player'
     is_drafted = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    player = db.relationship('Player', backref=db.backref('category_tiers', cascade='all, delete-orphan'))
-    category = db.relationship('Category', backref=db.backref('player_tiers', cascade='all, delete-orphan'))
+    player = db.relationship(
+        "Player", backref=db.backref("category_tiers", cascade="all, delete-orphan")
+    )
+    category = db.relationship(
+        "Category", backref=db.backref("player_tiers", cascade="all, delete-orphan")
+    )
+
 
 class TeamMember(db.Model):
-    __tablename__ = 'team_members'
+    __tablename__ = "team_members"
 
     id = db.Column(db.Integer, primary_key=True)
-    participant_id = db.Column(db.Integer, db.ForeignKey('participants.id'), nullable=False)
-    player_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=False)
-    role = db.Column(db.String(20), default='member')  # 'captain', 'vice_captain', 'member'
-    tier = db.Column(db.String(10))                    # 'A', 'B', 'C', 'D', 'E'
-    roster_order = db.Column(db.Integer, default=1)   # 1 to 5
+    participant_id = db.Column(db.Integer, db.ForeignKey("participants.id"), nullable=False)
+    player_id = db.Column(db.Integer, db.ForeignKey("players.id"), nullable=False)
+    role = db.Column(db.String(20), default="member")  # 'captain', 'vice_captain', 'member'
+    tier = db.Column(db.String(10))  # 'A', 'B', 'C', 'D', 'E'
+    roster_order = db.Column(db.Integer, default=1)  # 1 to 5
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    participant = db.relationship('Participant', backref=db.backref('team_members', cascade='all, delete-orphan'))
-    player = db.relationship('Player', backref=db.backref('team_memberships', cascade='all, delete-orphan'))
+    participant = db.relationship(
+        "Participant", backref=db.backref("team_members", cascade="all, delete-orphan")
+    )
+    player = db.relationship(
+        "Player", backref=db.backref("team_memberships", cascade="all, delete-orphan")
+    )
+
 
 class AuditLog(db.Model):
-    __tablename__ = 'audit_logs'
+    __tablename__ = "audit_logs"
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     action_type = db.Column(db.String(100), nullable=False)
     target_id = db.Column(db.Integer)
     target_name = db.Column(db.String(200))
     reason = db.Column(db.String(100), nullable=False)
     explanation = db.Column(db.Text)
-    details = db.Column(db.Text) # JSON diffs or additional metadata
+    details = db.Column(db.Text)  # JSON diffs or additional metadata
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    user = db.relationship('User', backref=db.backref('audit_logs', cascade='all, delete-orphan'), lazy=True)
+    user = db.relationship(
+        "User", backref=db.backref("audit_logs", cascade="all, delete-orphan"), lazy=True
+    )
+
 
 class Registration(db.Model):
-    __tablename__ = 'registrations'
+    __tablename__ = "registrations"
     __table_args__ = (
-        db.UniqueConstraint('tournament_id', 'category_id', 'player_id', name='uq_tournament_category_player'),
-        db.Index('idx_registrations_user_tourn', 'user_id', 'tournament_id'),
+        db.UniqueConstraint(
+            "tournament_id", "category_id", "player_id", name="uq_tournament_category_player"
+        ),
+        db.Index("idx_registrations_user_tourn", "user_id", "tournament_id"),
     )
 
     id = db.Column(db.Integer, primary_key=True)
-    tournament_id = db.Column(db.Integer, db.ForeignKey('tournaments.id'), nullable=False)
-    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    player_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=False)
-    player2_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=True)
+    tournament_id = db.Column(db.Integer, db.ForeignKey("tournaments.id"), nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey("categories.id"), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    player_id = db.Column(db.Integer, db.ForeignKey("players.id"), nullable=False)
+    player2_id = db.Column(db.Integer, db.ForeignKey("players.id"), nullable=True)
     partner_name = db.Column(db.String(100))
     partner_mobile = db.Column(db.String(20))
-    status = db.Column(db.String(20), default='pending') # pending, approved, rejected
-    payment_status = db.Column(db.String(20), default='pending') # pending, paid, refunded
+    status = db.Column(db.String(20), default="pending")  # pending, approved, rejected
+    payment_status = db.Column(db.String(20), default="pending")  # pending, paid, refunded
     amount_due = db.Column(db.Float, default=0.0)
-    transaction_id = db.Column(db.String(100)) # User's submitted UPI transaction ID
-    payment_method = db.Column(db.String(50), nullable=True) # online, cash, free
-    academy_id_snapshot = db.Column(db.Integer, db.ForeignKey('academies.id'), nullable=True) # Snapshot of player's academy at registration
+    transaction_id = db.Column(db.String(100))  # User's submitted UPI transaction ID
+    payment_method = db.Column(db.String(50), nullable=True)  # online, cash, free
+    academy_id_snapshot = db.Column(
+        db.Integer, db.ForeignKey("academies.id"), nullable=True
+    )  # Snapshot of player's academy at registration
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships
-    tournament = db.relationship('Tournament', backref=db.backref('registrations', cascade='all, delete-orphan'))
-    category = db.relationship('Category', backref=db.backref('registrations', cascade='all, delete-orphan'))
-    user = db.relationship('User', backref=db.backref('registrations', cascade='all, delete-orphan'))
-    player = db.relationship('Player', foreign_keys=[player_id])
-    player2 = db.relationship('Player', foreign_keys=[player2_id])
-    academy_snapshot = db.relationship('Academy', foreign_keys=[academy_id_snapshot])
+    tournament = db.relationship(
+        "Tournament", backref=db.backref("registrations", cascade="all, delete-orphan")
+    )
+    category = db.relationship(
+        "Category", backref=db.backref("registrations", cascade="all, delete-orphan")
+    )
+    user = db.relationship(
+        "User", backref=db.backref("registrations", cascade="all, delete-orphan")
+    )
+    player = db.relationship("Player", foreign_keys=[player_id])
+    player2 = db.relationship("Player", foreign_keys=[player2_id])
+    academy_snapshot = db.relationship("Academy", foreign_keys=[academy_id_snapshot])
+
 
 class Academy(db.Model):
-    __tablename__ = 'academies'
+    __tablename__ = "academies"
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
     url_slug = db.Column(db.String(200), unique=True, nullable=False)
     description = db.Column(db.Text)
-    owner_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    status = db.Column(db.String(20), default='PENDING', nullable=False) # PENDING, ACTIVE, REJECTED, SUSPENDED
+    owner_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    status = db.Column(
+        db.String(20), default="PENDING", nullable=False
+    )  # PENDING, ACTIVE, REJECTED, SUSPENDED
     address = db.Column(db.String(255), nullable=True)
     city = db.Column(db.String(100), nullable=True)
     state = db.Column(db.String(100), nullable=True)
@@ -497,38 +652,46 @@ class Academy(db.Model):
     website_url = db.Column(db.String(255), nullable=True)
     logo_url = db.Column(db.String(255), nullable=True)
     verified_at = db.Column(db.DateTime, nullable=True)
-    verified_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    verified_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships
-    owner = db.relationship('User', foreign_keys=[owner_id], backref='owned_academies')
-    verifier = db.relationship('User', foreign_keys=[verified_by_id])
-    tournaments = db.relationship('Tournament', backref='academy', lazy=True)
-    announcements = db.relationship('AcademyAnnouncement', backref='academy', lazy=True, cascade='all, delete-orphan')
-    members = db.relationship('AcademyMember', backref='academy', lazy=True, cascade='all, delete-orphan')
+    owner = db.relationship("User", foreign_keys=[owner_id], backref="owned_academies")
+    verifier = db.relationship("User", foreign_keys=[verified_by_id])
+    tournaments = db.relationship("Tournament", backref="academy", lazy=True)
+    announcements = db.relationship(
+        "AcademyAnnouncement", backref="academy", lazy=True, cascade="all, delete-orphan"
+    )
+    members = db.relationship(
+        "AcademyMember", backref="academy", lazy=True, cascade="all, delete-orphan"
+    )
+
 
 class AcademyMember(db.Model):
-    __tablename__ = 'academy_members'
+    __tablename__ = "academy_members"
 
     id = db.Column(db.Integer, primary_key=True)
-    academy_id = db.Column(db.Integer, db.ForeignKey('academies.id'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    role = db.Column(db.String(50), default='member')  # owner, admin, head_coach, coach, member
-    membership_status = db.Column(db.String(20), default='ACTIVE', nullable=False) # ACTIVE, INACTIVE, TRANSFERRED, REMOVED
+    academy_id = db.Column(db.Integer, db.ForeignKey("academies.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    role = db.Column(db.String(50), default="member")  # owner, admin, head_coach, coach, member
+    membership_status = db.Column(
+        db.String(20), default="ACTIVE", nullable=False
+    )  # ACTIVE, INACTIVE, TRANSFERRED, REMOVED
     joined_at = db.Column(db.DateTime, default=datetime.utcnow)
     left_at = db.Column(db.DateTime, nullable=True)
 
-    user = db.relationship('User', backref=db.backref('academy_memberships', cascade='all, delete-orphan'))
-
-    __table_args__ = (
-        db.Index('idx_academy_members_user_status', 'user_id', 'membership_status'),
+    user = db.relationship(
+        "User", backref=db.backref("academy_memberships", cascade="all, delete-orphan")
     )
 
+    __table_args__ = (db.Index("idx_academy_members_user_status", "user_id", "membership_status"),)
+
+
 class AcademyApplication(db.Model):
-    __tablename__ = 'academy_applications'
+    __tablename__ = "academy_applications"
 
     id = db.Column(db.Integer, primary_key=True)
-    applicant_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    applicant_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=True)
     address = db.Column(db.String(255), nullable=True)
@@ -539,62 +702,71 @@ class AcademyApplication(db.Model):
     contact_phone = db.Column(db.String(20), nullable=True)
     sports_offered = db.Column(db.Text, nullable=True)
     website_url = db.Column(db.String(255), nullable=True)
-    status = db.Column(db.String(20), default='PENDING', nullable=False)  # PENDING, APPROVED, REJECTED
-    reviewed_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    status = db.Column(
+        db.String(20), default="PENDING", nullable=False
+    )  # PENDING, APPROVED, REJECTED
+    reviewed_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     reviewed_at = db.Column(db.DateTime, nullable=True)
     rejection_reason = db.Column(db.Text, nullable=True)
-    academy_id = db.Column(db.Integer, db.ForeignKey('academies.id'), nullable=True)
+    academy_id = db.Column(db.Integer, db.ForeignKey("academies.id"), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships
-    applicant = db.relationship('User', foreign_keys=[applicant_id], backref='academy_applications')
-    reviewer = db.relationship('User', foreign_keys=[reviewed_by_id])
-    academy = db.relationship('Academy', foreign_keys=[academy_id])
+    applicant = db.relationship("User", foreign_keys=[applicant_id], backref="academy_applications")
+    reviewer = db.relationship("User", foreign_keys=[reviewed_by_id])
+    academy = db.relationship("Academy", foreign_keys=[academy_id])
+
 
 class AcademyAnnouncement(db.Model):
-    __tablename__ = 'academy_announcements'
+    __tablename__ = "academy_announcements"
 
     id = db.Column(db.Integer, primary_key=True)
-    academy_id = db.Column(db.Integer, db.ForeignKey('academies.id'), nullable=False)
-    author_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    academy_id = db.Column(db.Integer, db.ForeignKey("academies.id"), nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     title = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    author = db.relationship('User', backref='academy_announcements')
+    author = db.relationship("User", backref="academy_announcements")
 
 
 class TournamentStaffRole(enum.Enum):
-    MANAGER = "manager"      # Can edit schedule, categories, matches
-    OFFICIAL = "official"    # Can score matches & manage courts
-    SCORER = "scorer"        # Can only enter scores for assigned matches
+    MANAGER = "manager"  # Can edit schedule, categories, matches
+    OFFICIAL = "official"  # Can score matches & manage courts
+    SCORER = "scorer"  # Can only enter scores for assigned matches
 
 
 class TournamentStaff(db.Model):
-    __tablename__ = 'tournament_staff'
+    __tablename__ = "tournament_staff"
 
     id = db.Column(db.Integer, primary_key=True)
-    tournament_id = db.Column(db.Integer, db.ForeignKey('tournaments.id', ondelete='CASCADE'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=True)
-    role = db.Column(db.String(20), default='official', nullable=False)
+    tournament_id = db.Column(
+        db.Integer, db.ForeignKey("tournaments.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
+    role = db.Column(db.String(20), default="official", nullable=False)
     assigned_court = db.Column(db.String(50), nullable=True)
     access_pin = db.Column(db.String(6), nullable=True)
     pin_expires_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    tournament = db.relationship('Tournament', backref=db.backref('staff_members', cascade='all, delete-orphan'))
-    user = db.relationship('User', backref=db.backref('staff_assignments', cascade='all, delete-orphan'))
+    tournament = db.relationship(
+        "Tournament", backref=db.backref("staff_members", cascade="all, delete-orphan")
+    )
+    user = db.relationship(
+        "User", backref=db.backref("staff_assignments", cascade="all, delete-orphan")
+    )
 
     __table_args__ = (
-        db.UniqueConstraint('tournament_id', 'user_id', name='uq_tournament_user_staff'),
+        db.UniqueConstraint("tournament_id", "user_id", name="uq_tournament_user_staff"),
     )
 
 
 class DeviceRegistration(db.Model):
-    __tablename__ = 'device_registrations'
+    __tablename__ = "device_registrations"
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     device_token = db.Column(db.String(512), unique=True, nullable=False)
     platform = db.Column(db.String(20), nullable=False)  # 'android', 'ios'
     device_name = db.Column(db.String(100), nullable=True)
@@ -605,40 +777,42 @@ class DeviceRegistration(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     __table_args__ = (
-        db.Index('idx_device_reg_user', 'user_id'),
-        db.Index('idx_device_reg_token', 'device_token'),
+        db.Index("idx_device_reg_user", "user_id"),
+        db.Index("idx_device_reg_token", "device_token"),
     )
 
 
 class InAppNotification(db.Model):
-    __tablename__ = 'in_app_notifications'
+    __tablename__ = "in_app_notifications"
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     title = db.Column(db.String(150), nullable=False)
     body = db.Column(db.Text, nullable=False)
-    notification_type = db.Column(db.String(50), nullable=False)  # match_call, draw_published, registration_update, etc.
-    reference_type = db.Column(db.String(50), nullable=True)      # match, tournament, category, academy
+    notification_type = db.Column(
+        db.String(50), nullable=False
+    )  # match_call, draw_published, registration_update, etc.
+    reference_type = db.Column(db.String(50), nullable=True)  # match, tournament, category, academy
     reference_id = db.Column(db.Integer, nullable=True)
     is_read = db.Column(db.Boolean, default=False)
     read_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     __table_args__ = (
-        db.Index('idx_notifications_user_unread', 'user_id', 'is_read', 'created_at'),
+        db.Index("idx_notifications_user_unread", "user_id", "is_read", "created_at"),
     )
 
 
 class UserNotificationPreferences(db.Model):
-    __tablename__ = 'user_notification_preferences'
+    __tablename__ = "user_notification_preferences"
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), unique=True, nullable=False)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False
+    )
     notify_match_called = db.Column(db.Boolean, default=True)
     notify_draw_published = db.Column(db.Boolean, default=True)
     notify_registration_updates = db.Column(db.Boolean, default=True)
     notify_match_results = db.Column(db.Boolean, default=True)
     notify_academy_announcements = db.Column(db.Boolean, default=True)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-

@@ -16,7 +16,8 @@
         <div style="display: flex; gap: 0.5rem; align-items: center;">
             {% if category.status != 'setup' %}
             <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-secondary" style="padding: 0.4rem 0.9rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;">
-                🏆 View Live Bracket
+                <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-bracket"></use></svg>
+                <span>Live Bracket</span>
             </a>
             {% endif %}
         </div>
@@ -25,7 +26,7 @@
     <!-- Sibling Category Navigation -->
     {% if tournament.categories|length > 1 %}
     <div style="display: flex; gap: 0.5rem; overflow-x: auto; padding: 0.25rem 0 0.75rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); align-items: center;">
-        <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; margin-right: 0.25rem;">Category:</span>
+        <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; margin-right: 0.25rem;">Division:</span>
         {% for cat in tournament.categories %}
         <a href="{{ url_for('category.manage_category', slug=tournament.url_slug, category_id=cat.id) }}" class="btn btn-sm {% if cat.id == category.id %}btn-primary{% else %}btn-secondary{% endif %}" style="border-radius: 9999px; white-space: nowrap; padding: 0.3rem 0.85rem; font-size: 0.82rem; font-weight: {% if cat.id == category.id %}600{% else %}500{% endif %};">
             {{ cat.name }} <span class="status-badge status-{{ cat.status }}" style="font-size: 0.7rem; padding: 0.1rem 0.4rem; margin-left: 0.25rem;">{{ cat.status.title() }}</span>
@@ -39,8 +40,9 @@
         <div>
             <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
                 <h1 style="margin: 0; font-size: 1.75rem; font-weight: 700; color: var(--text-primary);">{{ category.name }}</h1>
-                <button type="button" class="btn btn-secondary btn-small rename-category-btn" title="Rename Category" data-category-id="{{ category.id }}" data-category-name="{{ category.name | e }}" style="padding: 0.25rem 0.55rem; font-size: 0.8rem; border-radius: var(--radius-sm);">
-                    ✏️ Rename
+                <button type="button" class="btn btn-secondary btn-small rename-category-btn" title="Rename Category" data-category-id="{{ category.id }}" data-category-name="{{ category.name | e }}" style="padding: 0.25rem 0.55rem; font-size: 0.8rem; border-radius: var(--radius-sm); display: inline-flex; align-items: center; gap: 0.3rem;">
+                    <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-edit"></use></svg>
+                    <span>Rename</span>
                 </button>
                 <span class="status-badge status-{{ category.status }}" style="padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">
                     {{ category.status.replace('_', ' ').title() }}
@@ -53,32 +55,35 @@
             <!-- Sleek 1-line Category Stage Stepper -->
             <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.65rem; font-size: 0.78rem;">
                 <span style="color: var(--accent-success); font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem;">
-                    ✓ 1. Rules
+                    <svg class="tp-icon tp-icon-sm"><use href="#icon-check"></use></svg>
+                    <span>1. Rules</span>
                 </span>
-                <span style="color: var(--text-muted); opacity: 0.6;">→</span>
+                <span style="color: var(--text-muted); opacity: 0.5;">→</span>
                 <span style="color: {% if participants|length >= 2 %}var(--accent-success){% elif category.status == 'setup' %}var(--accent-primary){% else %}var(--text-muted){% endif %}; font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem;">
-                    {% if participants|length >= 2 %}✓{% else %}2.{% endif %} Players ({{ participants|length }})
+                    {% if participants|length >= 2 %}<svg class="tp-icon tp-icon-sm"><use href="#icon-check"></use></svg>{% else %}2.{% endif %} Players ({{ participants|length }})
                 </span>
-                <span style="color: var(--text-muted); opacity: 0.6;">→</span>
+                <span style="color: var(--text-muted); opacity: 0.5;">→</span>
                 <span style="color: {% if category.status in ['in_progress', 'completed'] %}var(--accent-success){% elif category.status == 'setup' and participants|length >= 2 %}var(--accent-primary){% else %}var(--text-muted){% endif %}; font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem;">
-                    {% if category.status in ['in_progress', 'completed'] %}✓{% else %}3.{% endif %} Bracket
+                    {% if category.status in ['in_progress', 'completed'] %}<svg class="tp-icon tp-icon-sm"><use href="#icon-check"></use></svg>{% else %}3.{% endif %} Bracket
                 </span>
-                <span style="color: var(--text-muted); opacity: 0.6;">→</span>
+                <span style="color: var(--text-muted); opacity: 0.5;">→</span>
                 <span style="color: {% if category.status == 'completed' %}var(--accent-success){% elif category.status == 'in_progress' %}var(--accent-primary){% else %}var(--text-muted){% endif %}; font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem;">
-                    {% if category.status == 'completed' %}✓{% else %}4.{% endif %} Live & Finals
+                    {% if category.status == 'completed' %}<svg class="tp-icon tp-icon-sm"><use href="#icon-check"></use></svg>{% else %}4.{% endif %} Live & Finals
                 </span>
             </div>
         </div>
 
         <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-            <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 0.4rem 0.85rem; border-radius: var(--radius-md); font-size: 0.85rem; color: var(--text-secondary);">
-                🏅 <strong>{{ formats[category.format].name }}</strong>
+            <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 0.4rem 0.85rem; border-radius: var(--radius-md); font-size: 0.85rem; color: var(--text-secondary); display: inline-flex; align-items: center; gap: 6px;">
+                <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-trophy"></use></svg>
+                <strong>{{ formats[category.format].name }}</strong>
+            </div>
+            <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 0.4rem 0.85rem; border-radius: var(--radius-md); font-size: 0.85rem; color: var(--text-secondary); display: inline-flex; align-items: center; gap: 6px;">
+                <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-users"></use></svg>
+                <strong class="tabular-nums">{{ participants|length }}</strong>{% if category.max_participants %} / <span class="tabular-nums">{{ category.max_participants }}</span>{% endif %} Players
             </div>
             <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 0.4rem 0.85rem; border-radius: var(--radius-md); font-size: 0.85rem; color: var(--text-secondary);">
-                👥 <strong>{{ participants|length }}</strong>{% if category.max_participants %} / {{ category.max_participants }}{% endif %} Players
-            </div>
-            <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 0.4rem 0.85rem; border-radius: var(--radius-md); font-size: 0.85rem; color: var(--text-secondary);">
-                💰 <strong>{% if category.entry_fee > 0 %}₹{{ category.entry_fee }}{% else %}Free Entry{% endif %}</strong>
+                <strong>{% if category.entry_fee > 0 %}<span class="tabular-nums">₹{{ category.entry_fee }}</span>{% else %}Free Entry{% endif %}</strong>
             </div>
         </div>
     </div>
@@ -91,14 +96,17 @@
     <!-- Navigation Tabs: Players & Seeding VS Rules & Format -->
     <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; flex-wrap: wrap;">
         <button type="button" id="tabBtnPlayers" onclick="switchCategoryTab('players')" style="padding: 0.55rem 1.25rem; font-size: 0.9rem; font-weight: 600; border: none; background: var(--accent-primary); color: white; border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 0.4rem;">
-            👥 Players &amp; Seeds ({{ participants|length }})
+            <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-users"></use></svg>
+            <span>Entrants &amp; Seeds ({{ participants|length }})</span>
         </button>
         <button type="button" id="tabBtnRules" onclick="switchCategoryTab('rules')" style="padding: 0.55rem 1.25rem; font-size: 0.9rem; font-weight: 600; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-secondary); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 0.4rem;">
-            ⚙️ Category Rules &amp; Format
+            <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-settings"></use></svg>
+            <span>Division Rules &amp; Format</span>
         </button>
         {% if category.format == 'group_stage' or (category.max_players_per_team and category.max_players_per_team > 1) %}
-        <a href="{{ url_for('category.team_draft_view', slug=tournament.url_slug, category_id=category.id) }}" style="padding: 0.55rem 1.25rem; font-size: 0.9rem; font-weight: 700; border: 1px solid rgba(122, 95, 30, 0.4); background: rgba(201, 165, 92, 0.18); color: #7A5F1E; border-radius: var(--radius-md); text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; transition: all 0.15s;">
-            🎪 Team Draft &amp; Tiers Board
+        <a href="{{ url_for('category.team_draft_view', slug=tournament.url_slug, category_id=category.id) }}" style="padding: 0.55rem 1.25rem; font-size: 0.9rem; font-weight: 700; border: 1px solid rgba(122, 95, 30, 0.4); background: rgba(201, 165, 92, 0.18); color: var(--accent-secondary-text); border-radius: var(--radius-md); text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; transition: all 0.15s;">
+            <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-grid"></use></svg>
+            <span>Team Draft &amp; Tiers</span>
         </a>
         {% endif %}
     </div>
@@ -112,20 +120,18 @@
             <div class="card" style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 1.5rem; border: 1px solid var(--border-color);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
                     <h3 style="margin: 0; font-size: 1.15rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
-                        {% if category.status == 'setup' %}
-                        ➕ Register Player / Team
-                        {% else %}
-                        ➕ Add Late Player / Team
-                        {% endif %}
+                        <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-plus"></use></svg>
+                        <span>{% if category.status == 'setup' %}Register Entrant{% else %}Add Late Entrant{% endif %}</span>
                     </h3>
                     {% if category.status != 'setup' %}
-                    <span style="font-size: 0.75rem; background: rgba(201, 165, 92, 0.18); color: #7A5F1E; padding: 0.2rem 0.5rem; border-radius: 9999px; font-weight: 600;">Late Entry</span>
+                    <span style="font-size: 0.75rem; background: rgba(201, 165, 92, 0.18); color: var(--accent-secondary-text); padding: 0.2rem 0.5rem; border-radius: 9999px; font-weight: 600;">Late Entry</span>
                     {% endif %}
                 </div>
 
                 {% if category.status != 'setup' %}
-                <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.85rem; background: rgba(15, 61, 46, 0.08); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid rgba(15, 61, 46, 0.22);">
-                    💡 <strong>Late Addition:</strong> Player profile will be auto-created and enrolled into this category roster. To re-seed or regenerate bracket with this player, use "Reset Category" below.
+                <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.85rem; background: rgba(15, 61, 46, 0.08); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid rgba(15, 61, 46, 0.22); display: flex; align-items: flex-start; gap: 0.4rem;">
+                    <svg class="tp-icon tp-icon-sm" style="flex-shrink: 0; margin-top: 0.1rem;" aria-hidden="true"><use href="#icon-alert"></use></svg>
+                    <span><strong>Late Addition:</strong> Player profile will be enrolled into this division roster. To re-seed or regenerate bracket with this player, use "Reset Category" below.</span>
                 </div>
                 {% endif %}
 
@@ -163,7 +169,10 @@
 
                     {% if category.format in ['doubles_elimination', 'doubles_round_robin'] or 'Doubles' in category.name %}
                     <div style="margin-top: 0.5rem; padding-top: 0.75rem; border-top: 1px dashed var(--border-color);">
-                        <h4 style="margin: 0 0 0.5rem; font-size: 0.92rem; color: var(--text-primary); font-weight: 700;">👥 Partner Details</h4>
+                        <h4 style="margin: 0 0 0.5rem; font-size: 0.92rem; color: var(--text-primary); font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                            <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-users"></use></svg>
+                            <span>Partner Details</span>
+                        </h4>
                         <div class="form-group" style="margin-bottom: 0.75rem;">
                             <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Partner Full Name *</label>
                             <input type="text" name="partner_name" class="form-input" minlength="2" maxlength="100" placeholder="Partner full name" required style="width: 100%;">
@@ -191,19 +200,23 @@
             <div class="card" style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 1.5rem; border: 1px solid var(--border-color);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
                     <h3 style="margin: 0; font-size: 1.15rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
-                        👥 Registered Players <span style="background: var(--bg-secondary); padding: 0.15rem 0.55rem; border-radius: 9999px; font-size: 0.8rem; color: var(--text-secondary); border: 1px solid var(--border-color);">{{ participants|length }}</span>
+                        <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-users"></use></svg>
+                        <span>Registered Entrants</span> <span style="background: var(--bg-secondary); padding: 0.15rem 0.55rem; border-radius: 9999px; font-size: 0.8rem; color: var(--text-secondary); border: 1px solid var(--border-color);">{{ participants|length }}</span>
                     </h3>
                     {% if category.status == 'setup' and participants %}
                     <form id="inlineSeedingForm" method="POST" action="{{ url_for('category.manage_seeding', slug=tournament.url_slug, category_id=category.id) }}" style="display: none;"></form>
                     <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
-                        <button type="submit" form="inlineSeedingForm" class="btn btn-primary" style="font-size: 0.8rem; padding: 0.3rem 0.75rem; border-radius: var(--radius-sm); font-weight: 600;">
-                            💾 Save Seeds
+                        <button type="submit" form="inlineSeedingForm" class="btn btn-primary" style="font-size: 0.8rem; padding: 0.3rem 0.75rem; border-radius: var(--radius-sm); font-weight: 600; display: inline-flex; align-items: center; gap: 0.3rem;">
+                            <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-save"></use></svg>
+                            <span>Save Seeds</span>
                         </button>
-                        <button type="button" onclick="autoAssignSeeds()" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.3rem 0.65rem; border-radius: var(--radius-sm);" title="Assign seeds 1 to N in order">
-                            ⚡ Auto 1..N
+                        <button type="button" onclick="autoAssignSeeds()" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.3rem 0.65rem; border-radius: var(--radius-sm); display: inline-flex; align-items: center; gap: 0.3rem;" title="Assign seeds 1 to N in order">
+                            <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-zap"></use></svg>
+                            <span>Auto 1..N</span>
                         </button>
-                        <button type="button" onclick="clearAllSeeds()" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.3rem 0.65rem; border-radius: var(--radius-sm);" title="Clear all seeds">
-                            ✕ Clear
+                        <button type="button" onclick="clearAllSeeds()" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.3rem 0.65rem; border-radius: var(--radius-sm); display: inline-flex; align-items: center; gap: 0.3rem;" title="Clear all seeds">
+                            <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-x"></use></svg>
+                            <span>Clear</span>
                         </button>
                     </div>
                     {% endif %}
@@ -245,8 +258,9 @@
                                     <form method="POST" style="display: inline;" class="requires-audit" data-audit-action="Delete Participant">
                                         <input type="hidden" name="action" value="delete_participant">
                                         <input type="hidden" name="participant_id" value="{{ participant.id }}">
-                                        <button type="submit" style="background: none; border: none; color: var(--accent-danger); cursor: pointer; font-size: 0.8rem; padding: 0; font-weight: 600;" title="Remove player">
-                                            🗑️ Remove
+                                        <button type="submit" style="background: none; border: none; color: var(--accent-danger); cursor: pointer; font-size: 0.8rem; padding: 0; font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem;" title="Remove entrant">
+                                            <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-trash-2"></use></svg>
+                                            <span>Remove</span>
                                         </button>
                                     </form>
                                 </td>
@@ -261,8 +275,9 @@
                 <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
                     <form method="POST" style="display: inline;">
                         <input type="hidden" name="action" value="start_category">
-                        <button type="submit" class="btn btn-primary" style="background: var(--accent-success); border-color: var(--accent-success); font-size: 0.85rem; padding: 0.45rem 1rem; font-weight: 600;">
-                            🚀 Launch Category Bracket
+                        <button type="submit" class="btn btn-primary" style="font-size: 0.85rem; padding: 0.45rem 1rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem;">
+                            <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-bracket"></use></svg>
+                            <span>Generate Draw Bracket</span>
                         </button>
                     </form>
                 </div>
@@ -270,9 +285,11 @@
 
                 {% else %}
                 <div style="text-align: center; padding: 3rem 1rem; color: var(--text-muted);">
-                    <div style="font-size: 2.5rem; margin-bottom: 0.5rem; opacity: 0.5;">🎾</div>
-                    <p style="font-size: 1rem; font-weight: 600; margin-bottom: 0.25rem; color: var(--text-primary);">No players registered yet</p>
-                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0;">Add players above to prepare this category.</p>
+                    <div style="width: 52px; height: 52px; border-radius: 50%; background: var(--bg-secondary); border: 1px solid var(--border-color); display: inline-flex; align-items: center; justify-content: center; margin: 0 auto 0.75rem; color: var(--text-muted);">
+                        <svg class="tp-icon" style="width: 26px; height: 26px;" aria-hidden="true"><use href="#icon-tennis"></use></svg>
+                    </div>
+                    <p style="font-size: 1rem; font-weight: 600; margin-bottom: 0.25rem; color: var(--text-primary);">No entrants registered yet</p>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0;">Add players above to seed and prepare this division draw.</p>
                 </div>
                 {% endif %}
             </div>
@@ -282,8 +299,9 @@
     <!-- TAB 2: RULES & FORMAT -->
     <div id="tabContentRules" style="display: none;">
         <div class="card" style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 1.75rem; border: 1px solid var(--border-color); max-width: 800px; margin: 0 auto;">
-            <h3 style="margin: 0 0 1.25rem; font-size: 1.25rem; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 0.65rem;">
-                ⚙️ Category Rules &amp; Format Configuration
+            <h3 style="margin: 0 0 1.25rem; font-size: 1.25rem; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 0.65rem; display: flex; align-items: center; gap: 0.5rem;">
+                <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-settings"></use></svg>
+                <span>Division Rules &amp; Format Configuration</span>
             </h3>
 
             <form method="POST" style="display: flex; flex-direction: column; gap: 1rem;">
@@ -310,9 +328,9 @@
                 <div class="form-group" style="margin: 0;">
                     <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Competition Format *</label>
                     <select id="format" name="format" class="form-input" required style="width: 100%;" onchange="toggleGroupStageFields()">
-                        <option value="single_elimination" {% if category.format in ['single_elimination', 'doubles_elimination'] %}selected{% endif %}>🏆 Knockout (Single Elimination)</option>
-                        <option value="group_stage" {% if category.format == 'group_stage' %}selected{% endif %}>🎪 Group Stage + Knockout</option>
-                        <option value="round_robin" {% if category.format in ['round_robin', 'doubles_round_robin'] %}selected{% endif %}>🔄 Round Robin (League)</option>
+                        <option value="single_elimination" {% if category.format in ['single_elimination', 'doubles_elimination'] %}selected{% endif %}>Knockout (Single Elimination)</option>
+                        <option value="group_stage" {% if category.format == 'group_stage' %}selected{% else %}disabled style="color: var(--text-muted);"{% endif %}>Group Stage + Knockout {% if category.format != 'group_stage' %}(Under Development — Coming Soon){% endif %}</option>
+                        <option value="round_robin" {% if category.format in ['round_robin', 'doubles_round_robin'] %}selected{% endif %}>Round Robin (League)</option>
                     </select>
                 </div>
 
@@ -412,8 +430,9 @@
                 <!-- Category Dates & Daily Operating Hours (Item 5) -->
                 <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-                        <span style="font-size: 0.9rem; font-weight: 700; color: var(--text-primary);">
-                            📅 Category Dates &amp; Daily Operating Hours
+                        <span style="font-size: 0.9rem; font-weight: 700; color: var(--text-primary); display: inline-flex; align-items: center; gap: 6px;">
+                            <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-calendar"></use></svg>
+                            <span>Category Dates &amp; Daily Operating Hours</span>
                         </span>
                         <span style="font-size: 0.75rem; color: var(--text-muted); background: var(--bg-card); padding: 0.15rem 0.5rem; border-radius: 9999px;">
                             Order of Play Scheduling
@@ -451,8 +470,9 @@
                     <div id="manageSpannedDatesContainer" style="border-top: 1px solid var(--border-color); padding-top: 0.65rem;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.4rem;">
                             <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">Daily Operating Times per Date:</span>
-                            <button type="button" class="btn btn-secondary btn-small" onclick="applyManageCatDefaultTimes()" style="font-size: 0.72rem; padding: 0.15rem 0.5rem;">
-                                ⚡ Sync Defaults to All Days
+                            <button type="button" class="btn btn-secondary btn-small" onclick="applyManageCatDefaultTimes()" style="font-size: 0.72rem; padding: 0.15rem 0.5rem; display: inline-flex; align-items: center; gap: 0.25rem;">
+                                <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-zap"></use></svg>
+                                <span>Sync Defaults to All Days</span>
                             </button>
                         </div>
                         <div id="manageSpannedDatesList" style="display: flex; flex-direction: column; gap: 0.4rem;">
@@ -461,8 +481,9 @@
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary" style="margin-top: 0.75rem; padding: 0.75rem; font-weight: 600; width: 100%;">
-                    💾 Save Category Settings
+                <button type="submit" class="btn btn-primary" style="margin-top: 0.75rem; padding: 0.75rem; font-weight: 600; width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;">
+                    <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-save"></use></svg>
+                    <span>Save Division Settings</span>
                 </button>
             </form>
         </div>
@@ -473,7 +494,10 @@
     <div style="margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
         <div style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: var(--radius-md); padding: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
             <div>
-                <h4 style="margin: 0; color: var(--accent-danger); font-size: 0.95rem; font-weight: 700;">⚠️ Reset Category to Setup</h4>
+                <h4 style="margin: 0; color: var(--accent-danger); font-size: 0.95rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem;">
+                    <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-alert"></use></svg>
+                    <span>Reset Division to Setup</span>
+                </h4>
                 <p style="margin: 0.25rem 0 0; color: var(--text-secondary); font-size: 0.85rem;">
                     Resets bracket and matches for this category so you can adjust format or participants.
                 </p>
@@ -492,8 +516,9 @@
 <!-- RENAME CATEGORY MODAL -->
 <div id="renameCategoryModal" role="dialog" aria-modal="true" style="display: none; position: fixed; inset: 0; background: rgba(11, 43, 32, 0.52); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 1rem;">
     <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-top: 4px solid var(--accent-secondary); border-radius: var(--radius-lg); width: 100%; max-width: 440px; padding: 1.5rem; box-shadow: var(--shadow-md);">
-        <h3 style="margin: 0 0 0.5rem; font-size: 1.2rem; color: var(--text-primary); font-weight: 700;">
-            ✏️ Rename Category
+        <h3 style="margin: 0 0 0.5rem; font-size: 1.2rem; color: var(--text-primary); font-weight: 700; display: flex; align-items: center; gap: 0.4rem;">
+            <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-edit"></use></svg>
+            <span>Rename Division</span>
         </h3>
         <p style="margin: 0 0 1.25rem; font-size: 0.85rem; color: var(--text-secondary);">
             Enter a new name for this category.

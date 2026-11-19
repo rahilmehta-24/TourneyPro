@@ -111,17 +111,23 @@ def calculate_combined_round_robin_standings(category_id):
     """
     For Round Robin categories that do NOT have a knockout stage,
     the final rankings are determined by taking all participants from all groups,
-    and sorting them by their total group_points, group_wins, and manual_seed.
-    This sets final_rank on the Participant objects.
+    and sorting them by matches won (Priority 1), H2H, mini-league set/game difference,
+    points, and seed. This sets final_rank on the Participant objects.
     """
+    from app.domain.models import Category
+    from app.services.format_engine.round_robin.logic import RoundRobinFormat
+
+    category = Category.query.get(category_id)
+    if category:
+        RoundRobinFormat.calculate_final_rankings(category)
+        return Participant.query.filter_by(category_id=category_id).order_by(Participant.final_rank).all()
+
     participants = Participant.query.filter_by(category_id=category_id).all()
-    
-    # Sort participants by points (desc), wins (desc), and seed (asc for priority)
     sorted_participants = sorted(
         participants,
         key=lambda p: (
-            p.group_points or 0,
             p.group_wins or 0,
+            p.group_points or 0,
             -(p.manual_seed or 9999)
         ),
         reverse=True

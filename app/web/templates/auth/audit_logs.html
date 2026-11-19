@@ -10,7 +10,10 @@
                 ← Back to User Management
             </a>
             <div class="title-wrapper">
-                <h1>🛡️ System Audit Logs</h1>
+                <h1 style="display: flex; align-items: center; gap: 8px;">
+                    <svg class="tp-icon" style="color: var(--accent-primary);"><use href="#icon-shield"></use></svg>
+                    <span>System Audit Logs</span>
+                </h1>
             </div>
             <div class="meta-row">
                 <span class="meta-item">Tracking sensitive actions and modifications across the platform</span>
@@ -83,7 +86,9 @@
                 
             {% else %}
                 <div style="padding: 3rem; text-align: center; color: var(--text-muted);">
-                    <div style="font-size: 3rem; margin-bottom: 1rem;">📋</div>
+                    <div style="margin-bottom: 1rem; color: var(--text-muted); opacity: 0.5;">
+                        <svg class="tp-icon" style="width: 44px; height: 44px;"><use href="#icon-clipboard"></use></svg>
+                    </div>
                     <h3>No Audit Logs Found</h3>
                     <p>No sensitive actions have been recorded yet.</p>
                 </div>

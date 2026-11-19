@@ -51,7 +51,9 @@
     </div>
     {% else %}
     <div class="empty-state-card text-center py-5">
-        <div class="empty-state-icon fs-1 mb-3" aria-hidden="true">🏫</div>
+        <div class="empty-state-icon fs-1 mb-3" aria-hidden="true" style="color: var(--text-muted); opacity: 0.5;">
+            <svg class="tp-icon" style="width: 44px; height: 44px;"><use href="#icon-landmark"></use></svg>
+        </div>
         <h3 class="empty-state-title">No Active Academies Found</h3>
         <p class="empty-state-desc text-muted">Join or register sports academies to manage tournaments and member development.</p>
         {% if g.current_user %}

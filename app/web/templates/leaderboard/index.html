@@ -12,19 +12,23 @@
         <div>
             <h1 style="display: flex; align-items: center; gap: 0.5rem;">
                 Player Leaderboard 
-                <button type="button" onclick="document.getElementById('pointsModal').style.display='flex'" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; color: var(--accent-primary); padding: 0 0.25rem;" title="View Points Distribution" aria-label="View Points Distribution">ℹ️</button>
+                <button type="button" onclick="document.getElementById('pointsModal').style.display='flex'" style="background: none; border: none; cursor: pointer; color: var(--accent-primary); padding: 0 0.25rem; display: inline-flex; align-items: center;" title="View Points Distribution" aria-label="View Points Distribution"><svg class="tp-icon tp-icon-sm"><use href="#icon-alert"></use></svg></button>
             </h1>
             <p class="subtitle">Rankings across all categories and genders</p>
         </div>
         <div style="display: flex; align-items: center;">
             {% if current_user and current_user.role == 'superadmin' %}
             <form method="POST" action="{{ url_for('leaderboard.reset_leaderboard') }}" style="margin-right: 1rem; margin-bottom: 0;" onsubmit="return confirm('WARNING: This will delete ALL players and their tournament points completely! Are you absolutely sure?');">
-                <button type="submit" class="btn btn-outline-danger" style="border: 1px solid var(--accent-danger); background: transparent; color: var(--accent-danger); padding: 0.5rem 1rem; font-size: 0.85rem; font-weight: 600;">⚠️ Reset Leaderboard</button>
+                <button type="submit" class="btn btn-outline-danger" style="border: 1px solid var(--accent-danger); background: transparent; color: var(--accent-danger); padding: 0.5rem 1rem; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 5px;">
+                    <svg class="tp-icon tp-icon-sm"><use href="#icon-alert"></use></svg>
+                    <span>Reset Leaderboard</span>
+                </button>
             </form>
             {% endif %}
             {% if current_user and current_user.role == 'superadmin' %}
-            <button onclick="document.getElementById('addPlayerModal').style.display='flex'" class="btn btn-primary">
-                + Add New Player
+            <button onclick="document.getElementById('addPlayerModal').style.display='flex'" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 5px;">
+                <svg class="tp-icon tp-icon-sm"><use href="#icon-plus"></use></svg>
+                <span>Add New Player</span>
             </button>
             {% endif %}
         </div>
@@ -57,7 +61,10 @@
 
     {% if current_user and current_user.role == 'superadmin' %}
     <div class="export-box" style="background: var(--bg-card); padding: 1.25rem 1.5rem; border-radius: var(--radius-lg); margin-bottom: 2rem; border: 1px solid var(--border-color);">
-        <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.75rem;">📊 Export Leaderboard Data</div>
+        <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 6px;">
+            <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-bar-chart"></use></svg>
+            <span>Export Leaderboard Data</span>
+        </div>
         <form method="GET" action="{{ url_for('leaderboard.export_leaderboard') }}" style="display: flex; gap: 1rem; width: 100%; align-items: flex-end; flex-wrap: wrap;">
             <div class="form-group" style="flex: 1; min-width: 180px; margin: 0;">
                 <label class="form-label" style="display: block; margin-bottom: 0.4rem; font-weight: 600; font-size: 0.85rem;">Start Date</label>
@@ -67,7 +74,7 @@
                 <label class="form-label" style="display: block; margin-bottom: 0.4rem; font-weight: 600; font-size: 0.85rem;">End Date</label>
                 <input type="date" name="end_date" class="form-input" style="width: 100%; height: 42px;" required>
             </div>
-            <button type="submit" class="btn btn-primary" style="height: 42px; display: inline-flex; align-items: center; justify-content: center; padding: 0 1.25rem; font-weight: 600; white-space: nowrap;">⬇️ Export to Excel</button>
+            <button type="submit" class="btn btn-primary" style="height: 42px; display: inline-flex; align-items: center; justify-content: center; padding: 0 1.25rem; font-weight: 600; white-space: nowrap;">Export to Excel</button>
         </form>
     </div>
     {% endif %}
@@ -90,31 +97,37 @@
             <tbody>
                 {% for player in players %}
                 <tr style="border-bottom: 1px solid var(--border-subtle);">
-                    <td style="padding: 1rem; font-weight: bold; color: var(--accent-primary-text);">#{{ loop.index }}</td>
+                    <td class="tabular-nums" style="padding: 1rem; font-weight: bold; color: var(--accent-primary-text);">#{{ loop.index }}</td>
                     <td style="padding: 1rem;">
                         <div style="display: inline-flex; align-items: center; gap: 5px;">
                             <a href="{{ url_for('player.view_player', player_id=player.id) }}" style="font-weight: 600; color: var(--accent-primary-text); text-decoration: none;" class="hover-underline">{{ player.name }}</a>
-                            <span onclick="togglePlayerDetails('{{ player.id }}')" style="font-size: 0.8rem; cursor: pointer; color: var(--text-secondary); padding: 0 5px;" title="Toggle Details">▼</span>
+                            <span onclick="togglePlayerDetails('{{ player.id }}')" style="cursor: pointer; color: var(--text-secondary); padding: 0 4px; display: inline-flex; align-items: center;" title="Toggle Details">
+                                <svg class="tp-icon tp-icon-sm"><use href="#icon-chevron-down"></use></svg>
+                            </span>
                         </div>
                         <div style="font-size: 0.85rem; margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px;">
                             {% for record in player.tournament_records %}
                                 {% if record.level in ['State', 'National'] %}
-                                    <span class="{% if record.level == 'National' %}badge-national{% else %}badge-state{% endif %}" title="{{ record.tournament_name }}">
-                                        🏆 {{ record.level }} {{ record.round_reached }}
+                                    <span class="{% if record.level == 'National' %}badge-national{% else %}badge-state{% endif %}" title="{{ record.tournament_name }}" style="display: inline-flex; align-items: center; gap: 3px;">
+                                        <svg class="tp-icon tp-icon-sm"><use href="#icon-trophy"></use></svg>
+                                        <span>{{ record.level }} {{ record.round_reached }}</span>
                                     </span>
                                 {% endif %}
                             {% endfor %}
                         </div>
                     </td>
                     <td style="padding: 1rem; color: var(--text-secondary);">{{ player.age_category }} {{ player.gender }}</td>
-                    <td style="padding: 1rem; font-weight: bold; color: var(--accent-secondary-text);">{{ player.total_points }}</td>
-                    <td style="padding: 1rem; color: var(--text-secondary);">{{ player.matches_won }}W - {{ player.matches_lost }}L</td>
+                    <td class="tabular-nums" style="padding: 1rem; font-weight: bold; color: var(--accent-secondary-text);">{{ player.total_points }}</td>
+                    <td class="tabular-nums" style="padding: 1rem; color: var(--text-secondary);">{{ player.matches_won }}W - {{ player.matches_lost }}L</td>
                     {% if current_user and current_user.role == 'superadmin' %}
                     <td style="padding: 1rem; text-align: right; white-space: nowrap;">
                         <button onclick="openAddPointsModal('{{ player.id }}', '{{ player.name }}')" class="btn btn-small btn-secondary">+ Add Points</button>
-                        <button onclick="openEditPlayerModal('{{ player.id }}', '{{ player.name|escape }}', '{{ player.gender }}', '{{ player.age_category }}')" class="btn btn-small btn-secondary" style="margin-left: 0.25rem;">✏️ Edit</button>
+                        <button onclick="openEditPlayerModal('{{ player.id }}', '{{ player.name|escape }}', '{{ player.gender }}', '{{ player.age_category }}')" class="btn btn-small btn-secondary" style="margin-left: 0.25rem; display: inline-flex; align-items: center; gap: 4px;">
+                            <svg class="tp-icon tp-icon-sm"><use href="#icon-edit"></use></svg>
+                            <span>Edit</span>
+                        </button>
                         <form method="POST" action="{{ url_for('leaderboard.delete_player', player_id=player.id) }}" style="display: inline-block; margin-left: 0.25rem; margin-bottom: 0;" onsubmit="return confirm('Are you sure you want to delete {{ player.name|escape }}? This cannot be undone.');">
-                            <button type="submit" class="btn btn-small" style="background: var(--accent-danger); color: #FFFFFF;" aria-label="Delete player {{ player.name|escape }}" title="Delete Player">🗑️</button>
+                            <button type="submit" class="btn btn-small" style="background: var(--accent-danger); color: #FFFFFF;" aria-label="Delete player {{ player.name|escape }}" title="Delete Player"><svg class="tp-icon tp-icon-sm"><use href="#icon-trash-2"></use></svg></button>
                         </form>
                     </td>
                     {% endif %}
@@ -326,16 +339,31 @@
                     </thead>
                     <tbody>
                         <tr style="border-bottom: 1px solid var(--border-subtle);">
-                            <td style="padding: 0.75rem;">🥇 Winner</td>
-                            <td style="padding: 0.75rem; text-align: right; font-weight: bold; color: var(--accent-secondary-text);">650</td>
+                            <td style="padding: 0.75rem;">
+                                <span style="display: inline-flex; align-items: center; gap: 6px;">
+                                    <svg class="tp-icon tp-icon-sm" style="color: #C9A55C;"><use href="#icon-crown"></use></svg>
+                                    <span>Winner</span>
+                                </span>
+                            </td>
+                            <td class="tabular-nums" style="padding: 0.75rem; text-align: right; font-weight: bold; color: var(--accent-secondary-text);">650</td>
                         </tr>
                         <tr style="border-bottom: 1px solid var(--border-subtle);">
-                            <td style="padding: 0.75rem;">🥈 Runner-Up</td>
-                            <td style="padding: 0.75rem; text-align: right; font-weight: bold; color: var(--accent-secondary-text);">400</td>
+                            <td style="padding: 0.75rem;">
+                                <span style="display: inline-flex; align-items: center; gap: 6px;">
+                                    <svg class="tp-icon tp-icon-sm" style="color: #94A3B8;"><use href="#icon-medal"></use></svg>
+                                    <span>Runner-Up</span>
+                                </span>
+                            </td>
+                            <td class="tabular-nums" style="padding: 0.75rem; text-align: right; font-weight: bold; color: var(--accent-secondary-text);">400</td>
                         </tr>
                         <tr style="border-bottom: 1px solid var(--border-subtle);">
-                            <td style="padding: 0.75rem;">🥉 Semi-Final</td>
-                            <td style="padding: 0.75rem; text-align: right; font-weight: bold; color: var(--accent-secondary-text);">250</td>
+                            <td style="padding: 0.75rem;">
+                                <span style="display: inline-flex; align-items: center; gap: 6px;">
+                                    <svg class="tp-icon tp-icon-sm" style="color: #B45309;"><use href="#icon-medal"></use></svg>
+                                    <span>Semi-Final</span>
+                                </span>
+                            </td>
+                            <td class="tabular-nums" style="padding: 0.75rem; text-align: right; font-weight: bold; color: var(--accent-secondary-text);">250</td>
                         </tr>
                         <tr style="border-bottom: 1px solid var(--border-subtle);">
                             <td style="padding: 0.75rem;">Quarter-Final</td>

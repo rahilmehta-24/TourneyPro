@@ -47,7 +47,7 @@ class FormatScoringIsolationTestCase(unittest.TestCase):
             User.query.delete()
             db.session.commit()
 
-            user = User(username='organizer_iso', email='iso@test.com', role='admin')
+            user = User(username='organizer_iso', email='iso@test.com', role='superadmin')
             user.set_password('password123')
             db.session.add(user)
             db.session.flush()

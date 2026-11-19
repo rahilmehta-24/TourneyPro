@@ -6,11 +6,15 @@ from app.services.format_engine.base import TournamentFormat
 from app.domain.models import db, Match, Participant, Group, TeamMember, PlayerCategoryTier
 from app.services.tennis_logic import calculate_team_fixture_status
 
+
 class GroupStageFormat(TournamentFormat):
     name = "Group Stage + Knockout"
     description = "Round-robin group matches followed by a single elimination knockout bracket for top qualifiers."
     icon = "🎪"
     min_participants = 4
+    is_locked = True
+    status = "under_development"
+    badge = "Coming Soon"
 
     ROUND_NAMES = {
         2: "Finals",
@@ -28,7 +32,9 @@ class GroupStageFormat(TournamentFormat):
         return 1 << (num_qualifiers - 1).bit_length()
 
     @classmethod
-    def compute_group_structure_options(cls, num_teams, qualifiers_per_group=2, include_degenerate=False):
+    def compute_group_structure_options(
+        cls, num_teams, qualifiers_per_group=2, include_degenerate=False
+    ):
         """
         Compute viable Group Stage + Knockout structure options for `num_teams` teams/entries.
         Surfaces direct uneven splits (e.g., 11 teams -> 2 groups [6, 5], 4 qualifiers, 0 LL)
@@ -60,105 +66,123 @@ class GroupStageFormat(TournamentFormat):
             round_label = cls.ROUND_NAMES.get(target_bracket, f"{target_bracket}-Team Bracket")
 
             if extra_slots == 0:
-                raw_options.append({
-                    'option_id': f"g{g}_ll0",
-                    'num_groups': g,
-                    'group_sizes': sizes,
-                    'sizes_label': sizes_label,
-                    'is_uneven': len(set(sizes)) > 1,
-                    'is_degenerate': is_degenerate,
-                    'qualifiers_per_group': q,
-                    'direct_qualifiers': direct_qualifiers,
-                    'allow_lucky_losers': False,
-                    'lucky_losers_needed': 0,
-                    'byes_count': 0,
-                    'target_bracket': target_bracket,
-                    'knockout_label': round_label,
-                    'group_ties': group_ties,
-                    'knockout_ties': knockout_ties,
-                    'total_ties': group_ties + knockout_ties,
-                    'max_group_size': max_size,
-                    'min_group_size': min_size,
-                    'title': f"{g} Groups ({sizes_label}) — Direct Top {q}/Group",
-                    'summary': f"{direct_qualifiers} qualifiers → {target_bracket}-Team {round_label} (No Lucky Losers)",
-                    'badge': "Even Split • Direct" if len(set(sizes)) == 1 else "Uneven Split • No Lucky Losers",
-                    'is_recommended': False,
-                })
+                raw_options.append(
+                    {
+                        "option_id": f"g{g}_ll0",
+                        "num_groups": g,
+                        "group_sizes": sizes,
+                        "sizes_label": sizes_label,
+                        "is_uneven": len(set(sizes)) > 1,
+                        "is_degenerate": is_degenerate,
+                        "qualifiers_per_group": q,
+                        "direct_qualifiers": direct_qualifiers,
+                        "allow_lucky_losers": False,
+                        "lucky_losers_needed": 0,
+                        "byes_count": 0,
+                        "target_bracket": target_bracket,
+                        "knockout_label": round_label,
+                        "group_ties": group_ties,
+                        "knockout_ties": knockout_ties,
+                        "total_ties": group_ties + knockout_ties,
+                        "max_group_size": max_size,
+                        "min_group_size": min_size,
+                        "title": f"{g} Groups ({sizes_label}) — Direct Top {q}/Group",
+                        "summary": f"{direct_qualifiers} qualifiers → {target_bracket}-Team {round_label} (No Lucky Losers)",
+                        "badge": "Even Split • Direct"
+                        if len(set(sizes)) == 1
+                        else "Uneven Split • No Lucky Losers",
+                        "is_recommended": False,
+                    }
+                )
             else:
                 # Option with Lucky Losers when enough non-qualifiers exist across groups
                 if non_qualifiers >= extra_slots and not is_degenerate:
-                    raw_options.append({
-                        'option_id': f"g{g}_ll{extra_slots}",
-                        'num_groups': g,
-                        'group_sizes': sizes,
-                        'sizes_label': sizes_label,
-                        'is_uneven': len(set(sizes)) > 1,
-                        'is_degenerate': is_degenerate,
-                        'qualifiers_per_group': q,
-                        'direct_qualifiers': direct_qualifiers,
-                        'allow_lucky_losers': True,
-                        'lucky_losers_needed': extra_slots,
-                        'byes_count': 0,
-                        'target_bracket': target_bracket,
-                        'knockout_label': round_label,
-                        'group_ties': group_ties,
-                        'knockout_ties': knockout_ties,
-                        'total_ties': group_ties + knockout_ties,
-                        'max_group_size': max_size,
-                        'min_group_size': min_size,
-                        'title': f"{g} Groups ({sizes_label}) + {extra_slots} Lucky Loser{'s' if extra_slots > 1 else ''}",
-                        'summary': f"{direct_qualifiers} direct + {extra_slots} Lucky Loser{'s' if extra_slots > 1 else ''} → {target_bracket}-Team {round_label}",
-                        'badge': "Recommended • Balanced + Lucky Losers",
-                        'is_recommended': False,
-                    })
+                    raw_options.append(
+                        {
+                            "option_id": f"g{g}_ll{extra_slots}",
+                            "num_groups": g,
+                            "group_sizes": sizes,
+                            "sizes_label": sizes_label,
+                            "is_uneven": len(set(sizes)) > 1,
+                            "is_degenerate": is_degenerate,
+                            "qualifiers_per_group": q,
+                            "direct_qualifiers": direct_qualifiers,
+                            "allow_lucky_losers": True,
+                            "lucky_losers_needed": extra_slots,
+                            "byes_count": 0,
+                            "target_bracket": target_bracket,
+                            "knockout_label": round_label,
+                            "group_ties": group_ties,
+                            "knockout_ties": knockout_ties,
+                            "total_ties": group_ties + knockout_ties,
+                            "max_group_size": max_size,
+                            "min_group_size": min_size,
+                            "title": f"{g} Groups ({sizes_label}) + {extra_slots} Lucky Loser{'s' if extra_slots > 1 else ''}",
+                            "summary": f"{direct_qualifiers} direct + {extra_slots} Lucky Loser{'s' if extra_slots > 1 else ''} → {target_bracket}-Team {round_label}",
+                            "badge": "Recommended • Balanced + Lucky Losers",
+                            "is_recommended": False,
+                        }
+                    )
 
                 # Alternative without Lucky Losers (R1 Byes in knockout)
-                raw_options.append({
-                    'option_id': f"g{g}_bye{extra_slots}",
-                    'num_groups': g,
-                    'group_sizes': sizes,
-                    'sizes_label': sizes_label,
-                    'is_uneven': len(set(sizes)) > 1,
-                    'is_degenerate': is_degenerate,
-                    'qualifiers_per_group': q,
-                    'direct_qualifiers': direct_qualifiers,
-                    'allow_lucky_losers': False,
-                    'lucky_losers_needed': 0,
-                    'byes_count': extra_slots,
-                    'target_bracket': target_bracket,
-                    'knockout_label': round_label,
-                    'group_ties': group_ties,
-                    'knockout_ties': knockout_ties,
-                    'total_ties': group_ties + knockout_ties,
-                    'max_group_size': max_size,
-                    'min_group_size': min_size,
-                    'title': f"{g} Groups ({sizes_label}) + {extra_slots} Knockout Bye{'s' if extra_slots > 1 else ''}",
-                    'summary': f"{direct_qualifiers} direct qualifiers + {extra_slots} R1 Bye{'s' if extra_slots > 1 else ''} → {target_bracket}-Team {round_label}",
-                    'badge': "With Round-1 Byes",
-                    'is_recommended': False,
-                })
+                raw_options.append(
+                    {
+                        "option_id": f"g{g}_bye{extra_slots}",
+                        "num_groups": g,
+                        "group_sizes": sizes,
+                        "sizes_label": sizes_label,
+                        "is_uneven": len(set(sizes)) > 1,
+                        "is_degenerate": is_degenerate,
+                        "qualifiers_per_group": q,
+                        "direct_qualifiers": direct_qualifiers,
+                        "allow_lucky_losers": False,
+                        "lucky_losers_needed": 0,
+                        "byes_count": extra_slots,
+                        "target_bracket": target_bracket,
+                        "knockout_label": round_label,
+                        "group_ties": group_ties,
+                        "knockout_ties": knockout_ties,
+                        "total_ties": group_ties + knockout_ties,
+                        "max_group_size": max_size,
+                        "min_group_size": min_size,
+                        "title": f"{g} Groups ({sizes_label}) + {extra_slots} Knockout Bye{'s' if extra_slots > 1 else ''}",
+                        "summary": f"{direct_qualifiers} direct qualifiers + {extra_slots} R1 Bye{'s' if extra_slots > 1 else ''} → {target_bracket}-Team {round_label}",
+                        "badge": "With Round-1 Byes",
+                        "is_recommended": False,
+                    }
+                )
 
-        non_degenerate = [opt for opt in raw_options if not opt['is_degenerate']]
+        non_degenerate = [opt for opt in raw_options if not opt["is_degenerate"]]
         options = non_degenerate if (non_degenerate and not include_degenerate) else raw_options
 
         # Mark recommendations: prefer exact balanced split with size <= 4, or balanced Lucky Loser split with fewest ties
         if options:
-            exact_even = [o for o in options if not o['is_uneven'] and o['lucky_losers_needed'] == 0 and o['byes_count'] == 0]
-            ll_balanced = [o for o in options if o['allow_lucky_losers'] and o['max_group_size'] <= 5]
-            direct_any = [o for o in options if o['lucky_losers_needed'] == 0 and o['byes_count'] == 0]
+            exact_even = [
+                o
+                for o in options
+                if not o["is_uneven"] and o["lucky_losers_needed"] == 0 and o["byes_count"] == 0
+            ]
+            ll_balanced = [
+                o for o in options if o["allow_lucky_losers"] and o["max_group_size"] <= 5
+            ]
+            direct_any = [
+                o for o in options if o["lucky_losers_needed"] == 0 and o["byes_count"] == 0
+            ]
 
-            if exact_even and exact_even[0]['max_group_size'] <= 4:
-                exact_even[0]['is_recommended'] = True
-                exact_even[0]['badge'] = "Recommended • Clean Even Split"
+            if exact_even and exact_even[0]["max_group_size"] <= 4:
+                exact_even[0]["is_recommended"] = True
+                exact_even[0]["badge"] = "Recommended • Clean Even Split"
             elif ll_balanced:
                 # Pick Lucky Loser split with max_group_size <= 4 or smallest tie count
-                ll_balanced.sort(key=lambda o: (o['max_group_size'], o['lucky_losers_needed'], o['total_ties']))
-                ll_balanced[0]['is_recommended'] = True
+                ll_balanced.sort(
+                    key=lambda o: (o["max_group_size"], o["lucky_losers_needed"], o["total_ties"])
+                )
+                ll_balanced[0]["is_recommended"] = True
                 if direct_any:
-                    direct_any[0]['badge'] = "Direct Option • No Lucky Losers"
+                    direct_any[0]["badge"] = "Direct Option • No Lucky Losers"
             elif direct_any:
-                direct_any[0]['is_recommended'] = True
-                direct_any[0]['badge'] = "Recommended • Direct Split"
+                direct_any[0]["is_recommended"] = True
+                direct_any[0]["badge"] = "Recommended • Direct Split"
 
         return options
 
@@ -189,11 +213,12 @@ class GroupStageFormat(TournamentFormat):
             return
 
         participants_sorted = sorted(
-            participants,
-            key=lambda p: (p.manual_seed or p.seed or 999, p.id or 0)
+            participants, key=lambda p: (p.manual_seed or p.seed or 999, p.id or 0)
         )
         num_participants = len(participants_sorted)
-        target_sizes = cls._build_group_target_sizes(num_participants, num_groups, teams_per_group=teams_per_group)
+        target_sizes = cls._build_group_target_sizes(
+            num_participants, num_groups, teams_per_group=teams_per_group
+        )
 
         group_counts = [0] * num_groups
         snake_order = []
@@ -287,14 +312,14 @@ class GroupStageFormat(TournamentFormat):
 
                     for match_iteration in range(matches_per_pair):
                         parent_match = {
-                            'category_id': category.id,
-                            'group_id': group.id,
-                            'round': match_iteration + 1,
-                            'match_number': match_number,
-                            'participant1_id': p1.id,
-                            'participant2_id': p2.id,
-                            'match_type': 'group_stage',
-                            'status': 'pending'
+                            "category_id": category.id,
+                            "group_id": group.id,
+                            "round": match_iteration + 1,
+                            "match_number": match_number,
+                            "participant1_id": p1.id,
+                            "participant2_id": p2.id,
+                            "match_type": "group_stage",
+                            "status": "pending",
                         }
 
                         if is_team_event:
@@ -305,9 +330,9 @@ class GroupStageFormat(TournamentFormat):
                                 match_number=match_number,
                                 p1=p1,
                                 p2=p2,
-                                match_type='group_stage'
+                                match_type="group_stage",
                             )
-                            parent_match['sub_matches'] = sub_rubbers
+                            parent_match["sub_matches"] = sub_rubbers
 
                         matches.append(parent_match)
                         match_number += 1
@@ -315,7 +340,17 @@ class GroupStageFormat(TournamentFormat):
         return matches
 
     @classmethod
-    def _build_team_rubbers(cls, category, group_id, round_num, match_number, p1, p2, match_type='group_stage', auto_allot=False):
+    def _build_team_rubbers(
+        cls,
+        category,
+        group_id,
+        round_num,
+        match_number,
+        p1,
+        p2,
+        match_type="group_stage",
+        auto_allot=False,
+    ):
         """
         Build 3 rubbers for a team fixture:
         - Rubber 1: Singles
@@ -339,8 +374,16 @@ class GroupStageFormat(TournamentFormat):
         r3_p2_2 = None
 
         if auto_allot:
-            p1_m = sorted(p1.team_members, key=lambda m: m.roster_order or 99) if p1 and hasattr(p1, 'team_members') else []
-            p2_m = sorted(p2.team_members, key=lambda m: m.roster_order or 99) if p2 and hasattr(p2, 'team_members') else []
+            p1_m = (
+                sorted(p1.team_members, key=lambda m: m.roster_order or 99)
+                if p1 and hasattr(p1, "team_members")
+                else []
+            )
+            p2_m = (
+                sorted(p2.team_members, key=lambda m: m.roster_order or 99)
+                if p2 and hasattr(p2, "team_members")
+                else []
+            )
 
             # Rubber 1: Singles
             r1_p1_1 = p1_m[0].player_id if len(p1_m) >= 1 else (p1.player_id if p1 else None)
@@ -360,51 +403,51 @@ class GroupStageFormat(TournamentFormat):
 
         return [
             {
-                'category_id': category.id,
-                'group_id': group_id,
-                'round': round_num,
-                'match_number': match_number,
-                'participant1_id': p1.id if p1 else None,
-                'participant2_id': p2.id if p2 else None,
-                'match_type': match_type,
-                'rubber_type': 'singles',
-                'rubber_number': 1,
-                'p1_player1_id': r1_p1_1,
-                'p2_player1_id': r1_p2_1,
-                'status': 'pending'
+                "category_id": category.id,
+                "group_id": group_id,
+                "round": round_num,
+                "match_number": match_number,
+                "participant1_id": p1.id if p1 else None,
+                "participant2_id": p2.id if p2 else None,
+                "match_type": match_type,
+                "rubber_type": "singles",
+                "rubber_number": 1,
+                "p1_player1_id": r1_p1_1,
+                "p2_player1_id": r1_p2_1,
+                "status": "pending",
             },
             {
-                'category_id': category.id,
-                'group_id': group_id,
-                'round': round_num,
-                'match_number': match_number,
-                'participant1_id': p1.id if p1 else None,
-                'participant2_id': p2.id if p2 else None,
-                'match_type': match_type,
-                'rubber_type': 'doubles_1',
-                'rubber_number': 2,
-                'p1_player1_id': r2_p1_1,
-                'p1_player2_id': r2_p1_2,
-                'p2_player1_id': r2_p2_1,
-                'p2_player2_id': r2_p2_2,
-                'status': 'pending'
+                "category_id": category.id,
+                "group_id": group_id,
+                "round": round_num,
+                "match_number": match_number,
+                "participant1_id": p1.id if p1 else None,
+                "participant2_id": p2.id if p2 else None,
+                "match_type": match_type,
+                "rubber_type": "doubles_1",
+                "rubber_number": 2,
+                "p1_player1_id": r2_p1_1,
+                "p1_player2_id": r2_p1_2,
+                "p2_player1_id": r2_p2_1,
+                "p2_player2_id": r2_p2_2,
+                "status": "pending",
             },
             {
-                'category_id': category.id,
-                'group_id': group_id,
-                'round': round_num,
-                'match_number': match_number,
-                'participant1_id': p1.id if p1 else None,
-                'participant2_id': p2.id if p2 else None,
-                'match_type': match_type,
-                'rubber_type': 'doubles_2',
-                'rubber_number': 3,
-                'p1_player1_id': r3_p1_1,
-                'p1_player2_id': r3_p1_2,
-                'p2_player1_id': r3_p2_1,
-                'p2_player2_id': r3_p2_2,
-                'status': 'pending'
-            }
+                "category_id": category.id,
+                "group_id": group_id,
+                "round": round_num,
+                "match_number": match_number,
+                "participant1_id": p1.id if p1 else None,
+                "participant2_id": p2.id if p2 else None,
+                "match_type": match_type,
+                "rubber_type": "doubles_2",
+                "rubber_number": 3,
+                "p1_player1_id": r3_p1_1,
+                "p1_player2_id": r3_p1_2,
+                "p2_player1_id": r3_p2_1,
+                "p2_player2_id": r3_p2_2,
+                "status": "pending",
+            },
         ]
 
     @classmethod
@@ -419,32 +462,42 @@ class GroupStageFormat(TournamentFormat):
             parent = Match.query.get(match.parent_match_id)
             if parent:
                 rubbers = parent.sub_matches
-                status_res = calculate_team_fixture_status(rubbers, total_games=category.total_games or 7)
-                parent.score1 = status_res['summary_score1']
-                parent.score2 = status_res['summary_score2']
+                status_res = calculate_team_fixture_status(
+                    rubbers, total_games=category.total_games or 7
+                )
+                parent.score1 = status_res["summary_score1"]
+                parent.score2 = status_res["summary_score2"]
 
-                if status_res['is_decided']:
-                    parent.status = 'completed'
-                    parent.winner_id = parent.participant1_id if status_res['winner_indicator'] == 1 else parent.participant2_id
+                if status_res["is_decided"]:
+                    parent.status = "completed"
+                    parent.winner_id = (
+                        parent.participant1_id
+                        if status_res["winner_indicator"] == 1
+                        else parent.participant2_id
+                    )
                     parent.completed_at = datetime.utcnow()
 
-                    if parent.match_type == 'knockout':
-                        from app.services.format_engine.single_elimination.logic import SingleEliminationFormat
+                    if parent.match_type == "knockout":
+                        from app.services.format_engine.single_elimination.logic import (
+                            SingleEliminationFormat,
+                        )
+
                         SingleEliminationFormat.advance_match(parent, category, parent.winner_id)
                         cls._propagate_knockout_team_rubbers(parent, category)
-                    elif parent.match_type in ['group_stage', 'round_robin']:
+                    elif parent.match_type in ["group_stage", "round_robin"]:
                         cls.calculate_group_standings(parent.group_id)
                 else:
-                    parent.status = 'in_progress'
+                    parent.status = "in_progress"
 
                 db.session.commit()
                 return
 
-        if match.match_type == 'knockout':
+        if match.match_type == "knockout":
             from app.services.format_engine.single_elimination.logic import SingleEliminationFormat
+
             SingleEliminationFormat.advance_match(match, category, winner_id)
             cls._propagate_knockout_team_rubbers(match, category)
-        elif match.match_type in ['group_stage', 'round_robin'] and match.group_id:
+        elif match.match_type in ["group_stage", "round_robin"] and match.group_id:
             cls.calculate_group_standings(match.group_id)
 
     @classmethod
@@ -465,14 +518,14 @@ class GroupStageFormat(TournamentFormat):
             round=next_round,
             match_number=next_match_number,
             bracket_type=parent_match.bracket_type,
-            parent_match_id=None
+            parent_match_id=None,
         ).first()
 
         if not next_match:
             return
 
         winner_participant = Participant.query.get(parent_match.winner_id)
-        is_p1 = (parent_match.match_number % 2 == 1)
+        is_p1 = parent_match.match_number % 2 == 1
 
         # Check existing rubbers on next_match
         rubbers = next_match.sub_matches
@@ -485,21 +538,29 @@ class GroupStageFormat(TournamentFormat):
                 match_number=next_match_number,
                 p1=next_match.participant1,
                 p2=next_match.participant2,
-                match_type='knockout'
+                match_type="knockout",
             )
             for s_data in sub_rubbers_data:
-                s_data['parent_match_id'] = next_match.id
+                s_data["parent_match_id"] = next_match.id
                 sub_match = Match(**s_data, tournament_id=category.tournament_id)
                 db.session.add(sub_match)
             db.session.flush()
         else:
             # Update winner participant and roster on existing rubbers
-            w_members = sorted(winner_participant.team_members, key=lambda m: m.roster_order or 99) if winner_participant else []
+            w_members = (
+                sorted(winner_participant.team_members, key=lambda m: m.roster_order or 99)
+                if winner_participant
+                else []
+            )
             for r in rubbers:
                 if is_p1:
                     r.participant1_id = parent_match.winner_id
                     if r.rubber_number == 1:
-                        r.p1_player1_id = w_members[0].player_id if len(w_members) >= 1 else winner_participant.player_id
+                        r.p1_player1_id = (
+                            w_members[0].player_id
+                            if len(w_members) >= 1
+                            else winner_participant.player_id
+                        )
                     elif r.rubber_number == 2:
                         r.p1_player1_id = w_members[1].player_id if len(w_members) >= 2 else None
                         r.p1_player2_id = w_members[2].player_id if len(w_members) >= 3 else None
@@ -509,7 +570,11 @@ class GroupStageFormat(TournamentFormat):
                 else:
                     r.participant2_id = parent_match.winner_id
                     if r.rubber_number == 1:
-                        r.p2_player1_id = w_members[0].player_id if len(w_members) >= 1 else winner_participant.player_id
+                        r.p2_player1_id = (
+                            w_members[0].player_id
+                            if len(w_members) >= 1
+                            else winner_participant.player_id
+                        )
                     elif r.rubber_number == 2:
                         r.p2_player1_id = w_members[1].player_id if len(w_members) >= 2 else None
                         r.p2_player2_id = w_members[2].player_id if len(w_members) >= 3 else None
@@ -522,6 +587,7 @@ class GroupStageFormat(TournamentFormat):
     @classmethod
     def calculate_final_rankings(cls, category):
         from app.services.format_engine.single_elimination.logic import SingleEliminationFormat
+
         SingleEliminationFormat.calculate_final_rankings(category)
 
     @staticmethod
@@ -548,8 +614,8 @@ class GroupStageFormat(TournamentFormat):
         # Look at completed parent fixtures in this group
         matches = Match.query.filter(
             Match.group_id == group_id,
-            Match.match_type.in_(['group_stage', 'round_robin']),
-            Match.parent_match_id.is_(None)
+            Match.match_type.in_(["group_stage", "round_robin"]),
+            Match.parent_match_id.is_(None),
         ).all()
 
         for match in matches:
@@ -574,8 +640,8 @@ class GroupStageFormat(TournamentFormat):
                     if sm.score1 is not None and sm.score2 is not None:
                         try:
                             # Parse single game score e.g. "6" or format like "6-1"
-                            p1_games = int(str(sm.score1).split('-')[0]) if sm.score1 else 0
-                            p2_games = int(str(sm.score2).split('-')[0]) if sm.score2 else 0
+                            p1_games = int(str(sm.score1).split("-")[0]) if sm.score1 else 0
+                            p2_games = int(str(sm.score2).split("-")[0]) if sm.score2 else 0
                             p1_total += p1_games
                             p2_total += p2_games
                         except (ValueError, TypeError):
@@ -590,7 +656,10 @@ class GroupStageFormat(TournamentFormat):
                     elif p2_total > p1_total:
                         winner_id = match.participant2_id
 
-            if (match.status == 'completed' or (match.score1 is not None and match.score2 is not None)) and winner_id:
+            if (
+                match.status == "completed"
+                or (match.score1 is not None and match.score2 is not None)
+            ) and winner_id:
                 p1 = participant_map.get(match.participant1_id)
                 p2 = participant_map.get(match.participant2_id)
                 if not p1 or not p2:
@@ -630,13 +699,13 @@ class GroupStageFormat(TournamentFormat):
                 return 1 if a.group_points > b.group_points else -1
 
             # 3. Head-to-Head between a and b (decides rank if total games won are equal)
-            h2h = getattr(a, '_h2h', {}).get(b.id)
+            h2h = getattr(a, "_h2h", {}).get(b.id)
             if h2h is not None and h2h != 0:
                 return h2h
 
             # 4. Games Differential (Games Won - Games Conceded)
-            a_diff = a.group_points - getattr(a, '_games_conceded', 0)
-            b_diff = b.group_points - getattr(b, '_games_conceded', 0)
+            a_diff = a.group_points - getattr(a, "_games_conceded", 0)
+            b_diff = b.group_points - getattr(b, "_games_conceded", 0)
             if a_diff != b_diff:
                 return 1 if a_diff > b_diff else -1
 
@@ -655,7 +724,7 @@ class GroupStageFormat(TournamentFormat):
             p._group_size = group_size
             p._group_rank = rank_idx
             p._group_name = group_label
-            diff = (p.group_points or 0) - getattr(p, '_games_conceded', 0)
+            diff = (p.group_points or 0) - getattr(p, "_games_conceded", 0)
             mp = p._matches_played
             p._win_rate = round((p.group_wins or 0) / mp, 4) if mp > 0 else 0.0
             p._avg_diff = round(diff / mp, 2) if mp > 0 else 0.0
@@ -673,9 +742,9 @@ class GroupStageFormat(TournamentFormat):
         pts = participant.group_points or 0
         wins = participant.group_wins or 0
         losses = participant.group_losses or 0
-        conceded = getattr(participant, '_games_conceded', 0)
+        conceded = getattr(participant, "_games_conceded", 0)
         diff = pts - conceded
-        mp = getattr(participant, '_matches_played', wins + losses)
+        mp = getattr(participant, "_matches_played", wins + losses)
 
         if is_uneven_groups and mp > 0:
             metrics = (
@@ -692,7 +761,7 @@ class GroupStageFormat(TournamentFormat):
             metrics = (pts, diff, wins, -losses)
 
         if include_group_rank:
-            rank_score = -getattr(participant, '_group_rank', 999)
+            rank_score = -getattr(participant, "_group_rank", 999)
             return (rank_score, *metrics)
         return metrics
 
@@ -740,16 +809,16 @@ class GroupStageFormat(TournamentFormat):
         recommended_ll_ids = [p.id for p in candidates_sorted[:slots_to_fill]]
 
         return {
-            'groups': groups,
-            'group_sizes': group_sizes,
-            'is_uneven_groups': is_uneven,
-            'qualifiers_per_group': qualifiers_per_group,
-            'direct_qualifiers': direct_qualifiers,
-            'lucky_loser_candidates': candidates_sorted,
-            'recommended_ll_ids': recommended_ll_ids,
-            'target_bracket': target_bracket,
-            'slots_to_fill': slots_to_fill,
-            'byes_count': byes_count,
+            "groups": groups,
+            "group_sizes": group_sizes,
+            "is_uneven_groups": is_uneven,
+            "qualifiers_per_group": qualifiers_per_group,
+            "direct_qualifiers": direct_qualifiers,
+            "lucky_loser_candidates": candidates_sorted,
+            "recommended_ll_ids": recommended_ll_ids,
+            "target_bracket": target_bracket,
+            "slots_to_fill": slots_to_fill,
+            "byes_count": byes_count,
         }
 
     @staticmethod
@@ -760,14 +829,15 @@ class GroupStageFormat(TournamentFormat):
         and Seed 2 anchor slots whenever an alternative swap resolves the clash.
         """
         r1_matches = [
-            m for m in matches
-            if m.get('round') == 1 and m.get('participant1_id') and m.get('participant2_id')
+            m
+            for m in matches
+            if m.get("round") == 1 and m.get("participant1_id") and m.get("participant2_id")
         ]
         if len(r1_matches) < 2:
             return
 
-        anchor_p1_id = r1_matches[0].get('participant1_id')
-        anchor_p2_id = r1_matches[-1].get('participant2_id')
+        anchor_p1_id = r1_matches[0].get("participant1_id")
+        anchor_p2_id = r1_matches[-1].get("participant2_id")
 
         def group_of(pid):
             p = participant_map.get(pid)
@@ -775,11 +845,11 @@ class GroupStageFormat(TournamentFormat):
 
         def seed_of(pid):
             p = participant_map.get(pid)
-            return (p.seed if p and p.seed else 999)
+            return p.seed if p and p.seed else 999
 
         def is_same_group(m):
-            g1 = group_of(m.get('participant1_id'))
-            g2 = group_of(m.get('participant2_id'))
+            g1 = group_of(m.get("participant1_id"))
+            g2 = group_of(m.get("participant2_id"))
             return g1 is not None and g1 == g2
 
         # Try resolving each colliding R1 match using lowest-cost valid swaps
@@ -791,27 +861,33 @@ class GroupStageFormat(TournamentFormat):
             best_cost = None
 
             # Prefer moving the lower-seeded team in `m`, then either team in partner `other`
-            m_slots = ['participant2_id', 'participant1_id']
-            if seed_of(m['participant1_id']) > seed_of(m['participant2_id']):
-                m_slots = ['participant1_id', 'participant2_id']
+            m_slots = ["participant2_id", "participant1_id"]
+            if seed_of(m["participant1_id"]) > seed_of(m["participant2_id"]):
+                m_slots = ["participant1_id", "participant2_id"]
 
             for slot_a in m_slots:
                 pid_a = m[slot_a]
-                is_anchor_a = (m is r1_matches[0] and slot_a == 'participant1_id' and pid_a == anchor_p1_id) or (
-                    m is r1_matches[-1] and slot_a == 'participant2_id' and pid_a == anchor_p2_id
-                )
+                is_anchor_a = (
+                    m is r1_matches[0] and slot_a == "participant1_id" and pid_a == anchor_p1_id
+                ) or (m is r1_matches[-1] and slot_a == "participant2_id" and pid_a == anchor_p2_id)
 
                 for other in r1_matches:
                     if other is m:
                         continue
-                    other_slots = ['participant2_id', 'participant1_id']
-                    if seed_of(other['participant1_id']) > seed_of(other['participant2_id']):
-                        other_slots = ['participant1_id', 'participant2_id']
+                    other_slots = ["participant2_id", "participant1_id"]
+                    if seed_of(other["participant1_id"]) > seed_of(other["participant2_id"]):
+                        other_slots = ["participant1_id", "participant2_id"]
 
                     for slot_b in other_slots:
                         pid_b = other[slot_b]
-                        is_anchor_b = (other is r1_matches[0] and slot_b == 'participant1_id' and pid_b == anchor_p1_id) or (
-                            other is r1_matches[-1] and slot_b == 'participant2_id' and pid_b == anchor_p2_id
+                        is_anchor_b = (
+                            other is r1_matches[0]
+                            and slot_b == "participant1_id"
+                            and pid_b == anchor_p1_id
+                        ) or (
+                            other is r1_matches[-1]
+                            and slot_b == "participant2_id"
+                            and pid_b == anchor_p2_id
                         )
 
                         # Test swap
@@ -825,7 +901,11 @@ class GroupStageFormat(TournamentFormat):
                         anchor_penalty = (1000 if is_anchor_a else 0) + (1000 if is_anchor_b else 0)
                         seed_delta = abs(seed_of(pid_a) - seed_of(pid_b))
                         # Strongly prefer swapping two lower-half/slot-2 positions cleanly
-                        slot_penalty = 0 if (slot_a == 'participant2_id' and slot_b == 'participant2_id') else 10
+                        slot_penalty = (
+                            0
+                            if (slot_a == "participant2_id" and slot_b == "participant2_id")
+                            else 10
+                        )
                         cost = anchor_penalty + slot_penalty + seed_delta
                         if best_cost is None or cost < best_cost:
                             best_cost = cost
@@ -851,12 +931,12 @@ class GroupStageFormat(TournamentFormat):
         is_team_event = bool(category.max_players_per_team and category.max_players_per_team > 1)
         preview = cls.get_knockout_qualification_preview(category)
 
-        qualified = list(preview['direct_qualifiers'])
-        slots_to_fill = preview['slots_to_fill']
-        is_uneven = preview['is_uneven_groups']
+        qualified = list(preview["direct_qualifiers"])
+        slots_to_fill = preview["slots_to_fill"]
+        is_uneven = preview["is_uneven_groups"]
 
         if category.allow_lucky_losers and slots_to_fill > 0:
-            candidates_by_id = {p.id: p for p in preview['lucky_loser_candidates']}
+            candidates_by_id = {p.id: p for p in preview["lucky_loser_candidates"]}
             selected_lls = []
             if lucky_loser_ids is not None:
                 seen_ids = set()
@@ -867,7 +947,7 @@ class GroupStageFormat(TournamentFormat):
                     if len(selected_lls) == slots_to_fill:
                         break
             if not selected_lls:
-                selected_lls = preview['lucky_loser_candidates'][:slots_to_fill]
+                selected_lls = preview["lucky_loser_candidates"][:slots_to_fill]
 
             for ll in selected_lls:
                 ll._is_lucky_loser = True
@@ -892,26 +972,36 @@ class GroupStageFormat(TournamentFormat):
         db.session.commit()
 
         # Bracket placement with Seed 1 top, Seed 2 bottom, Seed 3 lower, Seed 4 upper
-        matches = SingleEliminationFormat._generate_single_elimination(unified_ranked, use_manual_seeding=False)
+        matches = SingleEliminationFormat._generate_single_elimination(
+            unified_ranked, use_manual_seeding=False
+        )
 
         # Avoid immediate Round-1 group-stage rematches when multiple groups exist
-        if len(preview['groups']) >= 2:
+        if len(preview["groups"]) >= 2:
             cls._avoid_same_group_r1_rematches(matches, participant_map)
 
         for match in matches:
-            match['category_id'] = category.id
-            if is_team_event and match.get('round') == 1:
+            match["category_id"] = category.id
+            if is_team_event and match.get("round") == 1:
                 # Build rubbers for Round 1 fixtures AFTER rematch-avoidance finalizes pairings
-                p1_obj = Participant.query.get(match['participant1_id']) if match.get('participant1_id') else None
-                p2_obj = Participant.query.get(match['participant2_id']) if match.get('participant2_id') else None
-                match['sub_matches'] = cls._build_team_rubbers(
+                p1_obj = (
+                    Participant.query.get(match["participant1_id"])
+                    if match.get("participant1_id")
+                    else None
+                )
+                p2_obj = (
+                    Participant.query.get(match["participant2_id"])
+                    if match.get("participant2_id")
+                    else None
+                )
+                match["sub_matches"] = cls._build_team_rubbers(
                     category=category,
                     group_id=None,
                     round_num=1,
-                    match_number=match['match_number'],
+                    match_number=match["match_number"],
                     p1=p1_obj,
                     p2=p2_obj,
-                    match_type='knockout'
+                    match_type="knockout",
                 )
 
         return matches
@@ -932,7 +1022,7 @@ class GroupStageFormat(TournamentFormat):
             raise ValueError("No player tiers found. Please create player tiers first.")
 
         k = category.max_players_per_team or 5
-        active_tiers = list('ABCDEFGH'[:k])
+        active_tiers = list("ABCDEFGH"[:k])
         tier_map = {letter: [] for letter in active_tiers}
         for t in tiers:
             if t.tier in tier_map:
@@ -940,7 +1030,9 @@ class GroupStageFormat(TournamentFormat):
 
         num_teams = len(tiers) // k
         if num_teams < 2:
-            raise ValueError(f"Need at least {k * 2} players across tiers to form at least 2 teams.")
+            raise ValueError(
+                f"Need at least {k * 2} players across tiers to form at least 2 teams."
+            )
 
         for tier_letter in active_tiers:
             if len(tier_map[tier_letter]) < num_teams:
@@ -962,7 +1054,7 @@ class GroupStageFormat(TournamentFormat):
 
         created_teams = []
         for i in range(num_teams):
-            captain_tier = tier_map['A'][i]
+            captain_tier = tier_map["A"][i]
             team_name = f"Team {i + 1}"
             team_p = Participant(
                 tournament_id=category.tournament_id,
@@ -976,15 +1068,17 @@ class GroupStageFormat(TournamentFormat):
 
             for order, tier_letter in enumerate(active_tiers, start=1):
                 t_item = tier_map[tier_letter][i]
-                role = 'captain' if order == 1 else ('vice_captain' if order == 2 else 'member')
-                tier_role = role if order <= 2 else 'player'
-                db.session.add(TeamMember(
-                    participant_id=team_p.id,
-                    player_id=t_item.player_id,
-                    role=role,
-                    tier=tier_letter,
-                    roster_order=order,
-                ))
+                role = "captain" if order == 1 else ("vice_captain" if order == 2 else "member")
+                tier_role = role if order <= 2 else "player"
+                db.session.add(
+                    TeamMember(
+                        participant_id=team_p.id,
+                        player_id=t_item.player_id,
+                        role=role,
+                        tier=tier_letter,
+                        roster_order=order,
+                    )
+                )
                 t_item.is_drafted = True
                 t_item.role = tier_role
 
@@ -992,7 +1086,9 @@ class GroupStageFormat(TournamentFormat):
 
         # Distribute newly created teams fairly using the unified snake-seeding order
         if cat_groups:
-            cls._assign_groups_snake(created_teams, cat_groups, teams_per_group=category.teams_per_group)
+            cls._assign_groups_snake(
+                created_teams, cat_groups, teams_per_group=category.teams_per_group
+            )
 
         db.session.commit()
         return created_teams

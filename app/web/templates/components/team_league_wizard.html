@@ -31,22 +31,24 @@
     {% endif %}
 {% endif %}
 
-<div class="team-wizard-container" {% if not hide_wizard_outer %}style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; margin-bottom: 2rem; box-shadow: var(--shadow-md);"{% endif %}>
+<div class="team-wizard-container" {% if not hide_wizard_outer %}style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; margin-bottom: 2rem; box-shadow: var(--shadow-sm);"{% endif %}>
     {% if not hide_wizard_header %}
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
         <div style="display: flex; align-items: center; gap: 0.6rem;">
-            <span style="font-size: 1.5rem;">📋</span>
+            <div class="format-icon-badge" style="width: 34px; height: 34px; background: rgba(15, 61, 46, 0.08); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center;">
+                <svg class="tp-icon" style="color: var(--accent-primary);"><use href="#icon-clipboard"></use></svg>
+            </div>
             <div>
-                <h4 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text-primary); letter-spacing: 0.02em;">
-                    Team League Workflow: Step-by-Step Procedure
+                <h4 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--text-primary); letter-spacing: 0.01em;">
+                    Team League Workflow: Operating Sequence
                 </h4>
                 <p style="margin: 0.2rem 0 0; font-size: 0.8rem; color: var(--text-muted);">
-                    Linear tournament lifecycle: Step 1 ➔ Step 6. Once teams are created, initial draft steps are locked.
+                    Linear tournament lifecycle: Step 1 to Step 6. Once teams are created, initial draft steps are locked.
                 </p>
             </div>
         </div>
         <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <span style="font-size: 0.78rem; font-weight: 700; color: var(--accent-primary-text); background: rgba(15, 61, 46, 0.10); border: 1px solid rgba(15, 61, 46, 0.28); padding: 0.25rem 0.65rem; border-radius: 9999px;">
+            <span class="tabular-nums" style="font-size: 0.78rem; font-weight: 600; color: var(--accent-primary-text); background: rgba(15, 61, 46, 0.08); border: 1px solid rgba(15, 61, 46, 0.22); padding: 0.25rem 0.65rem; border-radius: 9999px;">
                 Current Stage: Step {{ current_step }} of 6
             </span>
         </div>
@@ -66,21 +68,25 @@
         {% for num_str, title in step_titles %}
             {% set s_num = num_str|int %}
             <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
-                <div style="display: flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.75rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 700; transition: all 0.2s;
+                <div style="display: flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.75rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 600; transition: all 0.2s;
                     {% if s_num < current_step or (has_teams and s_num <= 3) %}
-                        background: rgba(5, 150, 105, 0.14); color: #065F46; border: 1px solid rgba(5, 150, 105, 0.35);
+                        background: rgba(5, 150, 105, 0.12); color: #065F46; border: 1px solid rgba(5, 150, 105, 0.30);
                     {% elif s_num == current_step %}
-                        background: rgba(181, 89, 58, 0.14); color: #9A482C; border: 2px solid #B5593A; box-shadow: 0 0 10px rgba(181, 89, 58, 0.22);
+                        background: rgba(181, 89, 58, 0.12); color: #9A482C; border: 1px solid #B5593A;
                     {% else %}
                         background: var(--bg-secondary); color: var(--text-muted); border: 1px solid var(--border-color); opacity: 0.75;
                     {% endif %}">
                     <span>
-                        {% if s_num < current_step or (has_teams and s_num <= 3) %}✓{% else %}{{ s_num }}{% endif %}
+                        {% if s_num < current_step or (has_teams and s_num <= 3) %}
+                            <svg class="tp-icon tp-icon-sm" style="vertical-align: -1px;"><use href="#icon-check"></use></svg>
+                        {% else %}
+                            <span class="tabular-nums">{{ s_num }}</span>
+                        {% endif %}
                     </span>
                     <span>{{ title }}</span>
                 </div>
                 {% if not loop.last %}
-                <span style="color: var(--text-muted); font-size: 0.85rem; opacity: 0.5;">➔</span>
+                <svg class="tp-icon tp-icon-sm" style="color: var(--text-muted); opacity: 0.45;"><use href="#icon-chevron-right"></use></svg>
                 {% endif %}
             </div>
         {% endfor %}
@@ -92,42 +98,47 @@
         <!-- STEP 1: PLAYER REGISTRATION -->
         {% set s1_done = (has_teams or players_count >= 5) %}
         {% set s1_active = (current_step == 1) %}
-        <div style="background: var(--bg-secondary); border: {% if s1_active %}2px solid var(--accent-primary){% elif s1_done %}1px solid rgba(5, 150, 105, 0.35){% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between; {% if has_teams %}opacity: 0.9;{% endif %}">
+        <div style="background: var(--bg-secondary); border: {% if s1_active %}1.5px solid var(--accent-primary){% elif s1_done %}1px solid rgba(5, 150, 105, 0.3){% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between; {% if has_teams %}opacity: 0.9;{% endif %}">
             <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: {% if s1_done %}#065F46{% else %}var(--accent-primary-text){% endif %}; letter-spacing: 0.05em;">
+                    <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: {% if s1_done %}#065F46{% else %}var(--accent-primary-text){% endif %}; letter-spacing: 0.05em;">
                         Step 1
                     </span>
                     {% if has_teams %}
-                        <span style="font-size: 0.72rem; background: rgba(5, 150, 105, 0.14); color: #065F46; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">✓ Locked</span>
+                        <span style="font-size: 0.72rem; background: rgba(5, 150, 105, 0.12); color: #065F46; padding: 2px 7px; border-radius: 9999px; font-weight: 600; display: inline-flex; align-items: center; gap: 3px;">
+                            <svg class="tp-icon tp-icon-sm"><use href="#icon-lock"></use></svg> Locked
+                        </span>
                     {% elif s1_active %}
-                        <span style="font-size: 0.72rem; background: rgba(15, 61, 46, 0.14); color: #0F3D2E; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">⚡ Current</span>
+                        <span style="font-size: 0.72rem; background: rgba(15, 61, 46, 0.12); color: #0F3D2E; padding: 2px 7px; border-radius: 9999px; font-weight: 600;">Active</span>
                     {% else %}
-                        <span style="font-size: 0.72rem; background: rgba(5, 150, 105, 0.14); color: #065F46; padding: 2px 7px; border-radius: 9999px; font-weight: 600;">✓ Done</span>
+                        <span style="font-size: 0.72rem; background: rgba(5, 150, 105, 0.12); color: #065F46; padding: 2px 7px; border-radius: 9999px; font-weight: 600; display: inline-flex; align-items: center; gap: 3px;">
+                            <svg class="tp-icon tp-icon-sm"><use href="#icon-check"></use></svg> Done
+                        </span>
                     {% endif %}
                 </div>
-                <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.35rem;">
-                    👥 Player Registration
+                <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.35rem;">
+                    <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-users"></use></svg>
+                    <span>Player Registration</span>
                 </div>
                 <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0 0 0.75rem; line-height: 1.4;">
                     Register participants into category pool.
                 </p>
             </div>
             <div>
-                <div style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem;">
-                    Pool: <strong style="color: var(--text-primary);">{{ players_count }} players</strong>
+                <div style="font-size: 0.78rem; font-weight: 500; color: var(--text-muted); margin-bottom: 0.5rem;">
+                    Pool: <strong class="tabular-nums" style="color: var(--text-primary); font-weight: 600;">{{ players_count }} players</strong>
                 </div>
                 {% if has_teams %}
-                    <div style="padding: 0.4rem; text-align: center; font-size: 0.75rem; font-weight: 600; color: #065F46; background: rgba(5, 150, 105, 0.10); border-radius: var(--radius-sm);">
-                        ✓ Squads Allotted &amp; Locked
+                    <div style="padding: 0.4rem; text-align: center; font-size: 0.75rem; font-weight: 600; color: #065F46; background: rgba(5, 150, 105, 0.10); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; gap: 4px;">
+                        <svg class="tp-icon tp-icon-sm"><use href="#icon-lock"></use></svg> Squads Allotted &amp; Locked
                     </div>
                 {% elif s1_active %}
-                    <a href="{{ url_for('category.manage_category', slug=tournament.url_slug, category_id=category.id) }}#participants" class="btn btn-primary btn-small" style="width: 100%; text-align: center; font-size: 0.78rem; padding: 0.4rem; font-weight: 700;">
-                        + Register Players ➔
+                    <a href="{{ url_for('category.manage_category', slug=tournament.url_slug, category_id=category.id) }}#participants" class="btn btn-primary btn-small" style="width: 100%; text-align: center; font-size: 0.78rem; padding: 0.4rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                        <svg class="tp-icon tp-icon-sm"><use href="#icon-plus"></use></svg> Register Players
                     </a>
                 {% else %}
-                    <div style="padding: 0.35rem; text-align: center; font-size: 0.75rem; color: var(--text-muted);">
-                        ✓ Registration Complete
+                    <div style="padding: 0.35rem; text-align: center; font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 4px;">
+                        <svg class="tp-icon tp-icon-sm"><use href="#icon-check"></use></svg> Registration Complete
                     </div>
                 {% endif %}
             </div>
@@ -136,24 +147,29 @@
         <!-- STEP 2: ASSIGN SKILL TIERS -->
         {% set s2_done = (has_teams or current_step > 2) %}
         {% set s2_active = (current_step == 2) %}
-        <div style="background: var(--bg-secondary); border: {% if s2_active %}2px solid #6D28D9{% elif s2_done %}1px solid rgba(15, 138, 95, 0.35){% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between; {% if has_teams %}opacity: 0.9;{% endif %}">
+        <div style="background: var(--bg-secondary); border: {% if s2_active %}1.5px solid var(--accent-secondary){% elif s2_done %}1px solid rgba(15, 138, 95, 0.3){% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between; {% if has_teams %}opacity: 0.9;{% endif %}">
             <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: {% if s2_done %}#065F46{% else %}#6D28D9{% endif %}; letter-spacing: 0.05em;">
+                    <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: {% if s2_done %}#065F46{% else %}var(--accent-secondary){% endif %}; letter-spacing: 0.05em;">
                         Step 2
                     </span>
                     {% if has_teams %}
-                        <span style="font-size: 0.72rem; background: rgba(15, 138, 95, 0.14); color: #065F46; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">✓ Locked</span>
+                        <span style="font-size: 0.72rem; background: rgba(15, 138, 95, 0.12); color: #065F46; padding: 2px 7px; border-radius: 9999px; font-weight: 600; display: inline-flex; align-items: center; gap: 3px;">
+                            <svg class="tp-icon tp-icon-sm"><use href="#icon-lock"></use></svg> Locked
+                        </span>
                     {% elif s2_active %}
-                        <span style="font-size: 0.72rem; background: rgba(109, 40, 217, 0.14); color: #5B21B6; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">⚡ Current</span>
+                        <span style="font-size: 0.72rem; background: rgba(109, 40, 217, 0.12); color: #5B21B6; padding: 2px 7px; border-radius: 9999px; font-weight: 600;">Active</span>
                     {% elif s2_done %}
-                        <span style="font-size: 0.72rem; background: rgba(15, 138, 95, 0.14); color: #065F46; padding: 2px 7px; border-radius: 9999px; font-weight: 600;">✓ Done</span>
+                        <span style="font-size: 0.72rem; background: rgba(15, 138, 95, 0.12); color: #065F46; padding: 2px 7px; border-radius: 9999px; font-weight: 600; display: inline-flex; align-items: center; gap: 3px;">
+                            <svg class="tp-icon tp-icon-sm"><use href="#icon-check"></use></svg> Done
+                        </span>
                     {% else %}
                         <span style="font-size: 0.72rem; background: var(--bg-tertiary); color: var(--text-muted); padding: 2px 7px; border-radius: 9999px;">Step 2</span>
                     {% endif %}
                 </div>
-                <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.35rem;">
-                    🎯 Tiers &amp; Captains
+                <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.35rem;">
+                    <svg class="tp-icon tp-icon-sm" style="color: var(--accent-secondary);"><use href="#icon-target"></use></svg>
+                    <span>Tiers &amp; Captains</span>
                 </div>
                 <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0 0 0.75rem; line-height: 1.4;">
                     Assign players into 5 tiers (Captains, VCs, Members).
@@ -161,20 +177,20 @@
             </div>
             <div>
                 {% if has_teams %}
-                    <div style="padding: 0.4rem; text-align: center; font-size: 0.75rem; font-weight: 600; color: #065F46; background: rgba(15, 138, 95, 0.1); border-radius: var(--radius-sm);">
-                        ✓ Tiers Allotted &amp; Locked
+                    <div style="padding: 0.4rem; text-align: center; font-size: 0.75rem; font-weight: 600; color: #065F46; background: rgba(15, 138, 95, 0.1); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; gap: 4px;">
+                        <svg class="tp-icon tp-icon-sm"><use href="#icon-lock"></use></svg> Tiers Allotted &amp; Locked
                     </div>
                 {% elif s2_active %}
-                    <a href="{{ url_for('category.team_draft_view', slug=tournament.url_slug, category_id=category.id) }}#stageTiers" class="btn btn-primary btn-small" style="width: 100%; text-align: center; font-size: 0.78rem; padding: 0.4rem; font-weight: 700;">
-                        🎯 Assign Tiers ➔
+                    <a href="{{ url_for('category.team_draft_view', slug=tournament.url_slug, category_id=category.id) }}#stageTiers" class="btn btn-primary btn-small" style="width: 100%; text-align: center; font-size: 0.78rem; padding: 0.4rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                        <svg class="tp-icon tp-icon-sm"><use href="#icon-target"></use></svg> Assign Tiers
                     </a>
                 {% elif s2_done %}
-                    <div style="padding: 0.35rem; text-align: center; font-size: 0.75rem; color: var(--text-muted);">
-                        ✓ Tiers Assigned
+                    <div style="padding: 0.35rem; text-align: center; font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 4px;">
+                        <svg class="tp-icon tp-icon-sm"><use href="#icon-check"></use></svg> Tiers Assigned
                     </div>
                 {% else %}
-                    <div style="padding: 0.35rem; text-align: center; font-size: 0.75rem; color: var(--text-muted);">
-                        🔒 Pending Step 1
+                    <div style="padding: 0.35rem; text-align: center; font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 4px;">
+                        <svg class="tp-icon tp-icon-sm"><use href="#icon-lock"></use></svg> Pending Step 1
                     </div>
                 {% endif %}
             </div>
@@ -183,22 +199,25 @@
         <!-- STEP 3: TEAM FORMATION -->
         {% set s3_done = has_teams %}
         {% set s3_active = (current_step == 3) %}
-        <div style="background: var(--bg-secondary); border: {% if s3_active %}2px solid #C9A55C{% elif s3_done %}1px solid rgba(5, 150, 105, 0.35){% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between; {% if has_teams %}opacity: 0.92;{% endif %}">
+        <div style="background: var(--bg-secondary); border: {% if s3_active %}1.5px solid #C9A55C{% elif s3_done %}1px solid rgba(5, 150, 105, 0.3){% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between; {% if has_teams %}opacity: 0.92;{% endif %}">
             <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: {% if s3_done %}#065F46{% else %}#7A5F1E{% endif %}; letter-spacing: 0.05em;">
+                    <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: {% if s3_done %}#065F46{% else %}#7A5F1E{% endif %}; letter-spacing: 0.05em;">
                         Step 3
                     </span>
                     {% if s3_done %}
-                        <span style="font-size: 0.72rem; background: rgba(5, 150, 105, 0.14); color: #065F46; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">✓ Formed &amp; Locked</span>
+                        <span style="font-size: 0.72rem; background: rgba(5, 150, 105, 0.12); color: #065F46; padding: 2px 7px; border-radius: 9999px; font-weight: 600; display: inline-flex; align-items: center; gap: 3px;">
+                            <svg class="tp-icon tp-icon-sm"><use href="#icon-lock"></use></svg> Formed &amp; Locked
+                        </span>
                     {% elif s3_active %}
-                        <span style="font-size: 0.72rem; background: rgba(201, 165, 92, 0.18); color: #7A5F1E; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">⚡ Current</span>
+                        <span style="font-size: 0.72rem; background: rgba(201, 165, 92, 0.18); color: #7A5F1E; padding: 2px 7px; border-radius: 9999px; font-weight: 600;">Active</span>
                     {% else %}
                         <span style="font-size: 0.72rem; background: var(--bg-tertiary); color: var(--text-muted); padding: 2px 7px; border-radius: 9999px;">Step 3</span>
                     {% endif %}
                 </div>
-                <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.35rem;">
-                    🎲 Team Formation
+                <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.35rem;">
+                    <svg class="tp-icon tp-icon-sm" style="color: #7A5F1E;"><use href="#icon-layers"></use></svg>
+                    <span>Team Formation</span>
                 </div>
                 <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0 0 0.75rem; line-height: 1.4;">
                     Chit draw or balanced draft to create squad rosters.
@@ -206,16 +225,16 @@
             </div>
             <div>
                 {% if s3_done %}
-                    <div style="padding: 0.4rem; text-align: center; font-size: 0.75rem; font-weight: 700; color: #065F46; background: rgba(15, 138, 95, 0.1); border-radius: var(--radius-sm); border: 1px solid rgba(15, 138, 95, 0.25);">
-                        ✓ {{ teams_count }} Teams Created (Locked)
+                    <div class="tabular-nums" style="padding: 0.4rem; text-align: center; font-size: 0.75rem; font-weight: 600; color: #065F46; background: rgba(15, 138, 95, 0.1); border-radius: var(--radius-sm); border: 1px solid rgba(15, 138, 95, 0.25); display: flex; align-items: center; justify-content: center; gap: 4px;">
+                        <svg class="tp-icon tp-icon-sm"><use href="#icon-check"></use></svg> {{ teams_count }} Teams Formed (Locked)
                     </div>
                 {% elif s3_active %}
-                    <a href="{{ url_for('category.team_draft_view', slug=tournament.url_slug, category_id=category.id) }}#stageTeams" class="btn btn-primary btn-small" style="width: 100%; text-align: center; font-size: 0.78rem; padding: 0.4rem; font-weight: 700;">
-                        🎲 Form Teams Now ➔
+                    <a href="{{ url_for('category.team_draft_view', slug=tournament.url_slug, category_id=category.id) }}#stageTeams" class="btn btn-primary btn-small" style="width: 100%; text-align: center; font-size: 0.78rem; padding: 0.4rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                        <svg class="tp-icon tp-icon-sm"><use href="#icon-layers"></use></svg> Form Teams Now
                     </a>
                 {% else %}
-                    <div style="padding: 0.35rem; text-align: center; font-size: 0.75rem; color: var(--text-muted);">
-                        🔒 Pending Step 2
+                    <div style="padding: 0.35rem; text-align: center; font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 4px;">
+                        <svg class="tp-icon tp-icon-sm"><use href="#icon-lock"></use></svg> Pending Step 2
                     </div>
                 {% endif %}
             </div>
@@ -224,20 +243,23 @@
         <!-- STEP 4: GROUP ALLOCATION & TIMINGS -->
         {% set s4_done = is_started %}
         {% set s4_active = (current_step == 4) %}
-        <div style="background: var(--bg-secondary); border: {% if s4_active %}2px solid #047857{% elif s4_done %}1px solid rgba(5, 150, 105, 0.35){% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between;">
+        <div style="background: var(--bg-secondary); border: {% if s4_active %}1.5px solid #047857{% elif s4_done %}1px solid rgba(5, 150, 105, 0.3){% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between;">
             <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #065F46; letter-spacing: 0.05em;">Step 4</span>
+                    <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #065F46; letter-spacing: 0.05em;">Step 4</span>
                     {% if s4_done %}
-                        <span style="font-size: 0.72rem; background: rgba(5, 150, 105, 0.14); color: #065F46; padding: 2px 7px; border-radius: 9999px; font-weight: 600;">✓ Scheduled</span>
+                        <span style="font-size: 0.72rem; background: rgba(5, 150, 105, 0.12); color: #065F46; padding: 2px 7px; border-radius: 9999px; font-weight: 600; display: inline-flex; align-items: center; gap: 3px;">
+                            <svg class="tp-icon tp-icon-sm"><use href="#icon-check"></use></svg> Scheduled
+                        </span>
                     {% elif s4_active %}
-                        <span style="font-size: 0.72rem; background: rgba(5, 150, 105, 0.18); color: #065F46; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">⚡ Next Action</span>
+                        <span style="font-size: 0.72rem; background: rgba(5, 150, 105, 0.16); color: #065F46; padding: 2px 7px; border-radius: 9999px; font-weight: 600;">Next Action</span>
                     {% else %}
                         <span style="font-size: 0.72rem; background: var(--bg-tertiary); color: var(--text-muted); padding: 2px 7px; border-radius: 9999px;">Step 4</span>
                     {% endif %}
                 </div>
-                <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.35rem;">
-                    🗓️ Groups &amp; Fixtures
+                <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.35rem;">
+                    <svg class="tp-icon tp-icon-sm" style="color: #065F46;"><use href="#icon-calendar"></use></svg>
+                    <span>Groups &amp; Fixtures</span>
                 </div>
                 <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0 0 0.75rem; line-height: 1.4;">
                     Set session start times &amp; courts, then generate ties.
@@ -245,16 +267,16 @@
             </div>
             <div>
                 {% if s4_active %}
-                    <a href="{{ url_for('category.team_draft_view', slug=tournament.url_slug, category_id=category.id) }}#stageTimings" class="btn btn-primary btn-small" style="width: 100%; text-align: center; font-size: 0.78rem; padding: 0.4rem; font-weight: 700;">
-                        ⚙️ Set Times &amp; Launch ➔
+                    <a href="{{ url_for('category.team_draft_view', slug=tournament.url_slug, category_id=category.id) }}#stageTimings" class="btn btn-primary btn-small" style="width: 100%; text-align: center; font-size: 0.78rem; padding: 0.4rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                        <svg class="tp-icon tp-icon-sm"><use href="#icon-settings"></use></svg> Set Times &amp; Launch
                     </a>
                 {% elif s4_done %}
-                    <div style="padding: 0.35rem; text-align: center; font-size: 0.75rem; color: #065F46; font-weight: 600;">
-                        ✓ Fixtures Generated
+                    <div style="padding: 0.35rem; text-align: center; font-size: 0.75rem; color: #065F46; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                        <svg class="tp-icon tp-icon-sm"><use href="#icon-check"></use></svg> Fixtures Generated
                     </div>
                 {% else %}
-                    <div style="padding: 0.35rem; text-align: center; font-size: 0.75rem; color: var(--text-muted);">
-                        🔒 Pending Team Formation
+                    <div style="padding: 0.35rem; text-align: center; font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 4px;">
+                        <svg class="tp-icon tp-icon-sm"><use href="#icon-lock"></use></svg> Pending Team Formation
                     </div>
                 {% endif %}
             </div>
@@ -263,20 +285,23 @@
         <!-- STEP 5: CAPTAINS' LINEUP ALLOTMENT -->
         {% set s5_done = (current_step > 5) %}
         {% set s5_active = (current_step == 5) %}
-        <div style="background: var(--bg-secondary); border: {% if s5_active %}2px solid #9D174D{% elif s5_done %}1px solid rgba(5, 150, 105, 0.35){% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between;">
+        <div style="background: var(--bg-secondary); border: {% if s5_active %}1.5px solid #9D174D{% elif s5_done %}1px solid rgba(5, 150, 105, 0.3){% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between;">
             <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #9D174D; letter-spacing: 0.05em;">Step 5</span>
+                    <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #9D174D; letter-spacing: 0.05em;">Step 5</span>
                     {% if s5_done %}
-                        <span style="font-size: 0.72rem; background: rgba(5, 150, 105, 0.14); color: #065F46; padding: 2px 7px; border-radius: 9999px; font-weight: 600;">✓ Done</span>
+                        <span style="font-size: 0.72rem; background: rgba(5, 150, 105, 0.12); color: #065F46; padding: 2px 7px; border-radius: 9999px; font-weight: 600; display: inline-flex; align-items: center; gap: 3px;">
+                            <svg class="tp-icon tp-icon-sm"><use href="#icon-check"></use></svg> Done
+                        </span>
                     {% elif s5_active %}
-                        <span style="font-size: 0.72rem; background: rgba(157, 23, 77, 0.14); color: #9D174D; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">⚡ Current</span>
+                        <span style="font-size: 0.72rem; background: rgba(157, 23, 77, 0.12); color: #9D174D; padding: 2px 7px; border-radius: 9999px; font-weight: 600;">Active</span>
                     {% else %}
                         <span style="font-size: 0.72rem; background: var(--bg-tertiary); color: var(--text-muted); padding: 2px 7px; border-radius: 9999px;">Step 5</span>
                     {% endif %}
                 </div>
-                <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.35rem;">
-                    📋 Lineup Allotment
+                <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.35rem;">
+                    <svg class="tp-icon tp-icon-sm" style="color: #9D174D;"><use href="#icon-clipboard"></use></svg>
+                    <span>Lineup Allotment</span>
                 </div>
                 <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0 0 0.75rem; line-height: 1.4;">
                     Captains submit slips for 1 Singles &amp; 2 Doubles per tie.
@@ -284,16 +309,16 @@
             </div>
             <div>
                 {% if s5_active %}
-                    <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=category.id) }}#fixtures" class="btn btn-primary btn-small" style="width: 100%; text-align: center; font-size: 0.78rem; padding: 0.4rem; font-weight: 700;" onclick="if(window.location.pathname.endsWith('/categories/{{ category.id }}')) { event.preventDefault(); if (typeof handleCategorySectionNav === 'function') { handleCategorySectionNav('fixtures'); } else { document.getElementById('fixtures')?.scrollIntoView({behavior: 'smooth'}); } }">
-                        📋 Allot Slips ➔
+                    <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=category.id) }}#fixtures" class="btn btn-primary btn-small" style="width: 100%; text-align: center; font-size: 0.78rem; padding: 0.4rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 4px;" onclick="if(window.location.pathname.endsWith('/categories/{{ category.id }}')) { event.preventDefault(); if (typeof handleCategorySectionNav === 'function') { handleCategorySectionNav('fixtures'); } else { document.getElementById('fixtures')?.scrollIntoView({behavior: 'smooth'}); } }">
+                        <svg class="tp-icon tp-icon-sm"><use href="#icon-clipboard"></use></svg> Allot Slips
                     </a>
                 {% elif s5_done %}
-                    <div style="padding: 0.35rem; text-align: center; font-size: 0.75rem; color: #065F46; font-weight: 600;">
-                        ✓ Lineups Allotted
+                    <div style="padding: 0.35rem; text-align: center; font-size: 0.75rem; color: #065F46; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                        <svg class="tp-icon tp-icon-sm"><use href="#icon-check"></use></svg> Lineups Allotted
                     </div>
                 {% else %}
-                    <div style="padding: 0.35rem; text-align: center; font-size: 0.75rem; color: var(--text-muted);">
-                        🔒 Pending Step 4
+                    <div style="padding: 0.35rem; text-align: center; font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 4px;">
+                        <svg class="tp-icon tp-icon-sm"><use href="#icon-lock"></use></svg> Pending Step 4
                     </div>
                 {% endif %}
             </div>
@@ -301,26 +326,27 @@
 
         <!-- STEP 6: MATCH PLAY & GAMES SCORING -->
         {% set s6_active = (current_step == 6) %}
-        <div style="background: var(--bg-secondary); border: {% if s6_active %}2px solid #B5593A{% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between;">
+        <div style="background: var(--bg-secondary); border: {% if s6_active %}1.5px solid #B5593A{% else %}1px solid var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between;">
             <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--accent-tertiary-text); letter-spacing: 0.05em;">Step 6</span>
+                    <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--accent-tertiary-text); letter-spacing: 0.05em;">Step 6</span>
                     {% if s6_active %}
-                        <span style="font-size: 0.72rem; background: rgba(181, 89, 58, 0.14); color: #9A482C; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">🎾 Match Day</span>
+                        <span style="font-size: 0.72rem; background: rgba(181, 89, 58, 0.12); color: #9A482C; padding: 2px 7px; border-radius: 9999px; font-weight: 600;">Match Day</span>
                     {% else %}
                         <span style="font-size: 0.72rem; background: var(--bg-tertiary); color: var(--text-muted); padding: 2px 7px; border-radius: 9999px;">Step 6</span>
                     {% endif %}
                 </div>
-                <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.35rem;">
-                    🎾 Games Scoring
+                <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.35rem;">
+                    <svg class="tp-icon tp-icon-sm" style="color: #B5593A;"><use href="#icon-tennis"></use></svg>
+                    <span>Games Scoring</span>
                 </div>
                 <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0 0 0.75rem; line-height: 1.4;">
                     Play according to Order of Play. Report rubber scores.
                 </p>
             </div>
             <div>
-                <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug) }}" class="btn {% if s6_active %}btn-primary{% else %}btn-secondary{% endif %} btn-small" style="width: 100%; text-align: center; font-size: 0.78rem; padding: 0.4rem; font-weight: 700;">
-                    📅 Order of Play ➔
+                <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug) }}" class="btn {% if s6_active %}btn-primary{% else %}btn-secondary{% endif %} btn-small" style="width: 100%; text-align: center; font-size: 0.78rem; padding: 0.4rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                    <svg class="tp-icon tp-icon-sm"><use href="#icon-calendar"></use></svg> Order of Play
                 </a>
             </div>
         </div>

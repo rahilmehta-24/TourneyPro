@@ -1,6 +1,7 @@
 import math
+from datetime import datetime
 from app.services.format_engine.base import TournamentFormat
-from app.domain.models import Match, Participant
+from app.domain.models import Match, Participant, db
 
 class DoubleEliminationFormat(TournamentFormat):
     name = "Double Elimination"
@@ -14,7 +15,6 @@ class DoubleEliminationFormat(TournamentFormat):
 
     @classmethod
     def advance_match(cls, match, category, winner_id=None):
-        from datetime import datetime
         loser_id = match.participant1_id if match.participant1_id != winner_id else match.participant2_id
 
         winners_matches = Match.query.filter_by(category_id=category.id, bracket_type='winners').all()
@@ -59,9 +59,27 @@ class DoubleEliminationFormat(TournamentFormat):
                         target_match.participant1_id = loser_id
                     else:
                         target_match.participant2_id = loser_id
+
+                    # Check if the other slot was a bye -> auto-advance loser
+                    if target_match.participant1_id and target_match.score2 == 'Bye':
+                        target_match.status = 'completed'
+                        target_match.winner_id = target_match.participant1_id
+                        cls.advance_match(target_match, category, target_match.participant1_id)
+                    elif target_match.participant2_id and target_match.score1 == 'Bye':
+                        target_match.status = 'completed'
+                        target_match.winner_id = target_match.participant2_id
+                        cls.advance_match(target_match, category, target_match.participant2_id)
             else:
                 target_round = 2 * match.round - 2
-                target_match_number = match.match_number
+                w_matches_in_r = [m for m in winners_matches if m.round == match.round]
+                n = len(w_matches_in_r)
+
+                # Anti-rematch mirrored mapping on even Winners rounds (Section 2.2 of DOUBLE_ELIMINATION.md)
+                if match.round % 2 == 0 and n > 1:
+                    target_match_number = n + 1 - match.match_number
+                else:
+                    target_match_number = match.match_number
+
                 target_match = Match.query.filter_by(
                     category_id=category.id,
                     round=target_round,
@@ -141,13 +159,10 @@ class DoubleEliminationFormat(TournamentFormat):
             match_number=2
         ).first()
 
-        if grand_finals and grand_finals.status == 'completed' and grand_finals.winner_id:
+        if grand_finals and grand_finals.status == 'completed' and grand_finals.winner_id and grand_finals.score1 != 'N/A':
             winner = Participant.query.get(grand_finals.winner_id)
-            if grand_finals.participant1_id == grand_finals.winner_id:
-                runner_up_id = grand_finals.participant2_id
-            else:
-                runner_up_id = grand_finals.participant1_id
-            runner_up = Participant.query.get(runner_up_id)
+            runner_up_id = grand_finals.participant2_id if grand_finals.participant1_id == grand_finals.winner_id else grand_finals.participant1_id
+            runner_up = Participant.query.get(runner_up_id) if runner_up_id else None
         else:
             grand_finals = Match.query.filter_by(
                 category_id=category.id,
@@ -159,42 +174,48 @@ class DoubleEliminationFormat(TournamentFormat):
                 return
 
             winner = Participant.query.get(grand_finals.winner_id)
-            if grand_finals.participant1_id == grand_finals.winner_id:
-                runner_up_id = grand_finals.participant2_id
-            else:
-                runner_up_id = grand_finals.participant1_id
-            runner_up = Participant.query.get(runner_up_id)
-
-        winners_final = Match.query.filter_by(
-            category_id=category.id,
-            bracket_type='winners'
-        ).order_by(Match.round.desc()).first()
-
-        losers_final = Match.query.filter_by(
-            category_id=category.id,
-            bracket_type='losers'
-        ).order_by(Match.round.desc()).first()
-
-        semi_finalists = []
-
-        for m in [winners_final, losers_final]:
-            if m and m.winner_id:
-                if m.participant1_id == m.winner_id:
-                    loser_id = m.participant2_id
-                else:
-                    loser_id = m.participant1_id
-
-                if loser_id:
-                    loser = Participant.query.get(loser_id)
-                    if loser and loser.id != runner_up.id:
-                        semi_finalists.append(loser)
+            runner_up_id = grand_finals.participant2_id if grand_finals.participant1_id == grand_finals.winner_id else grand_finals.participant1_id
+            runner_up = Participant.query.get(runner_up_id) if runner_up_id else None
 
         if winner:
             winner.final_rank = 1
         if runner_up:
             runner_up.final_rank = 2
-        for sf in semi_finalists:
-            sf.final_rank = 3
+
+        ranked_ids = {p.id for p in [winner, runner_up] if p}
+
+        # Full elimination-order final rankings by iterating backward through Losers rounds
+        losers_matches = Match.query.filter_by(
+            category_id=category.id,
+            bracket_type='losers'
+        ).all()
+
+        if not losers_matches:
+            db.session.commit()
+            return
+
+        max_losers_round = max(m.round for m in losers_matches)
+        current_rank = 3
+
+        for r in range(max_losers_round, 0, -1):
+            r_matches = [m for m in losers_matches if m.round == r and m.status == 'completed' and m.winner_id]
+            r_losers = []
+            for m in r_matches:
+                if m.score1 == 'Void' or m.score2 == 'Void':
+                    continue
+                lid = m.participant2_id if m.participant1_id == m.winner_id else m.participant1_id
+                if lid and lid not in ranked_ids:
+                    loser = Participant.query.get(lid)
+                    if loser:
+                        r_losers.append(loser)
+                        ranked_ids.add(lid)
+
+            if r_losers:
+                for loser_p in r_losers:
+                    loser_p.final_rank = current_rank
+                current_rank += len(r_losers)
+
+        db.session.commit()
 
     @staticmethod
     def _generate_double_elimination(participants, use_manual_seeding=True):
@@ -208,16 +229,44 @@ class DoubleEliminationFormat(TournamentFormat):
         num_rounds_winners = math.ceil(math.log2(num_participants))
         losers_matches = []
 
+        # Identify which Winners Round 1 matches had byes (i.e. no loser will be produced)
+        w1_byes = {
+            m['match_number']
+            for m in winners_matches
+            if m['round'] == 1 and (m['participant1_id'] is None or m['participant2_id'] is None)
+        }
+
         num_first_round_losers = len([m for m in winners_matches if m['round'] == 1])
 
         for i in range(0, num_first_round_losers, 2):
+            match_num = (i // 2) + 1
+            feed1 = 2 * match_num - 1
+            feed2 = 2 * match_num
+            has_feed1_bye = feed1 in w1_byes
+            has_feed2_bye = feed2 in w1_byes
+
+            status = 'pending'
+            score1 = None
+            score2 = None
+            if has_feed1_bye and has_feed2_bye:
+                status = 'completed'
+                score1 = 'Void'
+                score2 = 'Void'
+            elif has_feed1_bye:
+                score1 = 'Bye'
+            elif has_feed2_bye:
+                score2 = 'Bye'
+
             match = {
                 'round': 1,
-                'match_number': (i // 2) + 1,
+                'match_number': match_num,
                 'participant1_id': None,
                 'participant2_id': None,
                 'bracket_type': 'losers',
-                'match_type': 'knockout'
+                'match_type': 'knockout',
+                'status': status,
+                'score1': score1,
+                'score2': score2,
             }
             losers_matches.append(match)
 

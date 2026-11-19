@@ -62,7 +62,7 @@ class GroupStructureAndLuckyLosersTestCase(unittest.TestCase):
             User.query.delete()
             db.session.commit()
 
-            admin = User(username='struct_admin', email='struct_admin@test.com', role='admin')
+            admin = User(username='struct_admin', email='struct_admin@test.com', role='superadmin')
             admin.set_password('password123')
             db.session.add(admin)
             db.session.flush()

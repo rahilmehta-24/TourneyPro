@@ -13,6 +13,14 @@ The architecture follows a strict hierarchy:
 
 ## 2. Tournament Formats
 
+For in-depth mathematical specifications, bracket trees, seeding algorithms, and progression rules, refer to the dedicated format guides in the [`docs/formats/`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/docs/formats/README.md) directory, or inspect the visual UI layout in **[FORMAT_DISPLAYS.md](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/docs/FORMAT_DISPLAYS.md)**:
+- [Single Elimination Logic](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/docs/formats/SINGLE_ELIMINATION.md)
+- [Doubles Elimination Logic](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/docs/formats/DOUBLES_ELIMINATION.md)
+- [Double Elimination Logic](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/docs/formats/DOUBLE_ELIMINATION.md)
+- [Round Robin Logic](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/docs/formats/ROUND_ROBIN.md)
+- [Doubles Round Robin Logic](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/docs/formats/DOUBLES_ROUND_ROBIN.md)
+- [Group Stage + Knockout Logic](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/docs/formats/GROUP_STAGE.md)
+
 ### 2.1 Single Elimination (Knockout)
 A standard knockout bracket where a player is eliminated after a single match loss.
 - **Generation:** Bracket generation relies on mathematical powers of 2. If the number of participants is not a power of 2 (e.g. 8, 16, 32), the system automatically generates **Byes** for the top seeds, advancing them straight to the next round.
