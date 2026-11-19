@@ -13,7 +13,7 @@ The architecture follows a strict hierarchy:
 
 ## 2. Tournament Formats
 
-For in-depth mathematical specifications, bracket trees, seeding algorithms, and progression rules, refer to the dedicated format guides in the [`docs/formats/`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/docs/formats/README.md) directory:
+For in-depth mathematical specifications, bracket trees, seeding algorithms, and progression rules, refer to the dedicated format guides in the [`docs/formats/`](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/docs/formats/README.md) directory, or inspect the visual UI layout in **[FORMAT_DISPLAYS.md](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/docs/FORMAT_DISPLAYS.md)**:
 - [Single Elimination Logic](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/docs/formats/SINGLE_ELIMINATION.md)
 - [Doubles Elimination Logic](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/docs/formats/DOUBLES_ELIMINATION.md)
 - [Double Elimination Logic](file:///Users/rahilmehta24/VS_Code/Projects/TourneyPro/docs/formats/DOUBLE_ELIMINATION.md)

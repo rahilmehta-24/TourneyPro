@@ -6,20 +6,24 @@
 {% block content %}
     <style>
         .modern-header {
+            display: flex;
+            justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 1.5rem;
-            margin-bottom: 2rem;
+            gap: 1.5rem;
+            flex-wrap: wrap;
             background: var(--bg-card);
             border: 1px solid var(--border-color);
-            padding: 2rem;
+            padding: 1.35rem 1.75rem;
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow-sm);
+            margin-bottom: 1.75rem;
         }
         .header-content {
+            flex: 1;
+            min-width: 280px;
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
+            gap: 0.55rem;
         }
         .back-link {
             font-size: 0.9rem;
@@ -35,29 +39,48 @@
         .title-wrapper {
             display: flex;
             align-items: center;
-            gap: 1rem;
+            gap: 0.75rem;
+            flex-wrap: wrap;
         }
         .title-wrapper h1 {
             margin: 0;
-            font-size: 2.2rem;
+            font-size: 1.85rem;
+            font-weight: 700;
+            line-height: 1.25;
+            color: var(--text-primary);
+        }
+        .category-badges-cluster {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            flex-wrap: wrap;
         }
         .meta-row {
             display: flex;
             align-items: center;
-            gap: 1.5rem;
-            color: var(--text-muted);
-            font-size: 0.95rem;
-            margin-top: 0.2rem;
+            gap: 1.25rem;
+            color: var(--text-secondary);
+            font-size: 0.86rem;
+            flex-wrap: wrap;
+        }
+        .meta-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
         }
         .header-actions {
             display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 0.8rem;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            flex-shrink: 0;
         }
         .action-group {
-            display: flex;
-            gap: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
         }
         
         .category-subnav-bar {
@@ -97,15 +120,19 @@
             .modern-header {
                 flex-direction: column;
                 align-items: flex-start;
-                gap: 1.5rem;
+                gap: 1.25rem;
+                padding: 1.25rem;
             }
             .header-actions {
                 align-items: stretch;
                 width: 100%;
+                justify-content: flex-start;
             }
             .action-group {
-                flex-direction: column;
                 width: 100%;
+            }
+            .action-group .btn {
+                flex: 1;
             }
         }
     </style>
@@ -176,58 +203,54 @@
         <div class="header-content">
             <div class="title-wrapper">
                 <h1>{{ category.name }}</h1>
-                <span class="status-badge status-{{ category.status }}">{{ category.status.replace('_', ' ').title() }}</span>
-                {% if not category.draw_published %}
-                <span style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4); padding: 0.2rem 0.55rem; font-size: 0.75rem; border-radius: 4px; font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem;" title="Only organizers and staff can see full draft details">
-                    <svg class="icon icon-xs"><use href="#icon-lock"></use></svg> Draft Draw
-                </span>
-                {% else %}
-                <span style="background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4); padding: 0.2rem 0.55rem; font-size: 0.75rem; border-radius: 4px; font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem;" title="Publicly published and visible to all players">
-                    <svg class="icon icon-xs"><use href="#icon-check"></use></svg> Published
-                </span>
-                {% endif %}
-                {% if category.status == 'in_progress' %}
-                <span class="live-indicator-badge" title="Live Scores: Updating automatically"><span class="live-indicator-dot"></span> Live Scores</span>
-                {% endif %}
+                <div class="category-badges-cluster">
+                    <span class="status-badge status-{{ category.status }}">{{ category.status.replace('_', ' ').title() }}</span>
+                    {% if not category.draw_published %}
+                    <span style="background: rgba(201, 165, 92, 0.18); color: #7A5F1E; border: 1px solid rgba(122, 95, 30, 0.35); padding: 0.22rem 0.65rem; font-size: 0.75rem; border-radius: 9999px; font-weight: 600; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.25rem; line-height: 1.25;" title="Only organizers and staff can see full draft details">
+                        <svg class="icon icon-xs"><use href="#icon-lock"></use></svg> Draft Draw
+                    </span>
+                    {% else %}
+                    <span style="background: rgba(5, 150, 105, 0.14); color: #065F46; border: 1px solid rgba(5, 150, 105, 0.35); padding: 0.22rem 0.65rem; font-size: 0.75rem; border-radius: 9999px; font-weight: 600; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.25rem; line-height: 1.25;" title="Publicly published and visible to all players">
+                        <svg class="icon icon-xs"><use href="#icon-check"></use></svg> Published
+                    </span>
+                    {% endif %}
+                    {% if category.status == 'in_progress' %}
+                    <span class="live-indicator-badge" title="Live Scores: Updating automatically"><span class="live-indicator-dot"></span> Live Scores</span>
+                    {% endif %}
+                </div>
             </div>
             <div class="meta-row">
-                <span class="meta-item"><svg class="icon icon-xs" style="margin-right: 4px;"><use href="#icon-trophy"></use></svg>{{ formats[category.format].name }}</span>
+                <span class="meta-item"><svg class="icon icon-xs" style="margin-right: 2px;"><use href="#icon-trophy"></use></svg>{{ formats[category.format].name }}</span>
                 <span class="meta-item">
                     {% if category.format == 'group_stage' %}
-                    <svg class="icon icon-xs" style="margin-right: 4px;"><use href="#icon-tennis"></use></svg>{{ category.total_games or 7 }} Games/Rubber (Team Tie: First to {{ ((category.total_games or 7) * 3) // 2 + 1 }})
+                    <svg class="icon icon-xs" style="margin-right: 2px;"><use href="#icon-tennis"></use></svg>{{ category.total_games or 7 }} Games/Rubber (Team Tie: First to {{ ((category.total_games or 7) * 3) // 2 + 1 }})
                     {% elif category.scoring_format == 'points' %}
-                    <svg class="icon icon-xs" style="margin-right: 4px;"><use href="#icon-target"></use></svg>First to {{ category.points_to_win or 11 }} Points
+                    <svg class="icon icon-xs" style="margin-right: 2px;"><use href="#icon-target"></use></svg>First to {{ category.points_to_win or 11 }} Points
                     {% else %}
-                    <svg class="icon icon-xs" style="margin-right: 4px;"><use href="#icon-tennis"></use></svg>Best of {{ category.num_sets or 3 }} Sets ({{ category.games_per_set or 6 }} Games/Set)
+                    <svg class="icon icon-xs" style="margin-right: 2px;"><use href="#icon-tennis"></use></svg>Best of {{ category.num_sets or 3 }} Sets ({{ category.games_per_set or 6 }} Games/Set)
                     {% endif %}
                 </span>
-                <span class="meta-item"><svg class="icon icon-xs" style="margin-right: 4px;"><use href="#icon-users"></use></svg>{{ participants|length }} Participants</span>
+                <span class="meta-item"><svg class="icon icon-xs" style="margin-right: 2px;"><use href="#icon-users"></use></svg>{{ participants|length }} Participants</span>
             </div>
         </div>
         <div class="page-actions header-actions" {% if is_export %}style="display: none;"{% endif %}>
-            <div class="action-group primary-actions">
-                {% if current_user and current_user.role in ['admin', 'superadmin'] %}
-                {% if category.format == 'group_stage' or (category.max_players_per_team and category.max_players_per_team > 1) %}
-                <a href="{{ url_for('category.team_draft_view', slug=tournament.url_slug, category_id=category.id) }}" class="btn" style="background: rgba(201, 165, 92, 0.18); color: #7A5F1E; border: 1px solid rgba(122, 95, 30, 0.38); font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem;">
-                    <svg class="icon icon-xs"><use href="#icon-users"></use></svg> Team Draft Board
-                </a>
-                {% endif %}
-                <a href="{{ url_for('category.manage_category', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.35rem;">
-                    <svg class="icon icon-xs"><use href="#icon-settings"></use></svg> Manage Category
-                </a>
-                {% endif %}
-            </div>
             {% if current_user and current_user.role in ['admin', 'superadmin'] %}
-            <div class="action-group secondary-actions">
-                <a href="{{ url_for('export.export_matches_csv', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-small btn-secondary" data-turbo="false" target="_blank" style="display: inline-flex; align-items: center; gap: 0.35rem;">
-                    <svg class="icon icon-xs"><use href="#icon-file-text"></use></svg> Matches CSV
-                </a>
-                {% if category.format in ['round_robin', 'group_stage'] %}
-                <a href="{{ url_for('export.export_standings_csv', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-small btn-secondary" data-turbo="false" target="_blank" style="display: inline-flex; align-items: center; gap: 0.35rem;">
-                    <svg class="icon icon-xs"><use href="#icon-layers"></use></svg> Standings CSV
-                </a>
-                {% endif %}
-            </div>
+            {% if category.format == 'group_stage' or (category.max_players_per_team and category.max_players_per_team > 1) %}
+            <a href="{{ url_for('category.team_draft_view', slug=tournament.url_slug, category_id=category.id) }}" class="btn" style="white-space: nowrap; background: rgba(201, 165, 92, 0.18); color: #7A5F1E; border: 1px solid rgba(122, 95, 30, 0.38); font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.85rem; padding: 0.45rem 0.85rem;">
+                <svg class="icon icon-xs"><use href="#icon-users"></use></svg> Team Draft Board
+            </a>
+            {% endif %}
+            <a href="{{ url_for('category.manage_category', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-primary" style="white-space: nowrap; display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.85rem; padding: 0.45rem 0.95rem;">
+                <svg class="icon icon-xs"><use href="#icon-settings"></use></svg> Manage Category
+            </a>
+            <a href="{{ url_for('export.export_matches_csv', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-secondary" data-turbo="false" target="_blank" style="white-space: nowrap; display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.85rem; padding: 0.45rem 0.85rem;">
+                <svg class="icon icon-xs"><use href="#icon-file-text"></use></svg> Matches CSV
+            </a>
+            {% if category.format in ['round_robin', 'group_stage'] %}
+            <a href="{{ url_for('export.export_standings_csv', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-secondary" data-turbo="false" target="_blank" style="white-space: nowrap; display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.85rem; padding: 0.45rem 0.85rem;">
+                <svg class="icon icon-xs"><use href="#icon-layers"></use></svg> Standings CSV
+            </a>
+            {% endif %}
             {% endif %}
         </div>
     </div>

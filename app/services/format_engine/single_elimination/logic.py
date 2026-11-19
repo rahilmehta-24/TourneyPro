@@ -41,38 +41,36 @@ class SingleEliminationFormat(TournamentFormat):
             return
 
         winner = Participant.query.get(final_match.winner_id)
-
         if final_match.participant1_id == final_match.winner_id:
             runner_up_id = final_match.participant2_id
         else:
             runner_up_id = final_match.participant1_id
-        runner_up = Participant.query.get(runner_up_id)
-
-        semi_final_round = final_match.round - 1
-        semi_final_matches = Match.query.filter_by(
-            category_id=category.id,
-            round=semi_final_round,
-            match_type='knockout'
-        ).all()
-
-        semi_finalists = []
-        for match in semi_final_matches:
-            if match.winner_id:
-                if match.participant1_id == match.winner_id:
-                    loser_id = match.participant2_id
-                else:
-                    loser_id = match.participant1_id
-
-                if loser_id:
-                    loser = Participant.query.get(loser_id)
-                    semi_finalists.append(loser)
+        runner_up = Participant.query.get(runner_up_id) if runner_up_id else None
 
         if winner:
             winner.final_rank = 1
         if runner_up:
             runner_up.final_rank = 2
-        for i, sf in enumerate(semi_finalists):
-            sf.final_rank = 3
+
+        # Assign extended ranking bands to losers of each previous round down to round 1
+        # Round (final_round - 1): Semi-Final losers -> rank 3 (3-4 band)
+        # Round (final_round - 2): Quarter-Final losers -> rank 5 (5-8 band)
+        # Round (final_round - 3): Round of 16 losers -> rank 9 (9-16 band), etc.
+        for r in range(final_match.round - 1, 0, -1):
+            round_matches = Match.query.filter_by(
+                category_id=category.id,
+                round=r,
+                match_type='knockout'
+            ).all()
+
+            assigned_rank = (2 ** (final_match.round - r)) + 1
+            for match in round_matches:
+                if match.winner_id:
+                    loser_id = match.participant2_id if match.participant1_id == match.winner_id else match.participant1_id
+                    if loser_id and loser_id != (runner_up.id if runner_up else None) and loser_id != (winner.id if winner else None):
+                        loser = Participant.query.get(loser_id)
+                        if loser and not loser.final_rank:
+                            loser.final_rank = assigned_rank
 
     @staticmethod
     def _generate_single_elimination(participants, use_manual_seeding=True):

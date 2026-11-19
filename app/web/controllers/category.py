@@ -787,6 +787,21 @@ def manage_category(slug, category_id):
 
                         player2_id = p2_match.id
                         display_name = f"{p1_name} / {p2_name}"
+
+                        # Doubles validation: check self-partnering and duplicate entry
+                        if player_id == player2_id:
+                            flash('Validation failed: A player cannot partner with themselves in doubles.', 'error')
+                            return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
+                        dup_entry = Participant.query.filter(
+                            Participant.category_id == category.id,
+                            db.or_(
+                                Participant.player_id.in_([player_id, player2_id]),
+                                Participant.player2_id.in_([player_id, player2_id])
+                            )
+                        ).first()
+                        if dup_entry:
+                            flash('Validation failed: One or both players are already registered in a pair for this category.', 'error')
+                            return redirect(url_for('category.manage_category', slug=slug, category_id=category_id))
                     else:
                         display_name = p1_name
 

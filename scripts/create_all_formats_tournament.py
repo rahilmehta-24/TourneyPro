@@ -22,7 +22,7 @@ Includes:
 
 import sys
 import random
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from app import create_app
 from app.domain.models import (
     db,
@@ -706,7 +706,7 @@ def create_all_formats_tournament():
                     matches_per_grp_completed[m.group_id] += 1
         db.session.commit()
         recalculate_all_group_stats(cat6.id)
-        print(f"  Group Stage: 4 groups of 4 (16 players), 8 group matches completed with live points & standings.")
+        print("  Group Stage: 4 groups of 4 (16 players), 8 group matches completed with live points & standings.")
 
         # =============================================================
         # 4. Auto-Schedule All Tournament Matches Across Courts
@@ -729,7 +729,7 @@ def create_all_formats_tournament():
         print(f"Created By:    {superadmin.username} (Role: {superadmin.role})")
         print(f"URL:           /tournaments/{tournament.url_slug}")
         print(f"Order of Play: /tournaments/{tournament.url_slug}/schedule")
-        print(f"Total Categories Created: 6 (Covering ALL Supported Formats):")
+        print("Total Categories Created: 6 (Covering ALL Supported Formats):")
         
         all_cats = Category.query.filter_by(tournament_id=tournament.id).all()
         for idx, cat in enumerate(all_cats):
