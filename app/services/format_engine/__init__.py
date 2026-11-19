@@ -6,23 +6,29 @@ from app.services.format_engine.doubles_round_robin.logic import DoublesRoundRob
 from app.services.format_engine.group_stage.logic import GroupStageFormat
 
 FormatRegistry = {
-    'single_elimination': SingleEliminationFormat,
-    'doubles_elimination': DoublesEliminationFormat,
-    'double_elimination': DoubleEliminationFormat,
-    'round_robin': RoundRobinFormat,
-    'doubles_round_robin': DoublesRoundRobinFormat,
-    'group_stage': GroupStageFormat
+    "single_elimination": SingleEliminationFormat,
+    "doubles_elimination": DoublesEliminationFormat,
+    "double_elimination": DoubleEliminationFormat,
+    "round_robin": RoundRobinFormat,
+    "doubles_round_robin": DoublesRoundRobinFormat,
+    "group_stage": GroupStageFormat,
 }
+
 
 def get_format(format_key):
     return FormatRegistry.get(format_key)
 
+
 def get_all_formats():
     return {
         key: {
-            'name': cls.name,
-            'description': cls.description,
-            'icon': cls.icon,
-            'min_participants': cls.min_participants
-        } for key, cls in FormatRegistry.items()
+            "name": cls.name,
+            "description": cls.description,
+            "icon": cls.icon,
+            "min_participants": cls.min_participants,
+            "is_locked": getattr(cls, "is_locked", False),
+            "status": getattr(cls, "status", "available"),
+            "badge": getattr(cls, "badge", None),
+        }
+        for key, cls in FormatRegistry.items()
     }

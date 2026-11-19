@@ -37,7 +37,8 @@
             </div>
             {% if current_user and current_user.role in ['admin', 'superadmin'] %}
             <a href="{{ url_for('tournament.create_tournament') }}" class="btn btn-primary" title="Create Tournament">
-                + Create
+                <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-plus"></use></svg>
+                <span>New Tournament</span>
             </a>
             {% endif %}
         </div>
@@ -68,9 +69,19 @@
                         <div class="tournament-header">
                             <div class="tournament-format-badge">
                                 {% if tournament.format %}
-                                    {{ formats[tournament.format].icon }} {{ formats[tournament.format].name }}
+                                    {% if tournament.format == 'single_elimination' %}
+                                        <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-bracket"></use></svg>
+                                    {% elif tournament.format == 'round_robin' %}
+                                        <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-repeat"></use></svg>
+                                    {% elif tournament.format == 'group_stage' %}
+                                        <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-grid"></use></svg>
+                                    {% else %}
+                                        <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-trophy"></use></svg>
+                                    {% endif %}
+                                    <span>{{ formats[tournament.format].name }}</span>
                                 {% else %}
-                                    🗂️ Multi-Category
+                                    <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-layers"></use></svg>
+                                    <span>Multi-Division</span>
                                 {% endif %}
                             </div>
                             <div class="tournament-status status-{{ tournament.status }}">
@@ -80,26 +91,35 @@
                         <h3 class="tournament-name">{{ tournament.name }}</h3>
                         {% if tournament.owner %}
                         <p class="tournament-creator" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">
-                            Created by: <strong>{{ tournament.owner.username }}</strong>
+                            Director: <strong>{{ tournament.owner.username }}</strong>
                         </p>
                         {% elif tournament.creator_name %}
                         <p class="tournament-creator" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">
-                            Created by: <strong>{{ tournament.creator_name }}</strong>
+                            Director: <strong>{{ tournament.creator_name }}</strong>
                         </p>
                         {% endif %}
                         {% if tournament.game_info %}
-                        <p class="tournament-game">🎮 {{ tournament.game_info }}</p>
+                        <p class="tournament-game">
+                            <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-tennis"></use></svg>
+                            <span>{{ tournament.game_info }}</span>
+                        </p>
                         {% endif %}
-                        <div class="tournament-meta">
-                            <span class="meta-item">👥 {{ tournament.participants|length }} participants</span>
-                            <span class="meta-item">📅 {{ tournament.created_at.strftime('%b %d, %Y') }}</span>
+                        <div class="tournament-meta tabular-nums">
+                            <span class="meta-item">
+                                <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-users"></use></svg>
+                                {{ tournament.participants|length }} entrants
+                            </span>
+                            <span class="meta-item">
+                                <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-calendar"></use></svg>
+                                {{ tournament.created_at.strftime('%b %d, %Y') }}
+                            </span>
                         </div>
                         <div class="tournament-actions">
                             <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug) }}"
                                 class="btn btn-secondary btn-small">View Tournament</a>
                             {% if tournament.status == 'registration' and tournament.categories %}
                             <a href="{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug) }}"
-                                class="btn btn-primary btn-small" style="background-color: var(--accent-success); border-color: var(--accent-success);">Register Now</a>
+                                class="btn btn-primary btn-small">Register</a>
                             {% endif %}
                             {% if current_user and (current_user.id == tournament.user_id or current_user.role == 'superadmin') %}
                             <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}"
@@ -118,7 +138,9 @@
     </div>
     {% else %}
     <div class="empty-state">
-        <div class="empty-icon">🏆</div>
+        <div class="empty-icon" style="margin-bottom: 1rem; color: var(--text-muted); opacity: 0.5;">
+            <svg class="tp-icon" style="width: 44px; height: 44px;"><use href="#icon-trophy"></use></svg>
+        </div>
         <p>No tournaments yet. {% if current_user and current_user.role in ['admin', 'superadmin'] %}Create your first one!{% endif %}</p>
         {% if current_user and current_user.role in ['admin', 'superadmin'] %}
         <a href="{{ url_for('tournament.create_tournament') }}" class="btn btn-primary mt-3">Create Tournament</a>
@@ -186,7 +208,7 @@ const initTournamentsList = () => {
                     emptyState = document.createElement('div');
                     emptyState.id = 'filterEmptyState';
                     emptyState.className = 'empty-state';
-                    emptyState.innerHTML = '<div class="empty-icon" style="font-size: 3rem; margin-bottom: 1rem;">📂</div><p style="color: var(--text-secondary);">No tournaments found in this status.</p>';
+                    emptyState.innerHTML = '<div class="empty-icon" style="margin-bottom: 1rem; color: var(--text-muted); opacity: 0.5;"><svg class="tp-icon" style="width: 44px; height: 44px;"><use href="#icon-search"></use></svg></div><p style="color: var(--text-secondary);">No tournaments found in this status.</p>';
                     document.getElementById('tournamentContainer').appendChild(emptyState);
                 }
                 emptyState.style.display = 'block';

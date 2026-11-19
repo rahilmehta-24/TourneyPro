@@ -20,22 +20,36 @@
         <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
             {% if current_user and current_user.role in ['admin', 'superadmin'] %}
             <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}" class="btn btn-primary" style="padding: 0.35rem 0.85rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;">
-                ⚙️ Organizer Dashboard
+                <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-settings"></use></svg>
+                <span>Director Console</span>
             </a>
             {% endif %}
             {% if tournament.status == 'registration' and tournament.categories %}
-            <a href="{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug) }}" class="btn btn-primary" style="background-color: var(--accent-success); border-color: var(--accent-success); padding: 0.35rem 0.85rem; font-size: 0.85rem;">
-                ✍️ Register Now
+            <a href="{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug) }}" class="btn btn-primary" style="padding: 0.35rem 0.85rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;">
+                <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-edit"></use></svg>
+                <span>Register Entry</span>
             </a>
             {% endif %}
             {% if tournament.status == 'registration' %}
-            <button onclick="copyShareLink('{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">🔗 Share Registration Link</button>
+            <button onclick="copyShareLink('{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;">
+                <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-link"></use></svg>
+                <span>Share Entry Link</span>
+            </button>
             {% else %}
-            <button onclick="copyShareLink('{{ url_for('tournament.view_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">🔗 Share Link</button>
+            <button onclick="copyShareLink('{{ url_for('tournament.view_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;">
+                <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-link"></use></svg>
+                <span>Share Draw</span>
+            </button>
             {% endif %}
-            <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug) }}" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;" id="btnOrderOfPlayTop" data-turbo="false">📋 Order of Play</a>
+            <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug) }}" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;" id="btnOrderOfPlayTop" data-turbo="false">
+                <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-clock"></use></svg>
+                <span>Order of Play</span>
+            </a>
             {% if current_user and (current_user.role == 'superadmin' or tournament.user_id == current_user.id) and tournament.categories %}
-            <a href="{{ url_for('export.export_participants_pdf', slug=tournament.url_slug) }}" class="btn btn-secondary" data-turbo="false" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;" id="btnExportTournament" title="Export Participants Roster PDF (Organizer Desk Copy)">🖨️ Desk Roster PDF</a>
+            <a href="{{ url_for('export.export_participants_pdf', slug=tournament.url_slug) }}" class="btn btn-secondary" data-turbo="false" style="padding: 0.35rem 0.75rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;" id="btnExportTournament" title="Export Participants Roster PDF (Organizer Desk Copy)">
+                <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-printer"></use></svg>
+                <span>Desk Roster PDF</span>
+            </a>
             {% endif %}
         </div>
     </div>
@@ -59,7 +73,10 @@
             <p style="margin: 0.25rem 0 0; color: var(--text-secondary); font-size: 0.9rem;">Participants can register online for tournament categories.</p>
         </div>
         <div style="display: flex; gap: 0.75rem;">
-            <button onclick="copyShareLink('{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-secondary" style="font-size: 0.85rem;">🔗 Share Registration Link</button>
+            <button onclick="copyShareLink('{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-secondary" style="font-size: 0.85rem; display: inline-flex; align-items: center; gap: 4px;">
+                <svg class="tp-icon tp-icon-sm"><use href="#icon-link"></use></svg>
+                <span>Share Registration Link</span>
+            </button>
             <a href="{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug) }}" class="btn btn-primary" style="background-color: var(--accent-success); border-color: var(--accent-success); font-size: 0.85rem;">Go to Registration Form →</a>
         </div>
     </div>
@@ -74,26 +91,31 @@
 
     <!-- Category Switcher Tab Bar -->
     <div class="category-nav-tabs" style="margin-bottom: 2rem; border-bottom: 1px solid var(--border-color);">
-        <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug) }}" class="btn btn-sm btn-primary" style="border-radius: 9999px; white-space: nowrap; padding: 0.4rem 1rem; font-size: 0.85rem; font-weight: 600;">
-            🏆 Overview & Categories
+        <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug) }}" class="btn btn-sm btn-primary" style="border-radius: 9999px; white-space: nowrap; padding: 0.4rem 1rem; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem;">
+            <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-trophy"></use></svg>
+            <span>Overview & Divisions</span>
         </a>
         {% for cat in tournament.categories %}
         <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=cat.id) }}" class="btn btn-sm btn-secondary" style="border-radius: 9999px; white-space: nowrap; padding: 0.4rem 1rem; font-size: 0.85rem; font-weight: 500;">
-            {{ cat.name }} {% if cat.status == 'in_progress' %}<span style="color: var(--accent-tertiary-text); font-size: 0.75rem; font-weight: 700;">● Live</span>{% elif cat.status == 'completed' %}<span style="color: #065F46; font-size: 0.75rem; font-weight: 700;">✓ Done</span>{% endif %}
+            {{ cat.name }} {% if cat.status == 'in_progress' %}<span style="color: var(--accent-tertiary-text); font-size: 0.75rem; font-weight: 700;">● Live</span>{% elif cat.status == 'completed' %}<span style="color: var(--accent-success-text); font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 2px;"><svg class="tp-icon tp-icon-sm"><use href="#icon-check"></use></svg> Done</span>{% endif %}
         </a>
         {% endfor %}
-        <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug) }}" class="btn btn-sm btn-secondary" style="border-radius: 9999px; white-space: nowrap; padding: 0.4rem 1rem; font-size: 0.85rem; font-weight: 500;" id="btnOrderOfPlayTab" data-turbo="false">
-            📋 Order of Play
+        <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug) }}" class="btn btn-sm btn-secondary" style="border-radius: 9999px; white-space: nowrap; padding: 0.4rem 1rem; font-size: 0.85rem; font-weight: 500; display: inline-flex; align-items: center; gap: 0.4rem;" id="btnOrderOfPlayTab" data-turbo="false">
+            <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-clock"></use></svg>
+            <span>Order of Play</span>
         </a>
     </div>
 
-    <!-- 🏆 CHAMPIONS PODIUM / HALL OF FAME -->
+    <!-- CHAMPIONS PODIUM / HALL OF FAME -->
     {% set completed_cats = tournament.categories|selectattr('status', 'equalto', 'completed')|list %}
     {% if completed_cats %}
     <div class="podium-section" style="margin: 2rem 0; background: linear-gradient(180deg, rgba(201, 165, 92, 0.12) 0%, rgba(253, 251, 246, 0) 100%); border-radius: var(--radius-lg); padding: 2rem 1.5rem; border: 1px solid rgba(201, 165, 92, 0.42);">
         <div style="text-align: center; margin-bottom: 2rem;">
-            <span style="font-size: 0.85rem; letter-spacing: 2px; text-transform: uppercase; color: #7A5F1E; font-weight: 700;">Hall of Fame</span>
-            <h2 style="font-family: var(--font-display); font-size: 2.2rem; margin: 0.25rem 0; color: var(--text-primary); font-weight: 600;">🏆 Tournament Champions</h2>
+            <span style="font-size: 0.85rem; letter-spacing: 2px; text-transform: uppercase; color: var(--accent-secondary-text); font-weight: 700;">Hall of Fame</span>
+            <h2 style="font-family: var(--font-display); font-size: 2.2rem; margin: 0.25rem 0; color: var(--text-primary); font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 0.6rem;">
+                <svg class="tp-icon" style="color: var(--accent-secondary); width: 28px; height: 28px;" aria-hidden="true"><use href="#icon-trophy"></use></svg>
+                <span>Tournament Champions</span>
+            </h2>
             <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">Celebrating division champions and finalists</p>
         </div>
 
@@ -103,27 +125,33 @@
             {% set runner_up = cat.participants|selectattr('final_rank', 'equalto', 2)|first %}
             <div class="podium-card winner-card" style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 1.5rem; border: 1px solid var(--border-color); border-top: 4px solid var(--accent-secondary); box-shadow: var(--shadow-md); text-align: center;">
                 <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-primary-text); font-weight: 700; margin-bottom: 0.5rem;">{{ cat.name }}</div>
-                <div style="font-size: 2.2rem; margin-bottom: 0.25rem;">🥇</div>
-                <div style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1.5px; color: #7A5F1E; font-weight: 700;">Champion</div>
+                <div style="width: 44px; height: 44px; border-radius: 50%; background: rgba(201, 165, 92, 0.18); border: 1px solid rgba(201, 165, 92, 0.45); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.35rem; color: var(--accent-secondary-text);">
+                    <svg class="tp-icon" style="width: 22px; height: 22px;" aria-hidden="true"><use href="#icon-crown"></use></svg>
+                </div>
+                <div style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--accent-secondary-text); font-weight: 700;">Champion</div>
                 <div style="font-size: 1.4rem; font-weight: 800; color: var(--text-primary); margin: 0.25rem 0 0.5rem;">
                     {{ champ.name if champ else 'TBD' }}
                 </div>
                 {% if champ and champ.manual_seed %}
-                <span style="font-size: 0.75rem; background: rgba(201, 165, 92, 0.20); color: #7A5F1E; border: 1px solid rgba(122, 95, 30, 0.35); padding: 0.15rem 0.5rem; border-radius: 9999px; font-weight: 600;">Seed #{{ champ.manual_seed }}</span>
+                <span class="tabular-nums" style="font-size: 0.75rem; background: rgba(201, 165, 92, 0.20); color: var(--accent-secondary-text); border: 1px solid rgba(122, 95, 30, 0.35); padding: 0.15rem 0.5rem; border-radius: 9999px; font-weight: 600;">Seed #{{ champ.manual_seed }}</span>
                 {% elif champ and champ.seed %}
-                <span style="font-size: 0.75rem; background: rgba(201, 165, 92, 0.20); color: #7A5F1E; border: 1px solid rgba(122, 95, 30, 0.35); padding: 0.15rem 0.5rem; border-radius: 9999px; font-weight: 600;">Seed #{{ champ.seed }}</span>
+                <span class="tabular-nums" style="font-size: 0.75rem; background: rgba(201, 165, 92, 0.20); color: var(--accent-secondary-text); border: 1px solid rgba(122, 95, 30, 0.35); padding: 0.15rem 0.5rem; border-radius: 9999px; font-weight: 600;">Seed #{{ champ.seed }}</span>
                 {% endif %}
 
                 {% if runner_up %}
                 <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
-                    <span style="color: var(--text-secondary); font-weight: 600;">🥈 Runner-Up</span>
+                    <span style="color: var(--text-secondary); font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem;">
+                        <svg class="tp-icon tp-icon-sm" style="color: var(--text-muted);" aria-hidden="true"><use href="#icon-medal"></use></svg>
+                        Runner-Up
+                    </span>
                     <span style="color: var(--text-primary); font-weight: 600;">{{ runner_up.name }}</span>
                 </div>
                 {% endif %}
 
                 <div style="margin-top: 1.25rem;">
-                    <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=cat.id) }}" class="btn btn-secondary" style="width: 100%; font-size: 0.8rem; padding: 0.4rem; border-radius: var(--radius-sm); text-decoration: none; display: block;">
-                        View Bracket Results →
+                    <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=cat.id) }}" class="btn btn-secondary" style="width: 100%; font-size: 0.8rem; padding: 0.4rem; border-radius: var(--radius-sm); text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;">
+                        <span>View Bracket</span>
+                        <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
                     </a>
                 </div>
             </div>
@@ -137,10 +165,11 @@
             <h2 class="section-title">Categories</h2>
             <div class="page-actions">
                 {% if current_user and current_user.role in ['admin', 'superadmin'] %}
-<a href="{{ url_for('category.create_category', slug=tournament.url_slug) }}" class="btn btn-primary">
-                    ➕ Create Category
+                <a href="{{ url_for('category.create_category', slug=tournament.url_slug) }}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                    <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-plus"></use></svg>
+                    <span>Add Division</span>
                 </a>
-{% endif %}
+                {% endif %}
             </div>
         </div>
 
@@ -149,13 +178,22 @@
             style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
             {% for category in tournament.categories %}
             <div class="category-card"
-                style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 1.5rem; border: 1px solid var(--border-color); transition: transform 0.2s, box-shadow 0.2s;" class="category-card-hover">
+                style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 1.5rem; border: 1px solid var(--border-color); transition: transform 0.2s, box-shadow 0.2s;">
                 <!-- Category Header -->
                 <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
                     <div>
                         <h3 style="margin: 0; font-size: 1.25rem; color: var(--text-primary); font-weight: 600;">{{ category.name }}</h3>
-                        <p style="margin: 0.25rem 0 0 0; color: var(--text-muted); font-size: 0.875rem;">
-                            {{ formats[category.format].icon }} {{ formats[category.format].name }}
+                        <p style="margin: 0.25rem 0 0 0; color: var(--text-muted); font-size: 0.875rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+                            {% if category.format == 'single_elimination' %}
+                                <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-bracket"></use></svg>
+                            {% elif category.format == 'round_robin' %}
+                                <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-repeat"></use></svg>
+                            {% elif category.format == 'group_stage' %}
+                                <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-grid"></use></svg>
+                            {% else %}
+                                <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-trophy"></use></svg>
+                            {% endif %}
+                            <span>{{ formats[category.format].name }}</span>
                         </p>
                     </div>
                     <span class="status-badge status-{{ category.status }}"
@@ -165,7 +203,7 @@
                 </div>
 
                 <!-- Category Stats -->
-                <div
+                <div class="tabular-nums"
                     style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; padding: 1rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px;">
                     <div>
                         <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Participants</div>
@@ -187,13 +225,13 @@
                 <!-- Progress Bar -->
                 {% set progress = (completed_matches / total_matches * 100)|int if total_matches > 0 else 0 %}
                 <div style="margin: 1rem 0;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;" class="tabular-nums">
                         <span style="font-size: 0.75rem; color: var(--text-muted);">Progress</span>
                         <span style="font-size: 0.75rem; color: var(--text-primary); font-weight: 600;">{{ progress }}%</span>
                     </div>
                     <div style="width: 100%; height: 8px; background: var(--bg-secondary); border-radius: 10px; overflow: hidden;">
                         <div
-                            style="width: {{ progress }}%; height: 100%; background: var(--gradient-primary); transition: width 0.3s ease;">
+                            style="width: {{ progress }}%; height: 100%; background: var(--accent-primary); transition: width 0.3s ease;">
                         </div>
                     </div>
                 </div>
@@ -203,8 +241,10 @@
                 
                 {% if finals_match and finals_match.winner %}
                 <div
-                    style="margin: 1rem 0; padding: 1rem; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 8px;">
-                    <div style="font-size: 0.75rem; color: var(--success); margin-bottom: 0.25rem;">🏆 Winner
+                    style="margin: 1rem 0; padding: 1rem; background: rgba(4, 120, 87, 0.08); border: 1px solid rgba(4, 120, 87, 0.25); border-radius: 8px;">
+                    <div style="font-size: 0.75rem; color: var(--accent-success-text); margin-bottom: 0.25rem; display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 700;">
+                        <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-trophy"></use></svg>
+                        <span>Division Champion</span>
                     </div>
                     <div style="font-size: 1.125rem; font-weight: bold; color: var(--text-primary);">{{ finals_match.winner.name }}
                     </div>
@@ -230,28 +270,29 @@
         </div>
         {% else %}
         <div class="alert alert-info" style="margin-top: 1rem;">
-            <span class="alert-icon">💡</span>
+            <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-alert"></use></svg>
             {% if current_user and current_user.role in ['admin', 'superadmin'] %}
-            <span>No categories yet. Create a category to organize different tournament formats (Single Elimination,
-                Round Robin, etc.)</span>
+            <span>No divisions configured yet. Create a division to establish tournament draw formats (Single Elimination, Round Robin, Group Stage).</span>
             {% else %}
-            <span>No categories yet.</span>
+            <span>No divisions published yet.</span>
             {% endif %}
         </div>
         {% endif %}
     </div>
 
     <!-- OVERALL LEADERBOARD -->
-    <!-- OVERALL LEADERBOARD -->
     {% set completed_categories_exist = tournament.categories|selectattr('status', 'equalto', 'completed')|list|length > 0 %}
     {% if completed_categories_exist %}
     <div class="overall-leaderboard" style="margin: 2rem 0;">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
-            <h2 class="section-title" style="margin: 0;">🏆 Overall Leaderboard</h2>
+            <h2 class="section-title" style="margin: 0; display: inline-flex; align-items: center; gap: 0.5rem;">
+                <svg class="tp-icon" style="color: var(--accent-secondary);" aria-hidden="true"><use href="#icon-trophy"></use></svg>
+                <span>Tournament Standings</span>
+            </h2>
             <div style="min-width: 250px;">
                 <select id="categoryFilter" onchange="filterLeaderboard()" class="form-input"
                     style="padding: 0.625rem 1rem; font-size: 1rem; cursor: pointer;">
-                    <option value="all">All Categories</option>
+                    <option value="all">All Divisions</option>
                     {% for cat in tournament.categories %}
                     {% if cat.status == 'completed' %}
                     <option value="{{ cat.id }}">{{ cat.name }}</option>
@@ -265,7 +306,6 @@
             {% for category in tournament.categories %}
             {% if category.status == 'completed' %}
             
-
             <div data-category="{{ category.id }}" class="category-leaderboard-card"
                 style="min-width: 250px; background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border-color); overflow: hidden;">
                 <div style="background: var(--gradient-court); border-bottom: 2px solid var(--accent-secondary); padding: 1rem; text-align: center;">
@@ -277,8 +317,10 @@
                     {% if winner %}
                     <div style="border-bottom: 1px solid var(--border-color);">
                         <div style="padding: 0.75rem 1rem; background: rgba(201, 165, 92, 0.16); border-left: 3px solid #C9A55C;">
-                            <div style="font-weight: 700; font-size: 0.875rem; color: #7A5F1E; margin-bottom: 0.25rem;">
-                                🥇 CHAMPION</div>
+                            <div style="font-weight: 700; font-size: 0.82rem; color: var(--accent-secondary-text); margin-bottom: 0.25rem; display: inline-flex; align-items: center; gap: 0.35rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-crown"></use></svg>
+                                <span>Champion</span>
+                            </div>
                             <div style="color: var(--text-primary); font-weight: 600;">{{ winner.name }}</div>
                         </div>
                     </div>
@@ -288,8 +330,10 @@
                     {% if runner_up %}
                     <div style="border-bottom: 1px solid var(--border-color);">
                         <div style="padding: 0.75rem 1rem; background: rgba(85, 105, 94, 0.10); border-left: 3px solid #55695E;">
-                            <div style="font-weight: 700; font-size: 0.875rem; color: #2F4A3E; margin-bottom: 0.25rem;">
-                                🥈 RUNNER-UP</div>
+                            <div style="font-weight: 700; font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 0.25rem; display: inline-flex; align-items: center; gap: 0.35rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-medal"></use></svg>
+                                <span>Runner-Up</span>
+                            </div>
                             <div style="color: var(--text-primary); font-weight: 600;">{{ runner_up.name }}</div>
                         </div>
                     </div>
@@ -300,8 +344,10 @@
                     {% set sf_combined = sf1 + sf2 %}
                     {% if sf_combined %}
                     <div style="padding: 0.75rem 1rem; background: rgba(181, 89, 58, 0.10); border-left: 3px solid #B5593A;">
-                        <div style="font-weight: 700; font-size: 0.875rem; color: #9A482C; margin-bottom: 0.5rem;">
-                            🥉 SEMI-FINALISTS</div>
+                        <div style="font-weight: 700; font-size: 0.82rem; color: var(--accent-tertiary-text); margin-bottom: 0.5rem; display: inline-flex; align-items: center; gap: 0.35rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                            <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-award"></use></svg>
+                            <span>Semi-Finalists</span>
+                        </div>
                         {% for sf in sf_combined[:2] %}
                         <div style="color: var(--text-primary); font-weight: 500; padding: 0.25rem 0;">{{ sf.name }}</div>
                         {% endfor %}
@@ -334,7 +380,10 @@
     {% if player_registry %}
     <div class="player-registry" style="margin: 2rem 0;">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
-            <h2 class="section-title" style="margin: 0;">👥 Player Registry</h2>
+            <h2 class="section-title" style="margin: 0; display: inline-flex; align-items: center; gap: 0.5rem;">
+                <svg class="tp-icon" aria-hidden="true"><use href="#icon-users"></use></svg>
+                <span>Player Registry</span>
+            </h2>
             <div style="min-width: 300px;">
                 <input type="text" id="playerSearch" placeholder="Search players..." class="form-input"
                     style="padding: 0.625rem 1rem; font-size: 1rem;">
@@ -415,16 +464,24 @@
                                 {% if player.placements %}
                                 {% set best = player.placements[0] %}
                                 {% if best[0] == 'Champion' %}
-                                <span style="color: #7A5F1E; font-weight: 700;">🥇 {{ best[0] }}</span>
+                                <span style="color: var(--accent-secondary-text); font-weight: 700; display: inline-flex; align-items: center; gap: 0.25rem;">
+                                    <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-crown"></use></svg>
+                                    {{ best[0] }}
+                                </span>
                                 {% elif best[0] == 'Runner-Up' %}
-                                <span style="color: #2F4A3E; font-weight: 600;">🥈 {{ best[0] }}</span>
+                                <span style="color: var(--text-secondary); font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem;">
+                                    <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-medal"></use></svg>
+                                    {{ best[0] }}
+                                </span>
                                 {% elif best[0] == 'Semi-Finalist' %}
-                                <span style="color: #9A482C; font-weight: 600;">🥉 {{ best[0] }}</span>
+                                <span style="color: var(--accent-tertiary-text); font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem;">
+                                    <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-award"></use></svg>
+                                    {{ best[0] }}
+                                </span>
                                 {% endif %}
-                                <span style="color: var(--text-secondary); font-size: 0.875rem;"> in {{ best[1]
-                                    }}</span>
+                                <span style="color: var(--text-secondary); font-size: 0.875rem;"> in {{ best[1] }}</span>
                                 {% else %}
-                                <span style="color: var(--text-secondary);">Participant</span>
+                                <span style="color: var(--text-muted);">Participant</span>
                                 {% endif %}
                             </td>
                         </tr>
@@ -503,7 +560,7 @@
     function copyShareLink(url, btn) {
         navigator.clipboard.writeText(url).then(() => {
             const originalText = btn.innerText;
-            btn.innerText = '✅ Copied!';
+            btn.innerText = 'Copied!';
             setTimeout(() => {
                 btn.innerText = originalText;
             }, 2000);

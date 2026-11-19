@@ -4,4 +4,4 @@ class DoublesRoundRobinFormat(RoundRobinFormat):
     name = "Doubles Round Robin"
     description = "Team-based round-robin format where pairs compete against every other pair."
     icon = "👥"
-    min_participants = 2
+    min_participants = 3

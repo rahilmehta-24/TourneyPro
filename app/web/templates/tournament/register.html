@@ -18,8 +18,9 @@
             <span style="color: var(--accent-primary); font-weight: 600;">Registration</span>
         </div>
         <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-            <button type="button" onclick="copyShareLink('{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-primary" style="background-color: var(--accent-success); border-color: var(--accent-success); font-size: 0.85rem; padding: 0.35rem 0.85rem;">
-                🔗 Share Link
+            <button type="button" onclick="copyShareLink('{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug, _external=True) }}', this)" class="btn btn-primary" style="background-color: var(--accent-success); border-color: var(--accent-success); font-size: 0.85rem; padding: 0.35rem 0.85rem; display: inline-flex; align-items: center; gap: 4px;">
+                <svg class="tp-icon tp-icon-sm"><use href="#icon-link"></use></svg>
+                <span>Share Link</span>
             </button>
             <a href="{{ url_for('tournament.view_tournament', slug=tournament.url_slug, view='bracket') }}" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.35rem 0.85rem;">
                 Tournament Overview →
@@ -32,12 +33,13 @@
         <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
             <div>
                 <span class="status-badge status-registration" style="padding: 0.2rem 0.65rem; border-radius: 9999px; font-weight: 700; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; background: rgba(16, 185, 129, 0.15); color: var(--accent-success); border: 1px solid rgba(16, 185, 129, 0.3);">
-                    ✍️ Registration Open
+                    Registration Open
                 </span>
                 <h1 style="margin: 0.5rem 0 0.25rem; font-size: 1.85rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.5px;">{{ tournament.name }}</h1>
                 {% if tournament.game_info %}
-                <p style="color: var(--text-secondary); margin: 0; font-size: 0.9rem;">
-                    🎮 {{ tournament.game_info }}{% if tournament.creator_name %} &bull; Organized by <strong>{{ tournament.creator_name }}</strong>{% endif %}
+                <p style="color: var(--text-secondary); margin: 0; font-size: 0.9rem; display: flex; align-items: center; gap: 6px;">
+                    <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-tennis"></use></svg>
+                    <span>{{ tournament.game_info }}{% if tournament.creator_name %} &bull; Organized by <strong>{{ tournament.creator_name }}</strong>{% endif %}</span>
                 </p>
                 {% endif %}
             </div>
@@ -45,7 +47,10 @@
             {% if tournament.registration_closes_at %}
             <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 0.5rem 0.85rem; border-radius: var(--radius-md); font-size: 0.82rem; color: var(--text-secondary); text-align: right;">
                 <span style="color: var(--text-muted); display: block; font-size: 0.75rem;">Deadline</span>
-                ⏰ <strong>{{ tournament.registration_closes_at|ist('%b %d, %Y') }}</strong> at {{ tournament.registration_closes_at|ist('%I:%M %p IST') }}
+                <span style="display: inline-flex; align-items: center; gap: 4px;">
+                    <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-clock"></use></svg>
+                    <span><strong>{{ tournament.registration_closes_at|ist('%b %d, %Y') }}</strong> at {{ tournament.registration_closes_at|ist('%I:%M %p IST') }}</span>
+                </span>
             </div>
             {% endif %}
         </div>
@@ -120,8 +125,9 @@
             </div>
             {% else %}
             <div style="background: rgba(15, 61, 46, 0.08); border: 1px solid rgba(15, 61, 46, 0.25); padding: 1rem 1.25rem; border-radius: var(--radius-md); margin-bottom: 1.25rem;">
-                <div style="font-size: 0.9rem; font-weight: 600; color: var(--accent-primary);">
-                    ✨ Instant Player Profile Creation
+                <div style="font-size: 0.9rem; font-weight: 600; color: var(--accent-primary); display: flex; align-items: center; gap: 6px;">
+                    <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-user"></use></svg>
+                    <span>Player Profile Creation</span>
                 </div>
                 <div style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 0.2rem;">
                     Your player profile will be automatically created upon registration to track your tournament standings.
@@ -196,7 +202,8 @@
                     <label id="playerPayMethodOnlineLabel" onclick="setRegPaymentMethod('online')" style="cursor: pointer; border: 2px solid var(--accent-primary); background: rgba(15, 61, 46, 0.08); border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; gap: 0.3rem; transition: all 0.15s ease;">
                         <div style="display: flex; align-items: center; justify-content: space-between;">
                             <span style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.4rem;">
-                                💳 Pay Online (UPI QR)
+                                <svg class="tp-icon tp-icon-sm"><use href="#icon-credit-card"></use></svg>
+                                <span>Pay Online (UPI QR)</span>
                             </span>
                             <input type="radio" name="payment_method" value="online" id="regPayMethodOnline" checked style="accent-color: var(--accent-primary);">
                         </div>
@@ -210,7 +217,8 @@
                     <label id="playerPayMethodCashLabel" onclick="setRegPaymentMethod('cash')" style="cursor: pointer; border: {% if not tournament.payment_upi_id %}2px solid var(--accent-success){% else %}1px solid var(--border-color){% endif %}; background: {% if not tournament.payment_upi_id %}rgba(16, 185, 129, 0.08){% else %}var(--bg-secondary){% endif %}; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; gap: 0.3rem; transition: all 0.15s ease;">
                         <div style="display: flex; align-items: center; justify-content: space-between;">
                             <span style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.4rem;">
-                                💵 Pay in Cash
+                                <svg class="tp-icon tp-icon-sm"><use href="#icon-credit-card"></use></svg>
+                                <span>Pay in Cash</span>
                             </span>
                             <input type="radio" name="payment_method" value="cash" id="regPayMethodCash" {% if not tournament.payment_upi_id %}checked{% endif %} style="accent-color: var(--accent-success);">
                         </div>
@@ -224,13 +232,16 @@
             <!-- ONLINE SECTION: UPI QR & UTR input -->
             {% if tournament.payment_upi_id %}
             <div id="online_payment_section" style="margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border-color);">
-                <h4 style="margin: 0 0 0.5rem; font-size: 1.05rem; color: var(--text-primary); font-weight: 700;">📲 Pay via UPI</h4>
+                <h4 style="margin: 0 0 0.5rem; font-size: 1.05rem; color: var(--text-primary); font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                    <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-credit-card"></use></svg>
+                    <span>Pay via UPI</span>
+                </h4>
                 <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0 0 1rem;">Pay with Google Pay, PhonePe, Paytm, or any BHIM UPI app</p>
                 
                 <!-- Mobile 1-Tap UPI Intent Button -->
                 <div id="mobileUpiPayWrapper" style="display: none; margin-bottom: 1.25rem;">
                     <a id="btnPayUpiApp" href="#" class="btn btn-primary" style="display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%; max-width: 320px; padding: 0.75rem 1.25rem; font-weight: 700; font-size: 1rem; box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);">
-                        <span>⚡ Pay via UPI App</span>
+                        <span>Pay via UPI App</span>
                     </a>
                     <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem; margin-bottom: 0;">Tap to open your installed UPI app and pay directly</p>
                 </div>
@@ -244,8 +255,9 @@
                         <span style="font-size: 0.75rem; color: var(--text-muted); display: block;">UPI ID</span>
                         <strong style="color: var(--text-primary); font-size: 0.95rem; word-break: break-all;">{{ tournament.payment_upi_id }}</strong>
                     </div>
-                    <button type="button" class="btn btn-secondary" onclick="copyUpiId(this)" style="padding: 0.35rem 0.65rem; font-size: 0.75rem; border-radius: var(--radius-sm); white-space: nowrap;">
-                        📋 Copy
+                    <button type="button" class="btn btn-secondary" onclick="copyUpiId(this)" style="padding: 0.35rem 0.65rem; font-size: 0.75rem; border-radius: var(--radius-sm); white-space: nowrap; display: inline-flex; align-items: center; gap: 4px;">
+                        <svg class="tp-icon tp-icon-sm"><use href="#icon-clipboard"></use></svg>
+                        <span>Copy</span>
                     </button>
                 </div>
 
@@ -261,13 +273,13 @@
             <div id="cash_payment_section" style="display: {% if not tournament.payment_upi_id %}block{% else %}none{% endif %}; margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border-color);">
                 <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: var(--radius-md); padding: 1.25rem; max-width: 480px; margin: 0 auto; text-align: left;">
                     <div style="display: flex; align-items: center; gap: 0.45rem; font-weight: 700; color: #065F46; font-size: 1rem; margin-bottom: 0.35rem;">
-                        <span>💵 Pay in Cash at Tournament Desk</span>
+                        <span>Pay in Cash at Tournament Desk</span>
                     </div>
                     <p style="margin: 0 0 0.6rem; font-size: 0.85rem; color: var(--text-primary); line-height: 1.45;">
                         Please bring the exact entry fee of <strong id="cashDueDisplay" style="color: var(--accent-success);">₹0.00</strong> in cash to the tournament reception desk before your first scheduled match.
                     </p>
                     <div style="font-size: 0.78rem; color: var(--text-secondary); display: flex; align-items: flex-start; gap: 0.4rem;">
-                        <span>ℹ️</span>
+                        <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-alert"></use></svg>
                         <span>The tournament admin will collect your payment on arrival and officially activate your entry in the system.</span>
                     </div>
                 </div>
@@ -275,7 +287,7 @@
         </div>
 
         <div style="background: var(--bg-secondary); padding: 0.85rem 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); font-size: 0.82rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.6rem;">
-            <span>ℹ️</span>
+            <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-alert"></use></svg>
             <span id="reg_status_info_text">Free categories are instantly confirmed. Paid registrations are activated once payment is verified by the organizers.</span>
         </div>
 
@@ -285,7 +297,7 @@
                 Cancel
             </a>
             <button type="submit" id="submitRegBtn" class="btn btn-primary" style="padding: 0.65rem 2rem; font-size: 0.95rem; font-weight: 700; background: var(--accent-success); border-color: var(--accent-success);">
-                ✓ Complete Registration
+                Complete Registration
             </button>
         </div>
     </form>
@@ -324,7 +336,7 @@ function setRegPaymentMethod(method) {
             txInput.required = true;
         }
         if (submitBtn) {
-            submitBtn.textContent = '✓ Submit Online Registration';
+            submitBtn.textContent = 'Submit Online Registration';
         }
         if (infoText) {
             infoText.textContent = 'Online payments are approved once the organizer verifies the submitted UTR reference.';
@@ -347,7 +359,7 @@ function setRegPaymentMethod(method) {
             txInput.required = false;
         }
         if (submitBtn) {
-            submitBtn.textContent = '✓ Submit Cash Registration';
+            submitBtn.textContent = 'Submit Cash Registration';
         }
         if (infoText) {
             infoText.textContent = 'Cash registrations are approved by organizers at the tournament desk upon fee collection.';
@@ -415,7 +427,10 @@ function updateForm() {
                 const genderVal = existingData[genderInputName] || 'Male';
 
                 partnerDiv.innerHTML = `
-                    <h4 style="margin: 0 0 0.25rem; color: var(--text-primary); font-size: 1.05rem; font-weight: 700;">👥 ${cardTitle} Partner Information</h4>
+                    <h4 style="margin: 0 0 0.25rem; color: var(--text-primary); font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                        <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-users"></use></svg>
+                        <span>${cardTitle} Partner Information</span>
+                    </h4>
                     <p style="color: var(--text-secondary); font-size: 0.82rem; margin: 0 0 1rem;">Please provide your doubles partner's details to automatically create their player profile and enroll your team.</p>
                     
                     <div style="display: flex; flex-direction: column; gap: 0.85rem;">
@@ -486,7 +501,7 @@ function updateForm() {
         const tIdInput = document.getElementById('transaction_id');
         if (tIdInput) tIdInput.required = false;
         const submitBtn = document.getElementById('submitRegBtn');
-        if (submitBtn) submitBtn.textContent = '✓ Complete Registration';
+        if (submitBtn) submitBtn.textContent = 'Complete Registration';
         const infoText = document.getElementById('reg_status_info_text');
         if (infoText) infoText.textContent = 'Free categories are instantly confirmed. Paid registrations are activated once approved by organizers.';
     }
@@ -497,7 +512,7 @@ function copyUpiId(btn) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(upiText).then(() => {
             const originalText = btn.innerHTML;
-            btn.innerHTML = '✓ Copied!';
+            btn.innerHTML = 'Copied!';
             setTimeout(() => { btn.innerHTML = originalText; }, 2000);
         }).catch(() => {
             alert("UPI ID: " + upiText);
@@ -510,7 +525,7 @@ function copyUpiId(btn) {
 function copyShareLink(url, btn) {
     navigator.clipboard.writeText(url).then(() => {
         const originalText = btn.innerHTML;
-        btn.innerHTML = '✅ Copied!';
+        btn.innerHTML = 'Copied!';
         setTimeout(() => {
             btn.innerHTML = originalText;
         }, 2000);

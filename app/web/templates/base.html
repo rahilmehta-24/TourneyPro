@@ -79,7 +79,7 @@
     <noscript>
         <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     </noscript>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=4.3">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=4.5">
     <!-- Turbo.js for instant page navigation with Subresource Integrity -->
     <script type="module"
             src="https://unpkg.com/@hotwired/turbo@8.0.4/dist/turbo.es2017-umd.js"
@@ -90,15 +90,13 @@
     <style>
         @keyframes flashMatchUpdate {
             0% {
-                box-shadow: 0 0 0 3px rgba(201, 165, 92, 0.72), 0 0 16px rgba(201, 165, 92, 0.48);
-                background-color: rgba(201, 165, 92, 0.18) !important;
-                transform: scale(1.01);
+                background-color: rgba(201, 165, 92, 0.16) !important;
+                border-color: rgba(201, 165, 92, 0.6) !important;
             }
-            70% {
-                box-shadow: 0 0 0 2px rgba(201, 165, 92, 0.32);
-                background-color: rgba(201, 165, 92, 0.08);
-                transform: scale(1.0);
+            100% {
+                background-color: transparent;
             }
+        }
             100% {
                 box-shadow: none;
                 background-color: transparent;
@@ -208,9 +206,15 @@
                 <div class="nav-user-actions" id="navUserActions">
                     {% if current_user %}
                         {% if current_user.role in ['admin', 'superadmin'] %}
-                            <a href="{{ url_for('tournament.create_tournament') }}" class="btn navbar-host-btn" style="display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; color: #C9A55C !important; border: 1.5px solid #C9A55C !important; background: rgba(201, 165, 92, 0.12) !important; font-weight: 700 !important; font-size: 0.85rem !important; padding: 0.4rem 0.85rem !important; border-radius: 8px !important; text-decoration: none !important; margin-right: 0.5rem; white-space: nowrap; transition: all 0.2s ease;">+ Host Tournament</a>
+                            <a href="{{ url_for('tournament.create_tournament') }}" class="btn navbar-host-btn">
+                                <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-plus"></use></svg>
+                                <span>Host Tournament</span>
+                            </a>
                         {% elif current_user.role == 'user' %}
-                            <button type="button" onclick="openOrganizerModal()" class="btn navbar-host-btn" style="display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; color: #C9A55C !important; border: 1.5px solid #C9A55C !important; background: rgba(201, 165, 92, 0.12) !important; font-weight: 700 !important; font-size: 0.85rem !important; padding: 0.4rem 0.85rem !important; border-radius: 8px !important; text-decoration: none !important; margin-right: 0.5rem; cursor: pointer; white-space: nowrap; transition: all 0.2s ease;">+ Host Tournament</button>
+                            <button type="button" onclick="openOrganizerModal()" class="btn navbar-host-btn">
+                                <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-plus"></use></svg>
+                                <span>Host Tournament</span>
+                            </button>
                         {% endif %}
                         <!-- Profile Section Dropdown containing Theme Toggle, Admin Links, Dashboard & Logout -->
                         <div class="profile-dropdown-container" id="profileDropdownContainer">
@@ -218,7 +222,7 @@
                                 <svg class="tp-icon" aria-hidden="true"><use href="#icon-user"></use></svg>
                                 <span class="user-name">{{ current_user.username }}</span>
                                 <span class="role-badge role-{{ current_user.role }}">{{ current_user.role.upper() }}</span>
-                                <span id="profileDropdownChevron" style="font-size: 0.65rem; color: var(--text-muted); transition: transform 0.2s;">▼</span>
+                                <svg class="tp-icon tp-icon-sm profile-chevron" id="profileDropdownChevron" aria-hidden="true"><use href="#icon-chevron-down"></use></svg>
                             </button>
 
                             <!-- Profile Dropdown Menu -->
@@ -285,8 +289,7 @@
         {% for category, message in messages %}
         <div class="flash flash-{{ category }}">
             <span class="flash-icon">
-                {% if category == 'success' %}✓{% elif category == 'error' %}✗{% elif category == 'warning' %}⚠{% else
-                %}ℹ{% endif %}
+                {% if category == 'success' %}<svg class="tp-icon tp-icon-sm"><use href="#icon-check"></use></svg>{% elif category == 'error' %}<svg class="tp-icon tp-icon-sm"><use href="#icon-x"></use></svg>{% elif category == 'warning' %}<svg class="tp-icon tp-icon-sm"><use href="#icon-alert"></use></svg>{% else %}<svg class="tp-icon tp-icon-sm"><use href="#icon-alert"></use></svg>{% endif %}
             </span>
             <span class="flash-text">{{ message }}</span>
             <button type="button" class="flash-close" style="background: none; border: none; color: inherit; font-size: 1.2rem; cursor: pointer; margin-left: auto; padding-left: 10px;">&times;</button>
@@ -419,7 +422,10 @@
     <!-- Global Audit Validation Modal -->
     <div id="globalAuditModal" role="dialog" aria-modal="true" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(11, 43, 32, 0.52); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
         <div style="background: var(--bg-card); padding: 2rem; border-radius: var(--radius-lg); border: 1px solid var(--border-color); border-top: 4px solid var(--accent-secondary); width: 90%; max-width: 500px; box-shadow: var(--shadow-lg);">
-            <h3 style="margin-top: 0; color: var(--accent-danger); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1.5rem;">⚠️ Security Check Required</h3>
+            <h3 style="margin-top: 0; color: var(--accent-danger); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 8px;">
+                <svg class="tp-icon tp-icon-sm" style="color: var(--accent-danger);"><use href="#icon-alert"></use></svg>
+                <span>Security Check Required</span>
+            </h3>
             <p style="margin-bottom: 1.5rem; color: var(--text-secondary); font-size: 0.95rem;">
                 You are about to perform a sensitive action: <strong id="auditModalActionName" style="color: var(--text-primary);">Modify Data</strong>. 
                 <br><br>To ensure tournament integrity, please provide a reason. This will be recorded in the audit logs.
@@ -712,7 +718,7 @@
                         checkInterval = null;
                     }
                     if (success) {
-                        btn.innerHTML = '✅ Downloading!';
+                        btn.innerHTML = 'Downloading...';
                         setTimeout(() => {
                             btn.innerHTML = originalHtml;
                             btn.style.opacity = '';
@@ -751,13 +757,15 @@
             <div style="background: var(--bg-primary, #111); border: 1px solid var(--border-color, #333); border-radius: 12px; max-width: 500px; width: 100%; box-shadow: 0 20px 40px rgba(0,0,0,0.5); overflow: hidden;">
                 <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color, #333); display: flex; align-items: center; justify-content: space-between;">
                     <div style="display: flex; align-items: center; gap: 0.75rem;">
-                        <span style="font-size: 1.5rem;">🏆</span>
+                        <svg class="tp-icon" style="color: var(--accent-secondary); width: 24px; height: 24px;" aria-hidden="true"><use href="#icon-trophy"></use></svg>
                         <div>
-                            <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--text-primary, #fff);">Become a Tournament Host</h3>
-                            <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted, #888);">Activate your organizer permissions</p>
+                            <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--text-primary);">Become a Tournament Host</h3>
+                            <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Activate your organizer permissions</p>
                         </div>
                     </div>
-                    <button type="button" onclick="closeOrganizerModal()" style="background: transparent; border: none; font-size: 1.5rem; color: var(--text-muted, #888); cursor: pointer;">&times;</button>
+                    <button type="button" onclick="closeOrganizerModal()" aria-label="Close modal" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0.25rem;">
+                        <svg class="tp-icon" aria-hidden="true"><use href="#icon-x"></use></svg>
+                    </button>
                 </div>
                 <form method="POST" action="{{ url_for('auth.activate_organizer') }}" style="padding: 1.5rem;">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

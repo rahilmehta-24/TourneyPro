@@ -233,8 +233,9 @@
                                     </span>
                                 </div>
                                 {% if item.group %}
-                                <div style="display: inline-block; font-size: 0.8rem; background: rgba(15, 61, 46, 0.10); color: var(--accent-primary-text); border: 1px solid rgba(15, 61, 46, 0.25); padding: 0.2rem 0.5rem; border-radius: 4px; margin-bottom: 0.75rem; font-weight: 600;">
-                                    📊 Assigned to {{ item.group.name }}
+                                <div style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.8rem; background: rgba(15, 61, 46, 0.08); color: var(--accent-primary-text); border: 1px solid rgba(15, 61, 46, 0.22); padding: 0.2rem 0.5rem; border-radius: 4px; margin-bottom: 0.75rem; font-weight: 600;">
+                                    <svg class="tp-icon tp-icon-sm"><use href="#icon-layers"></use></svg>
+                                    <span>Assigned to {{ item.group.name }}</span>
                                 </div>
                                 {% endif %}
                                 <div style="font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.4rem;">Squad Teammates:</div>
@@ -331,7 +332,9 @@
             {% endfor %}
         {% else %}
             <div class="card" style="text-align: center; padding: 4rem 2rem;">
-                <div style="font-size: 4rem; margin-bottom: 1rem; opacity: 0.5;">👤</div>
+                <div style="margin-bottom: 1rem; color: var(--text-muted); opacity: 0.6;">
+                    <svg class="tp-icon" style="width: 48px; height: 48px;"><use href="#icon-user"></use></svg>
+                </div>
                 <h2>No Profile Found</h2>
                 <p style="color: var(--text-secondary); max-width: 400px; margin: 0 auto 2rem auto;">It looks like your account doesn't have an associated player profile. This shouldn't happen if you just registered.</p>
             </div>

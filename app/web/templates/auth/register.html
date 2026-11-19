@@ -11,7 +11,7 @@
         <h2 class="form-section-title" style="font-family: var(--font-display); font-weight: 600; text-align: center; margin-bottom: var(--spacing-sm); font-size: 2.15rem; color: var(--text-primary);">Create Your Account</h2>
         <p style="text-align: center; color: var(--text-secondary); margin-bottom: var(--spacing-lg);">Join The Baseline Society sports tournament network</p>
         
-        <form method="POST" action="{{ url_for('auth.register', next=next_url) if next_url else url_for('auth.register') }}" data-turbo="false" onsubmit="var btn=this.querySelector('button[type=submit]'); if(btn.dataset.submitted) return false; btn.dataset.submitted='true'; btn.disabled=true; btn.innerHTML='<span class=\'btn-icon\'>⏳</span> Creating Account...';">
+        <form method="POST" action="{{ url_for('auth.register', next=next_url) if next_url else url_for('auth.register') }}" data-turbo="false" onsubmit="var btn=this.querySelector('button[type=submit]'); if(btn.dataset.submitted) return false; btn.dataset.submitted='true'; btn.disabled=true; btn.innerHTML='Creating Account...';">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             {% if next_url %}
             <input type="hidden" name="next" value="{{ next_url }}"/>

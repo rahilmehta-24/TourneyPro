@@ -860,12 +860,16 @@
     </div>
     <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
       {% if current_user and current_user.role in ['admin', 'superadmin'] %}
-      <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}" class="btn btn-secondary btn-sm">
-        ⚙️ Organizer Controls
+      <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug) }}" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 4px;">
+        <svg class="tp-icon tp-icon-sm"><use href="#icon-settings"></use></svg>
+        <span>Organizer Controls</span>
       </a>
       {% endif %}
       <a href="{{ url_for('export.export_order_of_play_pdf', slug=tournament.url_slug, court=selected_court or '', date=active_date.strftime('%Y-%m-%d') if active_date else '', session=session_filter or 'all') }}"
-         id="btnExportOopPdf" data-turbo="false" class="btn btn-secondary btn-sm" title="Download official Order of Play PDF">🖨️ Export PDF</a>
+         id="btnExportOopPdf" data-turbo="false" class="btn btn-secondary btn-sm" title="Download official Order of Play PDF" style="display: inline-flex; align-items: center; gap: 4px;">
+        <svg class="tp-icon tp-icon-sm"><use href="#icon-printer"></use></svg>
+        <span>Export PDF</span>
+      </a>
     </div>
   </div>
 
@@ -874,15 +878,18 @@
     <div class="oop-header-content">
       <div>
         <div style="display: flex; align-items: center; gap: 0.75rem;">
-          <h1 style="margin: 0; font-size: 1.85rem;">📋 Order of Play</h1>
+          <h1 style="margin: 0; font-size: 1.85rem; display: flex; align-items: center; gap: 8px;">
+            <svg class="tp-icon" style="color: var(--accent-primary);"><use href="#icon-clock"></use></svg>
+            <span>Order of Play</span>
+          </h1>
           <span class="live-indicator-badge" title="Schedule auto-refreshes"><span class="live-indicator-dot"></span> Live</span>
         </div>
         <p class="subtitle" style="margin: 0.35rem 0 0; color: var(--text-secondary);">
           {{ tournament.name }} &bull;
           {% if total_rubbers_scheduled and total_rubbers_scheduled > 0 %}
-          <strong>{{ total_matches_scheduled }}</strong> team tie{{ 's' if total_matches_scheduled != 1 else '' }} ({{ total_rubbers_scheduled }} rubbers: Singles &amp; Doubles) scheduled
+          <strong class="tabular-nums">{{ total_matches_scheduled }}</strong> team tie{{ 's' if total_matches_scheduled != 1 else '' }} ({{ total_rubbers_scheduled }} rubbers: Singles &amp; Doubles) scheduled
           {% else %}
-          <strong>{{ total_matches_scheduled }}</strong> match{{ 'es' if total_matches_scheduled != 1 else '' }} scheduled
+          <strong class="tabular-nums">{{ total_matches_scheduled }}</strong> match{{ 'es' if total_matches_scheduled != 1 else '' }} scheduled
           {% endif %}
         </p>
       </div>
@@ -899,13 +906,15 @@
       {% for dm in days_meta %}
       <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug, date=dm.date_str, court=selected_court or '', session=session_filter or 'all') }}"
          class="oop-day-tab {% if dm.is_active %}active{% else %}inactive{% endif %}"
-         {% if dm.is_active %}id="activeDayTab" data-active-day="true"{% endif %}>
-        📅 {{ dm.label }}
+         {% if dm.is_active %}id="activeDayTab" data-active-day="true"{% endif %}
+         style="display: inline-flex; align-items: center; gap: 4px;">
+        <svg class="tp-icon tp-icon-sm"><use href="#icon-calendar"></use></svg>
+        <span>{{ dm.label }}</span>
         {% if dm.is_provisional %}
-        <span style="font-size: 0.72rem; padding: 1px 6px; border-radius: 9999px; background: {% if dm.is_active %}#C9A55C{% else %}rgba(201, 165, 92, 0.22){% endif %}; color: {% if dm.is_active %}#0B2B20{% else %}#7A5F1E{% endif %}; font-weight: 700; margin-left: 2px;" title="Schedule is provisional awaiting earlier day results">⏳ Provisional</span>
+        <span style="font-size: 0.72rem; padding: 1px 6px; border-radius: 9999px; background: {% if dm.is_active %}#C9A55C{% else %}rgba(201, 165, 92, 0.22){% endif %}; color: {% if dm.is_active %}#0B2B20{% else %}#7A5F1E{% endif %}; font-weight: 700; margin-left: 2px;" title="Schedule is provisional awaiting earlier day results">Provisional</span>
         {% endif %}
         {% if dm.match_count is defined %}
-        <span style="font-size: 0.78rem; padding: 2px 7px; border-radius: 9999px; background: {% if dm.is_active %}rgba(253, 251, 246, 0.22){% else %}var(--bg-tertiary){% endif %}; margin-left: 4px; font-weight: 700;">
+        <span class="tabular-nums" style="font-size: 0.78rem; padding: 2px 7px; border-radius: 9999px; background: {% if dm.is_active %}rgba(253, 251, 246, 0.22){% else %}var(--bg-tertiary){% endif %}; margin-left: 4px; font-weight: 700;">
           {{ dm.match_count }} {% if dm.rubbers_count and dm.rubbers_count > 0 %}<span style="opacity: 0.8; font-size: 0.7rem;">({{ dm.rubbers_count }} rubbers)</span>{% endif %}
         </span>
         {% endif %}
@@ -922,7 +931,7 @@
   <div class="oop-unified-filter-bar">
     <!-- Player Finder Search -->
     <div style="flex: 2 1 220px; position: relative;">
-      <input type="text" id="playerScheduleSearch" placeholder="🔍 Search player schedule..." class="form-input" style="width: 100%;" oninput="applyScheduleFilters()">
+      <input type="text" id="playerScheduleSearch" placeholder="Search player schedule..." class="form-input" style="width: 100%;" oninput="applyScheduleFilters()">
     </div>
 
     <!-- Category Filter -->
@@ -954,33 +963,39 @@
     </div>
 
     <!-- Quick Reset (if filtered) -->
-    <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('playerScheduleSearch').value=''; document.getElementById('categoryScheduleFilter').value=''; applyScheduleFilters();" style="height: 38px; padding: 0 0.85rem; font-size: 0.82rem; white-space: nowrap;" title="Clear Search Filters">
-      🔄 Clear
+    <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('playerScheduleSearch').value=''; document.getElementById('categoryScheduleFilter').value=''; applyScheduleFilters();" style="height: 38px; padding: 0 0.85rem; font-size: 0.82rem; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px;" title="Clear Search Filters">
+      <svg class="tp-icon tp-icon-sm"><use href="#icon-refresh"></use></svg>
+      <span>Clear</span>
     </button>
   </div>
 
   <!-- SESSION SELECTOR BAR (Day Session vs Evening Session) -->
   <div class="oop-session-bar">
     <div class="oop-session-pills">
-      <button type="button" class="oop-session-pill {% if session_filter == 'all' or not session_filter %}active{% endif %}" data-session="all" onclick="selectSession('all')">
-        <span>🌐</span> All Sessions
-        <span class="oop-session-pill-badge">{{ (day_session_count or 0) + (evening_session_count or 0) }}</span>
+      <button type="button" class="oop-session-pill {% if session_filter == 'all' or not session_filter %}active{% endif %}" data-session="all" onclick="selectSession('all')" style="display: inline-flex; align-items: center; gap: 6px;">
+        <svg class="tp-icon tp-icon-sm"><use href="#icon-layers"></use></svg>
+        <span>All Sessions</span>
+        <span class="oop-session-pill-badge tabular-nums">{{ (day_session_count or 0) + (evening_session_count or 0) }}</span>
       </button>
-      <button type="button" class="oop-session-pill {% if session_filter == 'day' %}active{% endif %}" data-session="day" onclick="selectSession('day')">
-        <span>☀️</span> Day Session
-        <span class="oop-session-pill-badge">{{ day_session_count or 0 }}</span>
+      <button type="button" class="oop-session-pill {% if session_filter == 'day' %}active{% endif %}" data-session="day" onclick="selectSession('day')" style="display: inline-flex; align-items: center; gap: 6px;">
+        <svg class="tp-icon tp-icon-sm"><use href="#icon-sun"></use></svg>
+        <span>Day Session</span>
+        <span class="oop-session-pill-badge tabular-nums">{{ day_session_count or 0 }}</span>
       </button>
-      <button type="button" class="oop-session-pill {% if session_filter == 'evening' %}active{% endif %}" data-session="evening" onclick="selectSession('evening')">
-        <span>🌙</span> Evening Session
-        <span class="oop-session-pill-badge">{{ evening_session_count or 0 }}</span>
+      <button type="button" class="oop-session-pill {% if session_filter == 'evening' %}active{% endif %}" data-session="evening" onclick="selectSession('evening')" style="display: inline-flex; align-items: center; gap: 6px;">
+        <svg class="tp-icon tp-icon-sm"><use href="#icon-moon"></use></svg>
+        <span>Evening Session</span>
+        <span class="oop-session-pill-badge tabular-nums">{{ evening_session_count or 0 }}</span>
       </button>
     </div>
     <div class="oop-session-legend">
-      <span class="oop-session-legend-item day">
-        ☀️ Day Session: {{ active_day_start or '09:00' }} &ndash; {{ evening_session_start or '16:00' }}
+      <span class="oop-session-legend-item day" style="display: inline-flex; align-items: center; gap: 4px;">
+        <svg class="tp-icon tp-icon-sm"><use href="#icon-sun"></use></svg>
+        <span>Day Session: <span class="tabular-nums">{{ active_day_start or '09:00' }} &ndash; {{ evening_session_start or '16:00' }}</span></span>
       </span>
-      <span class="oop-session-legend-item evening">
-        🌙 Evening Session: Not Before {{ evening_session_start or '16:00' }} &ndash; {{ active_day_end or '20:00' }}
+      <span class="oop-session-legend-item evening" style="display: inline-flex; align-items: center; gap: 4px;">
+        <svg class="tp-icon tp-icon-sm"><use href="#icon-moon"></use></svg>
+        <span>Evening Session: Not Before <span class="tabular-nums">{{ evening_session_start or '16:00' }} &ndash; {{ active_day_end or '20:00' }}</span></span>
       </span>
     </div>
   </div>
@@ -989,8 +1004,11 @@
   {% if current_user and current_user.role in ['admin', 'superadmin'] %}
   <div class="oop-dispatch-toolbar">
     <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-secondary);">
-      <span>⚡ <strong>Tournament Dispatch:</strong></span>
-      <span>Anti-clash rest buffer active ({{ tournament.min_rest_minutes or 30 }} mins)</span>
+      <span style="display: inline-flex; align-items: center; gap: 4px;">
+        <svg class="tp-icon tp-icon-sm" style="color: var(--accent-secondary);"><use href="#icon-zap"></use></svg>
+        <strong>Tournament Dispatch:</strong>
+      </span>
+      <span>Anti-clash rest buffer active (<span class="tabular-nums">{{ tournament.min_rest_minutes or 30 }}</span> mins)</span>
     </div>
     <div class="oop-dispatch-actions">
       <!-- Rain Delay Quick Trigger -->
@@ -1002,16 +1020,18 @@
           <option value="45">+45 Mins Delay</option>
           <option value="60">+60 Mins Delay</option>
         </select>
-        <button type="submit" class="btn btn-secondary btn-sm" onclick="return confirm('Shift all remaining pending matches by this delay?');">
-          🌧️ Apply Delay
+        <button type="submit" class="btn btn-secondary btn-sm" onclick="return confirm('Shift all remaining pending matches by this delay?');" style="display: inline-flex; align-items: center; gap: 4px;">
+          <svg class="tp-icon tp-icon-sm"><use href="#icon-clock"></use></svg>
+          <span>Apply Delay</span>
         </button>
       </form>
 
       <!-- Global Reschedule / Anti-Clash Recalculate -->
       <form method="POST" style="display: inline; margin: 0;">
         <input type="hidden" name="action" value="reschedule_all">
-        <button type="submit" class="btn btn-primary btn-sm" onclick="return confirm('Recalculate schedule across all categories with anti-clash protection?');">
-          🔄 Auto-Schedule All
+        <button type="submit" class="btn btn-primary btn-sm" onclick="return confirm('Recalculate schedule across all categories with anti-clash protection?');" style="display: inline-flex; align-items: center; gap: 4px;">
+          <svg class="tp-icon tp-icon-sm"><use href="#icon-refresh"></use></svg>
+          <span>Auto-Schedule All</span>
         </button>
       </form>
     </div>
@@ -1021,7 +1041,10 @@
   <div class="oop-content-grid" data-active-session="{{ session_filter or 'all' }}" style="padding-bottom: 2rem;">
 {% else %}
 <div class="header">
-  <h1>📋 Order of Play</h1>
+  <h1 style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+    <svg class="tp-icon" style="color: var(--accent-primary);"><use href="#icon-clock"></use></svg>
+    <span>Order of Play</span>
+  </h1>
   <p>{{ tournament.name }} &mdash; {% if active_date %}Date: {{ active_date.strftime('%d %B %Y') }}{% endif %}</p>
 </div>
 {% endif %}
@@ -1032,18 +1055,18 @@
   <td>
     <div style="display: flex; flex-direction: column; gap: 3px;">
       <div style="display: flex; align-items: center; gap: 6px;">
-        <span style="font-weight: 700; font-size: 1.15rem; color: var(--accent-primary); line-height: 1.2;">
+        <span class="tabular-nums" style="font-weight: 700; font-size: 1.15rem; color: var(--accent-primary); line-height: 1.2;">
           {{ item.time }}
         </span>
-        <span class="oop-session-tag {{ item.session }}">{{ item.session_icon }} {{ 'Evening' if item.session == 'evening' else 'Day' }}</span>
+        <span class="oop-session-tag {{ item.session }}">{{ 'Evening' if item.session == 'evening' else 'Day' }}</span>
       </div>
       {% if item.is_not_before %}
       <span style="font-size: 0.75rem; color: var(--accent-warning); font-weight: 600; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap;">
-        ⏱️ Not Before
+        Not Before
       </span>
       {% else %}
       <span style="font-size: 0.75rem; color: var(--accent-success); font-weight: 600; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap;">
-        🎾 First Match
+        First Match
       </span>
       {% endif %}
     </div>
@@ -1072,28 +1095,28 @@
     <div class="oop-matchup-container">
       <div class="oop-team-group">
         {% if item.is_team %}
-          <span class="oop-player-chip static" style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);">
-            <span class="oop-chip-icon">🛡️</span>
+          <span class="oop-player-chip static" style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); display: inline-flex; align-items: center; gap: 4px;">
+            <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-shield"></use></svg>
             <span>{{ item.p1 }}</span>
           </span>
         {% elif item.p1_players %}
           {% for pl in item.p1_players %}
             {% if pl.player_id %}
-            <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-chip" title="View {{ pl.name }} profile">
-              <span class="oop-chip-icon">👤</span>
+            <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-chip" title="View {{ pl.name }} profile" style="display: inline-flex; align-items: center; gap: 4px;">
+              <svg class="tp-icon tp-icon-sm"><use href="#icon-user"></use></svg>
               <span>{{ pl.name }}</span>
             </a>
             {% else %}
-            <span class="oop-player-chip static">
-              <span class="oop-chip-icon">👤</span>
+            <span class="oop-player-chip static" style="display: inline-flex; align-items: center; gap: 4px;">
+              <svg class="tp-icon tp-icon-sm"><use href="#icon-user"></use></svg>
               <span>{{ pl.name }}</span>
             </span>
             {% endif %}
             {% if not loop.last %}<span class="oop-pair-sep">&</span>{% endif %}
           {% endfor %}
         {% else %}
-          <span class="oop-player-chip static">
-            <span class="oop-chip-icon">👤</span>
+          <span class="oop-player-chip static" style="display: inline-flex; align-items: center; gap: 4px;">
+            <svg class="tp-icon tp-icon-sm"><use href="#icon-user"></use></svg>
             <span>{{ item.p1 }}</span>
           </span>
         {% endif %}
@@ -1103,28 +1126,28 @@
 
       <div class="oop-team-group">
         {% if item.is_team %}
-          <span class="oop-player-chip static" style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);">
-            <span class="oop-chip-icon">🛡️</span>
+          <span class="oop-player-chip static" style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); display: inline-flex; align-items: center; gap: 4px;">
+            <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-shield"></use></svg>
             <span>{{ item.p2 }}</span>
           </span>
         {% elif item.p2_players %}
           {% for pl in item.p2_players %}
             {% if pl.player_id %}
-            <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-chip" title="View {{ pl.name }} profile">
-              <span class="oop-chip-icon">👤</span>
+            <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-chip" title="View {{ pl.name }} profile" style="display: inline-flex; align-items: center; gap: 4px;">
+              <svg class="tp-icon tp-icon-sm"><use href="#icon-user"></use></svg>
               <span>{{ pl.name }}</span>
             </a>
             {% else %}
-            <span class="oop-player-chip static">
-              <span class="oop-chip-icon">👤</span>
+            <span class="oop-player-chip static" style="display: inline-flex; align-items: center; gap: 4px;">
+              <svg class="tp-icon tp-icon-sm"><use href="#icon-user"></use></svg>
               <span>{{ pl.name }}</span>
             </span>
             {% endif %}
             {% if not loop.last %}<span class="oop-pair-sep">&</span>{% endif %}
           {% endfor %}
         {% else %}
-          <span class="oop-player-chip static">
-            <span class="oop-chip-icon">👤</span>
+          <span class="oop-player-chip static" style="display: inline-flex; align-items: center; gap: 4px;">
+            <svg class="tp-icon tp-icon-sm"><use href="#icon-user"></use></svg>
             <span>{{ item.p2 }}</span>
           </span>
         {% endif %}
@@ -1133,7 +1156,7 @@
     {% if not item.is_team and item.category_id %}
     <div style="margin-top: 0.45rem;">
       <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=item.category_id, match_id=item.match.id) }}" class="oop-bracket-link" title="Jump to this match on the category bracket">
-        🎯 View in Bracket ↗
+        View in Bracket ↗
       </a>
     </div>
     {% endif %}
@@ -1142,11 +1165,11 @@
   <!-- Status & Live Controls -->
   <td style="text-align: center;">
     {% if item.status == 'completed' %}
-      <span class="oop-status-badge completed">✓ Completed</span>
+      <span class="oop-status-badge completed">Completed</span>
       {% set score_display = item.match | display_match_score %}
       {% if score_display %}
       <div style="margin-top: 5px;">
-        <span class="oop-score-badge" style="display: inline-block; padding: 2px 10px; background: var(--bg-secondary); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); font-weight: 800; font-size: 0.95rem; color: var(--text-primary); letter-spacing: 0.5px;">
+        <span class="oop-score-badge tabular-nums" style="display: inline-block; padding: 2px 10px; background: var(--bg-secondary); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); font-weight: 700; font-size: 0.95rem; color: var(--text-primary); letter-spacing: 0.5px;">
           {{ score_display | safe }}
         </span>
       </div>
@@ -1159,31 +1182,31 @@
       </div>
       {% endif %}
     {% elif item.status == 'in_progress' %}
-      <span class="oop-status-badge in-progress">🔴 IN PROGRESS</span>
+      <span class="oop-status-badge in-progress"><span class="live-indicator-dot" style="display:inline-block; margin-right:4px;"></span> In Progress</span>
       {% if current_user and current_user.role in ['admin', 'superadmin'] %}
       <div style="display: flex; justify-content: center; gap: 6px; margin-top: 8px; flex-wrap: wrap;">
         {% if item.category_id %}
         <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=item.category_id, match_id=item.match.id, open_score=1) }}" class="btn btn-success btn-sm" style="border-radius: 9999px; text-decoration: none; font-weight: 600; box-shadow: 0 2px 6px rgba(4, 120, 87, 0.25);" title="Go to bracket to enter final score">
-          🏁 Score & Complete ↗
+          Score &amp; Complete ↗
         </a>
         {% endif %}
         <button type="button" onclick="quickToggleStatus({{ item.match.id }}, 'pending', this)" class="btn btn-secondary btn-sm" style="border-radius: 9999px;" title="Reset back to To Play">
-          ⏸ Pause
+          Pause
         </button>
       </div>
       {% endif %}
     {% else %}
-      <span class="oop-status-badge pending">📅 To Play</span>
+      <span class="oop-status-badge pending">To Play</span>
       {% if item.is_locked %}
       <div style="display: flex; justify-content: center; gap: 6px; margin-top: 8px;">
         <span class="oop-locked-pill" title="Cannot start match until {{ previous_day_label }} matches are completed">
-          🔒 Awaiting {{ previous_day_label }}
+          <svg class="icon icon-xs" style="margin-right: 4px; vertical-align: -1px;"><use href="#icon-lock"></use></svg> Awaiting {{ previous_day_label }}
         </span>
       </div>
       {% elif current_user and current_user.role in ['admin', 'superadmin'] %}
       <div style="display: flex; justify-content: center; gap: 6px; margin-top: 8px;">
-        <button type="button" onclick="quickToggleStatus({{ item.match.id }}, 'in_progress', this)" class="btn btn-gold btn-sm" style="border-radius: 9999px; font-weight: 700;" title="Start match and mark court as active">
-          ▶ Start Match
+        <button type="button" onclick="quickToggleStatus({{ item.match.id }}, 'in_progress', this)" class="btn btn-gold btn-sm" style="border-radius: 9999px; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem;" title="Start match and mark court as active">
+          <svg class="icon icon-xs"><use href="#icon-zap"></use></svg> Start Match
         </button>
       </div>
       {% endif %}
@@ -1217,12 +1240,12 @@
   <!-- Card Top Row: Time, Session, Category & Round -->
   <div class="oop-card-top">
     <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-      <span style="font-weight: 700; font-size: 1.15rem; color: var(--accent-primary);">{{ item.time }}</span>
-      <span class="oop-session-tag {{ item.session }}">{{ item.session_icon }} {{ 'Evening' if item.session == 'evening' else 'Day' }}</span>
+      <span class="tabular-nums" style="font-weight: 700; font-size: 1.15rem; color: var(--accent-primary);">{{ item.time }}</span>
+      <span class="oop-session-tag {{ item.session }}">{{ 'Evening' if item.session == 'evening' else 'Day' }}</span>
       {% if item.is_not_before %}
-      <span style="font-size: 0.72rem; color: var(--accent-warning); font-weight: 600; display: inline-flex; align-items: center; gap: 2px;">⏱️ Not Before</span>
+      <span style="font-size: 0.72rem; color: var(--accent-warning); font-weight: 600; display: inline-flex; align-items: center; gap: 2px;">Not Before</span>
       {% else %}
-      <span style="font-size: 0.72rem; color: var(--accent-success); font-weight: 600; display: inline-flex; align-items: center; gap: 2px;">🎾 First Match</span>
+      <span style="font-size: 0.72rem; color: var(--accent-success); font-weight: 600; display: inline-flex; align-items: center; gap: 2px;">First Match</span>
       {% endif %}
     </div>
     <div style="display: flex; align-items: center; gap: 0.4rem;">
@@ -1236,28 +1259,28 @@
     <div class="oop-card-player" style="gap: 0.4rem; align-items: center;">
       <div class="oop-team-group" style="width: 100%;">
         {% if item.is_team %}
-          <span class="oop-player-chip static" style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);">
-            <span class="oop-chip-icon">🛡️</span>
+          <span class="oop-player-chip static" style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); display: inline-flex; align-items: center; gap: 4px;">
+            <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-shield"></use></svg>
             <span>{{ item.p1 }}</span>
           </span>
         {% elif item.p1_players %}
           {% for pl in item.p1_players %}
             {% if pl.player_id %}
-            <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-chip" title="View {{ pl.name }} profile">
-              <span class="oop-chip-icon">👤</span>
+            <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-chip" title="View {{ pl.name }} profile" style="display: inline-flex; align-items: center; gap: 4px;">
+              <svg class="tp-icon tp-icon-sm"><use href="#icon-user"></use></svg>
               <span>{{ pl.name }}</span>
             </a>
             {% else %}
-            <span class="oop-player-chip static">
-              <span class="oop-chip-icon">👤</span>
+            <span class="oop-player-chip static" style="display: inline-flex; align-items: center; gap: 4px;">
+              <svg class="tp-icon tp-icon-sm"><use href="#icon-user"></use></svg>
               <span>{{ pl.name }}</span>
             </span>
             {% endif %}
             {% if not loop.last %}<span class="oop-pair-sep">&</span>{% endif %}
           {% endfor %}
         {% else %}
-          <span class="oop-player-chip static">
-            <span class="oop-chip-icon">👤</span>
+          <span class="oop-player-chip static" style="display: inline-flex; align-items: center; gap: 4px;">
+            <svg class="tp-icon tp-icon-sm"><use href="#icon-user"></use></svg>
             <span>{{ item.p1 }}</span>
           </span>
         {% endif %}
@@ -1267,28 +1290,28 @@
     <div class="oop-card-player" style="gap: 0.4rem; align-items: center;">
       <div class="oop-team-group" style="width: 100%;">
         {% if item.is_team %}
-          <span class="oop-player-chip static" style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);">
-            <span class="oop-chip-icon">🛡️</span>
+          <span class="oop-player-chip static" style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); display: inline-flex; align-items: center; gap: 4px;">
+            <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-shield"></use></svg>
             <span>{{ item.p2 }}</span>
           </span>
         {% elif item.p2_players %}
           {% for pl in item.p2_players %}
             {% if pl.player_id %}
-            <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-chip" title="View {{ pl.name }} profile">
-              <span class="oop-chip-icon">👤</span>
+            <a href="{{ url_for('player.view_player', player_id=pl.player_id) }}" class="oop-player-chip" title="View {{ pl.name }} profile" style="display: inline-flex; align-items: center; gap: 4px;">
+              <svg class="tp-icon tp-icon-sm"><use href="#icon-user"></use></svg>
               <span>{{ pl.name }}</span>
             </a>
             {% else %}
-            <span class="oop-player-chip static">
-              <span class="oop-chip-icon">👤</span>
+            <span class="oop-player-chip static" style="display: inline-flex; align-items: center; gap: 4px;">
+              <svg class="tp-icon tp-icon-sm"><use href="#icon-user"></use></svg>
               <span>{{ pl.name }}</span>
             </span>
             {% endif %}
             {% if not loop.last %}<span class="oop-pair-sep">&</span>{% endif %}
           {% endfor %}
         {% else %}
-          <span class="oop-player-chip static">
-            <span class="oop-chip-icon">👤</span>
+          <span class="oop-player-chip static" style="display: inline-flex; align-items: center; gap: 4px;">
+            <svg class="tp-icon tp-icon-sm"><use href="#icon-user"></use></svg>
             <span>{{ item.p2 }}</span>
           </span>
         {% endif %}
@@ -1298,7 +1321,7 @@
     {% if not item.is_team and item.category_id %}
     <div style="margin-top: 0.4rem;">
       <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=item.category_id, match_id=item.match.id) }}" class="oop-bracket-link">
-        🎯 View in Bracket ↗
+        View in Bracket ↗
       </a>
     </div>
     {% endif %}
@@ -1309,17 +1332,17 @@
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
       <div>
         {% if item.status == 'completed' %}
-          <span class="oop-status-badge completed">✓ Completed</span>
+          <span class="oop-status-badge completed">Completed</span>
           {% set score_display = item.match | display_match_score %}
           {% if score_display %}
-          <span class="oop-score-badge" style="display: inline-block; padding: 2px 8px; background: var(--bg-secondary); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); font-weight: 800; font-size: 0.95rem; color: var(--text-primary); margin-left: 0.5rem; letter-spacing: 0.5px;">
+          <span class="oop-score-badge tabular-nums" style="display: inline-block; padding: 2px 8px; background: var(--bg-secondary); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-left: 0.5rem; letter-spacing: 0.5px;">
             {{ score_display | safe }}
           </span>
           {% endif %}
         {% elif item.status == 'in_progress' %}
-          <span class="oop-status-badge in-progress">🔴 IN PROGRESS</span>
+          <span class="oop-status-badge in-progress"><span class="live-indicator-dot" style="display:inline-block; margin-right:4px;"></span> In Progress</span>
         {% else %}
-          <span class="oop-status-badge pending">📅 To Play</span>
+          <span class="oop-status-badge pending">To Play</span>
         {% endif %}
       </div>
     </div>
@@ -1329,20 +1352,20 @@
       {% if item.status == 'in_progress' %}
         {% if item.category_id %}
         <a href="{{ url_for('category.view_category', slug=tournament.url_slug, category_id=item.category_id, match_id=item.match.id, open_score=1) }}" class="btn btn-success" style="font-weight: 600;">
-          🏁 Score & Complete ↗
+          Score &amp; Complete ↗
         </a>
         {% endif %}
         <button type="button" onclick="quickToggleStatus({{ item.match.id }}, 'pending', this)" class="btn btn-secondary">
-          ⏸ Pause
+          Pause
         </button>
       {% elif item.status != 'completed' %}
         {% if item.is_locked %}
         <span class="oop-locked-pill" title="Cannot start match until {{ previous_day_label }} matches are completed">
-          🔒 Awaiting {{ previous_day_label }}
+          <svg class="icon icon-xs" style="margin-right: 4px; vertical-align: -1px;"><use href="#icon-lock"></use></svg> Awaiting {{ previous_day_label }}
         </span>
         {% else %}
-        <button type="button" onclick="quickToggleStatus({{ item.match.id }}, 'in_progress', this)" class="btn btn-gold" style="font-weight: 700;">
-          ▶ Start Match
+        <button type="button" onclick="quickToggleStatus({{ item.match.id }}, 'in_progress', this)" class="btn btn-gold" style="font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem;">
+          <svg class="icon icon-xs"><use href="#icon-zap"></use></svg> Start Match
         </button>
         {% endif %}
       {% endif %}
@@ -1355,7 +1378,7 @@
         <input type="hidden" name="action" value="reassign_court">
         <input type="hidden" name="match_id" value="{{ item.match.id }}">
         <select name="new_court" class="form-input" style="height: 36px !important; min-height: 36px !important; padding: 0.25rem 0.6rem !important; font-size: 0.825rem !important;" onchange="this.form.submit()">
-          <option value="" disabled selected>Move to... ⤾</option>
+          <option value="" disabled selected>Move to... &rarr;</option>
           {% for oc in all_courts %}
           {% if oc != court_name %}
           <option value="{{ oc }}">{{ oc }}</option>
@@ -1374,7 +1397,9 @@
   {% if is_provisional %}
   <div class="oop-provisional-banner">
     <div class="oop-provisional-main">
-      <span class="oop-provisional-icon">⏳</span>
+      <div class="oop-provisional-icon" style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 8px; background: rgba(201, 165, 92, 0.2); color: #7A5F1E;">
+        <svg class="icon icon-md"><use href="#icon-clock"></use></svg>
+      </div>
       <div>
         <h4 class="oop-provisional-title">
           <span>Provisional Schedule &bull; Day {{ current_day_number }}</span>
@@ -1387,8 +1412,8 @@
         </p>
       </div>
     </div>
-    <div class="oop-provisional-badge">
-      <span>🔒</span> Matches Locked Until {{ previous_day_label }} Finishes
+    <div class="oop-provisional-badge" style="display: inline-flex; align-items: center; gap: 0.35rem;">
+      <svg class="icon icon-xs"><use href="#icon-lock"></use></svg> Matches Locked Until {{ previous_day_label }} Finishes
     </div>
   </div>
   {% endif %}
@@ -1401,12 +1426,14 @@
     <!-- Court Header -->
     <div class="oop-court-header">
       <div style="display: flex; align-items: center; gap: 0.75rem;">
-        <span style="font-size: 1.4rem;">🎾</span>
+        <div class="oop-court-icon-badge" style="width: 38px; height: 38px; border-radius: 8px; background: rgba(201, 165, 92, 0.2); display: flex; align-items: center; justify-content: center; color: var(--gold-light);">
+          <svg class="icon icon-md"><use href="#icon-tennis"></use></svg>
+        </div>
         <div>
           <h2 style="margin: 0; color: #FDFBF6; font-family: var(--font-display); font-size: 1.4rem; font-weight: 600;">{{ court_name }}</h2>
           <p style="margin: 0.2rem 0 0; color: rgba(253, 251, 246, 0.90); font-size: 0.825rem;">
             {{ matches|length }} match{{ 'es' if matches|length != 1 else '' }} scheduled
-            &bull; ☀️ {{ matches.day_count }} Day &bull; 🌙 {{ matches.evening_count }} Evening
+            &bull; Day Session ({{ matches.day_count }}) &bull; Evening Session ({{ matches.evening_count }})
             {% if active_date %}&bull; {{ active_date.strftime('%d %b %Y') }}{% endif %}
           </p>
         </div>
@@ -1420,7 +1447,7 @@
     <div class="oop-court-session-block" data-session="day" {% if session_filter == 'evening' %}style="display: none;"{% endif %}>
       <div class="oop-session-divider day-session-divider">
         <div class="oop-session-divider-title">
-          <span style="font-size: 1.15rem;">☀️</span>
+          <svg class="icon icon-sm" style="color: #7A5F1E;"><use href="#icon-clock"></use></svg>
           <div>
             <span class="oop-session-title-text">Day Session</span>
             <span class="oop-session-title-sub">Starting at {{ active_day_start or '09:00' }}</span>
@@ -1463,7 +1490,7 @@
       </div>
       {% else %}
       <div class="oop-empty-session-notice">
-        ☀️ No Day Session matches scheduled on {{ court_name }}.
+        No Day Session matches scheduled on {{ court_name }}.
       </div>
       {% endif %}
     </div>
@@ -1472,7 +1499,7 @@
     <div class="oop-court-session-block" data-session="evening" {% if session_filter == 'day' %}style="display: none;"{% endif %}>
       <div class="oop-session-divider evening-session-divider">
         <div class="oop-session-divider-title">
-          <span style="font-size: 1.15rem;">🌙</span>
+          <svg class="icon icon-sm" style="color: #0F3D2E;"><use href="#icon-clock"></use></svg>
           <div>
             <span class="oop-session-title-text">Evening Session</span>
             <span class="oop-session-title-sub">Not Before {{ evening_session_start or '16:00' }}</span>
@@ -1515,7 +1542,7 @@
       </div>
       {% else %}
       <div class="oop-empty-session-notice">
-        🌙 No Evening Session matches scheduled on {{ court_name }}.
+        No Evening Session matches scheduled on {{ court_name }}.
       </div>
       {% endif %}
     </div>
@@ -1523,11 +1550,11 @@
     {% else %}
     {# PDF Export Mode #}
     <div class="court-block">
-      <div class="court-title">{{ court_name }} &mdash; {{ matches|length }} Match{{ 'es' if matches|length != 1 else '' }} (☀️ {{ matches.day_count }} Day &bull; 🌙 {{ matches.evening_count }} Evening)</div>
+      <div class="court-title">{{ court_name }} &mdash; {{ matches|length }} Match{{ 'es' if matches|length != 1 else '' }} (Day Session: {{ matches.day_count }} &bull; Evening Session: {{ matches.evening_count }})</div>
 
       {% if matches.day_matches and session_filter != 'evening' %}
       <div style="background: #F4EFE3; border-left: 4px solid #C9A55C; padding: 6px 12px; font-weight: bold; font-size: 11px; color: #7A5F1E; margin-top: 10px;">
-        ☀️ DAY SESSION &mdash; Starting at {{ active_day_start or '09:00' }} ({{ matches.day_matches|length }} match{{ 'es' if matches.day_matches|length != 1 else '' }})
+        DAY SESSION &mdash; Starting at {{ active_day_start or '09:00' }} ({{ matches.day_matches|length }} match{{ 'es' if matches.day_matches|length != 1 else '' }})
       </div>
       <table class="oop-table">
         <thead>
@@ -1556,13 +1583,13 @@
             <td class="status-{{ item.status }}">
               {% if item.status == 'completed' %}
                 {% set score_display = item.match | display_match_score %}
-                <strong>✓ Done</strong>
+                <strong>Done</strong>
                 {% if score_display %}
                 <div style="font-size: 10px; font-weight: bold; margin-top: 2px; color: #0B2B20;">
                   {{ score_display | safe }}
                 </div>
                 {% endif %}
-              {% elif item.status == 'in_progress' %}● Live
+              {% elif item.status == 'in_progress' %}Live
               {% else %}Pending{% endif %}
             </td>
           </tr>
@@ -1573,7 +1600,7 @@
 
       {% if matches.evening_matches and session_filter != 'day' %}
       <div style="background: #EAF2EE; border-left: 4px solid #0F3D2E; padding: 6px 12px; font-weight: bold; font-size: 11px; color: #0F3D2E; margin-top: 14px;">
-        🌙 EVENING SESSION &mdash; Not Before {{ evening_session_start or '16:00' }} (4:00 PM) ({{ matches.evening_matches|length }} match{{ 'es' if matches.evening_matches|length != 1 else '' }})
+        EVENING SESSION &mdash; Not Before {{ evening_session_start or '16:00' }} (4:00 PM) ({{ matches.evening_matches|length }} match{{ 'es' if matches.evening_matches|length != 1 else '' }})
       </div>
       <table class="oop-table">
         <thead>
@@ -1602,13 +1629,13 @@
             <td class="status-{{ item.status }}">
               {% if item.status == 'completed' %}
                 {% set score_display = item.match | display_match_score %}
-                <strong>✓ Done</strong>
+                <strong>Done</strong>
                 {% if score_display %}
                 <div style="font-size: 10px; font-weight: bold; margin-top: 2px; color: #0B2B20;">
                   {{ score_display | safe }}
                 </div>
                 {% endif %}
-              {% elif item.status == 'in_progress' %}● Live
+              {% elif item.status == 'in_progress' %}Live
               {% else %}Pending{% endif %}
             </td>
           </tr>
@@ -1624,13 +1651,15 @@
 {% else %}
   {% if not is_export %}
   <div class="card" style="text-align: center; padding: 4rem 2rem; background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border-color);">
-    <div style="font-size: 3.5rem; margin-bottom: 1rem; opacity: 0.5;">📋</div>
+    <div class="empty-state-icon" style="width: 56px; height: 56px; margin: 0 auto 1.25rem; border-radius: 50%; background: rgba(15, 61, 46, 0.08); display: flex; align-items: center; justify-content: center; color: var(--court-green);">
+      <svg class="icon icon-lg"><use href="#icon-calendar"></use></svg>
+    </div>
     <h2>No Scheduled Matches Found</h2>
     <p style="color: var(--text-secondary); max-width: 450px; margin: 1rem auto;">
       {% if active_date %}
       No matches are scheduled for <strong>{{ active_date.strftime('%d %B %Y') }}</strong>. Use the day tabs above to view other dates.
       {% else %}
-      Matches have not been generated yet. Open your Category management dashboard and click "🚀 Start Category Bracket" or use "Auto-Schedule All" above.
+      Matches have not been generated yet. Open your Category management dashboard and click "Start Category Bracket" or use "Auto-Schedule All" above.
       {% endif %}
     </p>
   </div>
@@ -1795,7 +1824,7 @@ async function quickToggleStatus(matchId, newStatus, btnElem) {
     if (!matchId) return;
     const originalText = btnElem.innerText;
     btnElem.disabled = true;
-    btnElem.innerText = '⏳';
+    btnElem.innerText = 'Updating...';
     
     try {
         const res = await fetch(`/match/${matchId}/toggle-status`, {

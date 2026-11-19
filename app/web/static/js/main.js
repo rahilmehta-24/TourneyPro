@@ -72,7 +72,7 @@ function copyToClipboard(text) {
         const flash = document.createElement('div');
         flash.className = 'flash flash-success';
         flash.innerHTML = `
-            <span class="flash-icon">✓</span>
+            <svg class="icon icon-sm flash-icon"><use href="#icon-check"></use></svg>
             <span class="flash-text">Copied to clipboard!</span>
         `;
         

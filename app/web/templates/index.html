@@ -7,41 +7,42 @@
     <div class="container">
         <img src="{{ url_for('static', filename='brand/monogram-on-dark.svg') }}" alt="" class="hero-emblem" width="68" height="72">
         <h1 class="hero-title">The Baseline Society</h1>
-        <p class="hero-tagline">Every draw, every court, every champion.</p>
-        <p class="hero-subtitle">Organize and manage tennis tournaments with custom sets, game configurations, and set-by-set validation.</p>
+        <p class="hero-tagline">Tournament administration and live match registry.</p>
+        <p class="hero-subtitle">Official draw sheets, schedule coordination, and set-by-set match recording for lawn tennis clubs and academies.</p>
         <div class="hero-actions">
             {% if current_user and current_user.role in ['admin', 'superadmin'] %}
             <a href="{{ url_for('tournament.create_tournament') }}" class="btn btn-primary btn-large">
-                <span class="btn-icon">➕</span>
-                Create Tournament
+                <svg class="tp-icon" aria-hidden="true"><use href="#icon-plus"></use></svg>
+                <span>Create Tournament</span>
             </a>
             {% elif not current_user %}
             <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-large">
-                <span class="btn-icon">🎾</span>
-                Get Started
+                <svg class="tp-icon" aria-hidden="true"><use href="#icon-tennis"></use></svg>
+                <span>Sign In to Play</span>
             </a>
             {% endif %}
             <a href="{{ url_for('main.tournament_list') }}" class="btn btn-secondary btn-large">
-                <span class="btn-icon">📋</span>
-                Browse Tournaments
+                <svg class="tp-icon" aria-hidden="true"><use href="#icon-clipboard"></use></svg>
+                <span>Browse Tournaments</span>
             </a>
         </div>
     </div>
 </div>
 
 <div class="container">
-    <!-- Active & Featured Tournaments Carousel Section -->
+    <!-- Active & Featured Tournaments Section -->
     {% if tournaments %}
     <section class="featured-tournaments-section" style="margin-top: 2.5rem; margin-bottom: 3rem;">
         <div class="section-header-row">
             <div>
-                <span class="section-eyebrow">On the Courts</span>
-                <h2 class="section-title" style="margin: 0.2rem 0;">Active & Featured Tournaments</h2>
-                <p class="section-subtitle">Follow live draws, register for open events, or explore past champions.</p>
+                <span class="section-eyebrow">Live Competition</span>
+                <h2 class="section-title" style="margin: 0.2rem 0;">Tournament Registry</h2>
+                <p class="section-subtitle">Active draws, open entries, and completed championship results.</p>
             </div>
             <div style="display: flex; align-items: center; gap: 0.75rem;">
                 <a href="{{ url_for('main.tournament_list') }}" class="view-all-link">
-                    View All <span aria-hidden="true">&rarr;</span>
+                    <span>View All</span>
+                    <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
                 </a>
             </div>
         </div>
@@ -53,7 +54,7 @@
                         {% if t.status == 'in_progress' %}
                             <span class="live-dot"></span> Live
                         {% elif t.status == 'registration' %}
-                            ✓ Open
+                            Open
                         {% elif t.status == 'completed' %}
                             Completed
                         {% else %}
@@ -63,7 +64,7 @@
                     <span class="tournament-type-pill">{{ t.tournament_type.title() if t.tournament_type else 'Tennis' }}</span>
                 </div>
                 <h3 class="tournament-card-title">{{ t.name }}</h3>
-                <div class="tournament-card-meta">
+                <div class="tournament-card-meta tabular-nums">
                     {% if t.start_date %}
                     <span class="meta-item">
                         <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-calendar"></use></svg>
@@ -82,7 +83,7 @@
                         View Draws
                     </a>
                     {% if t.status == 'registration' %}
-                    <a href="{{ url_for('tournament.register_for_tournament', slug=t.url_slug) }}" class="btn btn-primary btn-small" style="background-color: var(--accent-success); border-color: var(--accent-success); flex: 1; text-align: center;">
+                    <a href="{{ url_for('tournament.register_for_tournament', slug=t.url_slug) }}" class="btn btn-primary btn-small" style="flex: 1; text-align: center;">
                         Register
                     </a>
                     {% endif %}
@@ -99,19 +100,35 @@
     <section class="formats-section" style="margin-bottom: 3.5rem;">
         <div class="section-header-row">
             <div>
-                <span class="section-eyebrow">Championship Engines</span>
-                <h2 class="section-title" style="margin: 0.2rem 0;">Tournament Formats</h2>
-                <p class="section-subtitle">Championship-tested structures tailored for singles, doubles, and team play.</p>
+                <span class="section-eyebrow">Match Regulations</span>
+                <h2 class="section-title" style="margin: 0.2rem 0;">Draw Formats</h2>
+                <p class="section-subtitle">Governed competition structures for singles knockouts, group stages, and round-robin fixtures.</p>
             </div>
         </div>
         <div class="formats-carousel-track" id="formatsCarouselTrack">
             {% for format_key, format_info in formats.items() %}
             {% if format_key not in ['double_elimination', 'doubles_elimination'] %}
-            <div class="format-card clickable carousel-card" onclick="openFormatModal('{{ format_key }}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter')openFormatModal('{{ format_key }}')">
-                <div class="format-icon">{{ format_info.icon }}</div>
+            <div class="format-card clickable carousel-card" onclick="openFormatModal('{{ format_key }}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter')openFormatModal('{{ format_key }}')" style="position: relative;">
+                {% if format_info.badge or format_info.is_locked %}
+                <span class="badge" style="position: absolute; top: 12px; right: 12px; background: rgba(217, 119, 6, 0.15); color: #B45309; border: 1px solid rgba(217, 119, 6, 0.35); padding: 3px 8px; border-radius: 9999px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">{{ format_info.badge or 'Coming Soon' }}</span>
+                {% endif %}
+                <div class="format-icon-badge">
+                    {% if format_key == 'single_elimination' %}
+                        <svg class="tp-icon format-svg-icon" aria-hidden="true"><use href="#icon-bracket"></use></svg>
+                    {% elif format_key == 'round_robin' %}
+                        <svg class="tp-icon format-svg-icon" aria-hidden="true"><use href="#icon-repeat"></use></svg>
+                    {% elif format_key == 'group_stage' %}
+                        <svg class="tp-icon format-svg-icon" aria-hidden="true"><use href="#icon-grid"></use></svg>
+                    {% else %}
+                        <svg class="tp-icon format-svg-icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>
+                    {% endif %}
+                </div>
                 <h3 class="format-name">{{ format_info.name }}</h3>
                 <p class="format-description">{{ format_info.description }}</p>
-                <div class="format-card-action">View Details &rarr;</div>
+                <div class="format-card-action">
+                    <span>View Rules</span>
+                    <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+                </div>
             </div>
             {% endif %}
             {% endfor %}
@@ -124,31 +141,53 @@
 <!-- Format Detail Modals -->
 {% for format_key, format_info in formats.items() %}
 {% if format_key not in ['double_elimination', 'doubles_elimination'] %}
-<div id="modal-{{ format_key }}" class="modal" role="dialog" aria-modal="true" style="display: none; position: fixed; inset: 0; background: rgba(11, 43, 32, 0.52); backdrop-filter: blur(4px); z-index: 1000; justify-content: center; align-items: center; padding: 1rem;">
-    <div class="modal-content" style="background: var(--bg-card); max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; border-radius: var(--radius-lg); padding: 2rem; position: relative; border-top: 4px solid var(--accent-secondary); box-shadow: var(--shadow-lg);">
-        <button type="button" onclick="closeFormatModal('{{ format_key }}')" aria-label="Close modal" style="position: absolute; top: 1rem; right: 1rem; background: transparent; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer; line-height: 1;">&times;</button>
-        <div style="font-size: 3rem; margin-bottom: 1rem;">{{ format_info.icon }}</div>
-        <h2 style="margin-bottom: 1rem; color: var(--text-primary);">{{ format_info.name }}</h2>
-        <p style="color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.6;">{{ format_info.description }}</p>
+<div id="modal-{{ format_key }}" class="format-modal-backdrop" role="dialog" aria-modal="true">
+    <div class="format-modal-dialog">
+        <button type="button" onclick="closeFormatModal('{{ format_key }}')" aria-label="Close modal" class="format-modal-close">
+            <svg class="tp-icon" aria-hidden="true"><use href="#icon-x"></use></svg>
+        </button>
+        <div class="format-modal-icon-badge">
+            {% if format_key == 'single_elimination' %}
+                <svg class="tp-icon format-svg-icon" aria-hidden="true"><use href="#icon-bracket"></use></svg>
+            {% elif format_key == 'round_robin' %}
+                <svg class="tp-icon format-svg-icon" aria-hidden="true"><use href="#icon-repeat"></use></svg>
+            {% elif format_key == 'group_stage' %}
+                <svg class="tp-icon format-svg-icon" aria-hidden="true"><use href="#icon-grid"></use></svg>
+            {% else %}
+                <svg class="tp-icon format-svg-icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>
+            {% endif %}
+        </div>
+        <h2 style="margin-bottom: 0.75rem; color: var(--text-primary); font-family: var(--font-display); font-size: 1.75rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+            <span>{{ format_info.name }}</span>
+            {% if format_info.badge or format_info.is_locked %}
+            <span style="background: rgba(217, 119, 6, 0.15); color: #B45309; border: 1px solid rgba(217, 119, 6, 0.35); padding: 3px 10px; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">{{ format_info.badge or 'Coming Soon' }}</span>
+            {% endif %}
+        </h2>
+        {% if format_info.is_locked %}
+        <div style="background: rgba(217, 119, 6, 0.10); border: 1px solid rgba(217, 119, 6, 0.30); border-radius: var(--radius-md); padding: 0.75rem 1rem; margin-bottom: 1.25rem; font-size: 0.85rem; color: #92400E; display: flex; align-items: center; gap: 0.5rem;">
+            <svg class="tp-icon tp-icon-sm" style="color: #B45309; flex-shrink: 0;"><use href="#icon-clock"></use></svg>
+            <span><strong>Under Active Development:</strong> This format is currently locked for new tournament setups while advanced team league scheduling and scoring features are being finalized. Coming soon!</span>
+        </div>
+        {% endif %}
+        <p style="color: var(--text-secondary); margin-bottom: 1.25rem; line-height: 1.6; font-size: 0.95rem;">{{ format_info.description }}</p>
         
-        <div style="background: var(--bg-secondary); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1.5rem;">
-            <h4 style="color: var(--accent-secondary-text); margin-bottom: 0.5rem; font-size: 0.9rem; text-transform: uppercase;">Format Rules & Info</h4>
-            <ul style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; padding-left: 1.25rem;">
+        <div class="format-rules-box">
+            <h4 class="format-rules-heading">Structure & Progression Rules</h4>
+            <ul class="format-rules-list">
                 {% if format_key == 'single_elimination' %}
-                    <li>Lose one match and you're out.</li>
-                    <li>Perfect for fast-paced, high-stakes tournaments.</li>
-                    <li>Number of participants determines the number of initial byes.</li>
-                    <li>Matches follow standard tennis set scoring.</li>
-                    <li>Supports both <strong>Singles</strong> and <strong>Doubles</strong> match formats.</li>
+                    <li>Knockout bracket: defeat in any match eliminates the participant.</li>
+                    <li>Bracket size determines initial seeded byes according to ITF regulations.</li>
+                    <li>Matches follow standard tennis set scoring with tiebreak protocol.</li>
+                    <li>Supports sanctioned Singles and Doubles draw sizes.</li>
                 {% elif format_key == 'group_stage' %}
-                    <li>Players are divided into pools/groups.</li>
-                    <li>Round-robin style: everyone plays everyone in their group.</li>
-                    <li>Top performers from each group advance to a Knockout stage.</li>
-                    <li>Great for ensuring all players get multiple matches.</li>
+                    <li>Entrants are allotted into balanced pools/groups.</li>
+                    <li>Round-robin pool play ensures each participant plays every opponent in their group.</li>
+                    <li>Top qualifiers from each group advance to a seeded Knockout championship stage.</li>
+                    <li>Guarantees multiple competitive matches per participant.</li>
                 {% elif format_key == 'round_robin' %}
-                    <li>Every player plays against every other player.</li>
-                    <li>Standings are determined by overall match wins and game score differentials.</li>
-                    <li>Excellent for ensuring maximum playtime for all participants.</li>
+                    <li>Complete round-robin schedule where every player faces all competitors in the category.</li>
+                    <li>Standings are governed by match wins, head-to-head records, and set/game differentials.</li>
+                    <li>Optimal for club leagues and round-robin division play.</li>
                 {% endif %}
             </ul>
         </div>
@@ -180,7 +219,7 @@
     }
     
     window.addEventListener('click', function(event) {
-        if (event.target.classList.contains('modal')) {
+        if (event.target.classList.contains('format-modal-backdrop')) {
             event.target.style.display = 'none';
             document.body.style.overflow = 'auto';
         }
