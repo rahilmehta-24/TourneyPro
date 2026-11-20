@@ -170,3 +170,21 @@ The scheduling engine solves resource constraints across multiple tournament day
 
 ### 2.9 Court PIN Scoring Mode (v2)
 6-digit, expiring, court-bound PINs held in `tournament_staff`; stored as keyed hashes, rate-limited, audit-logged, and valid for scoring only (see [`AUTH.md`](AUTH.md) §2.3).
+
+---
+
+### 2.10 Flexible Tournament Registration
+* **Decoupled Format Selection:** Organizers can create tournaments and launch participant registration while the category playing format remains undecided (`format_status = 'NOT_DECIDED'`).
+* **Participant Transparency:** The registration and public view portals display "To Be Announced (TBA)" badges, category deadlines, and remaining slots clearly without confusing participants.
+* **Non-Destructive Finalization:** Organizers can finalize or modify the playing format (`single_elimination`, `round_robin`, `group_stage`, `doubles_elimination`, `compass_draw`) at any point before or after registration closes. All existing registrations, participants, and partner pairings are preserved intact.
+* **Controlled Progression:** Format finalization strictly does not auto-generate brackets or fixtures, leaving schedule and draw generation under full organizer control.
+* **Category-Specific Registration Control:** Individual categories can be closed or reopened independently without affecting the entire tournament's registration status.
+
+---
+
+### 2.11 Organizer-Only Bulk CSV Import
+* **Ingestion Pipeline:** Full bulk participant onboarding pipeline on the organizer dashboard (`manage.html`), featuring template download, CSV drag-and-drop file upload, parsing, data preview, in-file and database duplicate detection, and transactional commit.
+* **Format & Relationship Validation:** Validates required headers (`First Name`, `Last Name`, `Category`), email and phone formats, category existence and availability, singles vs. doubles registrations, and doubles partner identifiers (detecting missing partners, self-partnering, and partner duplication).
+* **Idempotency & Partial Acceptance:** Calculates file content SHA-256 hashes to prevent accidental duplicate submission. Allows valid rows to be committed independently of rejected rows with explicit organizer confirmation.
+* **CWE-1236 Injection Defense:** Formula injection protection on all error CSV downloads, neutralizing leading `=`, `+`, `-`, `@`, `\t`, `\r`.
+* **RBAC & Audit Trails:** Restricted strictly to authorized tournament organizers and superadmins with cross-tournament boundary protection. Every upload and commit operation logs an immutable audit event via `log_audit()`.

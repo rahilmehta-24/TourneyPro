@@ -184,16 +184,22 @@
                     <div>
                         <h3 style="margin: 0; font-size: 1.25rem; color: var(--text-primary); font-weight: 600;">{{ category.name }}</h3>
                         <p style="margin: 0.25rem 0 0 0; color: var(--text-muted); font-size: 0.875rem; display: inline-flex; align-items: center; gap: 0.35rem;">
-                            {% if category.format == 'single_elimination' %}
+                            {% if category.format_status == 'NOT_DECIDED' or not category.format %}
+                                <svg class="tp-icon tp-icon-sm" aria-hidden="true" style="color: var(--accent-primary);"><use href="#icon-clock"></use></svg>
+                                <span style="color: var(--accent-primary); font-weight: 600;">To Be Announced (TBA)</span>
+                            {% elif category.format == 'single_elimination' %}
                                 <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-bracket"></use></svg>
+                                <span>{{ formats[category.format].name if category.format in formats else category.format }}</span>
                             {% elif category.format == 'round_robin' %}
                                 <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-repeat"></use></svg>
+                                <span>{{ formats[category.format].name if category.format in formats else category.format }}</span>
                             {% elif category.format == 'group_stage' %}
                                 <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-grid"></use></svg>
+                                <span>{{ formats[category.format].name if category.format in formats else category.format }}</span>
                             {% else %}
                                 <svg class="tp-icon tp-icon-sm" aria-hidden="true"><use href="#icon-trophy"></use></svg>
+                                <span>{{ formats[category.format].name if category.format and category.format in formats else (category.format or 'To Be Announced') }}</span>
                             {% endif %}
-                            <span>{{ formats[category.format].name }}</span>
                         </p>
                     </div>
                     <span class="status-badge status-{{ category.status }}"

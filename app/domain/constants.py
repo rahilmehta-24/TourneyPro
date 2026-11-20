@@ -58,6 +58,34 @@ VALID_SKILL_LEVELS: Tuple[str, ...] = (
 )
 
 # ---------------------------------------------------------------------------
+# Playing Format Statuses & Tournament Registration Statuses
+# ---------------------------------------------------------------------------
+FORMAT_STATUS_NOT_DECIDED = "NOT_DECIDED"
+FORMAT_STATUS_FINALIZED = "FINALIZED"
+
+FORMAT_STATUSES: Tuple[str, ...] = (
+    FORMAT_STATUS_NOT_DECIDED,
+    FORMAT_STATUS_FINALIZED,
+)
+
+REGISTRATION_STATUS_DRAFT = "DRAFT"
+REGISTRATION_STATUS_UPCOMING = "UPCOMING"
+REGISTRATION_STATUS_OPEN = "OPEN"
+REGISTRATION_STATUS_CLOSED = "CLOSED"
+
+REGISTRATION_STATUSES: Tuple[str, ...] = (
+    REGISTRATION_STATUS_DRAFT,
+    REGISTRATION_STATUS_UPCOMING,
+    REGISTRATION_STATUS_OPEN,
+    REGISTRATION_STATUS_CLOSED,
+)
+
+IMPORT_STATUS_PENDING = "PENDING_CONFIRMATION"
+IMPORT_STATUS_COMPLETED = "COMPLETED"
+IMPORT_STATUS_FAILED = "FAILED"
+IMPORT_STATUS_PARTIAL = "PARTIAL"
+
+# ---------------------------------------------------------------------------
 # Platform, Academy & Tournament Roles and Permissions
 # ---------------------------------------------------------------------------
 
@@ -129,6 +157,7 @@ PERM_TOURNAMENT_DRAW_MANAGE = "tournament.draw.manage"
 PERM_TOURNAMENT_REGISTRATION_REVIEW = "tournament.registration.review"
 PERM_TOURNAMENT_SCORE_SUBMIT = "tournament.score.submit"
 PERM_TOURNAMENT_RESULTS_PUBLISH = "tournament.results.publish"
+PERM_TOURNAMENT_PARTICIPANTS_IMPORT = "tournament.participants.import"
 
 
 def calculate_canonical_age_category(

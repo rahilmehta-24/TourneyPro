@@ -16,12 +16,15 @@ class Tournament(db.Model):
     description = db.Column(db.Text)
     game_info = db.Column(db.String(200))
     format = db.Column(db.String(50))  # Legacy field, kept for backward compatibility
+    format_status = db.Column(db.String(20), default="NOT_DECIDED", nullable=False)  # NOT_DECIDED, FINALIZED
     tournament_type = db.Column(db.String(20), default="single_stage")
     status = db.Column(
         db.String(20), default="setup"
     )  # setup, registration, in_progress, completed
+    registration_status = db.Column(db.String(20), default="DRAFT", nullable=False)  # DRAFT, UPCOMING, OPEN, CLOSED
     max_participants = db.Column(db.Integer)
     is_private = db.Column(db.Boolean, default=False)
+    is_published = db.Column(db.Boolean, default=True, nullable=False)
     has_categories = db.Column(db.Boolean, default=False)  # True if using category system
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     started_at = db.Column(db.DateTime)
@@ -29,6 +32,7 @@ class Tournament(db.Model):
     num_sets = db.Column(db.Integer, default=1)  # 1, 2 or 3 sets
     games_per_set = db.Column(db.Integer, default=6)  # games to win a set
     payment_upi_id = db.Column(db.String(100))  # Admin's UPI ID for manual payments
+    registration_opens_at = db.Column(db.DateTime, nullable=True)
     registration_closes_at = db.Column(db.DateTime)
     # Academy Integration
     academy_id = db.Column(db.Integer, db.ForeignKey("academies.id"), nullable=True)
@@ -78,9 +82,12 @@ class Category(db.Model):
     gender = db.Column(db.String(50), default="Unspecified")
     age_category = db.Column(db.String(50), default="Unspecified")
     format = db.Column(
-        db.String(50), nullable=False
-    )  # single_elimination, double_elimination, round_robin, group_stage
+        db.String(50), nullable=True
+    )  # single_elimination, double_elimination, round_robin, group_stage, or None if undecided
+    format_status = db.Column(db.String(20), default="NOT_DECIDED", nullable=False)  # NOT_DECIDED, FINALIZED
     status = db.Column(db.String(20), default="setup")  # setup, in_progress, completed
+    registration_status = db.Column(db.String(20), default="OPEN", nullable=False)  # OPEN, CLOSED
+    is_registration_open = db.Column(db.Boolean, default=True, nullable=False)
     max_participants = db.Column(db.Integer)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     started_at = db.Column(db.DateTime)
@@ -816,3 +823,28 @@ class UserNotificationPreferences(db.Model):
     notify_match_results = db.Column(db.Boolean, default=True)
     notify_academy_announcements = db.Column(db.Boolean, default=True)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class ParticipantImportBatch(db.Model):
+    __tablename__ = "import_batches"
+
+    id = db.Column(db.Integer, primary_key=True)
+    tournament_id = db.Column(db.Integer, db.ForeignKey("tournaments.id", ondelete="CASCADE"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    filename = db.Column(db.String(255), nullable=False)
+    file_hash = db.Column(db.String(64), nullable=False, index=True)
+    total_rows = db.Column(db.Integer, default=0)
+    valid_rows = db.Column(db.Integer, default=0)
+    invalid_rows = db.Column(db.Integer, default=0)
+    duplicate_rows = db.Column(db.Integer, default=0)
+    imported_rows = db.Column(db.Integer, default=0)
+    status = db.Column(db.String(30), default="PENDING_CONFIRMATION", nullable=False)
+    error_data = db.Column(db.Text, nullable=True)  # JSON-encoded array of row errors
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    completed_at = db.Column(db.DateTime, nullable=True)
+
+    tournament = db.relationship(
+        "Tournament", backref=db.backref("import_batches", cascade="all, delete-orphan"), lazy=True
+    )
+    user = db.relationship("User", backref=db.backref("import_batches", cascade="all, delete-orphan"), lazy=True)
+

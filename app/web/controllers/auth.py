@@ -770,6 +770,9 @@ def platform_review_academy_application(app_id):
 @login_required
 def profile():
     user = get_current_user()
+    if not user.profile_completed and user.role not in ['admin', 'superadmin']:
+        flash("Please complete your profile to view your full profile.", "info")
+        return redirect(url_for('auth.complete_profile', next=url_for('auth.profile')))
     users = []
     if user.role == 'superadmin':
         users = User.query.order_by(User.username).all()

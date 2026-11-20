@@ -13,6 +13,8 @@ Welcome to **TourneyPro**! This user guide walks you through every action you ca
    - [2.3 Publishing the Draw (Draft vs. Public)](#23-publishing-the-draw-draft-vs-public)
    - [2.4 Printing the Check-in Desk Roster PDF](#24-printing-the-check-in-desk-roster-pdf)
    - [2.5 Downloading Matches and Standings Sheets](#25-downloading-matches-and-standings-sheets)
+   - [2.6 Flexible Tournament Registration (Decoupled Formats)](#26-flexible-tournament-registration-decoupled-formats)
+   - [2.7 Bulk CSV Participant Import](#27-bulk-csv-participant-import)
 3. [For Court Scorers & Chair Umpires](#3-for-court-scorers--chair-umpires)
    - [3.1 Logging in with a 6-Digit Court PIN](#31-logging-in-with-a-6-digit-court-pin)
    - [3.2 Entering Live Tennis Match Scores](#32-entering-live-tennis-match-scores)
@@ -104,6 +106,35 @@ On tournament day, the registration desk needs a physical roster of all players,
 On each category page, organizers have quick access to:
 - **📄 Matches CSV**: Complete list of matches, courts, and scores for spreadsheets.
 - **📊 Standings CSV**: Team points, set differentials, and qualification rankings.
+
+---
+
+### 2.6 Flexible Tournament Registration (Decoupled Formats)
+Organizers do not have to pick a competition format right away when setting up a tournament.
+
+#### Key Capabilities:
+1. **Create with Format "To Be Announced" (TBA):** During tournament creation, set **Playing Format Status** to *Decide Later / To Be Announced (TBA)*. Registrations can be opened immediately while participant turnout is being gauged.
+2. **Category Registration Controls:** In the tournament management dashboard (`Categories` tab), organizers can click **Close Reg** or **Open Reg** on individual categories without affecting the rest of the tournament.
+3. **Finalizing or Modifying Format Later:** Once player numbers are confirmed, click the **Format** button next to any category. Select your chosen format (`Single Elimination`, `Round Robin`, `Group Stage`, etc.) and scoring format.
+4. **Registration Preservation:** Finalizing the format will *never* delete already-registered players or doubles teams. Brackets and fixtures are never auto-generated until the organizer manually clicks to seed and generate draws.
+
+---
+
+### 2.7 Bulk CSV Participant Import
+Organizers can onboard large groups of players via spreadsheet upload in seconds.
+
+#### Steps for Bulk CSV Import:
+1. Open your tournament dashboard (`/t/<slug>/manage`) and switch to the **📥 Bulk CSV Import** tab.
+2. Click **Download Template (.csv)** to obtain the official template with column headers:
+   - `First Name`, `Last Name`, `Email`, `Phone Number`, `Tournament Category`, `Registration Type`, `Doubles Partner`, `Player Level`, `Notes`
+3. Fill in your participant list and save as a standard `.csv` file.
+4. Drag and drop the file into the upload zone and click **Upload & Preview CSV**.
+5. Inspect the validation summary:
+   - **Valid Rows**: Ready for import.
+   - **Invalid Rows**: Missing fields or unrecognized categories.
+   - **Duplicate Rows**: Duplicates within the file or players already registered.
+6. Click **Confirm & Import Valid Records** to commit valid entries into the tournament.
+7. If any rows had errors, click **Download Error Report (.csv)** to see row-by-row reasons and re-upload only the corrected rows.
 
 ---
 
