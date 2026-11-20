@@ -424,6 +424,32 @@ def toggle_category_publish(category_id):
 @api_bp.route('/leaderboard', methods=['GET'])
 def get_leaderboard():
     """List genuine ranked players from the registry for mobile leaderboard."""
+    from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
+    from app.domain.models import User
+
+    current_user = None
+    try:
+        verify_jwt_in_request(optional=True)
+        identity = get_jwt_identity()
+        if identity:
+            current_user = User.query.get(int(identity))
+    except Exception:
+        pass
+
+    if not current_user:
+        return jsonify({
+            "success": False,
+            "message": "Authentication and completed profile required to view leaderboard.",
+            "code": "AUTH_REQUIRED"
+        }), 401
+
+    if not current_user.profile_completed and current_user.role not in ['admin', 'superadmin']:
+        return jsonify({
+            "success": False,
+            "message": "Player profile must be completed to view the leaderboard.",
+            "code": "PROFILE_INCOMPLETE",
+            "completion_percentage": current_user.completion_percentage or 0
+        }), 403
 
     category = request.args.get('category')
     gender = request.args.get('gender')

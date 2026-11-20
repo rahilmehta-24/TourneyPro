@@ -479,11 +479,6 @@ def register_for_tournament(slug):
         flash("Please log in or create an account to register for this tournament.", "info")
         return redirect(url_for("auth.login", next=url_for("tournament.register_for_tournament", slug=slug)))
 
-    if not current_u.profile_completed:
-        pct = current_u.completion_percentage or 0
-        flash(f"Your player profile is {pct}% complete. Please complete your profile before registering.", "warning")
-        return redirect(url_for("auth.complete_profile", next=url_for("tournament.register_for_tournament", slug=slug)))
-
     player = Player.query.filter_by(user_id=current_u.id).first()
     if not player:
         from app.services.user_service import ensure_user_profile
