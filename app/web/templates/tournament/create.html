@@ -82,6 +82,62 @@
             </div>
         </div>
 
+        <!-- REGISTRATION & FORMAT CONFIGURATION -->
+        <div class="form-section">
+            <h2 class="form-section-title" style="display: flex; align-items: center; gap: 8px;">
+                <svg class="tp-icon" style="color: var(--accent-primary);"><use href="#icon-settings"></use></svg>
+                <span>Registration Window &amp; Playing Format</span>
+            </h2>
+            <p style="color: var(--text-secondary); font-size: 0.875rem; margin-top: -0.5rem; margin-bottom: 1.25rem;">
+                Open registration early even if the tournament format is still to be announced (TBA). You can finalize or adjust the format later without losing registrations.
+            </p>
+
+            <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.25rem;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="format_status" class="form-label" style="font-weight: 700;">Playing Format Status</label>
+                        <select id="format_status" name="format_status" class="form-input">
+                            <option value="NOT_DECIDED" selected>To Be Announced (Undecided)</option>
+                            <option value="FINALIZED">Finalized (Format Specified)</option>
+                        </select>
+                        <small class="text-muted d-block mt-1">If undecided, players see "Format: To Be Announced (TBA)".</small>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="registration_status" class="form-label" style="font-weight: 700;">Registration Status</label>
+                        <select id="registration_status" name="registration_status" class="form-input">
+                            <option value="DRAFT">Draft (Internal Setup)</option>
+                            <option value="UPCOMING">Upcoming (Announced)</option>
+                            <option value="OPEN" selected>Open (Accepting Entries)</option>
+                            <option value="CLOSED">Closed</option>
+                        </select>
+                        <small class="text-muted d-block mt-1">Controls public ability to register.</small>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="registration_opens_at" class="form-label" style="font-weight: 700;">Registration Opens At</label>
+                        <input type="datetime-local" id="registration_opens_at" name="registration_opens_at" class="form-input">
+                        <small class="text-muted d-block mt-1">Optional. Prior to this, registration is marked upcoming.</small>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="registration_closes_at" class="form-label" style="font-weight: 700;">Registration Closes At</label>
+                        <input type="datetime-local" id="registration_closes_at" name="registration_closes_at" class="form-input">
+                        <small class="text-muted d-block mt-1">Optional. Deadline after which registrations automatically halt.</small>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 1rem; margin-bottom: 0;">
+                    <label for="category_names_csv" class="form-label" style="font-weight: 700;">Initial Tournament Categories (Optional)</label>
+                    <input type="text" id="category_names_csv" name="category_names_csv" class="form-input"
+                           placeholder="e.g. Men's Singles, Women's Singles, Men's Doubles">
+                    <small class="text-muted d-block mt-1">Enter comma-separated divisions to create automatically. You can also add more later.</small>
+                </div>
+            </div>
+        </div>
+
         <!-- TOURNAMENT DURATION & OPERATING TIMINGS -->
         <div class="form-section">
             <h2 class="form-section-title" style="display: flex; align-items: center; gap: 8px;">

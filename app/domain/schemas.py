@@ -55,7 +55,7 @@ class TournamentSchema(SQLAlchemyAutoSchema):
         model = Tournament
         include_fk = True
         
-    categories = fields.List(fields.Nested(CategorySchema(only=("id", "name", "format", "status", "num_sets", "games_per_set"))))
+    categories = fields.List(fields.Nested(CategorySchema(only=("id", "name", "format", "format_status", "status", "registration_status", "is_registration_open", "num_sets", "games_per_set"))))
 
 user_schema = UserSchema()
 users_schema = UserSchema(many=True)

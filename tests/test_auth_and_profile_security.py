@@ -262,6 +262,8 @@ class TestAuthAndProfileSecurity(unittest.TestCase):
 
         # Create User B
         res_b = register_user("user_b", "userb@baseline.test", "PassUserB123!", "PassUserB123!", full_name="User Beta")
+        res_b.user.profile_completed = True
+        db.session.commit()
         player_b = Player.query.filter_by(user_id=res_b.user.id).first()
 
         # Sign in as User B on web

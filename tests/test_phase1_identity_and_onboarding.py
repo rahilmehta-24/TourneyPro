@@ -50,6 +50,7 @@ class Phase1IdentityAndOnboardingTestCase(unittest.TestCase):
             pass
 
     def setUp(self):
+        self.client = self.app.test_client()
         db.create_all()
 
     def tearDown(self):
@@ -148,19 +149,32 @@ class Phase1IdentityAndOnboardingTestCase(unittest.TestCase):
 
     def test_05_unqualified_players_excluded_from_leaderboard(self):
         """Zero dummy data: newly registered users with 0 points and 0 registrations never appear on leaderboard."""
-        register_user(
+        reg_res = register_user(
             username="idle_user_1",
             email="idle1@example.com",
             password="SecurePassword123!",
             full_name="Idle One",
             registration_intent="player"
         )
+        complete_player_profile(
+            user_id=reg_res.user.id,
+            full_name="Idle One",
+            gender="Male",
+            dob=date(2000, 1, 1),
+            contact_number="9876543210",
+            primary_sport="Tennis",
+            emergency_contact_name="Emergency Guardian",
+            emergency_contact_phone="9876543211",
+        )
+        self._login("idle_user_1", "SecurePassword123!")
 
         res_web = self.client.get("/leaderboard/")
         self.assertEqual(res_web.status_code, 200)
         self.assertNotIn(b"Idle One", res_web.data)
 
-        res_api = self.client.get("/api/v1/leaderboard")
+        from flask_jwt_extended import create_access_token
+        token = create_access_token(identity=str(reg_res.user.id))
+        res_api = self.client.get("/api/v1/leaderboard", headers={"Authorization": f"Bearer {token}"})
         self.assertEqual(res_api.status_code, 200)
         json_data = res_api.get_json()
         self.assertEqual(json_data["count"], 0)
@@ -173,7 +187,7 @@ class Phase1IdentityAndOnboardingTestCase(unittest.TestCase):
         res_web2 = self.client.get("/leaderboard/")
         self.assertIn(b"Idle One", res_web2.data)
 
-        res_api2 = self.client.get("/api/v1/leaderboard")
+        res_api2 = self.client.get("/api/v1/leaderboard", headers={"Authorization": f"Bearer {token}"})
         json_data2 = res_api2.get_json()
         self.assertEqual(json_data2["count"], 1)
         self.assertEqual(json_data2["rankings"][0]["name"], "Idle One")
@@ -250,7 +264,7 @@ class Phase1IdentityAndOnboardingTestCase(unittest.TestCase):
         self.assertIn("/login", res_guest.headers["Location"])
         self.assertIn(f"next=/tournaments/{tournament.url_slug}/register", res_guest.headers["Location"])
 
-        # Case B: Authenticated user with incomplete profile redirects to /profile/complete?next=...
+        # Case B: Authenticated user with incomplete profile is NOT forced to complete profile to register
         register_user(
             username="incomplete_user",
             email="incomplete@example.com",
@@ -260,12 +274,24 @@ class Phase1IdentityAndOnboardingTestCase(unittest.TestCase):
         )
         self._login("incomplete_user")
 
+        # Can access registration directly without completing profile
         res_auth_incomplete = self.client.get(f"/tournaments/{tournament.url_slug}/register")
-        self.assertEqual(res_auth_incomplete.status_code, 302)
-        self.assertIn("/profile/complete", res_auth_incomplete.headers["Location"])
-        self.assertIn(f"next=/tournaments/{tournament.url_slug}/register", res_auth_incomplete.headers["Location"])
+        self.assertEqual(res_auth_incomplete.status_code, 200)
 
-        # Case C: After completing profile, user gets 200 OK on tournament register
+        # BUT cannot access dashboard, profile, or leaderboard without completed profile
+        res_dash = self.client.get("/player/dashboard")
+        self.assertEqual(res_dash.status_code, 302)
+        self.assertIn("/profile/complete", res_dash.headers["Location"])
+
+        res_prof = self.client.get("/profile")
+        self.assertEqual(res_prof.status_code, 302)
+        self.assertIn("/profile/complete", res_prof.headers["Location"])
+
+        res_lead = self.client.get("/leaderboard/")
+        self.assertEqual(res_lead.status_code, 302)
+        self.assertIn("/profile/complete", res_lead.headers["Location"])
+
+        # Case C: After completing profile, user gets 200 OK on tournament register, dashboard, profile, and leaderboard
         user = User.query.filter_by(username="incomplete_user").first()
         complete_player_profile(
             user_id=user.id,
@@ -279,6 +305,15 @@ class Phase1IdentityAndOnboardingTestCase(unittest.TestCase):
 
         res_complete = self.client.get(f"/tournaments/{tournament.url_slug}/register")
         self.assertEqual(res_complete.status_code, 200)
+
+        res_dash_ok = self.client.get("/player/dashboard")
+        self.assertEqual(res_dash_ok.status_code, 200)
+
+        res_prof_ok = self.client.get("/profile")
+        self.assertEqual(res_prof_ok.status_code, 200)
+
+        res_lead_ok = self.client.get("/leaderboard/")
+        self.assertEqual(res_lead_ok.status_code, 200)
 
     def test_08_email_verification_and_password_reset(self):
         """Verify token generation, email verification, and password reset."""

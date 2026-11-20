@@ -44,15 +44,27 @@
                 {% endif %}
             </div>
 
-            {% if tournament.registration_closes_at %}
-            <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 0.5rem 0.85rem; border-radius: var(--radius-md); font-size: 0.82rem; color: var(--text-secondary); text-align: right;">
-                <span style="color: var(--text-muted); display: block; font-size: 0.75rem;">Deadline</span>
-                <span style="display: inline-flex; align-items: center; gap: 4px;">
-                    <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-clock"></use></svg>
-                    <span><strong>{{ tournament.registration_closes_at|ist('%b %d, %Y') }}</strong> at {{ tournament.registration_closes_at|ist('%I:%M %p IST') }}</span>
-                </span>
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                {% if tournament.registration_opens_at %}
+                <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 0.5rem 0.85rem; border-radius: var(--radius-md); font-size: 0.82rem; color: var(--text-secondary); text-align: right;">
+                    <span style="color: var(--text-muted); display: block; font-size: 0.75rem;">Opens</span>
+                    <span style="display: inline-flex; align-items: center; gap: 4px;">
+                        <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-calendar"></use></svg>
+                        <span><strong>{{ tournament.registration_opens_at|ist('%b %d, %Y') }}</strong> at {{ tournament.registration_opens_at|ist('%I:%M %p IST') }}</span>
+                    </span>
+                </div>
+                {% endif %}
+
+                {% if tournament.registration_closes_at %}
+                <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 0.5rem 0.85rem; border-radius: var(--radius-md); font-size: 0.82rem; color: var(--text-secondary); text-align: right;">
+                    <span style="color: var(--text-muted); display: block; font-size: 0.75rem;">Deadline</span>
+                    <span style="display: inline-flex; align-items: center; gap: 4px;">
+                        <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-clock"></use></svg>
+                        <span><strong>{{ tournament.registration_closes_at|ist('%b %d, %Y') }}</strong> at {{ tournament.registration_closes_at|ist('%I:%M %p IST') }}</span>
+                    </span>
+                </div>
+                {% endif %}
             </div>
-            {% endif %}
         </div>
     </div>
 
@@ -68,14 +80,53 @@
             </p>
 
             {% if categories %}
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 0.85rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.85rem;">
                 {% for cat in categories %}
-                <label class="category-option-card" style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 1rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s;">
-                    <input type="checkbox" name="category_id" value="{{ cat.id }}" data-name="{{ cat.name|lower }}" data-fee="{{ cat.entry_fee or 0 }}" onchange="updateForm()" style="margin-top: 0.2rem; width: 18px; height: 18px; accent-color: var(--accent-primary); cursor: pointer;">
+                {% set is_closed = (not cat.is_registration_open) or (cat.registration_status == 'CLOSED') %}
+                {% set is_full = cat.max_participants and (cat.participants|length >= cat.max_participants) %}
+                {% set remaining_slots = (cat.max_participants - cat.participants|length) if cat.max_participants else None %}
+                <label class="category-option-card" style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 1rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); transition: all 0.15s; {% if is_closed or is_full %}opacity: 0.6; cursor: not-allowed;{% else %}cursor: pointer;{% endif %}">
+                    <input type="checkbox" name="category_id" value="{{ cat.id }}" data-name="{{ cat.name|lower }}" data-fee="{{ cat.entry_fee or 0 }}" onchange="updateForm()" style="margin-top: 0.2rem; width: 18px; height: 18px; accent-color: var(--accent-primary); cursor: pointer;" {% if is_closed or is_full %}disabled{% endif %}>
                     <div style="flex: 1; min-width: 0;">
-                        <div style="font-weight: 700; color: var(--text-primary); font-size: 0.95rem; margin-bottom: 0.2rem;">{{ cat.name }}</div>
-                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-top: 0.35rem;">
-                            <span style="font-size: 0.75rem; color: var(--text-muted);">{{ cat.gender or '' }} {{ cat.age_category or '' }}</span>
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.35rem; margin-bottom: 0.2rem;">
+                            <div style="font-weight: 700; color: var(--text-primary); font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ cat.name }}</div>
+                            {% if is_closed %}
+                            <span style="font-size: 0.7rem; font-weight: 700; color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 0.1rem 0.4rem; border-radius: 9999px;">Closed</span>
+                            {% elif is_full %}
+                            <span style="font-size: 0.7rem; font-weight: 700; color: #f59e0b; background: rgba(245, 158, 11, 0.1); padding: 0.1rem 0.4rem; border-radius: 9999px;">Full</span>
+                            {% else %}
+                            <span style="font-size: 0.7rem; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.1); padding: 0.1rem 0.4rem; border-radius: 9999px;">Open</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Playing Format pill -->
+                        <div style="margin: 0.25rem 0;">
+                            {% if cat.format_status == 'NOT_DECIDED' or not cat.format %}
+                            <span style="font-size: 0.72rem; font-weight: 600; color: var(--accent-primary); background: rgba(59, 130, 246, 0.08); padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;">
+                                <svg class="tp-icon tp-icon-xs" style="width: 12px; height: 12px;"><use href="#icon-clock"></use></svg>
+                                Format: To Be Announced (TBA)
+                            </span>
+                            {% else %}
+                            <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); background: var(--bg-card); padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px; border: 1px solid var(--border-subtle);">
+                                <svg class="tp-icon tp-icon-xs" style="width: 12px; height: 12px;"><use href="#icon-trophy"></use></svg>
+                                Format: {{ cat.format.replace('_', ' ').title() }}
+                            </span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Slots and fee info -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-top: 0.45rem;">
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">
+                                {% if remaining_slots is not none %}
+                                    {% if remaining_slots > 0 %}
+                                        <strong>{{ remaining_slots }}</strong> slot{{ 's' if remaining_slots != 1 else '' }} left
+                                    {% else %}
+                                        No slots remaining
+                                    {% endif %}
+                                {% else %}
+                                    {{ cat.gender or '' }} {{ cat.age_category or '' }}
+                                {% endif %}
+                            </span>
                             {% if cat.entry_fee and cat.entry_fee > 0 %}
                             <span style="font-size: 0.78rem; font-weight: 700; color: var(--accent-warning); background: rgba(245, 158, 11, 0.12); padding: 0.1rem 0.5rem; border-radius: 9999px; border: 1px solid rgba(245, 158, 11, 0.25);">
                                 ₹{{ cat.entry_fee }}

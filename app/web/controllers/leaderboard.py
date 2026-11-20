@@ -9,6 +9,14 @@ leaderboard_bp = Blueprint('leaderboard', __name__, url_prefix='/leaderboard')
 
 @leaderboard_bp.route('/')
 def view_leaderboard():
+    current_u = get_current_user()
+    if not current_u:
+        flash("Please log in and complete your profile to view the official leaderboard.", "info")
+        return redirect(url_for('auth.login', next=url_for('leaderboard.view_leaderboard')))
+    if not current_u.profile_completed and current_u.role not in ['admin', 'superadmin']:
+        flash("Please complete your profile to view the official leaderboard.", "info")
+        return redirect(url_for('auth.complete_profile', next=url_for('leaderboard.view_leaderboard')))
+
     category_filter = request.args.get('category', 'All')
     gender_filter = request.args.get('gender', 'All')
 

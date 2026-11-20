@@ -15,9 +15,11 @@ def view_player(player_id):
 @player_bp.route('/player/dashboard', methods=['GET', 'POST'])
 @login_required
 def dashboard():
-    # If the user doesn't have a linked player profile, they can create one or we can manage their multiple profiles
-    # For now, let's assume a 1-to-many relationship, and the dashboard lists all players they manage
     current_user = get_current_user()
+    if not current_user.profile_completed and current_user.role not in ['admin', 'superadmin']:
+        flash("Please complete your profile to access your player dashboard.", "info")
+        return redirect(url_for('auth.complete_profile', next=url_for('player.dashboard')))
+
     players = Player.query.filter_by(user_id=current_user.id).all()
     if not players:
         # Secure profile recovery / initialization if missing
