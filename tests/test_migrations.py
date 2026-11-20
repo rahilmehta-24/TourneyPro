@@ -4,7 +4,7 @@ import tempfile
 from app import create_app
 from app.domain.models import (
     db, User, Tournament, Category, Participant, Match, Group, PlayerCategoryTier, TeamMember, Registration,
-    DeviceRegistration, InAppNotification, UserNotificationPreferences
+    DeviceRegistration, InAppNotification, UserNotificationPreferences, ParticipantImportBatch
 )
 from flask_migrate import upgrade
 
@@ -79,6 +79,21 @@ class MigrationTestCase(unittest.TestCase):
             self.assertIn('platform', DeviceRegistration.__table__.columns)
             self.assertIn('notification_type', InAppNotification.__table__.columns)
             self.assertIn('notify_match_called', UserNotificationPreferences.__table__.columns)
+
+            # Verify flexible registration and bulk import columns and tables
+            self.assertIn('format_status', Tournament.__table__.columns)
+            self.assertIn('registration_status', Tournament.__table__.columns)
+            self.assertIn('registration_opens_at', Tournament.__table__.columns)
+            self.assertIn('is_published', Tournament.__table__.columns)
+
+            self.assertIn('format_status', Category.__table__.columns)
+            self.assertIn('registration_status', Category.__table__.columns)
+            self.assertIn('is_registration_open', Category.__table__.columns)
+            self.assertTrue(Category.__table__.columns['format'].nullable)
+
+            self.assertTrue(hasattr(ParticipantImportBatch, '__table__'))
+            self.assertIn('file_hash', ParticipantImportBatch.__table__.columns)
+            self.assertIn('error_data', ParticipantImportBatch.__table__.columns)
 
     def test_02_sqlite_batch_mode_enabled(self):
         """Verify that render_as_batch is enabled on the migrate extension"""

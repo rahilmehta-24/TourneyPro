@@ -105,6 +105,9 @@
                 <button type="button" id="tabBtnSettings" onclick="switchDashboardTab('settings')" style="padding: 0.5rem 1.1rem; font-size: 0.85rem; font-weight: 600; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-secondary); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 0.35rem;">
                     <svg class="icon icon-xs"><use href="#icon-settings"></use></svg> Settings &amp; Info
                 </button>
+                <button type="button" id="tabBtnImport" onclick="switchDashboardTab('import')" style="padding: 0.5rem 1.1rem; font-size: 0.85rem; font-weight: 600; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-secondary); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 0.35rem;">
+                    <svg class="icon icon-xs"><use href="#icon-file-text"></use></svg> Bulk CSV Import
+                </button>
             </div>
 
             <!-- TAB 1: CATEGORIES -->
@@ -129,23 +132,55 @@
                         {% for category in tournament.categories %}
                         <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.15rem; display: flex; flex-direction: column; gap: 0.75rem; position: relative; border-left: 4px solid var(--accent-primary);">
                             <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem;">
-                                <span style="color: var(--text-primary); font-weight: 700; font-size: 1.05rem; line-height: 1.3;">{{ category.name }}</span>
+                                <div>
+                                    <span style="color: var(--text-primary); font-weight: 700; font-size: 1.05rem; line-height: 1.3;">{{ category.name }}</span>
+                                    <div style="margin-top: 0.2rem; display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap;">
+                                        {% if category.format_status == 'NOT_DECIDED' or not category.format %}
+                                        <span style="font-size: 0.68rem; font-weight: 700; color: var(--accent-primary); background: rgba(59, 130, 246, 0.1); padding: 1px 6px; border-radius: 4px;">
+                                            TBA Format
+                                        </span>
+                                        {% else %}
+                                        <span style="font-size: 0.68rem; font-weight: 700; color: var(--text-secondary); background: var(--bg-card); padding: 1px 6px; border-radius: 4px; border: 1px solid var(--border-subtle);">
+                                            {{ category.format.replace('_', ' ').title() }}
+                                        </span>
+                                        {% endif %}
+
+                                        {% if not category.is_registration_open or category.registration_status == 'CLOSED' %}
+                                        <span style="font-size: 0.68rem; font-weight: 700; color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 1px 6px; border-radius: 4px;">
+                                            Reg Closed
+                                        </span>
+                                        {% else %}
+                                        <span style="font-size: 0.68rem; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.1); padding: 1px 6px; border-radius: 4px;">
+                                            Reg Open
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
                                 <span class="tab-badge status-{{ category.status }}" style="font-size: 0.7rem; text-transform: uppercase; padding: 2px 8px; border-radius: 12px; font-weight: 700; letter-spacing: 0.5px; white-space: nowrap;">
                                     {{ category.status.replace('_', ' ').title() }}
                                 </span>
                             </div>
                             
                             <div style="font-size: 0.82rem; color: var(--text-secondary); display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; background: var(--bg-card); padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
-                                <div style="display: flex; align-items: center; gap: 0.35rem;"><svg class="icon icon-xs" style="color: var(--accent-secondary);"><use href="#icon-trophy"></use></svg> <strong>{{ category.format.replace('_', ' ').title() }}</strong></div>
-                                <div style="display: flex; align-items: center; gap: 0.35rem;"><svg class="icon icon-xs" style="color: var(--court-green);"><use href="#icon-users"></use></svg> <strong>{{ category.participants|length }}</strong> players</div>
+                                <div style="display: flex; align-items: center; gap: 0.35rem;"><svg class="icon icon-xs" style="color: var(--accent-secondary);"><use href="#icon-trophy"></use></svg> <strong>{{ category.format.replace('_', ' ').title() if category.format else 'TBA' }}</strong></div>
+                                <div style="display: flex; align-items: center; gap: 0.35rem;"><svg class="icon icon-xs" style="color: var(--court-green);"><use href="#icon-users"></use></svg> <strong>{{ category.participants|length }}{% if category.max_participants %}/{{ category.max_participants }}{% endif %}</strong> players</div>
                                 <div style="display: flex; align-items: center; gap: 0.35rem;"><svg class="icon icon-xs" style="color: var(--accent-secondary);"><use href="#icon-credit-card"></use></svg> <strong>{% if category.entry_fee > 0 %}₹{{ category.entry_fee }}{% else %}Free{% endif %}</strong></div>
                                 <div style="display: flex; align-items: center; gap: 0.35rem;"><svg class="icon icon-xs" style="color: var(--court-green);"><use href="#icon-clock"></use></svg> <strong>{{ category.start_date_time|ist('%b %d, %I:%M %p IST') if category.start_date_time else 'Auto' }}</strong></div>
                             </div>
 
-                            <div style="margin-top: auto; display: flex; gap: 0.4rem; padding-top: 0.25rem;">
+                            <div style="margin-top: auto; display: flex; gap: 0.4rem; padding-top: 0.25rem; flex-wrap: wrap;">
                                 <a href="{{ url_for('category.manage_category', slug=tournament.url_slug, category_id=category.id) }}" class="btn btn-primary btn-small" style="flex: 1; text-align: center; font-weight: 600; padding: 0.4rem; display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;">
                                     <svg class="icon icon-xs"><use href="#icon-settings"></use></svg> Manage
                                 </a>
+                                <button type="button" class="btn btn-secondary btn-small" title="Finalize Format" onclick="openFinalizeFormatModal('{{ category.id }}', '{{ category.name | e }}', '{{ category.format or '' }}')" style="padding: 0.4rem 0.65rem; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.2rem;">
+                                    <svg class="icon icon-xs"><use href="#icon-trophy"></use></svg> Format
+                                </button>
+                                <form method="POST" action="{{ url_for('category.toggle_category_registration', slug=tournament.url_slug, category_id=category.id) }}" style="display: inline; margin: 0;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    <button type="submit" class="btn btn-secondary btn-small" title="{% if category.is_registration_open %}Close Registration{% else %}Open Registration{% endif %}" style="padding: 0.4rem 0.65rem; font-size: 0.75rem; font-weight: 600;">
+                                        {% if category.is_registration_open %}Close Reg{% else %}Open Reg{% endif %}
+                                    </button>
+                                </form>
                                 <button type="button" class="btn btn-secondary btn-small rename-category-btn" title="Rename Category" aria-label="Rename Category {{ category.name | e }}" data-category-id="{{ category.id }}" data-category-name="{{ category.name | e }}" style="padding: 0.4rem 0.65rem;">
                                     <svg class="icon icon-xs"><use href="#icon-edit"></use></svg>
                                 </button>
@@ -689,6 +724,180 @@
                 </div>
             </div>
 
+            <!-- TAB 6: ORGANIZER BULK CSV IMPORT -->
+            <div id="tabContentImport" style="display: none;">
+                <div style="display: grid; gap: 1.25rem;">
+                    
+                    <!-- CSV Import Card -->
+                    <div class="card" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                            <div>
+                                <h3 style="margin: 0; font-size: 1.15rem; color: var(--text-primary); font-weight: 700; display: flex; align-items: center; gap: 0.4rem;">
+                                    <svg class="icon icon-sm" style="color: var(--court-green);"><use href="#icon-file-text"></use></svg> Bulk CSV Participant Import
+                                </h3>
+                                <p style="margin: 0.2rem 0 0; color: var(--text-secondary); font-size: 0.82rem;">
+                                    Upload a CSV spreadsheet to bulk-register players. Valid rows can be imported independently of rejected rows.
+                                </p>
+                            </div>
+                            <a href="{{ url_for('tournament.download_csv_template', slug=tournament.url_slug) }}" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 600;">
+                                <svg class="icon icon-xs"><use href="#icon-download"></use></svg> Download CSV Template
+                            </a>
+                        </div>
+
+                        <!-- Upload Form -->
+                        <form method="POST" action="{{ url_for('tournament.upload_csv_preview', slug=tournament.url_slug) }}" enctype="multipart/form-data" style="margin-bottom: 1.5rem;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <div style="border: 2px dashed var(--border-color); border-radius: var(--radius-md); padding: 1.5rem; text-align: center; background: var(--bg-secondary);">
+                                <svg class="icon icon-lg" style="color: var(--text-muted); margin-bottom: 0.5rem;"><use href="#icon-upload"></use></svg>
+                                <div style="font-size: 0.9rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.25rem;">Choose a CSV file to validate and import</div>
+                                <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 1rem;">Supports .csv files up to 5MB (max 1,000 rows). Columns: First Name, Last Name, Email, Phone, Category, etc.</div>
+                                <div style="display: inline-flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; justify-content: center;">
+                                    <input type="file" name="csv_file" accept=".csv" required style="font-size: 0.85rem;">
+                                    <button type="submit" class="btn btn-primary" style="font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem;">
+                                        <svg class="icon icon-xs"><use href="#icon-check"></use></svg> Validate &amp; Preview
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+
+                        <!-- Active Batch Preview & Confirmation -->
+                        {% if active_batch %}
+                        <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                                <div>
+                                    <h4 style="margin: 0; font-size: 1rem; color: var(--text-primary); font-weight: 700;">Validation Results: {{ active_batch.filename }}</h4>
+                                    <span style="font-size: 0.75rem; color: var(--text-muted);">Uploaded {{ active_batch.created_at|ist('%b %d, %Y at %I:%M %p IST') if active_batch.created_at else '' }}</span>
+                                </div>
+                                <span class="status-badge status-{{ active_batch.status|lower }}" style="padding: 2px 8px; border-radius: 9999px; font-weight: 700; font-size: 0.75rem;">
+                                    {{ active_batch.status }}
+                                </span>
+                            </div>
+
+                            <!-- Metrics Chips -->
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1rem;">
+                                <div style="background: var(--bg-card); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); text-align: center;">
+                                    <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Total Rows</div>
+                                    <div style="font-size: 1.4rem; font-weight: 700; color: var(--text-primary);" class="tabular-nums">{{ active_batch.total_rows }}</div>
+                                </div>
+                                <div style="background: rgba(16, 185, 129, 0.08); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid rgba(16, 185, 129, 0.25); text-align: center;">
+                                    <div style="font-size: 0.72rem; color: #10b981; text-transform: uppercase; font-weight: 600;">Valid Records</div>
+                                    <div style="font-size: 1.4rem; font-weight: 700; color: #10b981;" class="tabular-nums">{{ active_batch.valid_rows }}</div>
+                                </div>
+                                <div style="background: rgba(239, 68, 68, 0.08); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid rgba(239, 68, 68, 0.25); text-align: center;">
+                                    <div style="font-size: 0.72rem; color: #ef4444; text-transform: uppercase; font-weight: 600;">Invalid Rows</div>
+                                    <div style="font-size: 1.4rem; font-weight: 700; color: #ef4444;" class="tabular-nums">{{ active_batch.invalid_rows }}</div>
+                                </div>
+                                <div style="background: rgba(245, 158, 11, 0.08); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid rgba(245, 158, 11, 0.25); text-align: center;">
+                                    <div style="font-size: 0.72rem; color: #f59e0b; text-transform: uppercase; font-weight: 600;">Duplicates</div>
+                                    <div style="font-size: 1.4rem; font-weight: 700; color: #f59e0b;" class="tabular-nums">{{ active_batch.duplicate_rows }}</div>
+                                </div>
+                            </div>
+
+                            <!-- Actions for Active Batch -->
+                            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                                {% if active_batch.valid_rows > 0 and active_batch.status == 'PENDING_CONFIRMATION' %}
+                                <form method="POST" action="{{ url_for('tournament.confirm_csv_import', slug=tournament.url_slug) }}" style="margin: 0;" onsubmit="return confirm('Import {{ active_batch.valid_rows }} valid participant(s) into this tournament?');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    <input type="hidden" name="batch_id" value="{{ active_batch.id }}">
+                                    <button type="submit" class="btn btn-primary" style="font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem;">
+                                        <svg class="icon icon-xs"><use href="#icon-check"></use></svg> Confirm &amp; Import {{ active_batch.valid_rows }} Valid Records
+                                    </button>
+                                </form>
+                                {% endif %}
+
+                                {% if active_batch.invalid_rows > 0 or active_batch.duplicate_rows > 0 %}
+                                <a href="{{ url_for('tournament.download_import_errors', slug=tournament.url_slug, batch_id=active_batch.id) }}" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 600;">
+                                    <svg class="icon icon-xs"><use href="#icon-download"></use></svg> Download Error Report CSV
+                                </a>
+                                {% endif %}
+                            </div>
+
+                            <!-- Error details if any -->
+                            {% if active_batch_errors %}
+                            <div style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 0.75rem;">
+                                <h5 style="margin: 0 0 0.5rem; font-size: 0.85rem; color: var(--text-primary); font-weight: 700;">Row Rejection Details:</h5>
+                                <div style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-card);">
+                                    <table style="width: 100%; border-collapse: collapse; font-size: 0.78rem;">
+                                        <thead>
+                                            <tr style="background: var(--bg-secondary); border-bottom: 1px solid var(--border-color);">
+                                                <th style="padding: 0.35rem 0.6rem; text-align: left;">Row</th>
+                                                <th style="padding: 0.35rem 0.6rem; text-align: left;">Player</th>
+                                                <th style="padding: 0.35rem 0.6rem; text-align: left;">Category</th>
+                                                <th style="padding: 0.35rem 0.6rem; text-align: left;">Reason</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for err in active_batch_errors[:50] %}
+                                            <tr style="border-bottom: 1px solid var(--border-color);">
+                                                <td style="padding: 0.35rem 0.6rem; color: var(--text-muted);" class="tabular-nums">{{ err.row_number }}</td>
+                                                <td style="padding: 0.35rem 0.6rem; font-weight: 600;">{{ err.first_name }} {{ err.last_name }}</td>
+                                                <td style="padding: 0.35rem 0.6rem;">{{ err.category_name }}</td>
+                                                <td style="padding: 0.35rem 0.6rem; color: #ef4444;">{{ err.error }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Import History Section -->
+                        <h4 style="margin: 1.5rem 0 0.75rem; font-size: 1rem; color: var(--text-primary); font-weight: 700;">Previous Import Batches</h4>
+                        {% if import_batches %}
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 0.82rem;">
+                                <thead>
+                                    <tr style="background: var(--bg-secondary); border-bottom: 1px solid var(--border-color); color: var(--text-secondary);">
+                                        <th style="padding: 0.5rem 0.75rem; text-align: left;">Date</th>
+                                        <th style="padding: 0.5rem 0.75rem; text-align: left;">Filename</th>
+                                        <th style="padding: 0.5rem 0.75rem; text-align: center;">Total</th>
+                                        <th style="padding: 0.5rem 0.75rem; text-align: center;">Imported</th>
+                                        <th style="padding: 0.5rem 0.75rem; text-align: center;">Rejected</th>
+                                        <th style="padding: 0.5rem 0.75rem; text-align: center;">Status</th>
+                                        <th style="padding: 0.5rem 0.75rem; text-align: right;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for b in import_batches %}
+                                    <tr style="border-bottom: 1px solid var(--border-color);">
+                                        <td style="padding: 0.5rem 0.75rem; color: var(--text-muted);">{{ b.created_at|ist('%b %d, %Y %I:%M %p IST') if b.created_at else '' }}</td>
+                                        <td style="padding: 0.5rem 0.75rem; font-weight: 600; color: var(--text-primary);">{{ b.filename }}</td>
+                                        <td style="padding: 0.5rem 0.75rem; text-align: center;" class="tabular-nums">{{ b.total_rows }}</td>
+                                        <td style="padding: 0.5rem 0.75rem; text-align: center; color: #10b981; font-weight: 700;" class="tabular-nums">{{ b.imported_rows }}</td>
+                                        <td style="padding: 0.5rem 0.75rem; text-align: center; color: #ef4444;" class="tabular-nums">{{ b.invalid_rows + b.duplicate_rows }}</td>
+                                        <td style="padding: 0.5rem 0.75rem; text-align: center;">
+                                            <span style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; background: {% if b.status == 'COMPLETED' %}rgba(16,185,129,0.1); color: #10b981;{% elif b.status == 'PENDING_CONFIRMATION' %}rgba(245,158,11,0.1); color: #f59e0b;{% else %}rgba(239,68,68,0.1); color: #ef4444;{% endif %}">
+                                                {{ b.status }}
+                                            </span>
+                                        </td>
+                                        <td style="padding: 0.5rem 0.75rem; text-align: right; white-space: nowrap;">
+                                            {% if b.invalid_rows > 0 or b.duplicate_rows > 0 %}
+                                            <a href="{{ url_for('tournament.download_import_errors', slug=tournament.url_slug, batch_id=b.id) }}" class="btn btn-secondary btn-small" title="Download Error Report" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                                                <svg class="icon icon-xs"><use href="#icon-download"></use></svg> Errors
+                                            </a>
+                                            {% endif %}
+                                            {% if b.status == 'PENDING_CONFIRMATION' %}
+                                            <a href="{{ url_for('tournament.manage_tournament', slug=tournament.url_slug, batch_id=b.id) }}#import" class="btn btn-primary btn-small" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                                                Resume
+                                            </a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div style="padding: 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.85rem; border: 1px dashed var(--border-color); border-radius: var(--radius-sm);">
+                            No previous CSV imports on record for this event.
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
         </div>
 
         <!-- RIGHT COLUMN: STICKY TOURNAMENT CONTROL SIDEBAR -->
@@ -1088,7 +1297,7 @@ function copyShareLink(url, btn) {
 
         // Restore active tab from hash, default to categories
         const hash = window.location.hash.replace('#', '');
-        if (['categories', 'schedule', 'players', 'settings'].includes(hash)) {
+        if (['categories', 'schedule', 'players', 'staff', 'settings', 'import'].includes(hash)) {
             switchDashboardTab(hash);
         } else {
             switchDashboardTab('categories');
@@ -1104,7 +1313,7 @@ function copyShareLink(url, btn) {
 })();
 
 function switchDashboardTab(tabName) {
-    const tabs = ['categories', 'schedule', 'players', 'staff', 'settings'];
+    const tabs = ['categories', 'schedule', 'players', 'staff', 'settings', 'import'];
     tabs.forEach(t => {
         const cap = t.charAt(0).toUpperCase() + t.slice(1);
         const content = document.getElementById('tabContent' + cap);
@@ -1133,7 +1342,7 @@ function switchDashboardTab(tabName) {
 
 window.addEventListener('hashchange', function() {
     const hash = window.location.hash.replace('#', '');
-    if (['categories', 'schedule', 'players', 'staff', 'settings'].includes(hash)) {
+    if (['categories', 'schedule', 'players', 'staff', 'settings', 'import'].includes(hash)) {
         switchDashboardTab(hash);
     }
 });
@@ -1545,8 +1754,65 @@ document.addEventListener('keydown', function(e) {
         </form>
     </div>
 </div>
+
+<!-- FINALIZE FORMAT MODAL -->
+<div id="finalizeFormatModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(2px);">
+    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); width: 100%; max-width: 480px; padding: 1.5rem; box-shadow: var(--shadow-lg); margin: 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+            <h3 style="margin: 0; font-size: 1.15rem; color: var(--text-primary); font-weight: 700;" id="finalizeModalTitle">Finalize Playing Format</h3>
+            <button type="button" onclick="closeFinalizeFormatModal()" style="background: none; border: none; font-size: 1.25rem; color: var(--text-muted); cursor: pointer;">&times;</button>
+        </div>
+        <form id="finalizeFormatForm" method="POST" action="">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div style="margin-bottom: 1rem;">
+                <label for="modalFormatSelect" style="display: block; font-size: 0.82rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.35rem;">Tournament Playing Format *</label>
+                <select name="format" id="modalFormatSelect" class="form-input" required>
+                    <option value="single_elimination">Knockout (Single Elimination)</option>
+                    <option value="round_robin">Round Robin / League</option>
+                    <option value="doubles_elimination">Doubles Knockout</option>
+                    <option value="doubles_round_robin">Doubles Round Robin</option>
+                    <option value="group_stage">Group Stage + Knockout</option>
+                </select>
+            </div>
+            <div style="margin-bottom: 1rem;">
+                <label for="modalScoringFormat" style="display: block; font-size: 0.82rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.35rem;">Match Scoring Rules</label>
+                <select name="scoring_format" id="modalScoringFormat" class="form-input">
+                    <option value="games" selected>Standard Games (Best of 1 Set / 6 Games)</option>
+                    <option value="points">Points System (e.g. First to 11 / 21)</option>
+                </select>
+            </div>
+            <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: var(--radius-sm); padding: 0.75rem; margin-bottom: 1.25rem; font-size: 0.8rem; color: var(--text-secondary);">
+                <strong>Preservation Guarantee:</strong> Finalizing or modifying the format preserves all existing registrations and participants. It does not automatically generate brackets, fixtures, or schedules.
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 0.65rem;">
+                <button type="button" onclick="closeFinalizeFormatModal()" class="btn btn-secondary" style="padding: 0.45rem 1rem;">Cancel</button>
+                <button type="submit" class="btn btn-primary" style="padding: 0.45rem 1.25rem; font-weight: 700;">Finalize Format</button>
+            </div>
         </form>
     </div>
 </div>
+
+<script>
+function openFinalizeFormatModal(catId, catName, currentFormat) {
+    const modal = document.getElementById('finalizeFormatModal');
+    const form = document.getElementById('finalizeFormatForm');
+    const title = document.getElementById('finalizeModalTitle');
+    const select = document.getElementById('modalFormatSelect');
+
+    if (modal && form) {
+        title.textContent = 'Finalize Format: ' + catName;
+        form.action = '/tournaments/{{ tournament.url_slug }}/categories/' + catId + '/finalize-format';
+        if (currentFormat && select) {
+            select.value = currentFormat;
+        }
+        modal.style.display = 'flex';
+    }
+}
+
+function closeFinalizeFormatModal() {
+    const modal = document.getElementById('finalizeFormatModal');
+    if (modal) modal.style.display = 'none';
+}
+</script>
 
 {% endblock %}

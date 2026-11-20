@@ -16,10 +16,19 @@ def register_for_tournament(slug):
     current_user_id = int(get_jwt_identity())
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
 
-    if tournament.status not in ['registration', 'setup', 'in_progress']:
+    if not getattr(tournament, "is_published", True):
+        return jsonify({"success": False, "message": "Tournament is not published"}), 400
+
+    reg_status = getattr(tournament, "registration_status", None)
+    is_open = (reg_status == "OPEN" or tournament.status in ['registration', 'setup', 'in_progress']) and reg_status != "CLOSED"
+    if not is_open:
         return jsonify({"success": False, "message": "Tournament registration is closed"}), 400
 
-    if tournament.registration_closes_at and tournament.registration_closes_at < datetime.utcnow():
+    now = datetime.utcnow()
+    if tournament.registration_opens_at and tournament.registration_opens_at > now:
+        return jsonify({"success": False, "message": "Tournament registration has not opened yet"}), 400
+
+    if tournament.registration_closes_at and tournament.registration_closes_at < now:
         return jsonify({"success": False, "message": "Tournament registration deadline has passed"}), 400
 
     data = request.get_json() or {}
@@ -32,6 +41,12 @@ def register_for_tournament(slug):
     category = Category.query.filter_by(id=category_id, tournament_id=tournament.id).first()
     if not category:
         return jsonify({"success": False, "message": "Invalid category for this tournament"}), 400
+
+    if not getattr(category, "is_registration_open", True) or getattr(category, "registration_status", "OPEN") != "OPEN":
+        return jsonify({"success": False, "message": f"Registration for category '{category.name}' is closed"}), 400
+
+    if category.max_participants and len(category.participants) >= category.max_participants:
+        return jsonify({"success": False, "message": f"Category '{category.name}' has reached maximum participant capacity"}), 400
 
     player = Player.query.get(player_id)
     if not player:

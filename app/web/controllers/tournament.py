@@ -12,6 +12,7 @@ from app.domain.models import (
     Player,
     User,
     TournamentStaff,
+    ParticipantImportBatch,
     determine_age_category,
     estimate_dob_from_age,
     calculate_age_from_dob,
@@ -161,6 +162,40 @@ def create_tournament():
 
         daily_operating_hours = json.dumps(daily_dict) if daily_dict else None
 
+        # Parse flexible format status & registration lifecycle
+        format_status = (request.form.get("format_status") or "NOT_DECIDED").strip().upper()
+        if format_status not in ["NOT_DECIDED", "FINALIZED"]:
+            format_status = "NOT_DECIDED"
+
+        registration_status = (request.form.get("registration_status") or "").strip().upper()
+        if registration_status not in ["DRAFT", "UPCOMING", "OPEN", "CLOSED"]:
+            if request.form.get("open_registration") == "on" or request.form.get("status") == "registration":
+                registration_status = "OPEN"
+            else:
+                registration_status = "DRAFT"
+
+        registration_opens_at = None
+        reg_opens_str = request.form.get("registration_opens_at")
+        if reg_opens_str:
+            for fmt in ("%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+                try:
+                    registration_opens_at = datetime.strptime(reg_opens_str, fmt)
+                    break
+                except ValueError:
+                    pass
+
+        registration_closes_at = None
+        reg_closes_str = request.form.get("registration_closes_at")
+        if reg_closes_str:
+            for fmt in ("%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+                try:
+                    registration_closes_at = datetime.strptime(reg_closes_str, fmt)
+                    break
+                except ValueError:
+                    pass
+
+        is_published = request.form.get("is_published", "on") in ["on", "true", "1", True]
+
         # Generate URL slug
         url_slug = slugify(name)
 
@@ -178,6 +213,7 @@ def create_tournament():
             description=description,
             game_info=game_info,
             format=format_type,
+            format_status=format_status,
             max_participants=max_participants,
             num_sets=num_sets,
             games_per_set=games_per_set,
@@ -185,6 +221,10 @@ def create_tournament():
             academy_id=academy_id if academy_id else None,
             is_internal=is_internal,
             payment_upi_id=payment_upi_id if payment_upi_id else None,
+            registration_status=registration_status,
+            registration_opens_at=registration_opens_at,
+            registration_closes_at=registration_closes_at,
+            is_published=is_published,
             start_date=start_date,
             end_date=end_date,
             court_operating_start=court_operating_start,
@@ -202,6 +242,25 @@ def create_tournament():
             # Create default settings
             settings = TournamentSettings(tournament_id=tournament.id)
             db.session.add(settings)
+
+            # Handle initial categories configured during creation
+            initial_cats = request.form.getlist("category_names") or request.form.getlist("categories")
+            if not initial_cats and request.form.get("category_names_csv"):
+                initial_cats = [c.strip() for c in request.form.get("category_names_csv").split(",") if c.strip()]
+
+            for cat_name in initial_cats:
+                cat_name_clean = cat_name.strip()
+                if cat_name_clean:
+                    new_cat = Category(
+                        tournament_id=tournament.id,
+                        name=cat_name_clean,
+                        format=None if format_status == "NOT_DECIDED" else "single_elimination",
+                        format_status=format_status,
+                        registration_status="OPEN",
+                        is_registration_open=True,
+                    )
+                    db.session.add(new_cat)
+
             db.session.commit()
             log_audit(
                 action_type="CREATE_TOURNAMENT",
@@ -387,11 +446,26 @@ def print_tournament(slug):
 @tournament_bp.route("/tournaments/<slug>/register", methods=["GET", "POST"])
 def register_for_tournament(slug):
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
-    if tournament.status != "registration":
+
+    # 1. Verification of tournament publication
+    if not getattr(tournament, "is_published", True):
+        flash("This tournament is not published.", "warning")
+        return redirect(url_for("tournament.view_tournament", slug=slug))
+
+    # 2. Verification of tournament registration status
+    reg_status = getattr(tournament, "registration_status", None)
+    is_open = (reg_status == "OPEN" or tournament.status == "registration") and reg_status != "CLOSED"
+    if not is_open:
         flash("Registration is currently closed for this tournament.", "warning")
         return redirect(url_for("tournament.view_tournament", slug=slug))
 
-    if tournament.registration_closes_at and datetime.utcnow() > tournament.registration_closes_at:
+    # 3. Verification of registration time window
+    now = datetime.utcnow()
+    if tournament.registration_opens_at and now < tournament.registration_opens_at:
+        flash("Registration has not opened yet for this tournament.", "warning")
+        return redirect(url_for("tournament.view_tournament", slug=slug))
+
+    if tournament.registration_closes_at and now > tournament.registration_closes_at:
         if tournament.status == "registration":
             tournament.status = "in_progress"
             db.session.commit()
@@ -422,6 +496,15 @@ def register_for_tournament(slug):
             return redirect(url_for("tournament.register_for_tournament", slug=slug))
 
         selected_categories = Category.query.filter(Category.id.in_(category_ids)).all()
+
+        # 4. Verification of category availability and capacity
+        for cat in selected_categories:
+            if not getattr(cat, "is_registration_open", True) or getattr(cat, "registration_status", "OPEN") != "OPEN":
+                flash(f"Registration for category '{cat.name}' is closed.", "error")
+                return redirect(url_for("tournament.register_for_tournament", slug=slug))
+            if cat.max_participants and len(cat.participants) >= cat.max_participants:
+                flash(f"Category '{cat.name}' has reached its participant capacity.", "error")
+                return redirect(url_for("tournament.register_for_tournament", slug=slug))
 
         # Calculate total fee
         total_due = sum(
@@ -1385,6 +1468,22 @@ def manage_tournament(slug):
         tournament_id=tournament.id, status="pending"
     ).all()
     staff_members = TournamentStaff.query.filter_by(tournament_id=tournament.id).all()
+    import_batches = (
+        ParticipantImportBatch.query.filter_by(tournament_id=tournament.id)
+        .order_by(ParticipantImportBatch.created_at.desc())
+        .all()
+    )
+    active_batch_id = request.args.get("batch_id", type=int)
+    active_batch = (
+        ParticipantImportBatch.query.get(active_batch_id) if active_batch_id else None
+    )
+    active_batch_errors = []
+    if active_batch and active_batch.error_data:
+        try:
+            active_batch_errors = json.loads(active_batch.error_data)
+        except Exception:
+            active_batch_errors = []
+
     return render_template(
         "tournament/manage.html",
         pending_registrations=pending_registrations,
@@ -1393,6 +1492,9 @@ def manage_tournament(slug):
         total_players=total_players,
         parsed_daily_hours=parsed_daily_hours,
         staff_members=staff_members,
+        import_batches=import_batches,
+        active_batch=active_batch,
+        active_batch_errors=active_batch_errors,
         formats=TOURNAMENT_FORMATS,
     )
 
@@ -2018,3 +2120,226 @@ def order_of_play(slug):
         previous_day_label=data.get("previous_day_label", "Day 1"),
         is_export=is_export,
     )
+
+
+# ---------------------------------------------------------------------------
+# Organizer Bulk CSV Import Routes (SEC-ENFORCED)
+# ---------------------------------------------------------------------------
+
+
+@tournament_bp.route("/tournaments/<slug>/import/template", methods=["GET"])
+@tournament_bp.route("/t/<slug>/import/template", methods=["GET"])
+@login_required
+@role_required("admin", "superadmin")
+def download_csv_template(slug):
+    """Download the official participant bulk import CSV template."""
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
+    from app.services.bulk_import_service import generate_csv_template
+    from flask import Response
+
+    csv_data = generate_csv_template()
+    return Response(
+        csv_data,
+        mimetype="text/csv",
+        headers={
+            "Content-Disposition": f"attachment; filename=Participant_Import_Template_{tournament.url_slug}.csv"
+        },
+    )
+
+
+@tournament_bp.route("/tournaments/<slug>/import/upload", methods=["POST"])
+@tournament_bp.route("/t/<slug>/import/upload", methods=["POST"])
+@login_required
+@role_required("admin", "superadmin")
+def upload_csv_preview(slug):
+    """Upload CSV file, perform validation, and return preview/results."""
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
+    current_u = get_current_user()
+
+    is_json = request.is_json or "application/json" in request.headers.get("Accept", "")
+
+    if "csv_file" not in request.files:
+        if is_json:
+            return jsonify({"success": False, "message": "No file uploaded."}), 400
+        flash("Please select a CSV file to upload.", "error")
+        return redirect(url_for("tournament.manage_tournament", slug=slug) + "#import")
+
+    file = request.files["csv_file"]
+    if not file or not file.filename:
+        if is_json:
+            return jsonify({"success": False, "message": "No file selected."}), 400
+        flash("No file selected.", "error")
+        return redirect(url_for("tournament.manage_tournament", slug=slug) + "#import")
+
+    ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
+    if ext != "csv":
+        if is_json:
+            return jsonify({"success": False, "message": "Only .csv files are supported."}), 400
+        flash("Invalid file format. Only .csv files are supported.", "error")
+        return redirect(url_for("tournament.manage_tournament", slug=slug) + "#import")
+
+    file_bytes = file.read()
+    if not file_bytes or not file_bytes.strip():
+        if is_json:
+            return jsonify({"success": False, "message": "The uploaded CSV file is empty."}), 400
+        flash("The uploaded CSV file is empty.", "error")
+        return redirect(url_for("tournament.manage_tournament", slug=slug) + "#import")
+
+    from app.services.bulk_import_service import validate_and_parse_csv
+
+    try:
+        results = validate_and_parse_csv(
+            tournament=tournament,
+            file_bytes=file_bytes,
+            original_filename=file.filename,
+            organizer_id=current_u.id,
+        )
+        if is_json:
+            return jsonify(
+                {
+                    "success": True,
+                    "batch_id": results["batch_id"],
+                    "total_rows": results["total_rows"],
+                    "valid_count": results["valid_count"],
+                    "invalid_count": results["invalid_count"],
+                    "duplicate_count": results["duplicate_count"],
+                    "preview_valid": results["preview_valid"],
+                    "preview_errors": results["preview_errors"],
+                    "valid_rows": results["valid_rows"],
+                }
+            )
+
+        flash(
+            f"CSV parsed: {results['valid_count']} valid, {results['invalid_count']} invalid, {results['duplicate_count']} duplicates.",
+            "success" if results["valid_count"] > 0 else "warning",
+        )
+        return redirect(
+            url_for("tournament.manage_tournament", slug=slug, batch_id=results["batch_id"])
+            + "#import"
+        )
+    except Exception as e:
+        if is_json:
+            return jsonify({"success": False, "message": str(e)}), 400
+        flash(f"CSV Validation Error: {str(e)}", "error")
+        return redirect(url_for("tournament.manage_tournament", slug=slug) + "#import")
+
+
+@tournament_bp.route("/tournaments/<slug>/import/confirm", methods=["POST"])
+@tournament_bp.route("/t/<slug>/import/confirm", methods=["POST"])
+@login_required
+@role_required("admin", "superadmin")
+def confirm_csv_import(slug):
+    """Execute import of valid rows for a pending batch."""
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
+    current_u = get_current_user()
+
+    is_json = request.is_json or "application/json" in request.headers.get("Accept", "")
+
+    batch_id = request.form.get("batch_id", type=int)
+    valid_rows = None
+
+    if not batch_id and is_json:
+        data = request.get_json(silent=True) or {}
+        batch_id = data.get("batch_id")
+        valid_rows = data.get("valid_rows")
+
+    if not batch_id:
+        if is_json:
+            return jsonify({"success": False, "message": "Batch ID is required."}), 400
+        flash("Missing batch ID.", "error")
+        return redirect(url_for("tournament.manage_tournament", slug=slug) + "#import")
+
+    batch = ParticipantImportBatch.query.get_or_404(batch_id)
+    if batch.tournament_id != tournament.id:
+        if is_json:
+            return (
+                jsonify({"success": False, "message": "Cross-tournament import unauthorized."}),
+                403,
+            )
+        flash("Unauthorized cross-tournament operation.", "error")
+        return redirect(url_for("tournament.manage_tournament", slug=slug))
+
+    from app.services.bulk_import_service import execute_import_batch
+
+    ok, message, imported_count = execute_import_batch(
+        batch.id, current_u.id, valid_rows=valid_rows
+    )
+
+    if is_json:
+        return jsonify(
+            {
+                "success": ok,
+                "message": message,
+                "imported_count": imported_count,
+                "batch_id": batch.id,
+            }
+        ), (200 if ok else 400)
+
+    if ok:
+        flash(message, "success")
+    else:
+        flash(message, "error")
+    return redirect(url_for("tournament.manage_tournament", slug=slug) + "#players")
+
+
+@tournament_bp.route("/tournaments/<slug>/import/<int:batch_id>/errors", methods=["GET"])
+@tournament_bp.route("/t/<slug>/import/<int:batch_id>/errors", methods=["GET"])
+@login_required
+@role_required("admin", "superadmin")
+def download_import_errors(slug, batch_id):
+    """Download CSV error report for an import batch with injection protection."""
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
+
+    batch = ParticipantImportBatch.query.get_or_404(batch_id)
+    if batch.tournament_id != tournament.id:
+        flash("Unauthorized cross-tournament access.", "error")
+        return redirect(url_for("tournament.manage_tournament", slug=slug))
+
+    from app.services.bulk_import_service import generate_error_csv_report
+    from flask import Response
+
+    error_csv = generate_error_csv_report(batch)
+    return Response(
+        error_csv,
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=Import_Errors_Batch_{batch.id}.csv"},
+    )
+
+
+@tournament_bp.route("/tournaments/<slug>/import/history", methods=["GET"])
+@tournament_bp.route("/t/<slug>/import/history", methods=["GET"])
+@login_required
+@role_required("admin", "superadmin")
+def get_import_history(slug):
+    """Retrieve import history for this tournament."""
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
+
+    batches = (
+        ParticipantImportBatch.query.filter_by(tournament_id=tournament.id)
+        .order_by(ParticipantImportBatch.created_at.desc())
+        .all()
+    )
+
+    history_data = [
+        {
+            "id": b.id,
+            "filename": b.filename,
+            "total_rows": b.total_rows,
+            "valid_rows": b.valid_rows,
+            "invalid_rows": b.invalid_rows,
+            "duplicate_rows": b.duplicate_rows,
+            "imported_rows": b.imported_rows,
+            "status": b.status,
+            "created_at": b.created_at.isoformat() if b.created_at else None,
+            "completed_at": b.completed_at.isoformat() if b.completed_at else None,
+        }
+        for b in batches
+    ]
+
+    return jsonify({"success": True, "history": history_data})
+

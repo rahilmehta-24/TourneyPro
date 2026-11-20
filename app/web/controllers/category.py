@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from app.services.utils.audit import log_audit
 from app.domain.models import (
     db,
     Tournament,
@@ -276,6 +277,14 @@ def create_category(slug):
     if request.method == "POST":
         name = request.form.get("name")
         format_type = request.form.get("format")
+        format_status = request.form.get("format_status")
+
+        if not format_type or format_type in ["not_decided", "undecided", "tba", "None", ""]:
+            format_type = None
+            format_status = "NOT_DECIDED"
+        else:
+            format_status = format_status or "FINALIZED"
+
         if format_type == "single_elimination":
             sub_format = request.form.get("sub_format")
             if sub_format == "doubles":
@@ -441,6 +450,9 @@ def create_category(slug):
             gender=gender,
             age_category=age_category,
             format=format_type,
+            format_status=format_status,
+            registration_status="OPEN",
+            is_registration_open=True,
             max_participants=max_participants,
             num_sets=num_sets,
             games_per_set=games_per_set,
@@ -2809,3 +2821,122 @@ def add_dummy_players(slug, category_id):
             "message": "Dummy player generation is disabled under Baseline Society Zero Dummy Data policy. Please register genuine players.",
         }, 400
     return redirect(url_for("category.team_draft_view", slug=slug, category_id=category_id)), 400
+
+
+@category_bp.route(
+    "/tournaments/<slug>/categories/<int:category_id>/finalize-format", methods=["POST"]
+)
+@category_bp.route(
+    "/tournaments/<slug>/category/<int:category_id>/finalize-format", methods=["POST"]
+)
+@category_bp.route(
+    "/t/<slug>/categories/<int:category_id>/finalize-format", methods=["POST"]
+)
+@login_required
+@role_required("admin", "superadmin")
+def finalize_category_format(slug, category_id):
+    """Finalize or update playing format without removing registered participants."""
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
+    category = Category.query.filter_by(id=category_id, tournament_id=tournament.id).first_or_404()
+
+    new_format = request.form.get("format")
+    sub_format = request.form.get("sub_format")
+    if new_format == "single_elimination" and sub_format == "doubles":
+        new_format = "doubles_elimination"
+    elif new_format == "round_robin" and sub_format == "doubles":
+        new_format = "doubles_round_robin"
+
+    if not new_format or new_format not in TOURNAMENT_FORMATS:
+        flash("Invalid playing format selected.", "error")
+        return redirect(url_for("tournament.manage_tournament", slug=slug) + "#categories")
+
+    scoring_cfg = _extract_category_scoring_config(new_format, request.form)
+
+    old_format = category.format
+    old_status = getattr(category, "format_status", "NOT_DECIDED")
+
+    category.format = new_format
+    category.format_status = "FINALIZED"
+    category.scoring_format = scoring_cfg["scoring_format"]
+    category.num_sets = scoring_cfg["num_sets"]
+    category.games_per_set = scoring_cfg["games_per_set"]
+    category.total_games = scoring_cfg["total_games"]
+    category.points_to_win = scoring_cfg["points_to_win"]
+    category.max_players_per_team = scoring_cfg["max_players_per_team"]
+
+    if new_format in ["group_stage", "round_robin", "doubles_round_robin"]:
+        category.has_group_stage = True
+        num_groups = request.form.get("num_groups", type=int)
+        if num_groups:
+            category.num_groups = num_groups
+    else:
+        category.has_group_stage = False
+
+    # Invariant: Preserve all registrations, participants, and teams!
+    # Format finalization must NOT automatically generate groups, fixtures, or schedules.
+    db.session.commit()
+
+    log_audit(
+        action_type="FINALIZE_FORMAT",
+        target_id=category.id,
+        target_name=f"{tournament.name} - {category.name}",
+        reason="Playing format finalized/modified by organizer",
+        details={
+            "tournament_id": tournament.id,
+            "category_id": category.id,
+            "old_format": old_format,
+            "new_format": new_format,
+            "old_format_status": old_status,
+            "new_format_status": "FINALIZED",
+            "participants_count": len(category.participants),
+        },
+    )
+
+    format_name = TOURNAMENT_FORMATS.get(new_format, {}).get("name", new_format)
+    flash(
+        f"Format for '{category.name}' finalized as {format_name}. Existing registrations preserved.",
+        "success",
+    )
+    return redirect(url_for("tournament.manage_tournament", slug=slug) + "#categories")
+
+
+@category_bp.route(
+    "/tournaments/<slug>/categories/<int:category_id>/toggle-registration", methods=["POST"]
+)
+@category_bp.route(
+    "/tournaments/<slug>/category/<int:category_id>/toggle-registration", methods=["POST"]
+)
+@category_bp.route(
+    "/t/<slug>/categories/<int:category_id>/toggle-registration", methods=["POST"]
+)
+@login_required
+@role_required("admin", "superadmin")
+def toggle_category_registration(slug, category_id):
+    """Open or close registration for an individual category."""
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
+    category = Category.query.filter_by(id=category_id, tournament_id=tournament.id).first_or_404()
+
+    new_state = not category.is_registration_open
+    category.is_registration_open = new_state
+    category.registration_status = "OPEN" if new_state else "CLOSED"
+    db.session.commit()
+
+    log_audit(
+        action_type="CATEGORY_REGISTRATION_TOGGLED",
+        target_id=category.id,
+        target_name=f"{tournament.name} - {category.name}",
+        reason=f"Registration {'opened' if new_state else 'closed'} for category",
+        details={
+            "tournament_id": tournament.id,
+            "category_id": category.id,
+            "is_registration_open": new_state,
+            "registration_status": category.registration_status,
+        },
+    )
+
+    state_str = "opened" if new_state else "closed"
+    flash(f"Registration for category '{category.name}' is now {state_str}.", "success")
+    return redirect(url_for("tournament.manage_tournament", slug=slug) + "#categories")
+

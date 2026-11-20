@@ -611,6 +611,33 @@ The Baseline Society adds multi-tenant academy federation, audited score revisio
   - `logo_url VARCHAR(255)`: Host emblem uploaded on creation.
   - `tournament_scope VARCHAR(30) DEFAULT 'intra_academy'`: `intra_academy`, `inter_academy`, `open_individual`.
   - `registration_scope VARCHAR(30) DEFAULT 'HOST_ACADEMY_ONLY'`.
+  - `format_status VARCHAR(20) DEFAULT 'FINALIZED'`: `NOT_DECIDED`, `FINALIZED`.
+  - `registration_status VARCHAR(20) DEFAULT 'OPEN'`: `DRAFT`, `UPCOMING`, `OPEN`, `CLOSED`.
+  - `registration_opens_at DATETIME`: Registration window start timestamp.
+  - `is_published BOOLEAN DEFAULT TRUE`: Public visibility flag.
+* **`categories`:**
+  - `format VARCHAR(50)`: Made nullable for undecided tournaments (`nullable=True`).
+  - `format_status VARCHAR(20) DEFAULT 'FINALIZED'`: `NOT_DECIDED`, `FINALIZED`.
+  - `registration_status VARCHAR(20) DEFAULT 'OPEN'`: `OPEN`, `CLOSED`.
+  - `is_registration_open BOOLEAN DEFAULT TRUE`: Individual category registration toggle flag.
+* **`import_batches` (New Table: `ParticipantImportBatch`):**
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `INTEGER` | PK, Auto | Batch identifier |
+| `tournament_id` | `INTEGER` | FK `tournaments.id`, NOT NULL | Target tournament |
+| `user_id` | `INTEGER` | FK `users.id`, NOT NULL | Organizer who uploaded file |
+| `filename` | `VARCHAR(255)` | NOT NULL | Sanitized original filename |
+| `file_hash` | `VARCHAR(64)` | Indexed | SHA-256 hash for idempotency |
+| `total_rows` | `INTEGER` | DEFAULT 0 | Total data rows in CSV |
+| `valid_rows` | `INTEGER` | DEFAULT 0 | Validated participant rows |
+| `invalid_rows` | `INTEGER` | DEFAULT 0 | Rejected syntax/format rows |
+| `duplicate_rows` | `INTEGER` | DEFAULT 0 | Detected in-file & DB duplicates |
+| `imported_rows` | `INTEGER` | DEFAULT 0 | Committed participant rows |
+| `status` | `VARCHAR(30)` | DEFAULT `'PENDING_CONFIRMATION'` | `PENDING_CONFIRMATION`, `COMPLETED`, `FAILED`, `PARTIAL` |
+| `error_data` | `TEXT` | Nullable | JSON payload with valid & error rows |
+| `created_at` | `DATETIME` | DEFAULT UTC | Upload timestamp |
+| `completed_at` | `DATETIME` | Nullable | Execution timestamp |
+
 * **`registrations`:**
   - `academy_id_snapshot INTEGER FK academies.id`: Immutable player affiliation at tournament entry.
   - `reviewed_by_id INTEGER FK users.id`: Reviewing host administrator.

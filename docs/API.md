@@ -435,6 +435,121 @@ Defined in [`app/domain/schemas.py`](app/domain/schemas.py). Schemas are split b
   }
   ```
 
+### 4.6 Flexible Tournament Registration & Bulk Import
+
+#### 4.6.1 Finalize Category Playing Format
+* **Endpoint:** `POST /api/v1/tournaments/<slug>/categories/<category_id>/format`
+* **Access:** Organizer / Admin (`Authorization: Bearer <token>`)
+* **Payload:**
+  ```json
+  {
+    "format": "single_elimination",
+    "scoring_format": "games",
+    "num_sets": 3,
+    "games_per_set": 6
+  }
+  ```
+* **Response (200 OK):**
+  ```json
+  {
+    "success": true,
+    "message": "Playing format finalized successfully. Existing registrations preserved.",
+    "category": {
+      "id": 1,
+      "name": "Men's Singles",
+      "format": "single_elimination",
+      "format_status": "FINALIZED"
+    }
+  }
+  ```
+
+#### 4.6.2 Toggle Category Registration Status
+* **Endpoint:** `PATCH /api/v1/tournaments/<slug>/categories/<category_id>/registration-status`
+* **Access:** Organizer / Admin (`Authorization: Bearer <token>`)
+* **Payload:**
+  ```json
+  {
+    "status": "CLOSED"
+  }
+  ```
+* **Response (200 OK):**
+  ```json
+  {
+    "success": true,
+    "category_id": 1,
+    "is_registration_open": false,
+    "registration_status": "CLOSED"
+  }
+  ```
+
+#### 4.6.3 Download CSV Import Template
+* **Endpoint:** `GET /api/v1/tournaments/<slug>/import/template`
+* **Access:** Organizer / Admin (`Authorization: Bearer <token>`)
+* **Response:** CSV attachment with sample rows and standard columns.
+
+#### 4.6.4 Upload and Validate CSV File
+* **Endpoint:** `POST /api/v1/tournaments/<slug>/import/upload`
+* **Access:** Organizer / Admin (`Authorization: Bearer <token>`)
+* **Form Data:** `csv_file` (file)
+* **Response (200 OK):**
+  ```json
+  {
+    "success": true,
+    "batch_id": 12,
+    "total_rows": 10,
+    "valid_count": 8,
+    "invalid_count": 1,
+    "duplicate_count": 1,
+    "preview_valid": [...],
+    "preview_errors": [...]
+  }
+  ```
+
+#### 4.6.5 Confirm Bulk Import
+* **Endpoint:** `POST /api/v1/tournaments/<slug>/import/confirm`
+* **Access:** Organizer / Admin (`Authorization: Bearer <token>`)
+* **Payload:**
+  ```json
+  {
+    "batch_id": 12
+  }
+  ```
+* **Response (200 OK):**
+  ```json
+  {
+    "success": true,
+    "message": "Successfully imported 8 participant(s).",
+    "imported_count": 8,
+    "batch_id": 12
+  }
+  ```
+
+#### 4.6.6 Download Import Error Report
+* **Endpoint:** `GET /api/v1/tournaments/<slug>/import/<batch_id>/errors`
+* **Access:** Organizer / Admin (`Authorization: Bearer <token>`)
+* **Response:** CSV report with sanitized fields and exact failure reasons.
+
+#### 4.6.7 Get Import History
+* **Endpoint:** `GET /api/v1/tournaments/<slug>/import/history`
+* **Access:** Organizer / Admin (`Authorization: Bearer <token>`)
+* **Response (200 OK):**
+  ```json
+  {
+    "success": true,
+    "history": [
+      {
+        "id": 12,
+        "filename": "summer_registrations.csv",
+        "total_rows": 10,
+        "valid_rows": 8,
+        "imported_rows": 8,
+        "status": "COMPLETED",
+        "created_at": "2026-11-20T10:00:00"
+      }
+    ]
+  }
+  ```
+
 ---
 
 ## 5. Rate Limits (required hardening)

@@ -119,6 +119,32 @@ def create_tournament_api():
     if existing:
         url_slug = f"{url_slug}-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
 
+    format_status = (data.get('format_status') or 'NOT_DECIDED').strip().upper()
+    if format_status not in ['NOT_DECIDED', 'FINALIZED']:
+        format_status = 'NOT_DECIDED'
+
+    registration_status = (data.get('registration_status') or 'DRAFT').strip().upper()
+    if registration_status not in ['DRAFT', 'UPCOMING', 'OPEN', 'CLOSED']:
+        registration_status = 'DRAFT'
+
+    registration_opens_at = None
+    if data.get('registration_opens_at'):
+        for fmt in ("%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+            try:
+                registration_opens_at = datetime.strptime(data.get('registration_opens_at'), fmt)
+                break
+            except ValueError:
+                pass
+
+    registration_closes_at = None
+    if data.get('registration_closes_at'):
+        for fmt in ("%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+            try:
+                registration_closes_at = datetime.strptime(data.get('registration_closes_at'), fmt)
+                break
+            except ValueError:
+                pass
+
     tournament = Tournament(
         user_id=user.id,
         creator_name=user.username or user.email,
@@ -133,17 +159,29 @@ def create_tournament_api():
         court_operating_start="09:00",
         court_operating_end="19:00",
         status="upcoming",
+        format_status=format_status,
+        registration_status=registration_status,
+        registration_opens_at=registration_opens_at,
+        registration_closes_at=registration_closes_at,
+        is_published=data.get('is_published', True),
     )
     db.session.add(tournament)
     db.session.flush()
 
-    # Automatically add a default Category so registrations & schedule work out of the box
+    # Automatically add a default Category if requested or default
+    cat_format = data.get('format')
+    if not cat_format or format_status == 'NOT_DECIDED':
+        cat_format = None
+
     default_cat = Category(
         tournament_id=tournament.id,
-        name="Men's Singles Open",
-        format="single_elimination",
-        entry_fee=500.0,
-        max_participants=32,
+        name=data.get('category_name') or "Men's Singles Open",
+        format=cat_format,
+        format_status=format_status,
+        entry_fee=float(data.get('entry_fee') or 500.0),
+        max_participants=int(data.get('max_participants') or 32),
+        registration_status="OPEN",
+        is_registration_open=True,
         status="registration_open"
     )
     db.session.add(default_cat)
@@ -447,4 +485,247 @@ def get_announcements():
         "count": len(data),
         "announcements": data
     }), 200
+
+
+# ---------------------------------------------------------------------------
+# Format Finalization & Category Registration APIs
+# ---------------------------------------------------------------------------
+
+@api_bp.route('/tournaments/<slug>/categories/<int:category_id>/format', methods=['POST'])
+@jwt_required()
+def finalize_category_format_api(slug, category_id):
+    """Finalize or modify category format without deleting existing participants."""
+    current_user_id = int(get_jwt_identity())
+    user = User.query.get(current_user_id)
+    if not user:
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    if user.role != 'superadmin' and tournament.user_id != user.id:
+        return jsonify({"success": False, "message": "Forbidden: Only organizers can finalize format"}), 403
+
+    category = Category.query.filter_by(id=category_id, tournament_id=tournament.id).first_or_404()
+    data = request.get_json() or {}
+    new_format = data.get('format')
+    if not new_format:
+        return jsonify({"success": False, "message": "Format is required"}), 400
+
+    old_format = category.format
+    category.format = new_format
+    category.format_status = "FINALIZED"
+    if 'scoring_format' in data:
+        category.scoring_format = data['scoring_format']
+    if 'num_sets' in data:
+        category.num_sets = int(data['num_sets'])
+    if 'games_per_set' in data:
+        category.games_per_set = int(data['games_per_set'])
+
+    db.session.commit()
+
+    from app.services.utils.audit import log_audit
+    log_audit(
+        action_type="FINALIZE_FORMAT",
+        target_id=category.id,
+        target_name=f"{tournament.name} - {category.name}",
+        reason="Format finalized via API",
+        details={"old_format": old_format, "new_format": new_format, "participants_count": len(category.participants)},
+        user_id=user.id
+    )
+
+    return jsonify({
+        "success": True,
+        "message": f"Format finalized as {new_format}",
+        "category": {
+            "id": category.id,
+            "format": category.format,
+            "format_status": category.format_status,
+            "participants_count": len(category.participants)
+        }
+    }), 200
+
+
+@api_bp.route('/tournaments/<slug>/categories/<int:category_id>/registration-status', methods=['PATCH'])
+@jwt_required()
+def toggle_category_registration_api(slug, category_id):
+    """Close or open an individual category registration."""
+    current_user_id = int(get_jwt_identity())
+    user = User.query.get(current_user_id)
+    if not user:
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    if user.role != 'superadmin' and tournament.user_id != user.id:
+        return jsonify({"success": False, "message": "Forbidden"}), 403
+
+    category = Category.query.filter_by(id=category_id, tournament_id=tournament.id).first_or_404()
+    data = request.get_json() or {}
+    status = (data.get('status') or '').strip().upper()
+    if status not in ['OPEN', 'CLOSED']:
+        category.is_registration_open = not category.is_registration_open
+        category.registration_status = "OPEN" if category.is_registration_open else "CLOSED"
+    else:
+        category.registration_status = status
+        category.is_registration_open = (status == "OPEN")
+
+    db.session.commit()
+    return jsonify({
+        "success": True,
+        "category_id": category.id,
+        "registration_status": category.registration_status,
+        "is_registration_open": category.is_registration_open
+    }), 200
+
+
+# ---------------------------------------------------------------------------
+# Bulk Import APIs
+# ---------------------------------------------------------------------------
+
+@api_bp.route('/tournaments/<slug>/import/template', methods=['GET'])
+@jwt_required()
+def download_api_csv_template(slug):
+    """Download CSV template via API."""
+    from app.services.bulk_import_service import generate_csv_template
+    from flask import Response
+    return Response(
+        generate_csv_template(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=Template_{slug}.csv"}
+    )
+
+
+@api_bp.route('/tournaments/<slug>/import/upload', methods=['POST'])
+@jwt_required()
+def api_bulk_import_upload(slug):
+    """Upload CSV for validation and preview."""
+    current_user_id = int(get_jwt_identity())
+    user = User.query.get(current_user_id)
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+
+    if user.role != 'superadmin' and tournament.user_id != user.id:
+        return jsonify({"success": False, "message": "Forbidden: Only tournament organizers can import participants"}), 403
+
+    if 'file' not in request.files and 'csv_file' not in request.files:
+        return jsonify({"success": False, "message": "No file uploaded"}), 400
+
+    file = request.files.get('file') or request.files.get('csv_file')
+    if not file or not file.filename:
+        return jsonify({"success": False, "message": "No file selected"}), 400
+
+    file_bytes = file.read()
+    from app.services.bulk_import_service import validate_and_parse_csv
+    try:
+        results = validate_and_parse_csv(
+            tournament=tournament,
+            file_bytes=file_bytes,
+            original_filename=file.filename,
+            organizer_id=user.id
+        )
+        return jsonify({
+            "success": True,
+            "batch_id": results["batch_id"],
+            "total_rows": results["total_rows"],
+            "valid_count": results["valid_count"],
+            "invalid_count": results["invalid_count"],
+            "duplicate_count": results["duplicate_count"],
+            "preview_valid": results["preview_valid"],
+            "preview_errors": results["preview_errors"],
+            "valid_rows": results["valid_rows"]
+        }), 200
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 400
+
+
+@api_bp.route('/tournaments/<slug>/import/confirm', methods=['POST'])
+@jwt_required()
+def api_bulk_import_confirm(slug):
+    """Confirm and execute import batch."""
+    current_user_id = int(get_jwt_identity())
+    user = User.query.get(current_user_id)
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+
+    if user.role != 'superadmin' and tournament.user_id != user.id:
+        return jsonify({"success": False, "message": "Forbidden"}), 403
+
+    data = request.get_json() or {}
+    batch_id = data.get('batch_id')
+    if not batch_id:
+        return jsonify({"success": False, "message": "batch_id is required"}), 400
+
+    from app.domain.models import ParticipantImportBatch
+    from app.services.bulk_import_service import execute_import_batch
+
+    batch = ParticipantImportBatch.query.get_or_404(batch_id)
+    if batch.tournament_id != tournament.id:
+        return jsonify({"success": False, "message": "Unauthorized cross-tournament batch"}), 403
+
+    ok, message, imported_count = execute_import_batch(batch.id, user.id, valid_rows=data.get('valid_rows'))
+    return jsonify({
+        "success": ok,
+        "message": message,
+        "imported_count": imported_count,
+        "batch_id": batch.id
+    }), (200 if ok else 400)
+
+
+@api_bp.route('/tournaments/<slug>/import/<int:batch_id>/errors', methods=['GET'])
+@jwt_required()
+def api_bulk_import_errors(slug, batch_id):
+    """Download error CSV report for a batch."""
+    current_user_id = int(get_jwt_identity())
+    user = User.query.get(current_user_id)
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+
+    if user.role != 'superadmin' and tournament.user_id != user.id:
+        return jsonify({"success": False, "message": "Forbidden"}), 403
+
+    from app.domain.models import ParticipantImportBatch
+    from app.services.bulk_import_service import generate_error_csv_report
+    from flask import Response
+
+    batch = ParticipantImportBatch.query.get_or_404(batch_id)
+    if batch.tournament_id != tournament.id:
+        return jsonify({"success": False, "message": "Cross-tournament error access forbidden"}), 403
+
+    return Response(
+        generate_error_csv_report(batch),
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=Errors_Batch_{batch.id}.csv"}
+    )
+
+
+@api_bp.route('/tournaments/<slug>/import/history', methods=['GET'])
+@jwt_required()
+def api_bulk_import_history(slug):
+    """List previous import batches for tournament."""
+    current_user_id = int(get_jwt_identity())
+    user = User.query.get(current_user_id)
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+
+    if user.role != 'superadmin' and tournament.user_id != user.id:
+        return jsonify({"success": False, "message": "Forbidden"}), 403
+
+    from app.domain.models import ParticipantImportBatch
+    batches = ParticipantImportBatch.query.filter_by(tournament_id=tournament.id).order_by(
+        ParticipantImportBatch.created_at.desc()
+    ).all()
+
+    return jsonify({
+        "success": True,
+        "history": [
+            {
+                "id": b.id,
+                "filename": b.filename,
+                "total_rows": b.total_rows,
+                "valid_rows": b.valid_rows,
+                "invalid_rows": b.invalid_rows,
+                "duplicate_rows": b.duplicate_rows,
+                "imported_rows": b.imported_rows,
+                "status": b.status,
+                "created_at": b.created_at.isoformat() if b.created_at else None,
+                "completed_at": b.completed_at.isoformat() if b.completed_at else None,
+            }
+            for b in batches
+        ]
+    }), 200
+
 
