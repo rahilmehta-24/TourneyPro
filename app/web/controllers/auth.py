@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from functools import wraps
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, g, abort
 from app.domain.models import db, User, Tournament, TournamentStaff, AcademyMember, Player, AuditLog
+from app.services.rbac_service import is_team_captain
 from app.services.utils.validation import (
     validate_name, validate_username, validate_email, validate_password,
     validate_dob, validate_mobile
@@ -91,7 +92,7 @@ def check_tournament_access(tournament, min_role="scorer"):
     pin_session_key = f"court_pin_staff_{tournament.id}"
     if pin_session_key in session:
         pin_data = session[pin_session_key]
-        staff = TournamentStaff.query.get(pin_data.get("staff_id"))
+        staff = db.session.get(TournamentStaff, pin_data.get("staff_id"))
         if staff and staff.tournament_id == tournament.id:
             if not staff.pin_expires_at or staff.pin_expires_at > datetime.utcnow():
                 canonical_staff = role_aliases.get(staff.role, staff.role)
@@ -106,43 +107,6 @@ def check_tournament_access(tournament, min_role="scorer"):
         abort(401)
     abort(403)
 
-def check_scoring_conflict_of_interest(match, user):
-    """
-    Verify that the user recording scores does not have an active conflict of interest
-    (i.e. is not a playing participant in this match or child rubber).
-    """
-    if not user:
-        return  # Court PIN session umpire is not a player
-
-    player_user_ids = set()
-
-    def add_participant_user_ids(part):
-        if not part:
-            return
-        if getattr(part, 'player', None) and part.player.user_id:
-            player_user_ids.add(part.player.user_id)
-        if getattr(part, 'player2', None) and part.player2.user_id:
-            player_user_ids.add(part.player2.user_id)
-        if hasattr(part, 'team_members') and part.team_members:
-            for tm in part.team_members:
-                if getattr(tm, 'player', None) and tm.player.user_id:
-                    player_user_ids.add(tm.player.user_id)
-
-    add_participant_user_ids(match.participant1)
-    add_participant_user_ids(match.participant2)
-
-    for pid_attr in ('p1_player1_id', 'p1_player2_id', 'p2_player1_id', 'p2_player2_id'):
-        pid = getattr(match, pid_attr, None)
-        if pid:
-            p = Player.query.get(pid)
-            if p and p.user_id:
-                player_user_ids.add(p.user_id)
-
-    if user.id in player_user_ids:
-        raise PermissionError(
-            "Conflict of interest: You are an active participant in this match. "
-            "Scores must be entered by an impartial official, court umpire, or tournament organizer."
-        )
 
 def check_academy_access(academy, require_admin=False):
     """Enforces multi-tenant authorization isolation for Academy resources."""
@@ -175,14 +139,6 @@ def check_fixture_lineup_access(fixture, user):
     staff = TournamentStaff.query.filter_by(tournament_id=fixture.tournament_id, user_id=user.id).first()
     if staff and staff.role in ("manager", "official"):
         return True
-
-    def is_team_captain(team, u):
-        if not team or not hasattr(team, 'team_members'):
-            return False
-        for m in team.team_members:
-            if m.player and m.player.user_id == u.id and m.role in ('captain', 'vice_captain'):
-                return True
-        return False
 
     is_cap1 = is_team_captain(fixture.participant1, user)
     is_cap2 = is_team_captain(fixture.participant2, user)

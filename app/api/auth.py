@@ -202,7 +202,7 @@ def reset_password():
 @jwt_required(refresh=True)
 def refresh_token():
     current_user_id = get_jwt_identity()
-    user = User.query.get(int(current_user_id)) if current_user_id and str(current_user_id).isdigit() else None
+    user = db.session.get(User, int(current_user_id)) if current_user_id and str(current_user_id).isdigit() else None
     if not user:
         return jsonify({"success": False, "message": "User not found"}), 404
 
@@ -228,7 +228,7 @@ def court_login():
     if slug:
         tournament = Tournament.query.filter_by(url_slug=slug).first()
     elif tournament_id:
-        tournament = Tournament.query.get(tournament_id)
+        tournament = db.session.get(Tournament, tournament_id)
 
     query = TournamentStaff.query.filter_by(access_pin=pin)
     if tournament:
@@ -243,7 +243,7 @@ def court_login():
         return jsonify({"success": False, "message": "Court access PIN has expired"}), 401
 
     if not tournament:
-        tournament = Tournament.query.get(staff.tournament_id)
+        tournament = db.session.get(Tournament, staff.tournament_id)
 
     identity = str(staff.user_id) if staff.user_id else f"court_staff_{staff.id}"
     additional_claims = {
@@ -272,7 +272,7 @@ def court_login():
 @jwt_required()
 def get_current_user_profile():
     current_user_id = get_jwt_identity()
-    user = User.query.get(int(current_user_id)) if current_user_id and str(current_user_id).isdigit() else None
+    user = db.session.get(User, int(current_user_id)) if current_user_id and str(current_user_id).isdigit() else None
     if not user:
         return jsonify({"success": False, "message": "User not found"}), 404
 
@@ -413,7 +413,7 @@ def app_verify_security():
             decoded = decode_token(raw_token)
             user_id = decoded.get('sub')
             
-            user = User.query.get(int(user_id)) if user_id and str(user_id).isdigit() else None
+            user = db.session.get(User, int(user_id)) if user_id and str(user_id).isdigit() else None
             if not user or user.role == 'deleted':
                 checks["auth_session"] = {
                     "status": "FAIL",
@@ -517,7 +517,7 @@ def app_verify_security():
 def activate_organizer():
     """Self-service tournament organizer activation for mobile app."""
     current_user_id = get_jwt_identity()
-    user = User.query.get(int(current_user_id)) if current_user_id and str(current_user_id).isdigit() else None
+    user = db.session.get(User, int(current_user_id)) if current_user_id and str(current_user_id).isdigit() else None
     if not user:
         return jsonify({"success": False, "message": "User not found"}), 404
 
@@ -571,7 +571,7 @@ def activate_organizer():
 def delete_account():
     """Mandatory account deletion for Google Play and Apple App Store compliance."""
     current_user_id = get_jwt_identity()
-    user = User.query.get(int(current_user_id)) if current_user_id and str(current_user_id).isdigit() else None
+    user = db.session.get(User, int(current_user_id)) if current_user_id and str(current_user_id).isdigit() else None
     if not user:
         return jsonify({"success": False, "message": "User not found"}), 404
 
@@ -721,7 +721,7 @@ def update_notification_preferences():
 def admin_create_user_api():
     """Administrator user creation endpoint with workspace initialization and verification."""
     current_user_id = get_jwt_identity()
-    admin_user = User.query.get(int(current_user_id)) if current_user_id and str(current_user_id).isdigit() else None
+    admin_user = db.session.get(User, int(current_user_id)) if current_user_id and str(current_user_id).isdigit() else None
     if not admin_user or admin_user.role != 'superadmin':
         return jsonify({"success": False, "message": "Forbidden: Superadmin privileges required"}), 403
 

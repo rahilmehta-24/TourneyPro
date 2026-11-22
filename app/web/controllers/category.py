@@ -13,14 +13,14 @@ from app.domain.models import (
     determine_age_category,
     estimate_dob_from_age,
 )
-from app.core.constants import TOURNAMENT_FORMATS
+from app.services.format_engine import TOURNAMENT_FORMATS
 from app.services.format_engine import get_format
+from app.services.rbac_service import check_scoring_conflict_of_interest, is_team_captain
 from app.web.controllers.auth import (
     login_required,
     role_required,
     check_tournament_ownership,
     check_tournament_access,
-    check_scoring_conflict_of_interest,
     check_fixture_lineup_access,
     get_current_user,
 )
@@ -31,6 +31,7 @@ from app.services.utils.validation import (
     validate_mobile,
     validate_email,
     validate_age,
+    parse_date_safe,
 )
 from app.web.controllers.export import get_category_winners
 
@@ -243,7 +244,7 @@ def _collect_draft_pool(category):
             and p.player_id not in tiered_player_ids
             and p.player_id not in seen_unassigned_ids
         ):
-            player_obj = Player.query.get(p.player_id)
+            player_obj = db.session.get(Player, p.player_id)
             if player_obj:
                 unassigned_players.append(player_obj)
                 seen_unassigned_ids.add(player_obj.id)
@@ -255,7 +256,7 @@ def _collect_draft_pool(category):
             and reg.player_id not in tiered_player_ids
             and reg.player_id not in seen_unassigned_ids
         ):
-            player_obj = Player.query.get(reg.player_id)
+            player_obj = db.session.get(Player, reg.player_id)
             if player_obj:
                 unassigned_players.append(player_obj)
                 seen_unassigned_ids.add(player_obj.id)
@@ -358,23 +359,8 @@ def create_category(slug):
 
         start_date_str = request.form.get("start_date")
         end_date_str = request.form.get("end_date")
-        start_date = None
-        end_date = None
-        if start_date_str:
-            try:
-                start_date = datetime.strptime(start_date_str.strip(), "%Y-%m-%d").date()
-            except ValueError:
-                pass
-        if not start_date and tournament.start_date:
-            start_date = tournament.start_date
-
-        if end_date_str:
-            try:
-                end_date = datetime.strptime(end_date_str.strip(), "%Y-%m-%d").date()
-            except ValueError:
-                pass
-        if not end_date:
-            end_date = tournament.end_date or start_date
+        start_date = parse_date_safe(start_date_str) or tournament.start_date
+        end_date = parse_date_safe(end_date_str) or tournament.end_date or start_date
 
         if start_date and end_date and end_date < start_date:
             end_date = start_date
@@ -1163,19 +1149,13 @@ def manage_category(slug, category_id):
 
                 # Date and daily operating times for Category
                 if "start_date" in request.form:
-                    s_str = request.form.get("start_date", "").strip()
-                    if s_str:
-                        try:
-                            category.start_date = datetime.strptime(s_str, "%Y-%m-%d").date()
-                        except ValueError:
-                            pass
+                    parsed_s = parse_date_safe(request.form.get("start_date", "").strip())
+                    if parsed_s:
+                        category.start_date = parsed_s
                 if "end_date" in request.form:
-                    e_str = request.form.get("end_date", "").strip()
-                    if e_str:
-                        try:
-                            category.end_date = datetime.strptime(e_str, "%Y-%m-%d").date()
-                        except ValueError:
-                            pass
+                    parsed_e = parse_date_safe(request.form.get("end_date", "").strip())
+                    if parsed_e:
+                        category.end_date = parsed_e
                 if (
                     category.start_date
                     and category.end_date
@@ -1318,7 +1298,7 @@ def manage_category(slug, category_id):
 
             elif action == "delete_participant":
                 participant_id = request.form.get("participant_id", type=int)
-                participant = Participant.query.get(participant_id)
+                participant = db.session.get(Participant, participant_id)
                 if participant:
                     from app.services.utils.audit import log_audit
 
@@ -2011,14 +1991,6 @@ def allot_fixture_lineup(slug, category_id, fixture_id):
         if staff and staff.role in ("manager", "official"):
             is_admin = True
 
-    def is_team_captain(team, u):
-        if not team or not hasattr(team, "team_members"):
-            return False
-        for m in team.team_members:
-            if m.player and m.player.user_id == u.id and m.role in ("captain", "vice_captain"):
-                return True
-        return False
-
     can_edit_p1 = is_admin or is_team_captain(fixture.participant1, user)
     can_edit_p2 = is_admin or is_team_captain(fixture.participant2, user)
 
@@ -2140,7 +2112,7 @@ def update_grid_scores(slug, category_id):
     # Update matches
     updated_count = 0
     for match_id, scores in match_updates.items():
-        match = Match.query.get(match_id)
+        match = db.session.get(Match, match_id)
         if not match or match.category_id != category.id:
             continue
 
@@ -2459,7 +2431,7 @@ def create_manual_teams(slug, category_id):
             p_ids = [pid for pid in p_ids if pid is not None]
             for pid in p_ids:
                 if pid in all_selected_players:
-                    player_obj = Player.query.get(pid)
+                    player_obj = db.session.get(Player, pid)
                     p_name = player_obj.name if player_obj else f"Player #{pid}"
                     raise ValueError(
                         f"Duplicate player detected: '{p_name}' is assigned to multiple teams."

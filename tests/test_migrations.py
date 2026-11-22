@@ -3,7 +3,7 @@ import os
 import tempfile
 from app import create_app
 from app.domain.models import (
-    db, User, Tournament, Category, Participant, Match, Group, PlayerCategoryTier, TeamMember, Registration,
+    db, Tournament, Category, Participant, Match, Group, Registration,
     DeviceRegistration, InAppNotification, UserNotificationPreferences, ParticipantImportBatch
 )
 from flask_migrate import upgrade
@@ -39,16 +39,17 @@ class MigrationTestCase(unittest.TestCase):
         with self.app.app_context():
             # Apply upgrade to test database
             upgrade()
-            # Verify tables exist
-            self.assertTrue(hasattr(User, '__table__'))
-            self.assertTrue(hasattr(Tournament, '__table__'))
-            self.assertTrue(hasattr(Category, '__table__'))
-            self.assertTrue(hasattr(Participant, '__table__'))
-            self.assertTrue(hasattr(Match, '__table__'))
-            self.assertTrue(hasattr(Group, '__table__'))
-            self.assertTrue(hasattr(PlayerCategoryTier, '__table__'))
-            self.assertTrue(hasattr(TeamMember, '__table__'))
-            self.assertTrue(hasattr(Registration, '__table__'))
+            # Verify tables exist in physical database schema
+            from sqlalchemy import inspect
+            inspector = inspect(db.engine)
+            db_tables = set(inspector.get_table_names())
+            for expected_table in (
+                'users', 'tournaments', 'categories', 'participants', 'matches',
+                'groups', 'player_category_tiers', 'team_members', 'registrations'
+            ):
+                # Account for table name variants or direct table inspection
+                matching = [t for t in db_tables if expected_table.rstrip('s') in t]
+                self.assertTrue(bool(matching), f"Table {expected_table} missing from schema")
 
             # Verify columns added in Phase 1
             self.assertIn('start_time', Group.__table__.columns)
@@ -72,9 +73,9 @@ class MigrationTestCase(unittest.TestCase):
             self.assertIn('daily_schedule', Category.__table__.columns)
 
             # Verify mobile notification and device tables from b7e2d91f4a01
-            self.assertTrue(hasattr(DeviceRegistration, '__table__'))
-            self.assertTrue(hasattr(InAppNotification, '__table__'))
-            self.assertTrue(hasattr(UserNotificationPreferences, '__table__'))
+            for notif_table in ('device_registrations', 'in_app_notifications', 'user_notification_preferences'):
+                matching = [t for t in db_tables if notif_table.rstrip('s') in t]
+                self.assertTrue(bool(matching), f"Notification table {notif_table} missing from schema")
             self.assertIn('device_token', DeviceRegistration.__table__.columns)
             self.assertIn('platform', DeviceRegistration.__table__.columns)
             self.assertIn('notification_type', InAppNotification.__table__.columns)
@@ -91,7 +92,8 @@ class MigrationTestCase(unittest.TestCase):
             self.assertIn('is_registration_open', Category.__table__.columns)
             self.assertTrue(Category.__table__.columns['format'].nullable)
 
-            self.assertTrue(hasattr(ParticipantImportBatch, '__table__'))
+            matching_import = [t for t in db_tables if 'import_batch' in t]
+            self.assertTrue(bool(matching_import), "Participant import batch table missing from schema")
             self.assertIn('file_hash', ParticipantImportBatch.__table__.columns)
             self.assertIn('error_data', ParticipantImportBatch.__table__.columns)
 

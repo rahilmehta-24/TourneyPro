@@ -459,7 +459,7 @@ class GroupStageFormat(TournamentFormat):
         - If group match completed: recalculate group standings.
         """
         if match.parent_match_id:
-            parent = Match.query.get(match.parent_match_id)
+            parent = db.session.get(Match, match.parent_match_id)
             if parent:
                 rubbers = parent.sub_matches
                 status_res = calculate_team_fixture_status(
@@ -524,7 +524,7 @@ class GroupStageFormat(TournamentFormat):
         if not next_match:
             return
 
-        winner_participant = Participant.query.get(parent_match.winner_id)
+        winner_participant = db.session.get(Participant, parent_match.winner_id)
         is_p1 = parent_match.match_number % 2 == 1
 
         # Check existing rubbers on next_match
@@ -716,7 +716,7 @@ class GroupStageFormat(TournamentFormat):
             return 0
 
         standings = sorted(participants, key=cmp_to_key(compare_teams), reverse=True)
-        group_obj = Group.query.get(group_id)
+        group_obj = db.session.get(Group, group_id)
         group_label = group_obj.name if group_obj else f"Group {group_id}"
         group_size = len(participants)
         for rank_idx, p in enumerate(standings, start=1):
@@ -985,12 +985,12 @@ class GroupStageFormat(TournamentFormat):
             if is_team_event and match.get("round") == 1:
                 # Build rubbers for Round 1 fixtures AFTER rematch-avoidance finalizes pairings
                 p1_obj = (
-                    Participant.query.get(match["participant1_id"])
+                    db.session.get(Participant, match["participant1_id"])
                     if match.get("participant1_id")
                     else None
                 )
                 p2_obj = (
-                    Participant.query.get(match["participant2_id"])
+                    db.session.get(Participant, match["participant2_id"])
                     if match.get("participant2_id")
                     else None
                 )

@@ -32,3 +32,6 @@ def get_all_formats():
         }
         for key, cls in FormatRegistry.items()
     }
+
+
+TOURNAMENT_FORMATS = get_all_formats()

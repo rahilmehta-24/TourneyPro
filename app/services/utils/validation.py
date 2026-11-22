@@ -214,3 +214,42 @@ def validate_password(password: Optional[str], min_length: int = 8, min_len: Opt
     if not any(c.isdigit() or not c.isalnum() for c in password):
         return False, "Password must include at least one number or special character."
     return True, password
+
+
+def parse_date_safe(date_val: Optional[Union[str, date, datetime]], fmt: str = "%Y-%m-%d") -> Optional[date]:
+    """Safely parse a date string or date/datetime instance into a date object."""
+    if not date_val:
+        return None
+    if isinstance(date_val, datetime):
+        return date_val.date()
+    if isinstance(date_val, date):
+        return date_val
+    if isinstance(date_val, str):
+        cleaned = date_val.strip()
+        if not cleaned:
+            return None
+        try:
+            return datetime.strptime(cleaned, fmt).date()
+        except (ValueError, TypeError):
+            return None
+    return None
+
+
+def parse_datetime_safe(dt_val: Optional[Union[str, date, datetime]], formats: Tuple[str, ...] = ("%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d")) -> Optional[datetime]:
+    """Safely parse a datetime string across multiple common formats."""
+    if not dt_val:
+        return None
+    if isinstance(dt_val, datetime):
+        return dt_val
+    if isinstance(dt_val, date):
+        return datetime.combine(dt_val, datetime.min.time())
+    if isinstance(dt_val, str):
+        cleaned = dt_val.strip()
+        if not cleaned:
+            return None
+        for fmt in formats:
+            try:
+                return datetime.strptime(cleaned, fmt)
+            except (ValueError, TypeError):
+                continue
+    return None

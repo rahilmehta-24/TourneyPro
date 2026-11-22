@@ -9,6 +9,7 @@ from app.domain.models import (
 from app.domain.schemas import tournament_schema, category_schema
 from app.services.utils.scheduler import get_order_of_play
 from app.services.leaderboard import recalculate_all_group_stats
+from app.services.utils.validation import parse_date_safe, parse_datetime_safe
 
 
 @api_bp.route('/tournaments', methods=['GET'])
@@ -70,7 +71,7 @@ def create_tournament_api():
     from slugify import slugify
 
     current_user_id = get_jwt_identity()
-    user = User.query.get(int(current_user_id)) if current_user_id and str(current_user_id).isdigit() else None
+    user = db.session.get(User, int(current_user_id)) if current_user_id and str(current_user_id).isdigit() else None
     if not user:
         return jsonify({"success": False, "message": "User not authenticated"}), 401
 
@@ -94,20 +95,8 @@ def create_tournament_api():
     description = (data.get('description') or '').strip()
     num_courts = int(data.get('num_courts') or 2)
 
-    start_date = None
-    end_date = None
-    start_date_str = data.get('start_date')
-    end_date_str = data.get('end_date')
-    if start_date_str:
-        try:
-            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
-        except ValueError:
-            pass
-    if end_date_str:
-        try:
-            end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
-        except ValueError:
-            pass
+    start_date = parse_date_safe(data.get('start_date'))
+    end_date = parse_date_safe(data.get('end_date'))
 
     if not start_date:
         start_date = datetime.utcnow().date()
@@ -127,23 +116,8 @@ def create_tournament_api():
     if registration_status not in ['DRAFT', 'UPCOMING', 'OPEN', 'CLOSED']:
         registration_status = 'DRAFT'
 
-    registration_opens_at = None
-    if data.get('registration_opens_at'):
-        for fmt in ("%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
-            try:
-                registration_opens_at = datetime.strptime(data.get('registration_opens_at'), fmt)
-                break
-            except ValueError:
-                pass
-
-    registration_closes_at = None
-    if data.get('registration_closes_at'):
-        for fmt in ("%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
-            try:
-                registration_closes_at = datetime.strptime(data.get('registration_closes_at'), fmt)
-                break
-            except ValueError:
-                pass
+    registration_opens_at = parse_datetime_safe(data.get('registration_opens_at'))
+    registration_closes_at = parse_datetime_safe(data.get('registration_closes_at'))
 
     tournament = Tournament(
         user_id=user.id,
@@ -229,13 +203,7 @@ def get_order_of_play_api(slug):
     Mobile Order of Play endpoint — structured court schedules,
     real-time match states, Not Before flags, and lock versions.
     """
-    date_param = request.args.get('date')
-    filter_date = None
-    if date_param:
-        try:
-            filter_date = datetime.strptime(date_param, "%Y-%m-%d").date()
-        except ValueError:
-            pass
+    filter_date = parse_date_safe(request.args.get('date'))
 
     oop_data = get_order_of_play(slug, filter_date=filter_date)
     tournament = oop_data.get("tournament")
@@ -385,7 +353,7 @@ def get_category_standings(category_id):
 def toggle_category_publish(category_id):
     """Publish or unpublish draws for a category, triggering in-app alerts to participants."""
     current_user_id = int(get_jwt_identity())
-    user = User.query.get(current_user_id)
+    user = db.session.get(User, current_user_id)
     if not user:
         return jsonify({"success": False, "message": "Unauthorized"}), 403
 
@@ -432,7 +400,7 @@ def get_leaderboard():
         verify_jwt_in_request(optional=True)
         identity = get_jwt_identity()
         if identity:
-            current_user = User.query.get(int(identity))
+            current_user = db.session.get(User, int(identity))
     except Exception:
         pass
 
@@ -522,7 +490,7 @@ def get_announcements():
 def finalize_category_format_api(slug, category_id):
     """Finalize or modify category format without deleting existing participants."""
     current_user_id = int(get_jwt_identity())
-    user = User.query.get(current_user_id)
+    user = db.session.get(User, current_user_id)
     if not user:
         return jsonify({"success": False, "message": "Unauthorized"}), 403
 
@@ -575,7 +543,7 @@ def finalize_category_format_api(slug, category_id):
 def toggle_category_registration_api(slug, category_id):
     """Close or open an individual category registration."""
     current_user_id = int(get_jwt_identity())
-    user = User.query.get(current_user_id)
+    user = db.session.get(User, current_user_id)
     if not user:
         return jsonify({"success": False, "message": "Unauthorized"}), 403
 
@@ -624,7 +592,7 @@ def download_api_csv_template(slug):
 def api_bulk_import_upload(slug):
     """Upload CSV for validation and preview."""
     current_user_id = int(get_jwt_identity())
-    user = User.query.get(current_user_id)
+    user = db.session.get(User, current_user_id)
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
 
     if user.role != 'superadmin' and tournament.user_id != user.id:
@@ -666,7 +634,7 @@ def api_bulk_import_upload(slug):
 def api_bulk_import_confirm(slug):
     """Confirm and execute import batch."""
     current_user_id = int(get_jwt_identity())
-    user = User.query.get(current_user_id)
+    user = db.session.get(User, current_user_id)
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
 
     if user.role != 'superadmin' and tournament.user_id != user.id:
@@ -698,7 +666,7 @@ def api_bulk_import_confirm(slug):
 def api_bulk_import_errors(slug, batch_id):
     """Download error CSV report for a batch."""
     current_user_id = int(get_jwt_identity())
-    user = User.query.get(current_user_id)
+    user = db.session.get(User, current_user_id)
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
 
     if user.role != 'superadmin' and tournament.user_id != user.id:
@@ -724,7 +692,7 @@ def api_bulk_import_errors(slug, batch_id):
 def api_bulk_import_history(slug):
     """List previous import batches for tournament."""
     current_user_id = int(get_jwt_identity())
-    user = User.query.get(current_user_id)
+    user = db.session.get(User, current_user_id)
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
 
     if user.role != 'superadmin' and tournament.user_id != user.id:

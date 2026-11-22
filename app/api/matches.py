@@ -24,12 +24,12 @@ def report_match(match_id):
 
     user = None
     if current_user_id and str(current_user_id).isdigit():
-        user = User.query.get(int(current_user_id))
+        user = db.session.get(User, int(current_user_id))
 
     match = Match.query.get_or_404(match_id)
 
     from app.domain.models import TournamentStaff
-    from app.web.controllers.auth import check_scoring_conflict_of_interest
+    from app.services.rbac_service import check_scoring_conflict_of_interest
 
     is_staff = False
     if user:
@@ -40,7 +40,7 @@ def report_match(match_id):
             if staff and staff.role in ('manager', 'official', 'scorer', 'tournament_admin', 'desk', 'umpire'):
                 is_staff = True
     elif court_pin_staff_id:
-        staff = TournamentStaff.query.get(court_pin_staff_id)
+        staff = db.session.get(TournamentStaff, court_pin_staff_id)
         if staff and staff.tournament_id == match.tournament_id:
             if not staff.pin_expires_at or staff.pin_expires_at > datetime.utcnow():
                 is_staff = True
