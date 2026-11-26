@@ -1409,6 +1409,30 @@ def manage_tournament(slug):
                 )
                 return redirect(url_for("tournament.manage_tournament", slug=slug))
 
+            elif action in ["update_description", "update_details"]:
+                new_desc = request.form.get("description", "").strip()
+                tournament.description = new_desc if new_desc else None
+
+                if "game_info" in request.form:
+                    tournament.game_info = request.form.get("game_info", "").strip() or None
+
+                if "payment_upi_id" in request.form:
+                    upi_val = request.form.get("payment_upi_id", "").strip()
+                    if upi_val:
+                        ok, clean_upi = validate_upi_id(upi_val, required=False)
+                        if not ok:
+                            flash(clean_upi, "error")
+                            return redirect(
+                                url_for("tournament.manage_tournament", slug=slug) + "#settings"
+                            )
+                        tournament.payment_upi_id = clean_upi
+                    else:
+                        tournament.payment_upi_id = None
+
+                db.session.commit()
+                flash("Tournament description and details updated successfully!", "success")
+                return redirect(url_for("tournament.manage_tournament", slug=slug) + "#settings")
+
             elif action == "finish_tournament":
                 tournament.status = "completed"
                 tournament.completed_at = datetime.utcnow()
@@ -1552,6 +1576,28 @@ def manage_tournament(slug):
         active_batch_errors=active_batch_errors,
         formats=TOURNAMENT_FORMATS,
     )
+
+
+@tournament_bp.route("/t/<slug>/edit-description", methods=["POST"])
+@tournament_bp.route("/tournaments/<slug>/edit-description", methods=["POST"])
+@login_required
+@role_required("admin", "superadmin")
+def edit_tournament_description(slug):
+    """Update tournament description directly from modal or overview page."""
+    tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
+    check_tournament_ownership(tournament)
+
+    new_desc = request.form.get("description", "").strip()
+    tournament.description = new_desc if new_desc else None
+
+    db.session.commit()
+    flash("Tournament description updated successfully!", "success")
+    next_url = (
+        request.form.get("next")
+        or request.referrer
+        or url_for("tournament.view_tournament", slug=slug)
+    )
+    return redirect(next_url)
 
 
 @tournament_bp.route("/tournaments/<slug>/match/<int:match_id>/report", methods=["POST"])

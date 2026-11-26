@@ -852,3 +852,84 @@ class FlexibleRegistrationAndBulkImportTestCase(unittest.TestCase):
         ).first()
         self.assertIsNotNone(reg)
         self.assertEqual(reg.amount_due, 500.0)
+
+    # -------------------------------------------------------------------------
+    # 24. Edit Tournament Description from Manage Dashboard
+    # -------------------------------------------------------------------------
+    def test_24_edit_tournament_description_from_manage_dashboard(self):
+        self._login("organizer1")
+        tourn, _, _ = self._create_sample_tournament()
+        tourn.description = "Old rules and schedule"
+        db.session.commit()
+
+        updated_desc = (
+            "Boys Under 12 Singles\nBoys Under 14 Singles\nMatches start at 9:00 AM sharp"
+        )
+        resp = self.client.post(
+            f"/tournaments/{tourn.url_slug}/manage",
+            data={
+                "action": "update_description",
+                "description": updated_desc,
+                "game_info": "Tennis",
+                "payment_upi_id": "tennisorg@okhdfcbank",
+            },
+            follow_redirects=True,
+        )
+        self.assertEqual(resp.status_code, 200)
+
+        db.session.refresh(tourn)
+        self.assertEqual(tourn.description, updated_desc)
+        self.assertEqual(tourn.game_info, "Tennis")
+        self.assertEqual(tourn.payment_upi_id, "tennisorg@okhdfcbank")
+
+        # Verify rendered as bullet points on overview page
+        view_resp = self.client.get(f"/tournaments/{tourn.url_slug}")
+        self.assertIn(b"Boys Under 12 Singles", view_resp.data)
+        self.assertIn(b"Boys Under 14 Singles", view_resp.data)
+        self.assertIn(b"Matches start at 9:00 AM sharp", view_resp.data)
+
+    # -------------------------------------------------------------------------
+    # 25. Edit Tournament Description via Direct Route (Modal endpoint)
+    # -------------------------------------------------------------------------
+    def test_25_edit_tournament_description_via_direct_route(self):
+        self._login("organizer1")
+        tourn, _, _ = self._create_sample_tournament()
+
+        new_desc = "Reporting time: 8:30 AM\nStrict white dress code required"
+        resp = self.client.post(
+            f"/tournaments/{tourn.url_slug}/edit-description",
+            data={"description": new_desc},
+            follow_redirects=True,
+        )
+        self.assertEqual(resp.status_code, 200)
+
+        db.session.refresh(tourn)
+        self.assertEqual(tourn.description, new_desc)
+
+    # -------------------------------------------------------------------------
+    # 26. Edit Tournament Description RBAC
+    # -------------------------------------------------------------------------
+    def test_26_edit_tournament_description_rbac(self):
+        tourn, _, _ = self._create_sample_tournament()
+        tourn.description = "Original Description"
+        db.session.commit()
+
+        # 1. Unauthenticated user
+        self.client.get("/logout", follow_redirects=True)
+        resp_unauth = self.client.post(
+            f"/tournaments/{tourn.url_slug}/edit-description",
+            data={"description": "Hacked description"},
+        )
+        self.assertIn(resp_unauth.status_code, [302, 401])
+        db.session.refresh(tourn)
+        self.assertEqual(tourn.description, "Original Description")
+
+        # 2. Non-owner organizer (organizer2)
+        self._login("organizer2")
+        resp_other = self.client.post(
+            f"/tournaments/{tourn.url_slug}/edit-description",
+            data={"description": "Hacked description"},
+        )
+        self.assertEqual(resp_other.status_code, 403)
+        db.session.refresh(tourn)
+        self.assertEqual(tourn.description, "Original Description")

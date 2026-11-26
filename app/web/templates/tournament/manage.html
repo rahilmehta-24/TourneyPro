@@ -678,11 +678,62 @@
                                 <button type="submit" class="btn btn-primary" style="padding: 0.45rem 1rem; font-size: 0.85rem; background-color: var(--accent-success); border-color: var(--accent-success); font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem;">
                                     <svg class="icon icon-xs"><use href="#icon-lock"></use></svg> Set Cutoff &amp; Open Registration
                                 </button>
-                                </button>
                             </div>
                             <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 0.25rem;">Form will automatically disable registrations when this time is reached.</small>
                         </form>
                         {% endif %}
+                    </div>
+
+                    <!-- Tournament Details & Description Editor -->
+                    <div class="card" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem;">
+                        <div style="margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+                            <h3 style="margin: 0; font-size: 1.15rem; color: var(--text-primary); font-weight: 700; display: flex; align-items: center; gap: 0.4rem;">
+                                <svg class="icon icon-sm" style="color: var(--court-green);"><use href="#icon-file-text"></use></svg> Edit Tournament Description &amp; Details
+                            </h3>
+                            <p style="margin: 0.2rem 0 0; color: var(--text-secondary); font-size: 0.82rem;">
+                                Update the description, event categories, rules, and activity info configured during tournament creation.
+                            </p>
+                        </div>
+
+                        <form method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="action" value="update_description">
+                            
+                            <div style="margin-bottom: 1rem;">
+                                <label for="manage_tournament_description" class="form-label" style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; display: block; color: var(--text-primary);">
+                                    Description &amp; Event Details
+                                </label>
+                                <textarea id="manage_tournament_description" name="description" class="form-textarea" rows="6" maxlength="2000"
+                                    placeholder="Tournament rules, category events, reporting schedule, prizes, etc. (one bullet per line recommended)"
+                                    style="width: 100%; padding: 0.6rem 0.75rem; font-size: 0.88rem; line-height: 1.5; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); resize: vertical; box-sizing: border-box;">{{ tournament.description or '' }}</textarea>
+                                <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 0.25rem;">
+                                    Tip: Put each category, rule, or schedule note on a new line. It will be neatly formatted with bullet points on the overview and registration pages.
+                                </small>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+                                <div>
+                                    <label for="manage_game_info" class="form-label" style="font-size: 0.82rem; font-weight: 600; margin-bottom: 0.25rem; display: block; color: var(--text-primary);">
+                                        Game / Sport Activity
+                                    </label>
+                                    <input type="text" id="manage_game_info" name="game_info" class="form-input" maxlength="60"
+                                        value="{{ tournament.game_info or '' }}" placeholder="e.g. Tennis, Badminton, Pickleball" style="width: 100%; padding: 0.45rem;">
+                                </div>
+                                <div>
+                                    <label for="manage_payment_upi" class="form-label" style="font-size: 0.82rem; font-weight: 600; margin-bottom: 0.25rem; display: block; color: var(--text-primary);">
+                                        Payment UPI ID (Optional)
+                                    </label>
+                                    <input type="text" id="manage_payment_upi" name="payment_upi_id" class="form-input"
+                                        value="{{ tournament.payment_upi_id or '' }}" placeholder="e.g. yourname@okhdfcbank" style="width: 100%; padding: 0.45rem;">
+                                </div>
+                            </div>
+
+                            <div style="display: flex; justify-content: flex-end;">
+                                <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem;">
+                                    <svg class="icon icon-xs"><use href="#icon-check"></use></svg> Save Description &amp; Details
+                                </button>
+                            </div>
+                        </form>
                     </div>
 
                     <!-- Reset & Danger Zone -->
