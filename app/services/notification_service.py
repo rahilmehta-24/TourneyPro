@@ -27,7 +27,7 @@ def send_notification(
     if not user_id:
         return None
 
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
     if not user:
         return None
 
@@ -180,7 +180,7 @@ def notify_match_called(match: Match, court_name: Optional[str] = None) -> List[
     for p_id in [match.participant1_id, match.participant2_id]:
         if not p_id:
             continue
-        participant = Participant.query.get(p_id)
+        participant = db.session.get(Participant, p_id)
         if not participant:
             continue
 
@@ -191,7 +191,7 @@ def notify_match_called(match: Match, court_name: Optional[str] = None) -> List[
         for pl_id in player_ids:
             if not pl_id:
                 continue
-            player = Player.query.get(pl_id)
+            player = db.session.get(Player, pl_id)
             if player and player.user_id:
                 notif = send_notification(
                     user_id=player.user_id,

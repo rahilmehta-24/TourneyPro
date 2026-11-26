@@ -18,14 +18,14 @@ from app.domain.models import (
     calculate_age_from_dob,
 )
 from app.services.format_engine import get_format
-from app.core.constants import TOURNAMENT_FORMATS
+from app.services.format_engine import TOURNAMENT_FORMATS
+from app.services.rbac_service import check_scoring_conflict_of_interest
 from app.web.controllers.auth import (
     login_required,
     role_required,
     get_current_user,
     check_tournament_ownership,
     check_tournament_access,
-    check_scoring_conflict_of_interest,
 )
 from app.services.tennis_logic import validate_and_format_score
 from app.services.utils.validation import (
@@ -38,6 +38,8 @@ from app.services.utils.validation import (
     validate_transaction_id,
     validate_tournament_dates,
     validate_operating_hours,
+    parse_date_safe,
+    parse_datetime_safe,
 )
 import json
 from slugify import slugify
@@ -108,18 +110,8 @@ def create_tournament():
         num_courts = request.form.get("num_courts", type=int) or 2
         court_names = request.form.get("court_names", "").strip() or None
 
-        start_date = None
-        end_date = None
-        if start_date_str:
-            try:
-                start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
-            except ValueError:
-                pass
-        if end_date_str:
-            try:
-                end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
-            except ValueError:
-                pass
+        start_date = parse_date_safe(start_date_str)
+        end_date = parse_date_safe(end_date_str)
 
         if start_date and duration_days and duration_days >= 1:
             computed_end = start_date + timedelta(days=duration_days - 1)
@@ -174,25 +166,18 @@ def create_tournament():
             else:
                 registration_status = "DRAFT"
 
-        registration_opens_at = None
-        reg_opens_str = request.form.get("registration_opens_at")
-        if reg_opens_str:
-            for fmt in ("%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
-                try:
-                    registration_opens_at = datetime.strptime(reg_opens_str, fmt)
-                    break
-                except ValueError:
-                    pass
+        initial_status = request.form.get("status")
+        if initial_status not in ["setup", "registration", "in_progress", "completed"]:
+            initial_status = "registration" if registration_status == "OPEN" else "setup"
 
-        registration_closes_at = None
-        reg_closes_str = request.form.get("registration_closes_at")
-        if reg_closes_str:
-            for fmt in ("%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
-                try:
-                    registration_closes_at = datetime.strptime(reg_closes_str, fmt)
-                    break
-                except ValueError:
-                    pass
+        tz_offset = request.form.get("tz_offset", type=int)
+        registration_opens_at = parse_datetime_safe(request.form.get("registration_opens_at"))
+        if registration_opens_at and tz_offset is not None:
+            registration_opens_at += timedelta(minutes=tz_offset)
+
+        registration_closes_at = parse_datetime_safe(request.form.get("registration_closes_at"))
+        if registration_closes_at and tz_offset is not None:
+            registration_closes_at += timedelta(minutes=tz_offset)
 
         is_published = request.form.get("is_published", "on") in ["on", "true", "1", True]
 
@@ -214,6 +199,7 @@ def create_tournament():
             game_info=game_info,
             format=format_type,
             format_status=format_status,
+            status=initial_status,
             max_participants=max_participants,
             num_sets=num_sets,
             games_per_set=games_per_set,
@@ -240,8 +226,10 @@ def create_tournament():
             db.session.commit()
 
             # Create default settings
-            settings = TournamentSettings(tournament_id=tournament.id)
-            db.session.add(settings)
+            settings = TournamentSettings.query.filter_by(tournament_id=tournament.id).first()
+            if not settings:
+                settings = TournamentSettings(tournament_id=tournament.id)
+                db.session.add(settings)
 
             # Handle initial categories configured during creation
             initial_cats = request.form.getlist("category_names") or request.form.getlist("categories")
@@ -295,7 +283,8 @@ def view_tournament(slug):
     )
 
     # If tournament is in registration phase, visiting/clicking the shared link opens the Registration page
-    if tournament.status == "registration" and request.args.get("view") not in [
+    is_reg_open = (tournament.registration_status == "OPEN" or tournament.status == "registration") and tournament.registration_status != "CLOSED"
+    if is_reg_open and request.args.get("view") not in [
         "bracket",
         "manage",
     ]:
@@ -450,27 +439,27 @@ def register_for_tournament(slug):
     # 1. Verification of tournament publication
     if not getattr(tournament, "is_published", True):
         flash("This tournament is not published.", "warning")
-        return redirect(url_for("tournament.view_tournament", slug=slug))
+        return redirect(url_for("tournament.view_tournament", slug=slug, view="bracket"))
 
     # 2. Verification of tournament registration status
     reg_status = getattr(tournament, "registration_status", None)
     is_open = (reg_status == "OPEN" or tournament.status == "registration") and reg_status != "CLOSED"
     if not is_open:
         flash("Registration is currently closed for this tournament.", "warning")
-        return redirect(url_for("tournament.view_tournament", slug=slug))
+        return redirect(url_for("tournament.view_tournament", slug=slug, view="bracket"))
 
     # 3. Verification of registration time window
     now = datetime.utcnow()
-    if tournament.registration_opens_at and now < tournament.registration_opens_at:
+    if reg_status != "OPEN" and tournament.registration_opens_at and now < tournament.registration_opens_at:
         flash("Registration has not opened yet for this tournament.", "warning")
-        return redirect(url_for("tournament.view_tournament", slug=slug))
+        return redirect(url_for("tournament.view_tournament", slug=slug, view="bracket"))
 
     if tournament.registration_closes_at and now > tournament.registration_closes_at:
         if tournament.status == "registration":
             tournament.status = "in_progress"
             db.session.commit()
         flash("Registration deadline has passed for this tournament.", "warning")
-        return redirect(url_for("tournament.view_tournament", slug=slug))
+        return redirect(url_for("tournament.view_tournament", slug=slug, view="bracket"))
 
     categories = Category.query.filter_by(tournament_id=tournament.id).all()
 
@@ -833,7 +822,7 @@ def manage_tournament(slug):
                 custom_tx_id = request.form.get("transaction_id", "").strip()
                 cash_notes = request.form.get("cash_notes", "").strip()
 
-                reg = Registration.query.get(reg_id)
+                reg = db.session.get(Registration, reg_id)
                 if reg:
                     reg.status = "approved"
                     reg.payment_status = "paid"
@@ -882,7 +871,7 @@ def manage_tournament(slug):
 
             elif action == "reject_registration":
                 reg_id = request.form.get("registration_id", type=int)
-                reg = Registration.query.get(reg_id)
+                reg = db.session.get(Registration, reg_id)
                 if reg:
                     player_name = reg.player.name if reg.player else "player"
                     reg.status = "rejected"
@@ -971,7 +960,7 @@ def manage_tournament(slug):
                             flash(clean_page, "error")
                             return redirect(url_for("tournament.manage_tournament", slug=slug))
 
-                target_category = Category.query.get(category_id) if category_id else None
+                target_category = db.session.get(Category, category_id) if category_id else None
                 if target_category and not participant_gender:
                     participant_gender = target_category.gender
 
@@ -1092,7 +1081,7 @@ def manage_tournament(slug):
 
             elif action == "delete_participant":
                 participant_id = request.form.get("participant_id", type=int)
-                participant = Participant.query.get(participant_id)
+                participant = db.session.get(Participant, participant_id)
                 if participant:
                     reason = request.form.get("audit_reason")
                     explanation = request.form.get("audit_explanation", "")
@@ -1119,19 +1108,14 @@ def manage_tournament(slug):
 
             elif action == "open_registration":
                 tournament.status = "registration"
+                tournament.registration_status = "OPEN"
 
                 reg_closes_str = request.form.get("registration_closes_at")
                 if reg_closes_str:
-                    try:
-                        local_dt = datetime.strptime(reg_closes_str, "%Y-%m-%dT%H:%M")
+                    local_dt = parse_datetime_safe(reg_closes_str)
+                    if local_dt:
                         tz_offset = request.form.get("tz_offset", type=int)
-                        if tz_offset is not None:
-                            utc_dt = local_dt + timedelta(minutes=tz_offset)
-                        else:
-                            utc_dt = local_dt
-                        tournament.registration_closes_at = utc_dt
-                    except ValueError:
-                        pass
+                        tournament.registration_closes_at = local_dt + timedelta(minutes=tz_offset) if tz_offset is not None else local_dt
 
                 db.session.commit()
                 flash("Tournament registration is now open!", "success")
@@ -1139,6 +1123,7 @@ def manage_tournament(slug):
 
             elif action == "close_registration":
                 tournament.status = "setup"
+                tournament.registration_status = "CLOSED"
                 db.session.commit()
                 flash("Tournament registration is now closed. Status returned to setup.", "info")
                 return redirect(url_for("tournament.manage_tournament", slug=slug))
@@ -1260,13 +1245,9 @@ def manage_tournament(slug):
                 end_date_str = request.form.get("end_date", "").strip()
                 duration_days = request.form.get("duration_days", type=int)
                 if start_date_str and duration_days and duration_days >= 1 and not end_date_str:
-                    try:
-                        s_dt = datetime.strptime(start_date_str, "%Y-%m-%d").date()
-                        end_date_str = (s_dt + timedelta(days=duration_days - 1)).strftime(
-                            "%Y-%m-%d"
-                        )
-                    except Exception:
-                        pass
+                    s_dt = parse_date_safe(start_date_str)
+                    if s_dt:
+                        end_date_str = (s_dt + timedelta(days=duration_days - 1)).strftime("%Y-%m-%d")
                 if start_date_str or end_date_str:
                     ok, dates_or_err = validate_tournament_dates(start_date_str, end_date_str)
                     if not ok:
@@ -1470,7 +1451,7 @@ def manage_tournament(slug):
     )
     active_batch_id = request.args.get("batch_id", type=int)
     active_batch = (
-        ParticipantImportBatch.query.get(active_batch_id) if active_batch_id else None
+        db.session.get(ParticipantImportBatch, active_batch_id) if active_batch_id else None
     )
     active_batch_errors = []
     if active_batch and active_batch.error_data:
@@ -1603,7 +1584,7 @@ def report_match_result(slug, match_id):
         retiring_player = request.form.get("retiring_player", type=int)
 
         if match.category_id:
-            category = Category.query.get(match.category_id)
+            category = db.session.get(Category, match.category_id)
 
             scoring_format = match.scoring_format or (
                 category.scoring_format if category else "games"
@@ -1936,13 +1917,7 @@ def court_schedule(slug):
     """Public Court Schedule — shows all scheduled matches across all courts."""
     from app.services.utils.scheduler import get_order_of_play
 
-    date_param = request.args.get("date")
-    filter_date = None
-    if date_param:
-        try:
-            filter_date = datetime.strptime(date_param, "%Y-%m-%d").date()
-        except ValueError:
-            pass
+    filter_date = parse_date_safe(request.args.get("date"))
 
     data = get_order_of_play(slug, filter_date=filter_date)
     selected_court = request.args.get("court", None)
@@ -1991,7 +1966,6 @@ def order_of_play(slug):
         apply_weather_delay,
         reassign_match_court,
     )
-    from datetime import datetime
 
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
 
@@ -2032,7 +2006,7 @@ def order_of_play(slug):
             match_id = request.form.get("match_id", type=int)
             new_status = request.form.get("status")
             if match_id and new_status in ["pending", "in_progress"]:
-                match = Match.query.get(match_id)
+                match = db.session.get(Match, match_id)
                 if match and match.tournament_id == tournament.id and match.status != "completed":
                     if new_status == "in_progress":
                         from app.services.utils.scheduler import check_match_progression_allowed
@@ -2062,12 +2036,7 @@ def order_of_play(slug):
 
     # Parse optional date filter
     date_param = request.args.get("date")
-    filter_date = None
-    if date_param:
-        try:
-            filter_date = datetime.strptime(date_param, "%Y-%m-%d").date()
-        except ValueError:
-            pass
+    filter_date = parse_date_safe(date_param)
 
     data = get_order_of_play(slug, filter_date=filter_date)
     selected_court = request.args.get("court", None)

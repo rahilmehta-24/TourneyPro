@@ -29,6 +29,7 @@
     </div>
 
     <form method="POST" enctype="multipart/form-data" class="tournament-form">
+        <input type="hidden" name="tz_offset" id="tz_offset_create">
         <div class="form-section">
             <h2 class="form-section-title">Basic Information</h2>
             
@@ -499,6 +500,11 @@ function initCreateTournamentPage() {
         defaultEndInput.addEventListener('change', function() {
             if (Object.keys(dailyCustomMap).length === 0) renderDays();
         });
+    }
+
+    const tzInput = document.getElementById('tz_offset_create');
+    if (tzInput) {
+        tzInput.value = new Date().getTimezoneOffset();
     }
 
     renderDays();

@@ -14,6 +14,7 @@ from app.domain.models import (
     Player,
     Registration,
     ParticipantImportBatch,
+    TournamentSettings,
 )
 from flask_jwt_extended import create_access_token
 
@@ -55,6 +56,7 @@ class FlexibleRegistrationAndBulkImportTestCase(unittest.TestCase):
         Participant.query.delete()
         Player.query.delete()
         Category.query.delete()
+        TournamentSettings.query.delete()
         Tournament.query.delete()
         User.query.delete()
         db.session.commit()
@@ -661,3 +663,89 @@ class FlexibleRegistrationAndBulkImportTestCase(unittest.TestCase):
         data = resp.get_json()
         self.assertEqual(data["registration_status"], "CLOSED")
         self.assertFalse(data["is_registration_open"])
+
+    # -------------------------------------------------------------------------
+    # 19. Tournament Creation Status Sync & Direct Registration Link
+    # -------------------------------------------------------------------------
+    def test_19_tournament_creation_status_sync_and_direct_registration_link(self):
+        self._login("organizer1")
+        resp = self.client.post(
+            "/tournaments/new",
+            data={
+                "name": "Sync Test Tournament",
+                "format_status": "NOT_DECIDED",
+                "registration_status": "OPEN",
+                "category_names_csv": "Open Singles",
+                "start_date": datetime.utcnow().strftime("%Y-%m-%d"),
+                "duration_days": 1,
+            },
+            follow_redirects=True,
+        )
+        self.assertEqual(resp.status_code, 200)
+
+        tourn = Tournament.query.filter_by(name="Sync Test Tournament").first()
+        self.assertIsNotNone(tourn)
+        self.assertEqual(tourn.status, "registration")
+        self.assertEqual(tourn.registration_status, "OPEN")
+
+        # Verify manage dashboard renders direct registration link
+        manage_resp = self.client.get(f"/tournaments/{tourn.url_slug}/manage")
+        self.assertEqual(manage_resp.status_code, 200)
+        self.assertIn(f"{tourn.url_slug}/register".encode(), manage_resp.data)
+        self.assertIn(b"Direct Registration Link:", manage_resp.data)
+
+        # Verify public view displays the registration banner and entry link
+        view_resp = self.client.get(f"/tournaments/{tourn.url_slug}?view=bracket")
+        self.assertEqual(view_resp.status_code, 200)
+        self.assertIn(b"Registration is currently Open!", view_resp.data)
+        self.assertIn(b"Register Entry", view_resp.data)
+
+    # -------------------------------------------------------------------------
+    # 20. Prevent Infinite Redirect Loop When Registration Is Closed
+    # -------------------------------------------------------------------------
+    def test_20_no_infinite_redirect_when_registration_closed(self):
+        tourn, _, _ = self._create_sample_tournament(reg_status="CLOSED")
+        tourn.status = "registration"
+        db.session.commit()
+
+        # Accessing register page when closed must redirect to bracket view, not loop
+        resp = self.client.get(f"/tournaments/{tourn.url_slug}/register", follow_redirects=False)
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn(tourn.url_slug, resp.headers["Location"])
+        self.assertIn("view=bracket", resp.headers["Location"])
+
+        # Following redirect terminates at bracket view successfully with 200 OK
+        resp_followed = self.client.get(f"/tournaments/{tourn.url_slug}/register", follow_redirects=True)
+        self.assertEqual(resp_followed.status_code, 200)
+        self.assertIn(b"Registration is currently closed for this tournament.", resp_followed.data)
+
+    # -------------------------------------------------------------------------
+    # 21. Open and Close Registration Actions Keep Status Synchronized
+    # -------------------------------------------------------------------------
+    def test_21_open_and_close_registration_actions_sync(self):
+        tourn, _, _ = self._create_sample_tournament(reg_status="DRAFT")
+        tourn.status = "setup"
+        db.session.commit()
+        self._login("organizer1")
+
+        # Open registration
+        resp = self.client.post(
+            f"/tournaments/{tourn.url_slug}/manage",
+            data={"action": "open_registration"},
+            follow_redirects=True,
+        )
+        self.assertEqual(resp.status_code, 200)
+        db.session.refresh(tourn)
+        self.assertEqual(tourn.status, "registration")
+        self.assertEqual(tourn.registration_status, "OPEN")
+
+        # Close registration
+        resp = self.client.post(
+            f"/tournaments/{tourn.url_slug}/manage",
+            data={"action": "close_registration"},
+            follow_redirects=True,
+        )
+        self.assertEqual(resp.status_code, 200)
+        db.session.refresh(tourn)
+        self.assertEqual(tourn.status, "setup")
+        self.assertEqual(tourn.registration_status, "CLOSED")

@@ -1,6 +1,6 @@
 import math
 from app.services.format_engine.base import TournamentFormat
-from app.domain.models import Match, Participant
+from app.domain.models import db, Match, Participant
 
 class SingleEliminationFormat(TournamentFormat):
     name = "Knockout (Single Elimination)"
@@ -40,12 +40,12 @@ class SingleEliminationFormat(TournamentFormat):
         if not final_match or not final_match.winner_id:
             return
 
-        winner = Participant.query.get(final_match.winner_id)
+        winner = db.session.get(Participant, final_match.winner_id)
         if final_match.participant1_id == final_match.winner_id:
             runner_up_id = final_match.participant2_id
         else:
             runner_up_id = final_match.participant1_id
-        runner_up = Participant.query.get(runner_up_id) if runner_up_id else None
+        runner_up = db.session.get(Participant, runner_up_id) if runner_up_id else None
 
         if winner:
             winner.final_rank = 1
@@ -68,7 +68,7 @@ class SingleEliminationFormat(TournamentFormat):
                 if match.winner_id:
                     loser_id = match.participant2_id if match.participant1_id == match.winner_id else match.participant1_id
                     if loser_id and loser_id != (runner_up.id if runner_up else None) and loser_id != (winner.id if winner else None):
-                        loser = Participant.query.get(loser_id)
+                        loser = db.session.get(Participant, loser_id)
                         if loser and not loser.final_rank:
                             loser.final_rank = assigned_rank
 
