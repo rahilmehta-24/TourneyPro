@@ -118,8 +118,19 @@
     {% endif %}
 
     {% if tournament.description %}
-    <div class="tournament-description">
-        <p>{{ tournament.description }}</p>
+    <div class="card" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.85rem 1.15rem; margin-bottom: 1.5rem; box-shadow: var(--shadow-sm);">
+        <div style="display: flex; align-items: center; gap: 0.45rem; margin-bottom: 0.5rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border-color);">
+            <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-file-text"></use></svg>
+            <h3 style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin: 0; text-transform: uppercase; letter-spacing: 0.5px;">Tournament Information & Events</h3>
+        </div>
+        <ul style="margin: 0; padding-left: 1.15rem; display: flex; flex-direction: column; gap: 0.25rem; color: var(--text-secondary); font-size: 0.88rem; line-height: 1.45;">
+            {% for line in tournament.description.splitlines() %}
+                {% set clean_line = line.strip().lstrip('-*• ').strip() %}
+                {% if clean_line %}
+                <li style="margin: 0; padding: 0;">{{ clean_line }}</li>
+                {% endif %}
+            {% endfor %}
+        </ul>
     </div>
     {% endif %}
 
