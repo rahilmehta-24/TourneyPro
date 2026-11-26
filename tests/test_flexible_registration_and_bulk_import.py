@@ -235,7 +235,9 @@ class FlexibleRegistrationAndBulkImportTestCase(unittest.TestCase):
             follow_redirects=True,
         )
         self.assertEqual(resp.status_code, 200)
-        regs = Registration.query.filter_by(tournament_id=tourn.id, user_id=self.player_user.id).all()
+        regs = Registration.query.filter_by(
+            tournament_id=tourn.id, user_id=self.player_user.id
+        ).all()
         self.assertEqual(len(regs), 2)
 
     # -------------------------------------------------------------------------
@@ -299,7 +301,12 @@ class FlexibleRegistrationAndBulkImportTestCase(unittest.TestCase):
         self._login("organizer1")
         resp = self.client.post(
             f"/t/{tourn.url_slug}/categories/{cat1.id}/finalize-format",
-            data={"format": "single_elimination", "scoring_format": "games", "num_sets": 1, "games_per_set": 6},
+            data={
+                "format": "single_elimination",
+                "scoring_format": "games",
+                "num_sets": 1,
+                "games_per_set": 6,
+            },
             follow_redirects=True,
         )
         self.assertEqual(resp.status_code, 200)
@@ -688,11 +695,11 @@ class FlexibleRegistrationAndBulkImportTestCase(unittest.TestCase):
         self.assertEqual(tourn.status, "registration")
         self.assertEqual(tourn.registration_status, "OPEN")
 
-        # Verify manage dashboard renders direct registration link
+        # Verify manage dashboard renders public tournament link
         manage_resp = self.client.get(f"/tournaments/{tourn.url_slug}/manage")
         self.assertEqual(manage_resp.status_code, 200)
-        self.assertIn(f"{tourn.url_slug}/register".encode(), manage_resp.data)
-        self.assertIn(b"Direct Registration Link:", manage_resp.data)
+        self.assertIn(f"{tourn.url_slug}".encode(), manage_resp.data)
+        self.assertIn(b"Public Tournament Link:", manage_resp.data)
 
         # Verify public view displays the registration banner and entry link
         view_resp = self.client.get(f"/tournaments/{tourn.url_slug}?view=bracket")
@@ -715,7 +722,9 @@ class FlexibleRegistrationAndBulkImportTestCase(unittest.TestCase):
         self.assertIn("view=bracket", resp.headers["Location"])
 
         # Following redirect terminates at bracket view successfully with 200 OK
-        resp_followed = self.client.get(f"/tournaments/{tourn.url_slug}/register", follow_redirects=True)
+        resp_followed = self.client.get(
+            f"/tournaments/{tourn.url_slug}/register", follow_redirects=True
+        )
         self.assertEqual(resp_followed.status_code, 200)
         self.assertIn(b"Registration is currently closed for this tournament.", resp_followed.data)
 
@@ -749,3 +758,59 @@ class FlexibleRegistrationAndBulkImportTestCase(unittest.TestCase):
         db.session.refresh(tourn)
         self.assertEqual(tourn.status, "setup")
         self.assertEqual(tourn.registration_status, "CLOSED")
+
+    # -------------------------------------------------------------------------
+    # 22. Default Route for Unauthenticated Visitors & Guest Registration
+    # -------------------------------------------------------------------------
+    def test_22_unauthenticated_default_route_and_guest_registration(self):
+        tourn, cat_singles, _ = self._create_sample_tournament(reg_status="OPEN")
+        tourn.status = "registration"
+        db.session.commit()
+
+        # 1. Visiting tournament hub unauthenticated lands on tournament view (200, no redirect to login)
+        resp_hub = self.client.get(f"/tournaments/{tourn.url_slug}")
+        self.assertEqual(resp_hub.status_code, 200)
+        self.assertIn(b"Registration is currently Open!", resp_hub.data)
+        self.assertIn(b"Register as a guest or sign in", resp_hub.data)
+        self.assertIn(b"Go to Registration Form", resp_hub.data)
+
+        # 2. Visiting direct registration link unauthenticated opens guest registration form
+        resp_reg = self.client.get(f"/tournaments/{tourn.url_slug}/register")
+        self.assertEqual(resp_reg.status_code, 200)
+        self.assertIn(b"Guest Registration & Leaderboard Access", resp_reg.data)
+        self.assertIn(b"guest_name", resp_reg.data)
+        self.assertIn(b"guest_mobile", resp_reg.data)
+
+        # 3. Submitting registration as guest
+        post_data = {
+            "category_id": [cat_singles.id],
+            "guest_name": "Guest Tennis Star",
+            "guest_age": "24",
+            "guest_mobile": "9876543299",
+            "guest_gender": "Male",
+            "guest_email": "gueststar@example.com",
+            "payment_method": "cash",
+            "tz_offset": "0",
+        }
+        resp_post = self.client.post(
+            f"/tournaments/{tourn.url_slug}/register",
+            data=post_data,
+            follow_redirects=True,
+        )
+        self.assertEqual(resp_post.status_code, 200)
+        self.assertIn(b"Registration Submitted as Guest!", resp_post.data)
+        self.assertIn(b"view live leaderboards", resp_post.data)
+
+        # 4. Verify database state
+        guest_player = Player.query.filter_by(contact_number="9876543299").first()
+        self.assertIsNotNone(guest_player)
+        self.assertIsNone(guest_player.user_id)
+        self.assertEqual(guest_player.name, "Guest Tennis Star")
+
+        reg = Registration.query.filter_by(
+            tournament_id=tourn.id, player_id=guest_player.id
+        ).first()
+        self.assertIsNotNone(reg)
+        anon_user = User.query.filter_by(username="anonymous_registrations").first()
+        self.assertIsNotNone(anon_user)
+        self.assertEqual(reg.user_id, anon_user.id)
