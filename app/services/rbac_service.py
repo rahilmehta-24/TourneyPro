@@ -201,6 +201,41 @@ def check_scoring_conflict_of_interest(match: Match, user: Optional[User]) -> No
         )
 
 
+def is_team_captain(team, user: Optional[User]) -> bool:
+    """Verify whether user is a captain or vice-captain of the specified team."""
+    if not team or not user or not hasattr(team, "team_members") or not team.team_members:
+        return False
+    for m in team.team_members:
+        if m.player and m.player.user_id == user.id and m.role in ("captain", "vice_captain"):
+            return True
+    return False
+
+
+def can_export_draw(category, user: Optional[User]) -> bool:
+    """
+    Verify whether the requesting user is permitted to export the category draw PDF.
+    - Superadmin or Tournament Owner: Always permitted.
+    - Tournament Staff (Manager/Official): Permitted.
+    - Public Viewer / Player / Spectator: Permitted ONLY if category.draw_published is True
+      and category.status is 'in_progress' or 'completed' (i.e. draw is generated and released).
+    """
+    if user and (user.role == "superadmin" or category.tournament.user_id == user.id):
+        return True
+
+    if user:
+        staff = db.session.query(TournamentStaff).filter_by(
+            tournament_id=category.tournament_id,
+            user_id=user.id
+        ).first()
+        if staff and staff.role in ("manager", "official"):
+            return True
+
+    if category.draw_published and category.status in ("in_progress", "completed"):
+        return True
+
+    return False
+
+
 def check_scoring_authorization(
     match: Match,
     user: Optional[User] = None,

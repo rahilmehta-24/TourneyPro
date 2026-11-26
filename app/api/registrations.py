@@ -48,11 +48,11 @@ def register_for_tournament(slug):
     if category.max_participants and len(category.participants) >= category.max_participants:
         return jsonify({"success": False, "message": f"Category '{category.name}' has reached maximum participant capacity"}), 400
 
-    player = Player.query.get(player_id)
+    player = db.session.get(Player, player_id)
     if not player:
         return jsonify({"success": False, "message": "Player profile not found"}), 404
 
-    caller = User.query.get(current_user_id)
+    caller = db.session.get(User, current_user_id)
     is_authorized = (
         player.user_id == current_user_id or
         (caller and (caller.role == 'superadmin' or tournament.user_id == caller.id))
@@ -125,7 +125,7 @@ def register_for_tournament(slug):
 def review_registration(registration_id):
     """Tournament organizer/admin reviews and approves or rejects a registration."""
     current_user_id = int(get_jwt_identity())
-    user = User.query.get(current_user_id)
+    user = db.session.get(User, current_user_id)
     if not user:
         return jsonify({"success": False, "message": "Unauthorized"}), 403
 
@@ -209,7 +209,7 @@ def review_registration(registration_id):
 def get_my_registrations():
     """Return all tournament registrations for the currently authenticated user."""
     current_user_id = int(get_jwt_identity())
-    user = User.query.get(current_user_id)
+    user = db.session.get(User, current_user_id)
     if not user or user.username == 'anonymous_registrations' or user.email == 'anonymous@tourneypro.com':
         return jsonify({"success": False, "message": "Forbidden"}), 403
 
@@ -228,7 +228,7 @@ def get_my_registrations():
 def get_tournament_registrations(slug):
     """Organizer view: return all registrations for this tournament."""
     current_user_id = int(get_jwt_identity())
-    user = User.query.get(current_user_id)
+    user = db.session.get(User, current_user_id)
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
 
     is_staff = False

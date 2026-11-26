@@ -160,9 +160,9 @@ class DoubleEliminationFormat(TournamentFormat):
         ).first()
 
         if grand_finals and grand_finals.status == 'completed' and grand_finals.winner_id and grand_finals.score1 != 'N/A':
-            winner = Participant.query.get(grand_finals.winner_id)
+            winner = db.session.get(Participant, grand_finals.winner_id)
             runner_up_id = grand_finals.participant2_id if grand_finals.participant1_id == grand_finals.winner_id else grand_finals.participant1_id
-            runner_up = Participant.query.get(runner_up_id) if runner_up_id else None
+            runner_up = db.session.get(Participant, runner_up_id) if runner_up_id else None
         else:
             grand_finals = Match.query.filter_by(
                 category_id=category.id,
@@ -173,9 +173,9 @@ class DoubleEliminationFormat(TournamentFormat):
             if not grand_finals or not grand_finals.winner_id:
                 return
 
-            winner = Participant.query.get(grand_finals.winner_id)
+            winner = db.session.get(Participant, grand_finals.winner_id)
             runner_up_id = grand_finals.participant2_id if grand_finals.participant1_id == grand_finals.winner_id else grand_finals.participant1_id
-            runner_up = Participant.query.get(runner_up_id) if runner_up_id else None
+            runner_up = db.session.get(Participant, runner_up_id) if runner_up_id else None
 
         if winner:
             winner.final_rank = 1
@@ -205,7 +205,7 @@ class DoubleEliminationFormat(TournamentFormat):
                     continue
                 lid = m.participant2_id if m.participant1_id == m.winner_id else m.participant1_id
                 if lid and lid not in ranked_ids:
-                    loser = Participant.query.get(lid)
+                    loser = db.session.get(Participant, lid)
                     if loser:
                         r_losers.append(loser)
                         ranked_ids.add(lid)

@@ -209,7 +209,7 @@ def enforce_order_of_play_day_progression(tournament_id: int) -> int:
     slots so that the Order of Play strictly reflects valid tournament progression.
     Returns the count of sanitized matches.
     """
-    tournament = Tournament.query.get(tournament_id)
+    tournament = db.session.get(Tournament, tournament_id)
     if not tournament:
         return 0
 
@@ -732,7 +732,7 @@ def reassign_match_court(match_id: int, new_court_name: str, new_time: datetime 
     """
     Move a match to another court immediately (e.g. quick call to available court).
     """
-    match = Match.query.get(match_id)
+    match = db.session.get(Match, match_id)
     if not match:
         return False
     match.court_name = new_court_name

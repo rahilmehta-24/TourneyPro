@@ -312,7 +312,7 @@ def execute_import_batch(batch_id: int, organizer_id: int, valid_rows: Optional[
     Executes and commits the valid rows for a pending import batch in a database transaction.
     Guarantees idempotency and prevents double-import.
     """
-    batch = ParticipantImportBatch.query.get(batch_id)
+    batch = db.session.get(ParticipantImportBatch, batch_id)
     if not batch:
         return False, "Import batch not found.", 0
 
@@ -341,7 +341,7 @@ def execute_import_batch(batch_id: int, organizer_id: int, valid_rows: Optional[
         with db.session.begin_nested():
             for row in valid_rows:
                 cat_id = row.get("category_id")
-                category = Category.query.get(cat_id)
+                category = db.session.get(Category, cat_id)
                 if not category or category.tournament_id != tournament.id:
                     continue
 

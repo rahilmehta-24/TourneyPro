@@ -185,7 +185,7 @@ def export_leaderboard():
     player_stats = {}
     for r in records:
         if r.player_id not in player_stats:
-            player = Player.query.get(r.player_id)
+            player = db.session.get(Player, r.player_id)
             if not player:
                 continue
             player_stats[r.player_id] = {

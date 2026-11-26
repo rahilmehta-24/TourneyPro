@@ -22,7 +22,7 @@
             <a href="{{ url_for('tournament.order_of_play', slug=tournament.url_slug) }}" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 0.35rem;" data-turbo="false">
                 <svg class="icon icon-xs"><use href="#icon-calendar"></use></svg> Order of Play
             </a>
-            <button onclick="copyShareLink('{% if tournament.status == 'registration' %}{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug, _external=True) }}{% else %}{{ url_for('tournament.view_tournament', slug=tournament.url_slug, _external=True) }}{% endif %}', this)" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+            <button onclick="copyShareLink('{% if tournament.status == 'registration' or tournament.registration_status == 'OPEN' %}{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug, _external=True) }}{% else %}{{ url_for('tournament.view_tournament', slug=tournament.url_slug, _external=True) }}{% endif %}', this)" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 0.35rem;">
                 <svg class="icon icon-xs"><use href="#icon-share-2"></use></svg> Share Link
             </button>
         </div>
@@ -48,8 +48,8 @@
                     {% if tournament.categories %}<svg class="icon icon-xs" style="vertical-align: -1px;"><use href="#icon-check"></use></svg>{% else %}2.{% endif %} Categories ({{ tournament.categories|length }})
                 </span>
                 <span style="color: var(--text-muted); opacity: 0.6;">&rarr;</span>
-                <span style="color: {% if tournament.status in ['registration', 'in_progress', 'completed'] %}var(--accent-success){% elif tournament.status == 'setup' and tournament.categories %}var(--accent-primary){% else %}var(--text-muted){% endif %}; font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem;">
-                    {% if tournament.status in ['registration', 'in_progress', 'completed'] %}<svg class="icon icon-xs" style="vertical-align: -1px;"><use href="#icon-check"></use></svg>{% else %}3.{% endif %} Registration
+                <span style="color: {% if tournament.status in ['registration', 'in_progress', 'completed'] or tournament.registration_status == 'OPEN' %}var(--accent-success){% elif tournament.status == 'setup' and tournament.categories %}var(--accent-primary){% else %}var(--text-muted){% endif %}; font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem;">
+                    {% if tournament.status in ['registration', 'in_progress', 'completed'] or tournament.registration_status == 'OPEN' %}<svg class="icon icon-xs" style="vertical-align: -1px;"><use href="#icon-check"></use></svg>{% else %}3.{% endif %} Registration
                 </span>
                 <span style="color: var(--text-muted); opacity: 0.6;">&rarr;</span>
                 <span style="color: {% if tournament.status in ['in_progress', 'completed'] %}var(--accent-success){% elif tournament.status == 'registration' %}var(--accent-primary){% else %}var(--text-muted){% endif %}; font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem;">
@@ -913,7 +913,7 @@
                 </div>
 
                 <!-- Primary Action Based On Stage -->
-                {% if tournament.status == 'setup' %}
+                {% if tournament.status == 'setup' and tournament.registration_status != 'OPEN' %}
                     <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 1rem;">
                         {% if not tournament.categories %}
                         Add at least 1 category to open registration or add participants.
@@ -943,7 +943,7 @@
                     {% endif %}
                     {% endif %}
 
-                {% elif tournament.status == 'registration' %}
+                {% elif tournament.status == 'registration' or tournament.registration_status == 'OPEN' %}
                     <p style="font-size: 0.82rem; color: var(--accent-success); font-weight: 600; margin-bottom: 0.75rem;">
                         Registration is Open! Share the registration link with participants.
                     </p>
@@ -987,11 +987,11 @@
                 <!-- Direct Share Link Box in Sidebar -->
                 <div style="margin-top: 1rem; padding-top: 0.85rem; border-top: 1px solid var(--border-color);">
                     <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 0.35rem;">
-                        {% if tournament.status == 'registration' %}Direct Registration Link:{% else %}Public Tournament Link:{% endif %}
+                        {% if tournament.status == 'registration' or tournament.registration_status == 'OPEN' %}Direct Registration Link:{% else %}Public Tournament Link:{% endif %}
                     </label>
                     <div style="display: flex; gap: 0.35rem;">
-                        <input type="text" readonly value="{% if tournament.status == 'registration' %}{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug, _external=True) }}{% else %}{{ url_for('tournament.view_tournament', slug=tournament.url_slug, _external=True) }}{% endif %}" class="form-input" style="font-size: 0.75rem; padding: 0.3rem 0.5rem; flex: 1;">
-                        <button onclick="copyShareLink('{% if tournament.status == 'registration' %}{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug, _external=True) }}{% else %}{{ url_for('tournament.view_tournament', slug=tournament.url_slug, _external=True) }}{% endif %}', this)" class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.78rem;">
+                        <input type="text" readonly value="{% if tournament.status == 'registration' or tournament.registration_status == 'OPEN' %}{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug, _external=True) }}{% else %}{{ url_for('tournament.view_tournament', slug=tournament.url_slug, _external=True) }}{% endif %}" class="form-input" style="font-size: 0.75rem; padding: 0.3rem 0.5rem; flex: 1;">
+                        <button onclick="copyShareLink('{% if tournament.status == 'registration' or tournament.registration_status == 'OPEN' %}{{ url_for('tournament.register_for_tournament', slug=tournament.url_slug, _external=True) }}{% else %}{{ url_for('tournament.view_tournament', slug=tournament.url_slug, _external=True) }}{% endif %}', this)" class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.78rem;">
                             Copy
                         </button>
                     </div>

@@ -10,7 +10,7 @@ def assign_leaderboard_points(category):
             player_ids.append(participant.player2_id)
             
         for p_id in player_ids:
-            player = Player.query.get(p_id)
+            player = db.session.get(Player, p_id)
             if not player:
                 continue
 
@@ -57,7 +57,7 @@ def assign_leaderboard_points(category):
             
             if category.format == 'doubles_elimination' and participant.player2_id:
                 partner_id = participant.player2_id if p_id == participant.player_id else participant.player_id
-                partner = Player.query.get(partner_id)
+                partner = db.session.get(Player, partner_id)
                 if partner:
                     tournament_display_name += f" (Partner: {partner.name})"
 
@@ -86,7 +86,7 @@ def update_live_player_stats(match):
         if not participant_id:
             continue
             
-        participant = Participant.query.get(participant_id)
+        participant = db.session.get(Participant, participant_id)
         if participant:
             player_ids = []
             if participant.player_id:
@@ -95,7 +95,7 @@ def update_live_player_stats(match):
                 player_ids.append(participant.player2_id)
                 
             for p_id in player_ids:
-                player = Player.query.get(p_id)
+                player = db.session.get(Player, p_id)
                 if player:
                     player.matches_played += 1
                     if participant.id == match.winner_id:
@@ -117,7 +117,7 @@ def calculate_combined_round_robin_standings(category_id):
     from app.domain.models import Category
     from app.services.format_engine.round_robin.logic import RoundRobinFormat
 
-    category = Category.query.get(category_id)
+    category = db.session.get(Category, category_id)
     if category:
         RoundRobinFormat.calculate_final_rankings(category)
         return Participant.query.filter_by(category_id=category_id).order_by(Participant.final_rank).all()
