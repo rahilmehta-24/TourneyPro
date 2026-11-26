@@ -4281,6 +4281,127 @@ svg.tp-icon use {
     font-variant-numeric: tabular-nums;
 }
 
+/* ==========================================================================
+   Tournament Registration & Hub Mobile Responsiveness Fixes
+   ========================================================================== */
+.categories-selection-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 0.85rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.category-option-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    transition: all 0.15s;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.category-option-name {
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    line-height: 1.35;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+}
+
+.payment-method-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.85rem;
+    max-width: 520px;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+    .categories-selection-grid {
+        grid-template-columns: 1fr !important;
+        gap: 0.65rem;
+        width: 100% !important;
+    }
+
+    .category-option-card {
+        padding: 0.85rem !important;
+        gap: 0.65rem !important;
+        width: 100% !important;
+    }
+
+    .category-option-name {
+        font-size: 0.9rem !important;
+        white-space: normal !important;
+    }
+
+    .payment-method-grid {
+        grid-template-columns: 1fr !important;
+        gap: 0.65rem;
+        width: 100% !important;
+    }
+
+    .registration-card,
+    .payment-summary-card,
+    .partner-card {
+        padding: 1.15rem 0.85rem !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .form-actions-wrapper {
+        flex-direction: column-reverse !important;
+        width: 100% !important;
+        gap: 0.6rem !important;
+    }
+
+    .form-actions-wrapper .btn {
+        width: 100% !important;
+        justify-content: center !important;
+        text-align: center !important;
+        padding: 0.75rem 1rem !important;
+    }
+
+    .reg-open-banner {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding: 1rem !important;
+        gap: 0.85rem !important;
+    }
+
+    .reg-open-actions {
+        width: 100% !important;
+        flex-direction: column !important;
+        gap: 0.5rem !important;
+    }
+
+    .reg-open-actions .btn {
+        width: 100% !important;
+        justify-content: center !important;
+        text-align: center !important;
+    }
+
+    .reg-dates-row {
+        flex-direction: column !important;
+        width: 100% !important;
+    }
+
+    .reg-date-badge {
+        width: 100% !important;
+        text-align: left !important;
+        box-sizing: border-box !important;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
