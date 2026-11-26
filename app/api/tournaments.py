@@ -119,6 +119,8 @@ def create_tournament_api():
     registration_opens_at = parse_datetime_safe(data.get('registration_opens_at'))
     registration_closes_at = parse_datetime_safe(data.get('registration_closes_at'))
 
+    initial_status = "registration" if registration_status == "OPEN" else "upcoming"
+
     tournament = Tournament(
         user_id=user.id,
         creator_name=user.username or user.email,
@@ -132,7 +134,7 @@ def create_tournament_api():
         num_courts=num_courts,
         court_operating_start="09:00",
         court_operating_end="19:00",
-        status="upcoming",
+        status=initial_status,
         format_status=format_status,
         registration_status=registration_status,
         registration_opens_at=registration_opens_at,

@@ -166,8 +166,18 @@ def create_tournament():
             else:
                 registration_status = "DRAFT"
 
+        initial_status = request.form.get("status")
+        if initial_status not in ["setup", "registration", "in_progress", "completed"]:
+            initial_status = "registration" if registration_status == "OPEN" else "setup"
+
+        tz_offset = request.form.get("tz_offset", type=int)
         registration_opens_at = parse_datetime_safe(request.form.get("registration_opens_at"))
+        if registration_opens_at and tz_offset is not None:
+            registration_opens_at += timedelta(minutes=tz_offset)
+
         registration_closes_at = parse_datetime_safe(request.form.get("registration_closes_at"))
+        if registration_closes_at and tz_offset is not None:
+            registration_closes_at += timedelta(minutes=tz_offset)
 
         is_published = request.form.get("is_published", "on") in ["on", "true", "1", True]
 
@@ -189,6 +199,7 @@ def create_tournament():
             game_info=game_info,
             format=format_type,
             format_status=format_status,
+            status=initial_status,
             max_participants=max_participants,
             num_sets=num_sets,
             games_per_set=games_per_set,
@@ -215,8 +226,10 @@ def create_tournament():
             db.session.commit()
 
             # Create default settings
-            settings = TournamentSettings(tournament_id=tournament.id)
-            db.session.add(settings)
+            settings = TournamentSettings.query.filter_by(tournament_id=tournament.id).first()
+            if not settings:
+                settings = TournamentSettings(tournament_id=tournament.id)
+                db.session.add(settings)
 
             # Handle initial categories configured during creation
             initial_cats = request.form.getlist("category_names") or request.form.getlist("categories")
@@ -270,7 +283,8 @@ def view_tournament(slug):
     )
 
     # If tournament is in registration phase, visiting/clicking the shared link opens the Registration page
-    if tournament.status == "registration" and request.args.get("view") not in [
+    is_reg_open = (tournament.registration_status == "OPEN" or tournament.status == "registration") and tournament.registration_status != "CLOSED"
+    if is_reg_open and request.args.get("view") not in [
         "bracket",
         "manage",
     ]:
@@ -425,27 +439,27 @@ def register_for_tournament(slug):
     # 1. Verification of tournament publication
     if not getattr(tournament, "is_published", True):
         flash("This tournament is not published.", "warning")
-        return redirect(url_for("tournament.view_tournament", slug=slug))
+        return redirect(url_for("tournament.view_tournament", slug=slug, view="bracket"))
 
     # 2. Verification of tournament registration status
     reg_status = getattr(tournament, "registration_status", None)
     is_open = (reg_status == "OPEN" or tournament.status == "registration") and reg_status != "CLOSED"
     if not is_open:
         flash("Registration is currently closed for this tournament.", "warning")
-        return redirect(url_for("tournament.view_tournament", slug=slug))
+        return redirect(url_for("tournament.view_tournament", slug=slug, view="bracket"))
 
     # 3. Verification of registration time window
     now = datetime.utcnow()
-    if tournament.registration_opens_at and now < tournament.registration_opens_at:
+    if reg_status != "OPEN" and tournament.registration_opens_at and now < tournament.registration_opens_at:
         flash("Registration has not opened yet for this tournament.", "warning")
-        return redirect(url_for("tournament.view_tournament", slug=slug))
+        return redirect(url_for("tournament.view_tournament", slug=slug, view="bracket"))
 
     if tournament.registration_closes_at and now > tournament.registration_closes_at:
         if tournament.status == "registration":
             tournament.status = "in_progress"
             db.session.commit()
         flash("Registration deadline has passed for this tournament.", "warning")
-        return redirect(url_for("tournament.view_tournament", slug=slug))
+        return redirect(url_for("tournament.view_tournament", slug=slug, view="bracket"))
 
     categories = Category.query.filter_by(tournament_id=tournament.id).all()
 
@@ -1094,6 +1108,7 @@ def manage_tournament(slug):
 
             elif action == "open_registration":
                 tournament.status = "registration"
+                tournament.registration_status = "OPEN"
 
                 reg_closes_str = request.form.get("registration_closes_at")
                 if reg_closes_str:
@@ -1108,6 +1123,7 @@ def manage_tournament(slug):
 
             elif action == "close_registration":
                 tournament.status = "setup"
+                tournament.registration_status = "CLOSED"
                 db.session.commit()
                 flash("Tournament registration is now closed. Status returned to setup.", "info")
                 return redirect(url_for("tournament.manage_tournament", slug=slug))
