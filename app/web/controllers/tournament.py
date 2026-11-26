@@ -57,7 +57,11 @@ def create_tournament():
     current_u = get_current_user()
     if request.method == "POST":
         name = request.form.get("name")
-        creator_name = (request.form.get("creator_name") or "").strip() or current_u.full_name or current_u.username
+        creator_name = (
+            (request.form.get("creator_name") or "").strip()
+            or current_u.full_name
+            or current_u.username
+        )
         description = request.form.get("description", "")
         payment_upi_id = request.form.get("payment_upi_id", "").strip()
         game_info = request.form.get("game_info", "")
@@ -71,6 +75,7 @@ def create_tournament():
             if logo_file and logo_file.filename:
                 try:
                     from app.services.utils.uploads import save_uploaded_logo
+
                     logo_url = save_uploaded_logo(logo_file, subfolder="tournaments/logos")
                 except ValueError as e:
                     flash(str(e), "error")
@@ -161,7 +166,10 @@ def create_tournament():
 
         registration_status = (request.form.get("registration_status") or "").strip().upper()
         if registration_status not in ["DRAFT", "UPCOMING", "OPEN", "CLOSED"]:
-            if request.form.get("open_registration") == "on" or request.form.get("status") == "registration":
+            if (
+                request.form.get("open_registration") == "on"
+                or request.form.get("status") == "registration"
+            ):
                 registration_status = "OPEN"
             else:
                 registration_status = "DRAFT"
@@ -232,9 +240,15 @@ def create_tournament():
                 db.session.add(settings)
 
             # Handle initial categories configured during creation
-            initial_cats = request.form.getlist("category_names") or request.form.getlist("categories")
+            initial_cats = request.form.getlist("category_names") or request.form.getlist(
+                "categories"
+            )
             if not initial_cats and request.form.get("category_names_csv"):
-                initial_cats = [c.strip() for c in request.form.get("category_names_csv").split(",") if c.strip()]
+                initial_cats = [
+                    c.strip()
+                    for c in request.form.get("category_names_csv").split(",")
+                    if c.strip()
+                ]
 
             for cat_name in initial_cats:
                 cat_name_clean = cat_name.strip()
@@ -281,14 +295,6 @@ def view_tournament(slug):
         .filter_by(url_slug=slug)
         .first_or_404()
     )
-
-    # If tournament is in registration phase, visiting/clicking the shared link opens the Registration page
-    is_reg_open = (tournament.registration_status == "OPEN" or tournament.status == "registration") and tournament.registration_status != "CLOSED"
-    if is_reg_open and request.args.get("view") not in [
-        "bracket",
-        "manage",
-    ]:
-        return redirect(url_for("tournament.register_for_tournament", slug=slug))
 
     participants = (
         Participant.query.filter_by(tournament_id=tournament.id).order_by(Participant.seed).all()
@@ -443,14 +449,20 @@ def register_for_tournament(slug):
 
     # 2. Verification of tournament registration status
     reg_status = getattr(tournament, "registration_status", None)
-    is_open = (reg_status == "OPEN" or tournament.status == "registration") and reg_status != "CLOSED"
+    is_open = (
+        reg_status == "OPEN" or tournament.status == "registration"
+    ) and reg_status != "CLOSED"
     if not is_open:
         flash("Registration is currently closed for this tournament.", "warning")
         return redirect(url_for("tournament.view_tournament", slug=slug, view="bracket"))
 
     # 3. Verification of registration time window
     now = datetime.utcnow()
-    if reg_status != "OPEN" and tournament.registration_opens_at and now < tournament.registration_opens_at:
+    if (
+        reg_status != "OPEN"
+        and tournament.registration_opens_at
+        and now < tournament.registration_opens_at
+    ):
         flash("Registration has not opened yet for this tournament.", "warning")
         return redirect(url_for("tournament.view_tournament", slug=slug, view="bracket"))
 
@@ -464,14 +476,13 @@ def register_for_tournament(slug):
     categories = Category.query.filter_by(tournament_id=tournament.id).all()
 
     current_u = get_current_user()
-    if not current_u:
-        flash("Please log in or create an account to register for this tournament.", "info")
-        return redirect(url_for("auth.login", next=url_for("tournament.register_for_tournament", slug=slug)))
+    player = None
+    if current_u:
+        player = Player.query.filter_by(user_id=current_u.id).first()
+        if not player:
+            from app.services.user_service import ensure_user_profile
 
-    player = Player.query.filter_by(user_id=current_u.id).first()
-    if not player:
-        from app.services.user_service import ensure_user_profile
-        player = ensure_user_profile(current_u.id)
+            player = ensure_user_profile(current_u.id)
 
     if request.method == "POST":
         category_ids = request.form.getlist("category_id", type=int)
@@ -483,7 +494,10 @@ def register_for_tournament(slug):
 
         # 4. Verification of category availability and capacity
         for cat in selected_categories:
-            if not getattr(cat, "is_registration_open", True) or getattr(cat, "registration_status", "OPEN") != "OPEN":
+            if (
+                not getattr(cat, "is_registration_open", True)
+                or getattr(cat, "registration_status", "OPEN") != "OPEN"
+            ):
                 flash(f"Registration for category '{cat.name}' is closed.", "error")
                 return redirect(url_for("tournament.register_for_tournament", slug=slug))
             if cat.max_participants and len(cat.participants) >= cat.max_participants:
@@ -491,12 +505,7 @@ def register_for_tournament(slug):
                 return redirect(url_for("tournament.register_for_tournament", slug=slug))
 
         # Calculate total fee
-        total_due = sum(
-            (cat.entry_fee or 0.0) * 2
-            if ("Doubles" in cat.name or (cat.format and "doubles" in cat.format))
-            else (cat.entry_fee or 0.0)
-            for cat in selected_categories
-        )
+        total_due = sum((cat.entry_fee or 0.0) for cat in selected_categories)
 
         # Payment method handling: 'online' or 'cash'
         payment_method = request.form.get("payment_method", "online").strip().lower()
@@ -638,23 +647,58 @@ def register_for_tournament(slug):
                 flash("Age or Date of Birth is required.", "error")
                 return redirect(url_for("tournament.register_for_tournament", slug=slug))
 
-        # 1. VERIFIED USER IDENTITY: Ensure authenticated user owns the registration
-        current_u_id = current_u.id
+        # 1. VERIFIED USER IDENTITY: Ensure authenticated user owns the registration or assign anonymous proxy user
+        if current_u:
+            current_u_id = current_u.id
+            if player:
+                new_player = player
+                if participant_mobile and not new_player.contact_number:
+                    new_player.contact_number = participant_mobile
+                if participant_email and not new_player.email:
+                    new_player.email = participant_email
+                if participant_dob and not new_player.dob:
+                    new_player.dob = participant_dob
+            else:
+                new_player = Player.query.filter_by(user_id=current_u.id).first()
+                if not new_player:
+                    from app.services.user_service import ensure_user_profile
 
-        # 2. AUTO PROFILE CREATION: Link authenticated Player profile
-        if player:
-            new_player = player
-            if participant_mobile and not new_player.contact_number:
-                new_player.contact_number = participant_mobile
-            if participant_email and not new_player.email:
-                new_player.email = participant_email
-            if participant_dob and not new_player.dob:
-                new_player.dob = participant_dob
+                    new_player = ensure_user_profile(current_u.id)
         else:
-            new_player = Player.query.filter_by(user_id=current_u.id).first()
+            # Guest registration: use anonymous proxy user to satisfy Registration.user_id FK
+            anon_user = User.query.filter_by(username="anonymous_registrations").first()
+            if not anon_user:
+                import secrets
+
+                anon_user = User(
+                    username="anonymous_registrations",
+                    email="anonymous@tourneypro.com",
+                    role="user",
+                    account_status="INACTIVE",
+                )
+                anon_user.set_password(secrets.token_urlsafe(32))
+                db.session.add(anon_user)
+                db.session.flush()
+            current_u_id = anon_user.id
+
+            # Create or match unlinked Player profile
+            new_player = Player.query.filter(Player.contact_number == participant_mobile).first()
             if not new_player:
-                from app.services.user_service import ensure_user_profile
-                new_player = ensure_user_profile(current_u.id)
+                p_dob = participant_dob or estimate_dob_from_age(participant_age)
+                new_player = Player(
+                    user_id=None,
+                    name=participant_name,
+                    email=participant_email or None,
+                    contact_number=participant_mobile,
+                    gender=participant_gender,
+                    dob=p_dob,
+                    age_category=determine_age_category(age=participant_age, dob=p_dob),
+                )
+                db.session.add(new_player)
+                db.session.flush()
+            else:
+                if participant_email and not new_player.email:
+                    new_player.email = participant_email
 
         # 3. AUTO PROFILE CREATION FOR DOUBLES PARTNERS
         partner_players = {}
@@ -701,34 +745,45 @@ def register_for_tournament(slug):
                 p2_obj.contact_number if p2_obj else partners_data.get(cat.id, {}).get("mobile")
             )
 
-            is_cat_doubles = ("Doubles" in cat.name or (cat.format and "doubles" in cat.format.lower()))
+            is_cat_doubles = "Doubles" in cat.name or (
+                cat.format and "doubles" in cat.format.lower()
+            )
             if is_cat_doubles:
                 if p2_id and p2_id == new_player.id:
-                    flash(f"Registration failed for {cat.name}: A player cannot partner with themselves in a doubles event.", "error")
-                    return redirect(url_for('tournament.register_tournament', slug=slug))
+                    flash(
+                        f"Registration failed for {cat.name}: A player cannot partner with themselves in a doubles event.",
+                        "error",
+                    )
+                    return redirect(url_for("tournament.register_tournament", slug=slug))
                 if p2_id:
                     dup_reg = Participant.query.filter(
                         Participant.category_id == cat.id,
                         db.or_(
                             Participant.player_id.in_([new_player.id, p2_id]),
-                            Participant.player2_id.in_([new_player.id, p2_id])
-                        )
+                            Participant.player2_id.in_([new_player.id, p2_id]),
+                        ),
                     ).first()
                     if dup_reg:
-                        flash(f"Registration failed for {cat.name}: One or both players are already registered in this doubles event.", "error")
-                        return redirect(url_for('tournament.register_tournament', slug=slug))
+                        flash(
+                            f"Registration failed for {cat.name}: One or both players are already registered in this doubles event.",
+                            "error",
+                        )
+                        return redirect(url_for("tournament.register_tournament", slug=slug))
 
             cat_fee = cat.entry_fee or 0.0
-            amount_due = (
-                cat_fee * 2
-                if ("Doubles" in cat.name or (cat.format and "doubles" in cat.format))
-                else cat_fee
-            )
+            amount_due = cat_fee
 
             reg_status = "pending" if amount_due > 0 else "approved"
 
             from app.domain.models import AcademyMember
-            active_mem = AcademyMember.query.filter_by(user_id=current_u_id, membership_status='ACTIVE').first()
+
+            active_mem = (
+                AcademyMember.query.filter_by(
+                    user_id=current_u_id, membership_status="ACTIVE"
+                ).first()
+                if current_u
+                else None
+            )
             academy_snapshot_id = active_mem.academy_id if active_mem else None
 
             reg = Registration(
@@ -773,6 +828,7 @@ def register_for_tournament(slug):
 
         db.session.commit()
 
+        is_guest = not current_u
         if total_due > 0:
             if payment_method == "cash":
                 flash(
@@ -789,7 +845,11 @@ def register_for_tournament(slug):
                 "Registration successful! You are now officially enrolled in the tournament.",
                 "success",
             )
-        return redirect(url_for("tournament.view_tournament", slug=slug))
+        return redirect(
+            url_for(
+                "tournament.view_tournament", slug=slug, registered="guest" if is_guest else "1"
+            )
+        )
 
     return render_template(
         "tournament/register.html", tournament=tournament, categories=categories, player=player
@@ -858,6 +918,7 @@ def manage_tournament(slug):
                     db.session.add(participant)
                     try:
                         from app.services.notification_service import notify_registration_status
+
                         notify_registration_status(reg, "approved")
                     except Exception:
                         pass
@@ -877,6 +938,7 @@ def manage_tournament(slug):
                     reg.status = "rejected"
                     try:
                         from app.services.notification_service import notify_registration_status
+
                         notify_registration_status(reg, "rejected")
                     except Exception:
                         pass
@@ -1115,7 +1177,11 @@ def manage_tournament(slug):
                     local_dt = parse_datetime_safe(reg_closes_str)
                     if local_dt:
                         tz_offset = request.form.get("tz_offset", type=int)
-                        tournament.registration_closes_at = local_dt + timedelta(minutes=tz_offset) if tz_offset is not None else local_dt
+                        tournament.registration_closes_at = (
+                            local_dt + timedelta(minutes=tz_offset)
+                            if tz_offset is not None
+                            else local_dt
+                        )
 
                 db.session.commit()
                 flash("Tournament registration is now open!", "success")
@@ -1247,7 +1313,9 @@ def manage_tournament(slug):
                 if start_date_str and duration_days and duration_days >= 1 and not end_date_str:
                     s_dt = parse_date_safe(start_date_str)
                     if s_dt:
-                        end_date_str = (s_dt + timedelta(days=duration_days - 1)).strftime("%Y-%m-%d")
+                        end_date_str = (s_dt + timedelta(days=duration_days - 1)).strftime(
+                            "%Y-%m-%d"
+                        )
                 if start_date_str or end_date_str:
                     ok, dates_or_err = validate_tournament_dates(start_date_str, end_date_str)
                     if not ok:
@@ -1363,7 +1431,10 @@ def manage_tournament(slug):
                 ).first()
 
                 if not target_user:
-                    flash(f"User with identifier '{identifier}' not found. Please ask them to register first.", "error")
+                    flash(
+                        f"User with identifier '{identifier}' not found. Please ask them to register first.",
+                        "error",
+                    )
                     return redirect(url_for("tournament.manage_tournament", slug=slug))
 
                 existing_staff = TournamentStaff.query.filter_by(
@@ -1374,13 +1445,16 @@ def manage_tournament(slug):
                     existing_staff.role = role
                     existing_staff.assigned_court = assigned_court
                     db.session.commit()
-                    flash(f"Updated staff assignment for {target_user.username} to role '{role}'.", "success")
+                    flash(
+                        f"Updated staff assignment for {target_user.username} to role '{role}'.",
+                        "success",
+                    )
                 else:
                     staff = TournamentStaff(
                         tournament_id=tournament.id,
                         user_id=target_user.id,
                         role=role,
-                        assigned_court=assigned_court
+                        assigned_court=assigned_court,
                     )
                     db.session.add(staff)
                     db.session.commit()
@@ -1401,17 +1475,22 @@ def manage_tournament(slug):
                     role=role,
                     assigned_court=assigned_court,
                     access_pin=pin,
-                    pin_expires_at=expires_at
+                    pin_expires_at=expires_at,
                 )
                 db.session.add(staff_pin)
                 db.session.commit()
-                flash(f"Generated Court Access PIN: {pin} for {assigned_court or 'All Courts'} (valid for {hours_valid}h).", "success")
+                flash(
+                    f"Generated Court Access PIN: {pin} for {assigned_court or 'All Courts'} (valid for {hours_valid}h).",
+                    "success",
+                )
                 return redirect(url_for("tournament.manage_tournament", slug=slug))
 
             elif action == "remove_staff":
                 staff_id = request.form.get("staff_id", type=int)
                 if staff_id:
-                    staff = TournamentStaff.query.filter_by(id=staff_id, tournament_id=tournament.id).first()
+                    staff = TournamentStaff.query.filter_by(
+                        id=staff_id, tournament_id=tournament.id
+                    ).first()
                     if staff:
                         db.session.delete(staff)
                         db.session.commit()
@@ -1495,7 +1574,10 @@ def report_match_result(slug, match_id):
     # 2. Optimistic Concurrency Locking Check
     client_lock_version = request.form.get("lock_version", type=int)
     if client_lock_version and match.lock_version and match.lock_version != client_lock_version:
-        flash("Conflict detected: This match was recently updated by another official. Please review the updated score.", "warning")
+        flash(
+            "Conflict detected: This match was recently updated by another official. Please review the updated score.",
+            "warning",
+        )
         return redirect(url_for("tournament.view_tournament", slug=slug))
 
     match.lock_version = (match.lock_version or 1) + 1
@@ -1506,7 +1588,7 @@ def report_match_result(slug, match_id):
     is_live_update = action == "live_score"
     winner_id = request.form.get("winner_id", type=int) if not is_live_update else None
 
-    is_score_modification = (match.status == "completed")
+    is_score_modification = match.status == "completed"
     old_score1 = match.score1
     old_score2 = match.score2
     old_winner_id = match.winner_id
@@ -1593,7 +1675,12 @@ def report_match_result(slug, match_id):
             if (
                 match.parent_match_id
                 or getattr(match, "rubber_type", None)
-                or (category and category.format == "group_stage" and category.total_games and scoring_format == "games")
+                or (
+                    category
+                    and category.format == "group_stage"
+                    and category.total_games
+                    and scoring_format == "games"
+                )
             ):
                 from app.services.tennis_logic import validate_team_rubber_score
 
@@ -1621,7 +1708,9 @@ def report_match_result(slug, match_id):
                 match.score2 = score2
 
             elif scoring_format == "points" or (
-                category and category.format in ["round_robin", "doubles_round_robin"] and scoring_format != "games"
+                category
+                and category.format in ["round_robin", "doubles_round_robin"]
+                and scoring_format != "games"
             ):
                 from app.services.tennis_logic import validate_points_score
 
@@ -1659,8 +1748,15 @@ def report_match_result(slug, match_id):
                     if category and category.games_per_set
                     else (tournament.games_per_set or 6)
                 )
-                if not is_live_update and outcome_type in ("walkover", "retired") and not winner_id and retiring_player in (1, 2):
-                    winner_id = match.participant2_id if retiring_player == 1 else match.participant1_id
+                if (
+                    not is_live_update
+                    and outcome_type in ("walkover", "retired")
+                    and not winner_id
+                    and retiring_player in (1, 2)
+                ):
+                    winner_id = (
+                        match.participant2_id if retiring_player == 1 else match.participant1_id
+                    )
 
                 score1, score2 = validate_and_format_score(
                     winner_id,
@@ -1680,7 +1776,12 @@ def report_match_result(slug, match_id):
             # Fallback for tournaments without categories
             num_sets = tournament.num_sets or 3
             games_per_set = tournament.games_per_set or 6
-            if not is_live_update and outcome_type in ("walkover", "retired") and not winner_id and retiring_player in (1, 2):
+            if (
+                not is_live_update
+                and outcome_type in ("walkover", "retired")
+                and not winner_id
+                and retiring_player in (1, 2)
+            ):
                 winner_id = match.participant2_id if retiring_player == 1 else match.participant1_id
 
             score1, score2 = validate_and_format_score(
@@ -1706,6 +1807,7 @@ def report_match_result(slug, match_id):
 
         if is_score_modification:
             from app.domain.models import MatchScoreRevision
+
             revision = MatchScoreRevision(
                 match_id=match.id,
                 edited_by_id=current_u.id if current_u else None,
@@ -1717,7 +1819,7 @@ def report_match_result(slug, match_id):
                 new_winner_id=winner_id,
                 reason=reason,
                 explanation=explanation,
-                created_at=datetime.utcnow()
+                created_at=datetime.utcnow(),
             )
             db.session.add(revision)
 
@@ -2306,4 +2408,3 @@ def get_import_history(slug):
     ]
 
     return jsonify({"success": True, "history": history_data})
-

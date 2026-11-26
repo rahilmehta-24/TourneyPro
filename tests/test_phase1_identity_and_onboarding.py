@@ -10,12 +10,16 @@ from datetime import date
 from app import create_app, db
 from app.domain.models import User, Player, Tournament, Category
 from app.domain.constants import (
-    COMPETITION_CATEGORIES, AGE_CATEGORIES,
-    calculate_canonical_age_category
+    COMPETITION_CATEGORIES,
+    AGE_CATEGORIES,
+    calculate_canonical_age_category,
 )
 from app.services.user_service import (
-    register_user, complete_player_profile,
-    verify_user_email, request_password_reset, reset_password_with_token
+    register_user,
+    complete_player_profile,
+    verify_user_email,
+    request_password_reset,
+    reset_password_with_token,
 )
 
 
@@ -58,10 +62,9 @@ class Phase1IdentityAndOnboardingTestCase(unittest.TestCase):
         db.drop_all()
 
     def _login(self, username, password="password123"):
-        return self.client.post("/login", data={
-            "username": username,
-            "password": password
-        }, follow_redirects=False)
+        return self.client.post(
+            "/login", data={"username": username, "password": password}, follow_redirects=False
+        )
 
     def test_01_canonical_categories_standardization(self):
         """Verify exact 10 competition categories and 14 age categories."""
@@ -83,7 +86,9 @@ class Phase1IdentityAndOnboardingTestCase(unittest.TestCase):
         """Verify player age category is derived as tournament_year - birth_year."""
         # 14 years old in 2026
         dob_u14 = date(2012, 11, 20)
-        self.assertEqual(calculate_canonical_age_category(dob_u14, tournament_year=2026), "Under 14")
+        self.assertEqual(
+            calculate_canonical_age_category(dob_u14, tournament_year=2026), "Under 14"
+        )
 
         # 8 years old in 2026
         dob_u8 = date(2018, 5, 10)
@@ -95,11 +100,15 @@ class Phase1IdentityAndOnboardingTestCase(unittest.TestCase):
 
         # 42 years old in 2026 -> Veterans 40+
         dob_v40 = date(1984, 8, 30)
-        self.assertEqual(calculate_canonical_age_category(dob_v40, tournament_year=2026), "Veterans 40+")
+        self.assertEqual(
+            calculate_canonical_age_category(dob_v40, tournament_year=2026), "Veterans 40+"
+        )
 
         # 62 years old in 2026 -> Veterans 60+
         dob_v60 = date(1964, 2, 1)
-        self.assertEqual(calculate_canonical_age_category(dob_v60, tournament_year=2026), "Veterans 60+")
+        self.assertEqual(
+            calculate_canonical_age_category(dob_v60, tournament_year=2026), "Veterans 60+"
+        )
 
     def test_03_registration_intent_user_decouples_player_profile(self):
         """Standard user registration creates user record without fabricating athletic profile."""
@@ -109,7 +118,7 @@ class Phase1IdentityAndOnboardingTestCase(unittest.TestCase):
             password="SecurePassword123!",
             password_confirm="SecurePassword123!",
             full_name="Fan User",
-            registration_intent="user"
+            registration_intent="user",
         )
         self.assertTrue(res.success)
         user = res.user
@@ -134,7 +143,7 @@ class Phase1IdentityAndOnboardingTestCase(unittest.TestCase):
             password="SecurePassword123!",
             password_confirm="SecurePassword123!",
             full_name="Competitor One",
-            registration_intent="player"
+            registration_intent="player",
         )
         self.assertTrue(res.success)
         user = res.user
@@ -154,7 +163,7 @@ class Phase1IdentityAndOnboardingTestCase(unittest.TestCase):
             email="idle1@example.com",
             password="SecurePassword123!",
             full_name="Idle One",
-            registration_intent="player"
+            registration_intent="player",
         )
         complete_player_profile(
             user_id=reg_res.user.id,
@@ -173,8 +182,11 @@ class Phase1IdentityAndOnboardingTestCase(unittest.TestCase):
         self.assertNotIn(b"Idle One", res_web.data)
 
         from flask_jwt_extended import create_access_token
+
         token = create_access_token(identity=str(reg_res.user.id))
-        res_api = self.client.get("/api/v1/leaderboard", headers={"Authorization": f"Bearer {token}"})
+        res_api = self.client.get(
+            "/api/v1/leaderboard", headers={"Authorization": f"Bearer {token}"}
+        )
         self.assertEqual(res_api.status_code, 200)
         json_data = res_api.get_json()
         self.assertEqual(json_data["count"], 0)
@@ -187,7 +199,9 @@ class Phase1IdentityAndOnboardingTestCase(unittest.TestCase):
         res_web2 = self.client.get("/leaderboard/")
         self.assertIn(b"Idle One", res_web2.data)
 
-        res_api2 = self.client.get("/api/v1/leaderboard", headers={"Authorization": f"Bearer {token}"})
+        res_api2 = self.client.get(
+            "/api/v1/leaderboard", headers={"Authorization": f"Bearer {token}"}
+        )
         json_data2 = res_api2.get_json()
         self.assertEqual(json_data2["count"], 1)
         self.assertEqual(json_data2["rankings"][0]["name"], "Idle One")
@@ -199,7 +213,7 @@ class Phase1IdentityAndOnboardingTestCase(unittest.TestCase):
             email="john@example.com",
             password="SecurePassword123!",
             full_name="John Doe",
-            registration_intent="player"
+            registration_intent="player",
         )
         user = res.user
         self.assertFalse(user.profile_completed)
@@ -214,7 +228,7 @@ class Phase1IdentityAndOnboardingTestCase(unittest.TestCase):
             skill_level="Advanced",
             preferred_competition_category="Men's Singles",
             emergency_contact_name="Jane Doe",
-            emergency_contact_phone="+919876500000"
+            emergency_contact_phone="+919876500000",
         )
         self.assertTrue(comp_res["success"])
         self.assertEqual(comp_res["completion_percentage"], 100)
@@ -242,7 +256,7 @@ class Phase1IdentityAndOnboardingTestCase(unittest.TestCase):
             name="Spring Championship 2026",
             url_slug="spring-championship-2026",
             user_id=creator.id,
-            status="registration"
+            status="registration",
         )
         db.session.add(tournament)
         db.session.flush()
@@ -253,16 +267,19 @@ class Phase1IdentityAndOnboardingTestCase(unittest.TestCase):
             gender="Male",
             age_category="Open",
             format="singles",
-            entry_fee=50.0
+            entry_fee=50.0,
         )
         db.session.add(cat)
         db.session.commit()
 
-        # Case A: Unauthenticated request redirects to /login?next=...
+        # Case A: Unauthenticated request can access tournament and registration page without being forced to /login
+        res_overview = self.client.get(f"/tournaments/{tournament.url_slug}")
+        self.assertEqual(res_overview.status_code, 200)
+
         res_guest = self.client.get(f"/tournaments/{tournament.url_slug}/register")
-        self.assertEqual(res_guest.status_code, 302)
-        self.assertIn("/login", res_guest.headers["Location"])
-        self.assertIn(f"next=/tournaments/{tournament.url_slug}/register", res_guest.headers["Location"])
+        self.assertEqual(res_guest.status_code, 200)
+        self.assertIn(b"Guest Registration & Leaderboard Access", res_guest.data)
+        self.assertIn(b"guest_name", res_guest.data)
 
         # Case B: Authenticated user with incomplete profile is NOT forced to complete profile to register
         register_user(
@@ -270,7 +287,7 @@ class Phase1IdentityAndOnboardingTestCase(unittest.TestCase):
             email="incomplete@example.com",
             password="password123",
             full_name="Incomplete User",
-            registration_intent="user"
+            registration_intent="user",
         )
         self._login("incomplete_user")
 
@@ -300,7 +317,7 @@ class Phase1IdentityAndOnboardingTestCase(unittest.TestCase):
             dob=date(1998, 4, 12),
             contact_number="+919999988888",
             emergency_contact_name="Guardian Name",
-            emergency_contact_phone="+919999977777"
+            emergency_contact_phone="+919999977777",
         )
 
         res_complete = self.client.get(f"/tournaments/{tournament.url_slug}/register")
@@ -321,7 +338,7 @@ class Phase1IdentityAndOnboardingTestCase(unittest.TestCase):
             username="verify_user",
             email="verify@example.com",
             password="InitialPassword123!",
-            full_name="Verify User"
+            full_name="Verify User",
         )
         user = res.user
         token = user.email_verification_token
@@ -342,12 +359,14 @@ class Phase1IdentityAndOnboardingTestCase(unittest.TestCase):
         self.assertIsNotNone(reset_token)
 
         # Reset with new password
-        r_done = reset_password_with_token(reset_token, "NewSecurePassword456!", "NewSecurePassword456!")
+        r_done = reset_password_with_token(
+            reset_token, "NewSecurePassword456!", "NewSecurePassword456!"
+        )
         self.assertTrue(r_done["success"])
         db.session.refresh(user)
         self.assertTrue(user.check_password("NewSecurePassword456!"))
         self.assertIsNone(user.password_reset_token)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
