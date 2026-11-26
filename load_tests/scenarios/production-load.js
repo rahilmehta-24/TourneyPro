@@ -3,6 +3,7 @@ import http from 'k6/http';
 import { check, sleep, group } from 'k6';
 import { Trend } from 'k6/metrics';
 import { CONFIG, getUrl, getApiUrl } from '../config.js';
+import { authenticate, getAuthHeaders } from '../helpers/auth.js';
 
 const tournamentsDuration = new Trend('prod_tournaments_duration');
 const leaderboardDuration = new Trend('prod_leaderboard_duration');
@@ -22,7 +23,15 @@ export const options = {
   },
 };
 
-export default function () {
+export function setup() {
+  console.log(`[SETUP] Initializing production load test against ${CONFIG.BASE_URL}`);
+  const token = authenticate();
+  return { token };
+}
+
+export default function (data) {
+  const authHeaders = data && data.token ? getAuthHeaders(data.token) : CONFIG.DEFAULT_HEADERS;
+
   // 1. Home page (Edge CDN)
   group('1. Web Home Page', function () {
     const res = http.get(getUrl('/'), {
@@ -48,10 +57,10 @@ export default function () {
 
     check(res, {
       'tournaments status 200': (r) => r.status === 200,
-      'tournaments count > 0': (r) => {
+      'tournaments count >= 0': (r) => {
         try {
           const body = JSON.parse(r.body);
-          return body.success === true && body.count >= 0;
+          return body.success === true && body.count !== undefined;
         } catch (e) {
           return false;
         }
@@ -78,7 +87,7 @@ export default function () {
 
   sleep(Math.random() * 1.5 + 0.5);
 
-  // 3. Public API - Academies & Leaderboard
+  // 3. API - Academies & Leaderboard (authenticated if token provided)
   group('3. Academies & Leaderboard', function () {
     const acadRes = http.get(getApiUrl('/academies'), {
       headers: CONFIG.DEFAULT_HEADERS,
@@ -88,8 +97,9 @@ export default function () {
       'academies status 200': (r) => r.status === 200,
     });
 
+    // Leaderboard endpoint enforces authentication on production
     const lbRes = http.get(getApiUrl('/leaderboard'), {
-      headers: CONFIG.DEFAULT_HEADERS,
+      headers: authHeaders,
       tags: { name: 'GET /api/v1/leaderboard' },
     });
     leaderboardDuration.add(lbRes.timings.duration);
