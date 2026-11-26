@@ -814,3 +814,41 @@ class FlexibleRegistrationAndBulkImportTestCase(unittest.TestCase):
         anon_user = User.query.filter_by(username="anonymous_registrations").first()
         self.assertIsNotNone(anon_user)
         self.assertEqual(reg.user_id, anon_user.id)
+
+    # -------------------------------------------------------------------------
+    # 23. Doubles Category Entry Fee Includes Both Players (Not Multiplied by 2)
+    # -------------------------------------------------------------------------
+    def test_23_doubles_category_entry_fee_not_doubled(self):
+        tourn, _, cat_doubles = self._create_sample_tournament(reg_status="OPEN")
+        tourn.status = "registration"
+        cat_doubles.entry_fee = 500.0
+        db.session.commit()
+
+        post_data = {
+            "category_id": [cat_doubles.id],
+            "guest_name": "Doubles Captain",
+            "guest_age": "25",
+            "guest_mobile": "9876543211",
+            "guest_gender": "Male",
+            "guest_email": "captain@example.com",
+            f"partner_name_{cat_doubles.id}": "Doubles Partner",
+            f"partner_age_{cat_doubles.id}": "26",
+            f"partner_mobile_{cat_doubles.id}": "9876543212",
+            f"partner_gender_{cat_doubles.id}": "Male",
+            "payment_method": "cash",
+            "tz_offset": "0",
+        }
+        resp = self.client.post(
+            f"/tournaments/{tourn.url_slug}/register",
+            data=post_data,
+            follow_redirects=True,
+        )
+        self.assertEqual(resp.status_code, 200)
+
+        captain_player = Player.query.filter_by(contact_number="9876543211").first()
+        self.assertIsNotNone(captain_player)
+        reg = Registration.query.filter_by(
+            tournament_id=tourn.id, category_id=cat_doubles.id, player_id=captain_player.id
+        ).first()
+        self.assertIsNotNone(reg)
+        self.assertEqual(reg.amount_due, 500.0)

@@ -505,12 +505,7 @@ def register_for_tournament(slug):
                 return redirect(url_for("tournament.register_for_tournament", slug=slug))
 
         # Calculate total fee
-        total_due = sum(
-            (cat.entry_fee or 0.0) * 2
-            if ("Doubles" in cat.name or (cat.format and "doubles" in cat.format))
-            else (cat.entry_fee or 0.0)
-            for cat in selected_categories
-        )
+        total_due = sum((cat.entry_fee or 0.0) for cat in selected_categories)
 
         # Payment method handling: 'online' or 'cash'
         payment_method = request.form.get("payment_method", "online").strip().lower()
@@ -776,11 +771,7 @@ def register_for_tournament(slug):
                         return redirect(url_for("tournament.register_tournament", slug=slug))
 
             cat_fee = cat.entry_fee or 0.0
-            amount_due = (
-                cat_fee * 2
-                if ("Doubles" in cat.name or (cat.format and "doubles" in cat.format))
-                else cat_fee
-            )
+            amount_due = cat_fee
 
             reg_status = "pending" if amount_due > 0 else "approved"
 
