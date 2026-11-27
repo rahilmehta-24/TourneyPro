@@ -816,9 +816,9 @@ class FlexibleRegistrationAndBulkImportTestCase(unittest.TestCase):
         self.assertEqual(reg.user_id, anon_user.id)
 
     # -------------------------------------------------------------------------
-    # 23. Doubles Category Entry Fee Includes Both Players (Not Multiplied by 2)
+    # 23. Doubles Category Entry Fee is Per Person (Multiplied by 2 for Doubles)
     # -------------------------------------------------------------------------
-    def test_23_doubles_category_entry_fee_not_doubled(self):
+    def test_23_doubles_category_entry_fee_per_person_multiplied(self):
         tourn, _, cat_doubles = self._create_sample_tournament(reg_status="OPEN")
         tourn.status = "registration"
         cat_doubles.entry_fee = 500.0
@@ -851,4 +851,4 @@ class FlexibleRegistrationAndBulkImportTestCase(unittest.TestCase):
             tournament_id=tourn.id, category_id=cat_doubles.id, player_id=captain_player.id
         ).first()
         self.assertIsNotNone(reg)
-        self.assertEqual(reg.amount_due, 500.0)
+        self.assertEqual(reg.amount_due, 1000.0)

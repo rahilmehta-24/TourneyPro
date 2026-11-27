@@ -147,6 +147,28 @@ class Category(db.Model):
     matches = db.relationship("Match", backref="category", lazy=True, cascade="all, delete-orphan")
     groups = db.relationship("Group", backref="category", lazy=True, cascade="all, delete-orphan")
 
+    @property
+    def is_doubles(self) -> bool:
+        """Determines if this category is a doubles event."""
+        if self.max_players_per_team and self.max_players_per_team == 2:
+            return True
+        name_lower = (self.name or "").lower()
+        format_lower = (self.format or "").lower()
+        return "double" in name_lower or "doubles" in format_lower
+
+    @property
+    def fee_multiplier(self) -> int:
+        """Multiplier for team entry fee (fee is configured per person)."""
+        if self.max_players_per_team and self.max_players_per_team > 1:
+            return self.max_players_per_team
+        return 2 if self.is_doubles else 1
+
+    @property
+    def team_entry_fee(self) -> float:
+        """Total entry fee for the team/entry (per-person fee * multiplier)."""
+        return float(self.entry_fee or 0.0) * self.fee_multiplier
+
+
 
 class Group(db.Model):
     __tablename__ = "groups"

@@ -72,9 +72,7 @@ def register_for_tournament(slug):
     if existing:
         return jsonify({"success": False, "message": "Player is already registered for this category"}), 409
 
-    expected_fee = float(category.entry_fee or 0.0)
-    if "doubles" in (category.format or "").lower() or "doubles" in (category.name or "").lower():
-        expected_fee *= 2
+    expected_fee = float(getattr(category, "team_entry_fee", (category.entry_fee or 0.0) * (2 if getattr(category, "is_doubles", False) else 1)))
 
     payment_method = data.get('payment_method', 'online').strip().lower()
     if payment_method not in ['online', 'cash', 'free']:

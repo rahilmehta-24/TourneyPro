@@ -597,6 +597,26 @@ class RoundRobinTournamentDesignTestCase(unittest.TestCase):
         db.session.refresh(final_m)
         self.assertEqual(final_m.participant1_id, sf1.winner_id, "sync_knockout_advancement must self-heal unpopulated next round slots")
 
+    def test_08_per_person_entry_fee_multiplier(self):
+        """Verify fees configured per person result in team_entry_fee = fee * 2 for doubles."""
+        cat_singles = Category(
+            name="Men's Singles",
+            format="round_robin",
+            entry_fee=500.0,
+        )
+        self.assertFalse(cat_singles.is_doubles)
+        self.assertEqual(cat_singles.fee_multiplier, 1)
+        self.assertEqual(cat_singles.team_entry_fee, 500.0)
+
+        cat_doubles = Category(
+            name="Men's Doubles",
+            format="round_robin",
+            entry_fee=500.0,
+        )
+        self.assertTrue(cat_doubles.is_doubles)
+        self.assertEqual(cat_doubles.fee_multiplier, 2)
+        self.assertEqual(cat_doubles.team_entry_fee, 1000.0)
+
 
 if __name__ == "__main__":
     unittest.main()

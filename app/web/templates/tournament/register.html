@@ -102,7 +102,7 @@
                 {% set is_full = cat.max_participants and (cat.participants|length >= cat.max_participants) %}
                 {% set remaining_slots = (cat.max_participants - cat.participants|length) if cat.max_participants else None %}
                 <label class="category-option-card" style="{% if is_closed or is_full %}opacity: 0.6; cursor: not-allowed;{% else %}cursor: pointer;{% endif %}">
-                    <input type="checkbox" name="category_id" value="{{ cat.id }}" data-name="{{ cat.name|lower }}" data-fee="{{ cat.entry_fee or 0 }}" onchange="updateForm()" style="margin-top: 0.2rem; width: 18px; height: 18px; accent-color: var(--accent-primary); cursor: pointer; flex-shrink: 0;" {% if is_closed or is_full %}disabled{% endif %}>
+                    <input type="checkbox" name="category_id" value="{{ cat.id }}" data-name="{{ cat.name|lower }}" data-fee="{{ cat.entry_fee or 0 }}" data-multiplier="{{ cat.fee_multiplier }}" onchange="updateForm()" style="margin-top: 0.2rem; width: 18px; height: 18px; accent-color: var(--accent-primary); cursor: pointer; flex-shrink: 0;" {% if is_closed or is_full %}disabled{% endif %}>
                     <div style="flex: 1; min-width: 0;">
                         <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 0.4rem; margin-bottom: 0.25rem; flex-wrap: wrap;">
                             <div class="category-option-name">{{ cat.name }}</div>
@@ -144,9 +144,15 @@
                                 {% endif %}
                             </span>
                             {% if cat.entry_fee and cat.entry_fee > 0 %}
-                            <span style="font-size: 0.78rem; font-weight: 700; color: var(--accent-warning); background: rgba(245, 158, 11, 0.12); padding: 0.1rem 0.5rem; border-radius: 9999px; border: 1px solid rgba(245, 158, 11, 0.25); white-space: nowrap;">
-                                ₹{{ cat.entry_fee }}
-                            </span>
+                                {% if cat.fee_multiplier > 1 %}
+                                <span style="font-size: 0.78rem; font-weight: 700; color: var(--accent-warning); background: rgba(245, 158, 11, 0.12); padding: 0.1rem 0.5rem; border-radius: 9999px; border: 1px solid rgba(245, 158, 11, 0.25); white-space: nowrap;">
+                                    ₹{{ '%.0f'|format(cat.entry_fee) }} / person (₹{{ '%.0f'|format(cat.team_entry_fee) }} team)
+                                </span>
+                                {% else %}
+                                <span style="font-size: 0.78rem; font-weight: 700; color: var(--accent-warning); background: rgba(245, 158, 11, 0.12); padding: 0.1rem 0.5rem; border-radius: 9999px; border: 1px solid rgba(245, 158, 11, 0.25); white-space: nowrap;">
+                                    ₹{{ '%.0f'|format(cat.entry_fee) }}
+                                </span>
+                                {% endif %}
                             {% else %}
                             <span style="font-size: 0.78rem; font-weight: 700; color: var(--accent-success); background: rgba(16, 185, 129, 0.12); padding: 0.1rem 0.5rem; border-radius: 9999px; border: 1px solid rgba(16, 185, 129, 0.25); white-space: nowrap;">
                                 Free Entry
@@ -498,9 +504,10 @@ function updateForm() {
         const catName = cb.getAttribute('data-name');
         const catId = cb.value;
         const fee = parseFloat(cb.getAttribute('data-fee') || 0);
+        const multiplier = parseInt(cb.getAttribute('data-multiplier') || (catName && catName.includes('double') ? 2 : 1), 10);
         const cardTitle = cb.closest('label').querySelector('div > div').innerText.trim();
         
-        let categoryFee = fee;
+        let categoryFee = fee * multiplier;
         
         if (catName && catName.includes('double')) {
             if (container) {
