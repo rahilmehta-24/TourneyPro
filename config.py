@@ -57,4 +57,5 @@ class Config:
     MAIL_CONFIRMATION_EMAIL = os.environ.get('MAIL_CONFIRMATION_EMAIL') or 'confirmation@thebaselinesociety.com'
     MAIL_SUPPRESS_SEND = os.environ.get('MAIL_SUPPRESS_SEND', 'false').lower() in ['true', '1', 't', 'yes']
     SUPERADMIN_EMAIL = os.environ.get('SUPERADMIN_EMAIL') or 'rahilmehta.ict19@gmail.com'
+    BASE_URL = os.environ.get('BASE_URL') or os.environ.get('APP_URL') or 'https://the-baseline-society.vercel.app'
 

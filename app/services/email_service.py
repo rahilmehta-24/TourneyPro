@@ -22,6 +22,25 @@ def _render_email_template(template_name: str, **context) -> str:
         return render_template(template_name, **context)
 
 
+def _get_base_url() -> str:
+    """
+    Returns the public base URL for links in email notifications.
+    Falls back gracefully from config/env to request.host_url or https://the-baseline-society.vercel.app.
+    """
+    config_base = current_app.config.get("BASE_URL") if current_app else None
+    if config_base:
+        return config_base.rstrip("/")
+    env_base = os.environ.get("BASE_URL") or os.environ.get("APP_URL")
+    if env_base:
+        return env_base.rstrip("/")
+    if has_request_context():
+        from flask import request
+
+        proto = request.headers.get("X-Forwarded-Proto") or request.scheme
+        return f"{proto}://{request.host}".rstrip("/")
+    return "https://the-baseline-society.vercel.app"
+
+
 def _send_smtp_message(
     to_emails: List[str],
     subject: str,
@@ -41,8 +60,10 @@ def _send_smtp_message(
     mail_port = int(config.get("MAIL_PORT") or 587)
     mail_use_tls = config.get("MAIL_USE_TLS", True)
     mail_use_ssl = config.get("MAIL_USE_SSL", False)
-    mail_username = config.get("MAIL_USERNAME")
-    mail_password = config.get("MAIL_PASSWORD")
+    mail_username = (config.get("MAIL_USERNAME") or "").strip() or None
+    mail_password = (config.get("MAIL_PASSWORD") or "").strip() or None
+    if mail_password and " " in mail_password and mail_server and "gmail" in mail_server.lower():
+        mail_password = mail_password.replace(" ", "")
     default_sender = config.get("MAIL_DEFAULT_SENDER") or "The Baseline Society <confirmation@thebaselinesociety.com>"
     mail_sender = from_sender or default_sender
     suppress_send = config.get("MAIL_SUPPRESS_SEND", False)
@@ -202,19 +223,11 @@ def notify_registration_created(registration_id: int, async_send: bool = True) -
 
     results = {"player": False, "organizer": False, "superadmin": False}
 
-    # Safe URL construction
-    try:
-        from flask import url_for
-
-        tournament_url = url_for("tournament.view_tournament", slug=tournament.url_slug, _external=True)
-        manage_url = url_for("tournament.manage_tournament", slug=tournament.url_slug, _external=True)
-        admin_url = url_for("admin.index", _external=True)
-    except Exception:
-        domain = current_app.config.get("SERVER_NAME") or "localhost:5000"
-        scheme = "https" if current_app.config.get("SESSION_COOKIE_SECURE") else "http"
-        tournament_url = f"{scheme}://{domain}/tournaments/{tournament.url_slug}"
-        manage_url = f"{scheme}://{domain}/tournaments/{tournament.url_slug}/manage"
-        admin_url = f"{scheme}://{domain}/admin"
+    # Safe URL construction pointing to the live tournament page
+    base_url = _get_base_url()
+    tournament_url = f"{base_url}/tournaments/{tournament.url_slug}"
+    manage_url = f"{base_url}/tournaments/{tournament.url_slug}/manage"
+    admin_url = f"{base_url}/admin"
 
     # Context shared across templates
     base_context = {
@@ -330,14 +343,8 @@ def notify_registration_status_update(
         subtitle = f"Your entry status for {tournament.name} has been updated to: {status}."
         status_color = "#C9A55C"
 
-    try:
-        from flask import url_for
-
-        tournament_url = url_for("tournament.view_tournament", slug=tournament.url_slug, _external=True)
-    except Exception:
-        domain = current_app.config.get("SERVER_NAME") or "localhost:5000"
-        scheme = "https" if current_app.config.get("SESSION_COOKIE_SECURE") else "http"
-        tournament_url = f"{scheme}://{domain}/tournaments/{tournament.url_slug}"
+    base_url = _get_base_url()
+    tournament_url = f"{base_url}/tournaments/{tournament.url_slug}"
 
     context = {
         "tournament": tournament,
