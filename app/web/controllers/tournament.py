@@ -582,12 +582,27 @@ def register_for_tournament(slug):
                     "gender": p_gender,
                 }
 
-        participant_name = request.form.get("guest_name", "").strip()
-        participant_age_str = request.form.get("guest_age", "").strip()
-        participant_mobile = request.form.get("guest_mobile", "").strip()
-        participant_email = request.form.get("guest_email", "").strip()
-        participant_gender = request.form.get("guest_gender", "").strip()
-        participant_dob_str = request.form.get("guest_dob", "").strip()
+        participant_name = (
+            request.form.get("guest_name") or request.form.get("participant_name") or ""
+        ).strip()
+        participant_age_str = (
+            request.form.get("guest_age") or request.form.get("age") or ""
+        ).strip()
+        participant_mobile = (
+            request.form.get("guest_mobile")
+            or request.form.get("mobile")
+            or request.form.get("contact_number")
+            or ""
+        ).strip()
+        participant_email = (
+            request.form.get("guest_email") or request.form.get("email") or ""
+        ).strip()
+        participant_gender = (
+            request.form.get("guest_gender") or request.form.get("gender") or ""
+        ).strip()
+        participant_dob_str = (
+            request.form.get("guest_dob") or request.form.get("dob") or ""
+        ).strip()
 
         # If user is logged in with profile, auto-fill
         if player:
@@ -595,30 +610,36 @@ def register_for_tournament(slug):
             participant_email = (
                 participant_email or player.email or (current_u.email if current_u else None)
             )
-            participant_mobile = participant_mobile or player.contact_number
+            participant_mobile = (
+                participant_mobile
+                or player.contact_number
+                or (getattr(current_u, "phone_number", None) if current_u else None)
+            )
             participant_gender = participant_gender or player.gender
             participant_dob = player.dob
             participant_age = player.age
 
-            ok, clean_p_mobile = validate_mobile(
-                participant_mobile, required=True, field_name="Mobile Number"
-            )
-            if not ok:
-                flash(clean_p_mobile, "error")
-                return redirect(url_for("tournament.register_for_tournament", slug=slug))
-            participant_mobile = clean_p_mobile
-            if not player.contact_number:
-                player.contact_number = clean_p_mobile
+            if participant_mobile:
+                ok, clean_p_mobile = validate_mobile(
+                    participant_mobile, required=False, field_name="Mobile Number"
+                )
+                if not ok:
+                    flash(clean_p_mobile, "error")
+                    return redirect(url_for("tournament.register_for_tournament", slug=slug))
+                participant_mobile = clean_p_mobile
+                if not player.contact_number:
+                    player.contact_number = clean_p_mobile
 
-            ok, clean_p_email = validate_email(
-                participant_email, required=True, field_name="Email Address"
-            )
-            if not ok:
-                flash(clean_p_email, "error")
-                return redirect(url_for("tournament.register_for_tournament", slug=slug))
-            participant_email = clean_p_email
-            if not player.email:
-                player.email = clean_p_email
+            if participant_email:
+                ok, clean_p_email = validate_email(
+                    participant_email, required=False, field_name="Email Address"
+                )
+                if not ok:
+                    flash(clean_p_email, "error")
+                    return redirect(url_for("tournament.register_for_tournament", slug=slug))
+                participant_email = clean_p_email
+                if not player.email:
+                    player.email = clean_p_email
         else:
             ok, clean_p_name = validate_name(participant_name, field_name="Full Name")
             if not ok:
