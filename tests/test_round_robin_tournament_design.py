@@ -547,6 +547,12 @@ class RoundRobinTournamentDesignTestCase(unittest.TestCase):
             db.session.refresh(m)
             self.assertIsNotNone(m.court_name, f"Match {m.id} should have court assigned")
             self.assertIsNotNone(m.scheduled_time, f"Match {m.id} should have scheduled_time assigned")
+            # Must be strictly after group match end (10:00 AM) + rest buffer (>= 10:45 AM)
+            self.assertGreaterEqual(
+                m.scheduled_time,
+                datetime(2026, 6, 1, 10, 45),
+                f"Knockout match {m.id} must be scheduled strictly after completion of league matches",
+            )
 
         # Verify get_order_of_play includes knockout matches
         oop_data = get_order_of_play(t.url_slug)
