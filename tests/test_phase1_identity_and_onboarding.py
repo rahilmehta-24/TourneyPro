@@ -367,6 +367,98 @@ class Phase1IdentityAndOnboardingTestCase(unittest.TestCase):
         self.assertTrue(user.check_password("NewSecurePassword456!"))
         self.assertIsNone(user.password_reset_token)
 
+    def test_09_complete_profile_web_post_with_all_fields(self):
+        """Web POST /profile/complete handles all fields including nationality, academy, coach without error."""
+        res = register_user(
+            username="edit_user",
+            email="edit_user@example.com",
+            password="SecurePassword123!",
+            full_name="Edit User",
+            registration_intent="player",
+        )
+        self._login("edit_user", "SecurePassword123!")
+
+        post_data = {
+            "full_name": "Edit User Updated",
+            "gender": "Male",
+            "dob": "1998-04-12",
+            "contact_number": "+919876543210",
+            "primary_sport": "Tennis",
+            "skill_level": "Advanced",
+            "preferred_competition_category": "Men's Singles",
+            "emergency_contact_name": "Emergency Person",
+            "emergency_contact_phone": "+919876500000",
+            "nationality": "Indian",
+            "height": "180 cm",
+            "weight": "75 kg",
+            "blood_group": "O+",
+            "address": "123 Court St",
+            "academy": "Grand Slam Academy",
+            "coach": "Coach John",
+        }
+        res_post = self.client.post("/profile/complete", data=post_data, follow_redirects=True)
+        self.assertEqual(res_post.status_code, 200)
+        self.assertNotIn(b"Something went wrong", res_post.data)
+        self.assertIn(b"Profile updated successfully", res_post.data)
+
+        player = Player.query.filter_by(user_id=res.user.id).first()
+        self.assertIsNotNone(player)
+        self.assertEqual(player.name, "Edit User Updated")
+        self.assertEqual(player.nationality, "Indian")
+        self.assertEqual(player.academy, "Grand Slam Academy")
+        self.assertEqual(player.coach, "Coach John")
+        self.assertEqual(player.gender, "Male")
+
+    def test_10_update_player_profile_on_dashboard(self):
+        """Web POST /player/dashboard with action=update_profile successfully updates profile without NameError."""
+        res = register_user(
+            username="dash_user",
+            email="dash_user@example.com",
+            password="SecurePassword123!",
+            full_name="Dash User",
+            registration_intent="player",
+        )
+        complete_player_profile(
+            user_id=res.user.id,
+            full_name="Dash User",
+            gender="Female",
+            dob=date(2005, 5, 20),
+            contact_number="+919876543210",
+            primary_sport="Tennis",
+            skill_level="Intermediate",
+            emergency_contact_name="Parent User",
+            emergency_contact_phone="+919876500000",
+        )
+        self._login("dash_user", "SecurePassword123!")
+
+        player = Player.query.filter_by(user_id=res.user.id).first()
+        dash_data = {
+            "action": "update_profile",
+            "player_id": str(player.id),
+            "name": "Dash User Edited",
+            "email": "dash_user@example.com",
+            "dob": "2006-06-15",
+            "gender": "Female",
+            "contact_number": "+919876543210",
+            "blood_group": "A+",
+            "height": "5 ft 8 in",
+            "weight": "60 kg",
+            "nationality": "Indian",
+            "coach": "New Coach",
+            "academy": "Elite Academy",
+            "address": "456 Baseline Rd",
+        }
+        res_post = self.client.post("/player/dashboard", data=dash_data, follow_redirects=True)
+        self.assertEqual(res_post.status_code, 200)
+        self.assertNotIn(b"Something went wrong", res_post.data)
+        self.assertIn(b"Profile updated successfully", res_post.data)
+
+        db.session.refresh(player)
+        self.assertEqual(player.name, "Dash User Edited")
+        self.assertEqual(player.coach, "New Coach")
+        self.assertEqual(player.academy, "Elite Academy")
+        self.assertEqual(player.dob, date(2006, 6, 15))
+
 
 if __name__ == "__main__":
     unittest.main()

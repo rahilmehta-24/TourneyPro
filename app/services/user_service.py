@@ -616,6 +616,10 @@ def complete_player_profile(
     height: Optional[str] = None,
     weight: Optional[str] = None,
     blood_group: Optional[str] = None,
+    nationality: Optional[str] = None,
+    academy: Optional[str] = None,
+    coach: Optional[str] = None,
+    **kwargs: Any,
 ) -> Dict[str, Any]:
     """
     Completes or updates a player's profile (Stage 2 onboarding), calculating canonical age
@@ -696,6 +700,15 @@ def complete_player_profile(
     if blood_group:
         player.blood_group = blood_group.strip()
 
+    if nationality:
+        player.nationality = nationality.strip()
+
+    if academy:
+        player.academy = academy.strip()
+
+    if coach:
+        player.coach = coach.strip()
+
     # Calculate completion percentage
     pct_info = calculate_profile_completion_percentage(
         user_name=player.name,
@@ -713,7 +726,8 @@ def complete_player_profile(
 
     user.completion_percentage = pct_info["percentage"]
     user.profile_completed = pct_info["is_complete"]
-    user.role = "player"  # Upgraded/confirmed as active player
+    if user.role not in ("admin", "superadmin", "organizer"):
+        user.role = "player"  # Upgraded/confirmed as active player
     player.profile_status = "complete" if pct_info["is_complete"] else "incomplete"
 
     db.session.commit()

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for
+from flask import Blueprint, render_template, request, flash, redirect, url_for, session
 from app.web.controllers.auth import login_required, get_current_user, role_required
 from app.domain.models import Player, db
 from app.services.utils.validation import (
@@ -123,27 +123,8 @@ def dashboard():
                 if not ok:
                     return False, dob_res
                 p.dob = dob_res
-                from datetime import date
-                today = date.today()
-                age = today.year - p.dob.year - ((today.month, today.day) < (dob.month, dob.day))
-                if age <= 8:
-                    p.age_category = 'U8'
-                elif age <= 10:
-                    p.age_category = 'U10'
-                elif age <= 12:
-                    p.age_category = 'U12'
-                elif age <= 14:
-                    p.age_category = 'U14'
-                elif age <= 16:
-                    p.age_category = 'U16'
-                elif age <= 18:
-                    p.age_category = 'U18'
-                elif age >= 45:
-                    p.age_category = '45+'
-                elif age >= 35:
-                    p.age_category = '35+'
-                else:
-                    p.age_category = 'Open'
+                from app.domain.constants import calculate_canonical_age_category
+                p.age_category = calculate_canonical_age_category(p.dob)
 
             raw_email = request.form.get('email', '').strip()
             if raw_email:
@@ -186,9 +167,37 @@ def dashboard():
             avatar_url = request.form.get('avatar_url')
             if avatar_url:
                 player.avatar_url = avatar_url
-                    
-            db.session.commit()
-            flash('Profile updated successfully!', 'success')
+
+            # Sync user profile attributes & completion status
+            try:
+                current_user.full_name = player.name
+                if player.contact_number:
+                    current_user.phone_number = player.contact_number
+                from app.domain.constants import calculate_profile_completion_percentage
+                pct_info = calculate_profile_completion_percentage(
+                    user_name=player.name,
+                    email=player.email or current_user.email,
+                    contact_number=player.contact_number,
+                    dob=player.dob,
+                    gender=player.gender,
+                    primary_sport=player.primary_sport,
+                    skill_level=player.skill_level,
+                    emergency_contact_name=player.emergency_contact_name,
+                    emergency_contact_phone=player.emergency_contact_phone,
+                    avatar_url=player.avatar_url,
+                    bio=player.bio,
+                )
+                current_user.completion_percentage = pct_info["percentage"]
+                current_user.profile_completed = pct_info["is_complete"]
+                player.profile_status = "complete" if pct_info["is_complete"] else "incomplete"
+                db.session.commit()
+                flash('Profile updated successfully!', 'success')
+            except Exception as e:
+                import logging
+                logging.error(f"Error saving player profile: {e}", exc_info=True)
+                db.session.rollback()
+                flash("An error occurred while saving your profile changes.", "error")
+
             return redirect(url_for('player.dashboard'))
             
     return render_template('player/dashboard.html', players=players, dashboard_data=dashboard_data, all_players=all_players)

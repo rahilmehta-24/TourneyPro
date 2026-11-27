@@ -406,25 +406,39 @@ def complete_profile():
             )
 
         from app.services.user_service import complete_player_profile
-        res = complete_player_profile(
-            user_id=user.id,
-            full_name=n_clean,
-            gender=gender,
-            dob=dob_clean,
-            contact_number=mob_clean,
-            primary_sport=primary_sport,
-            skill_level=skill_level or None,
-            preferred_competition_category=preferred_competition_category or None,
-            emergency_contact_name=emergency_contact_name or None,
-            emergency_contact_phone=emergency_contact_phone or None,
-            nationality=nationality or None,
-            height=height or None,
-            weight=weight or None,
-            blood_group=blood_group or None,
-            address=address or None,
-            academy=academy or None,
-            coach=coach or None,
-        )
+        try:
+            res = complete_player_profile(
+                user_id=user.id,
+                full_name=n_clean,
+                gender=gender,
+                dob=dob_clean,
+                contact_number=mob_clean,
+                primary_sport=primary_sport,
+                skill_level=skill_level or None,
+                preferred_competition_category=preferred_competition_category or None,
+                emergency_contact_name=emergency_contact_name or None,
+                emergency_contact_phone=emergency_contact_phone or None,
+                nationality=nationality or None,
+                height=height or None,
+                weight=weight or None,
+                blood_group=blood_group or None,
+                address=address or None,
+                academy=academy or None,
+                coach=coach or None,
+            )
+        except Exception as e:
+            import logging
+            logging.error(f"Error completing player profile: {e}", exc_info=True)
+            db.session.rollback()
+            flash("An error occurred while saving your profile. Please check the details and try again.", "error")
+            return render_template(
+                'auth/complete_profile.html',
+                user=user,
+                player=player,
+                next_url=next_url,
+                competition_categories=COMPETITION_CATEGORIES,
+                age_categories=AGE_CATEGORIES
+            )
 
         if not res.get("success"):
             flash(res.get("message", "Profile completion failed."), "error")

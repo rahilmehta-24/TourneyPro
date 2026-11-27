@@ -46,6 +46,7 @@
                     </div>
                     
                     <form action="{{ url_for('player.dashboard') }}" method="POST" >
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <input type="hidden" name="action" value="update_profile">
                         <input type="hidden" name="player_id" value="{{ player.id }}">
                         
