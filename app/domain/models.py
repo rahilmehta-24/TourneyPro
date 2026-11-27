@@ -34,6 +34,7 @@ class Tournament(db.Model):
     payment_upi_id = db.Column(db.String(100))  # Admin's UPI ID for manual payments
     registration_opens_at = db.Column(db.DateTime, nullable=True)
     registration_closes_at = db.Column(db.DateTime)
+    registration_views = db.Column(db.Integer, default=0, nullable=False)
     # Academy Integration
     academy_id = db.Column(db.Integer, db.ForeignKey("academies.id"), nullable=True)
     is_internal = db.Column(db.Boolean, default=False)

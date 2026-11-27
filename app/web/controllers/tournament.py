@@ -1,6 +1,6 @@
 import random
 from app.services.utils.audit import log_audit
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session, current_app
 from app.domain.models import (
     db,
     Tournament,
@@ -476,6 +476,29 @@ def register_for_tournament(slug):
     categories = Category.query.filter_by(tournament_id=tournament.id).all()
 
     current_u = get_current_user()
+    is_admin = False
+    if current_u:
+        if current_u.role == "superadmin" or tournament.user_id == current_u.id:
+            is_admin = True
+        else:
+            staff = TournamentStaff.query.filter_by(
+                tournament_id=tournament.id, user_id=current_u.id
+            ).first()
+            if staff and staff.role in ("manager", "tournament_admin"):
+                is_admin = True
+
+    # Track registration page view on GET (exclude admin visits to keep view counts authentic)
+    if request.method == "GET":
+        session_view_key = f"viewed_reg_{tournament.id}"
+        if not is_admin and not session.get(session_view_key):
+            try:
+                tournament.registration_views = (tournament.registration_views or 0) + 1
+                db.session.commit()
+                session[session_view_key] = True
+            except Exception as e:
+                db.session.rollback()
+                current_app.logger.warning("Could not increment tournament registration views: %s", e)
+
     player = None
     if current_u:
         player = Player.query.filter_by(user_id=current_u.id).first()
@@ -877,8 +900,6 @@ def register_for_tournament(slug):
             for created_reg in created_registrations:
                 notify_registration_created(created_reg.id)
         except Exception as e:
-            from flask import current_app
-
             current_app.logger.error("Failed to dispatch registration email notifications: %s", e)
 
 
@@ -905,8 +926,32 @@ def register_for_tournament(slug):
             )
         )
 
+    admin_telemetry = None
+    if is_admin:
+        total_views = tournament.registration_views or 0
+        total_registrations = Registration.query.filter_by(tournament_id=tournament.id).count()
+        approved_registrations = Registration.query.filter_by(
+            tournament_id=tournament.id, status="approved"
+        ).count()
+        conversion_rate = (
+            round((total_registrations / total_views) * 100, 1)
+            if total_views > 0
+            else 0.0
+        )
+        admin_telemetry = {
+            "total_views": total_views,
+            "total_registrations": total_registrations,
+            "approved_registrations": approved_registrations,
+            "conversion_rate": conversion_rate,
+        }
+
     return render_template(
-        "tournament/register.html", tournament=tournament, categories=categories, player=player
+        "tournament/register.html",
+        tournament=tournament,
+        categories=categories,
+        player=player,
+        is_admin=is_admin,
+        admin_telemetry=admin_telemetry,
     )
 
 
