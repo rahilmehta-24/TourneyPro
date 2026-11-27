@@ -1887,21 +1887,20 @@ def report_match_result(slug, match_id):
         update_live_player_stats(match)
 
         # Update next round match
-        if tournament.format == "single_elimination":
-            # Find next round match
-            next_round = match.round + 1
-            next_match_number = (match.match_number + 1) // 2
+        if match.category_id:
+            from app.services.format_engine import get_format
 
-            next_match = Match.query.filter_by(
-                tournament_id=tournament.id, round=next_round, match_number=next_match_number
-            ).first()
+            cat = match.category or Category.query.get(match.category_id)
+            if cat:
+                fmt = get_format(cat.format)
+                if fmt:
+                    fmt.advance_match(match, cat, winner_id)
+        elif tournament.format == "single_elimination" or match.match_type == "knockout":
+            from app.services.format_engine.single_elimination.logic import (
+                SingleEliminationFormat,
+            )
 
-            if next_match:
-                # Determine which slot to fill (participant1 or participant2)
-                if match.match_number % 2 == 1:
-                    next_match.participant1_id = winner_id
-                else:
-                    next_match.participant2_id = winner_id
+            SingleEliminationFormat.advance_match(match, None, winner_id)
 
         db.session.commit()
 

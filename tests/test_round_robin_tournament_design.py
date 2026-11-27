@@ -1,7 +1,7 @@
 import os
 import tempfile
 import unittest
-from datetime import date
+from datetime import date, datetime, time
 from app import create_app
 from app.domain.models import db, Tournament, Category, Participant, Match, Group
 from app.services.format_engine.round_robin.logic import RoundRobinFormat
@@ -441,9 +441,155 @@ class RoundRobinTournamentDesignTestCase(unittest.TestCase):
             self.assertEqual(m1.score1, "21")
             self.assertEqual(m1.score2, "15")
             self.assertEqual(m1.winner_id, m1.participant1_id)
-            self.assertEqual(m1.score1, "21")
-            self.assertEqual(m1.score2, "15")
-            self.assertEqual(m1.winner_id, m1.participant1_id)
+
+    def test_07_knockout_generation_order_of_play_and_winner_advancement(self):
+        """Test knockout generation from round robin / groups, auto-scheduling onto Order of Play, and winner advancement to next round."""
+        from app.services.utils.scheduler import get_order_of_play
+        from app.web.controllers.category import sync_knockout_advancement
+
+        t = Tournament(
+            name="RR Knockout Advance Tournament",
+            url_slug="rr-ko-advance-tourn",
+            format="round_robin",
+            num_courts=2,
+            court_names="Court 1, Court 2",
+            start_date=date(2026, 6, 1),
+            end_date=date(2026, 6, 2),
+            user_id=1,
+        )
+        db.session.add(t)
+        db.session.flush()
+
+        cat = Category(
+            tournament_id=t.id,
+            name="Open Singles",
+            format="round_robin",
+            has_group_stage=True,
+            qualifiers_per_group=2,
+            scoring_format="points",
+            knockout_scoring_format="points",
+            points_to_win=21,
+            win_by_margin=2,
+            semifinal_target=21,
+            final_target=25,
+            status="in_progress",
+        )
+        db.session.add(cat)
+        db.session.flush()
+
+        gA = Group(category_id=cat.id, name="Group A")
+        gB = Group(category_id=cat.id, name="Group B")
+        db.session.add_all([gA, gB])
+        db.session.flush()
+
+        pA1 = Participant(tournament_id=t.id, category_id=cat.id, group_id=gA.id, name="A1")
+        pA2 = Participant(tournament_id=t.id, category_id=cat.id, group_id=gA.id, name="A2")
+        pB1 = Participant(tournament_id=t.id, category_id=cat.id, group_id=gB.id, name="B1")
+        pB2 = Participant(tournament_id=t.id, category_id=cat.id, group_id=gB.id, name="B2")
+        db.session.add_all([pA1, pA2, pB1, pB2])
+        db.session.flush()
+
+        # Complete group matches
+        m_ga = Match(
+            tournament_id=t.id,
+            category_id=cat.id,
+            group_id=gA.id,
+            participant1_id=pA1.id,
+            participant2_id=pA2.id,
+            round=1,
+            match_number=1,
+            match_type="group_stage",
+            status="completed",
+            score1="21",
+            score2="10",
+            winner_id=pA1.id,
+            scheduled_date=date(2026, 6, 1),
+            scheduled_time=datetime.combine(date(2026, 6, 1), time(9, 0)),
+            court_name="Court 1",
+        )
+        m_gb = Match(
+            tournament_id=t.id,
+            category_id=cat.id,
+            group_id=gB.id,
+            participant1_id=pB1.id,
+            participant2_id=pB2.id,
+            round=1,
+            match_number=1,
+            match_type="group_stage",
+            status="completed",
+            score1="21",
+            score2="12",
+            winner_id=pB1.id,
+            scheduled_date=date(2026, 6, 1),
+            scheduled_time=datetime.combine(date(2026, 6, 1), time(9, 0)),
+            court_name="Court 2",
+        )
+        db.session.add_all([m_ga, m_gb])
+        db.session.commit()
+
+        # Calculate standings
+        GroupStageFormat.calculate_group_standings(gA.id)
+        GroupStageFormat.calculate_group_standings(gB.id)
+
+        # Generate knockout from groups
+        matches_data = GroupStageFormat.generate_knockout_from_groups(cat)
+        created_ko = []
+        for m_data in matches_data:
+            m = Match(**m_data, tournament_id=t.id)
+            db.session.add(m)
+            created_ko.append(m)
+        db.session.commit()
+
+        # Verify auto-scheduling handles knockout matches
+        auto_schedule_tournament(t.id)
+
+        for m in created_ko:
+            db.session.refresh(m)
+            self.assertIsNotNone(m.court_name, f"Match {m.id} should have court assigned")
+            self.assertIsNotNone(m.scheduled_time, f"Match {m.id} should have scheduled_time assigned")
+
+        # Verify get_order_of_play includes knockout matches
+        oop_data = get_order_of_play(t.url_slug)
+        total_oop_matches = sum(len(matches) for matches in oop_data["courts"].values())
+        self.assertGreaterEqual(total_oop_matches, 3)
+
+        # Identify SF1, SF2, and Final
+        sf1 = next(m for m in created_ko if m.round == 1 and m.match_number == 1)
+        sf2 = next(m for m in created_ko if m.round == 1 and m.match_number == 2)
+        final_m = next(m for m in created_ko if m.round == 2 and m.match_number == 1)
+
+        self.assertIsNone(final_m.participant1_id)
+        self.assertIsNone(final_m.participant2_id)
+
+        # Complete SF1 with winner A1
+        sf1.score1 = "21"
+        sf1.score2 = "15"
+        sf1.winner_id = sf1.participant1_id
+        sf1.status = "completed"
+        RoundRobinFormat.advance_match(sf1, cat, sf1.winner_id)
+        db.session.commit()
+
+        db.session.refresh(final_m)
+        self.assertEqual(final_m.participant1_id, sf1.winner_id, "Winner of SF1 must advance to Final participant1")
+        self.assertIsNone(final_m.participant2_id, "SF2 not yet played so participant2 remains None")
+
+        # Complete SF2 with winner B1
+        sf2.score1 = "21"
+        sf2.score2 = "18"
+        sf2.winner_id = sf2.participant1_id
+        sf2.status = "completed"
+        RoundRobinFormat.advance_match(sf2, cat, sf2.winner_id)
+        db.session.commit()
+
+        db.session.refresh(final_m)
+        self.assertEqual(final_m.participant2_id, sf2.winner_id, "Winner of SF2 must advance to Final participant2")
+
+        # Test self-healing sync_knockout_advancement if a match slot was somehow cleared
+        final_m.participant1_id = None
+        db.session.commit()
+        sync_knockout_advancement(cat)
+        db.session.refresh(final_m)
+        self.assertEqual(final_m.participant1_id, sf1.winner_id, "sync_knockout_advancement must self-heal unpopulated next round slots")
 
 
 if __name__ == "__main__":

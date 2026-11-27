@@ -388,7 +388,13 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
 
     all_matches = (
         Match.query.filter_by(tournament_id=tournament_id)
-        .filter(Match.status != "completed", Match.parent_match_id.is_(None))
+        .filter(
+            Match.parent_match_id.is_(None),
+            db.or_(
+                Match.status != "completed",
+                Match.scheduled_time.is_(None),
+            ),
+        )
         .options(
             db.joinedload(Match.participant1),
             db.joinedload(Match.participant2),
@@ -440,6 +446,33 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
     player_next_available: dict[str, datetime] = {}
     # player_daily_count[d][player_key] = count
     player_daily_count: dict[date, dict[str, int]] = {d: {} for d in tournament_days}
+
+    # Pre-populate court availability and player rest buffers from existing scheduled matches that are completed
+    existing_completed = (
+        Match.query.filter_by(tournament_id=tournament_id)
+        .filter(
+            Match.parent_match_id.is_(None),
+            Match.scheduled_time.isnot(None),
+            Match.court_name.isnot(None),
+            Match.status == "completed",
+        )
+        .all()
+    )
+    for em in existing_completed:
+        em_date = em.scheduled_date or em.scheduled_time.date()
+        if em_date in court_next_available and em.court_name in court_next_available[em_date]:
+            em_end = em.scheduled_end_time or (em.scheduled_time + timedelta(minutes=60))
+            em_next = em_end + court_buffer
+            if em_next > court_next_available[em_date][em.court_name]:
+                court_next_available[em_date][em.court_name] = em_next
+
+        em_keys = get_participant_player_keys(em.participant1).union(
+            get_participant_player_keys(em.participant2)
+        )
+        for pk in em_keys:
+            p_ready = (em.scheduled_end_time or em.scheduled_time) + player_rest_buffer
+            if pk not in player_next_available or p_ready > player_next_available[pk]:
+                player_next_available[pk] = p_ready
 
     # Match earliest start time per category round (Round N cannot start before Round N-1 ends)
     round_ready_at: dict[tuple[int, int], datetime] = {} # (category_id, round) -> earliest datetime
@@ -824,6 +857,23 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
     'Not Before' indicators, court schedules, and day progression enforcement.
     """
     tournament = Tournament.query.filter_by(url_slug=tournament_slug).first_or_404()
+
+    # Self-heal: ensure any unscheduled top-level matches are scheduled so Order of Play is complete
+    unscheduled = (
+        Match.query.filter_by(tournament_id=tournament.id, parent_match_id=None)
+        .filter(
+            db.or_(
+                Match.scheduled_time.is_(None),
+                Match.court_name.is_(None),
+            )
+        )
+        .first()
+    )
+    if unscheduled:
+        try:
+            auto_schedule_tournament(tournament.id)
+        except Exception:
+            pass
 
     # Pre-fetch categories and groups for tournament into in-memory dictionaries to avoid N+1 queries
     categories = {c.id: c for c in Category.query.filter_by(tournament_id=tournament.id).all()}

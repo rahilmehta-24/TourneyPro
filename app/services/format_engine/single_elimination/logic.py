@@ -13,15 +13,29 @@ class SingleEliminationFormat(TournamentFormat):
         return cls._generate_single_elimination(participants, use_manual_seeding=True)
         
     @classmethod
-    def advance_match(cls, match, category, winner_id=None):
+    def advance_match(cls, match, category=None, winner_id=None):
         next_round = match.round + 1
         next_match_number = (match.match_number + 1) // 2
 
-        next_match = Match.query.filter_by(
-            category_id=category.id,
-            round=next_round,
-            match_number=next_match_number,
-            bracket_type=match.bracket_type
+        cat_id = category.id if category else match.category_id
+        target_bracket_type = match.bracket_type or "main"
+
+        query = Match.query.filter(
+            Match.round == next_round,
+            Match.match_number == next_match_number,
+            Match.parent_match_id.is_(None),
+        )
+        if cat_id:
+            query = query.filter(Match.category_id == cat_id)
+        elif match.tournament_id:
+            query = query.filter(Match.tournament_id == match.tournament_id)
+
+        next_match = query.filter(
+            db.or_(
+                Match.bracket_type == match.bracket_type,
+                Match.bracket_type == target_bracket_type,
+                Match.bracket_type.is_(None),
+            )
         ).first()
 
         if next_match:
@@ -29,6 +43,7 @@ class SingleEliminationFormat(TournamentFormat):
                 next_match.participant1_id = winner_id
             else:
                 next_match.participant2_id = winner_id
+            db.session.flush()
 
     @classmethod
     def calculate_final_rankings(cls, category):

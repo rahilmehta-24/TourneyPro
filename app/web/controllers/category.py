@@ -591,6 +591,74 @@ def _build_score_matrix(match_list):
     return matrix
 
 
+def sync_knockout_advancement(category):
+    """
+    Ensure all completed knockout matches have their winners advanced
+    to the next round matches, and losers to third-place match if applicable.
+    Also handles self-healing for any previous rounds whose next matches were not populated.
+    """
+    knockout_matches = (
+        Match.query.filter_by(
+            category_id=category.id,
+            match_type="knockout",
+            parent_match_id=None,
+        )
+        .order_by(Match.round.asc(), Match.match_number.asc())
+        .all()
+    )
+    if not knockout_matches:
+        return
+
+    updated = False
+    for m in knockout_matches:
+        if m.status == "completed" and m.winner_id:
+            next_round = m.round + 1
+            next_match_num = (m.match_number + 1) // 2
+            next_m = next(
+                (
+                    nm
+                    for nm in knockout_matches
+                    if nm.round == next_round
+                    and nm.match_number == next_match_num
+                    and (nm.bracket_type or "main") == (m.bracket_type or "main")
+                ),
+                None,
+            )
+            if next_m:
+                if m.match_number % 2 == 1:
+                    if next_m.participant1_id != m.winner_id:
+                        next_m.participant1_id = m.winner_id
+                        updated = True
+                else:
+                    if next_m.participant2_id != m.winner_id:
+                        next_m.participant2_id = m.winner_id
+                        updated = True
+
+            # Third place match check for semifinals
+            if getattr(category, "has_third_place_match", False) and getattr(m, "match_stage", None) == "semifinal":
+                tp_m = next(
+                    (nm for nm in knockout_matches if nm.bracket_type == "third_place"),
+                    None,
+                )
+                if tp_m:
+                    loser_id = (
+                        m.participant2_id
+                        if m.winner_id == m.participant1_id
+                        else m.participant1_id
+                    )
+                    if m.match_number % 2 == 1:
+                        if tp_m.participant1_id != loser_id:
+                            tp_m.participant1_id = loser_id
+                            updated = True
+                    else:
+                        if tp_m.participant2_id != loser_id:
+                            tp_m.participant2_id = loser_id
+                            updated = True
+
+    if updated:
+        db.session.commit()
+
+
 @category_bp.route("/t/<slug>/categories/<int:category_id>")
 @category_bp.route("/tournaments/<slug>/categories/<int:category_id>")
 def view_category(slug, category_id):
@@ -598,6 +666,9 @@ def view_category(slug, category_id):
     tournament = Tournament.query.filter_by(url_slug=slug).first_or_404()
 
     category = Category.query.get_or_404(category_id)
+    if category.status != "setup":
+        sync_knockout_advancement(category)
+
     participants = (
         Participant.query.filter_by(category_id=category_id).order_by(Participant.seed).all()
     )
@@ -1693,6 +1764,15 @@ def start_knockout_stage(slug, category_id):
                 GroupStageFormat._propagate_knockout_team_rubbers(b_match, category)
 
         db.session.commit()
+
+        # Automatically schedule knockout matches so they appear on the Order of Play
+        try:
+            from app.services.utils.scheduler import auto_schedule_tournament
+
+            auto_schedule_tournament(tournament.id)
+        except Exception:
+            pass
+
         flash("Knockout stage started successfully!", "success")
     except Exception as e:
         db.session.rollback()
