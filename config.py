@@ -56,5 +56,5 @@ class Config:
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER') or 'The Baseline Society <confirmation@thebaselinesociety.com>'
     MAIL_CONFIRMATION_EMAIL = os.environ.get('MAIL_CONFIRMATION_EMAIL') or 'confirmation@thebaselinesociety.com'
     MAIL_SUPPRESS_SEND = os.environ.get('MAIL_SUPPRESS_SEND', 'false').lower() in ['true', '1', 't', 'yes']
-    SUPERADMIN_EMAIL = os.environ.get('SUPERADMIN_EMAIL')
+    SUPERADMIN_EMAIL = os.environ.get('SUPERADMIN_EMAIL') or 'rahilmehta.ict19@gmail.com'
 

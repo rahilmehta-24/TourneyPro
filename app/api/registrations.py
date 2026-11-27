@@ -237,7 +237,7 @@ def get_my_registrations():
     """Return all tournament registrations for the currently authenticated user."""
     current_user_id = int(get_jwt_identity())
     user = db.session.get(User, current_user_id)
-    if not user or user.username == 'anonymous_registrations' or user.email == 'anonymous@tourneypro.com':
+    if not user or user.username == 'anonymous_registrations' or user.email in ('anonymous@tourneypro.com', 'anonymous@thebaselinesociety.com'):
         return jsonify({"success": False, "message": "Forbidden"}), 403
 
     registrations = Registration.query.filter_by(

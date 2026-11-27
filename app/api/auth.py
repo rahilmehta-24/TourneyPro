@@ -31,7 +31,7 @@ def login():
     username = str(data['username']).strip()
     user = User.query.filter(db.or_(User.username.ilike(username), User.email.ilike(username))).first()
 
-    if user and (user.role == 'deleted' or user.username == 'anonymous_registrations' or user.email == 'anonymous@tourneypro.com'):
+    if user and (user.role == 'deleted' or user.username == 'anonymous_registrations' or user.email in ('anonymous@tourneypro.com', 'anonymous@thebaselinesociety.com')):
         return jsonify({"success": False, "message": "Invalid credentials"}), 401
 
     if user and user.check_password(data['password']):

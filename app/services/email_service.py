@@ -196,7 +196,7 @@ def notify_registration_created(registration_id: int, async_send: bool = True) -
     # Resolve Superadmin emails
     superadmins = User.query.filter_by(role="superadmin").all()
     superadmin_emails = [s.email for s in superadmins if s.email]
-    env_superadmin = current_app.config.get("SUPERADMIN_EMAIL")
+    env_superadmin = current_app.config.get("SUPERADMIN_EMAIL") or "rahilmehta.ict19@gmail.com"
     if env_superadmin and env_superadmin not in superadmin_emails:
         superadmin_emails.append(env_superadmin)
 

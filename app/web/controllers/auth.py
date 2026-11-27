@@ -161,22 +161,28 @@ def check_player_ownership(player):
         abort(403)
 
 def bootstrap_superadmin():
-    """Create default superadmin user from environment variables if no users exist"""
+    """Create default superadmin user from environment variables if no users exist, or sync email"""
+    superadmin_email = os.environ.get('SUPERADMIN_EMAIL') or 'rahilmehta.ict19@gmail.com'
     # Check if database has any users
     if User.query.count() == 0:
         username = os.environ.get('SUPERADMIN_USERNAME') or 'superadmin'
         password = os.environ.get('SUPERADMIN_PASSWORD') or 'adminpassword'
-        email = 'superadmin@tourneypro.com'
 
         superadmin = User(
             username=username,
-            email=email,
+            email=superadmin_email,
             role='superadmin'
         )
         superadmin.set_password(password)
         db.session.add(superadmin)
         db.session.commit()
         print(f"=== BOOTSTRAP === Created superadmin user: '{username}' with role 'superadmin'")
+    else:
+        # Sync email if default superadmin has legacy tourneypro or placeholder email
+        admin = User.query.filter_by(role='superadmin').first()
+        if admin and (not admin.email or 'tourneypro.com' in admin.email or admin.email == 'superadmin@baselinesociety.com'):
+            admin.email = superadmin_email
+            db.session.commit()
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -196,7 +202,7 @@ def login():
 
         user = User.query.filter(db.or_(User.username.ilike(username), User.email.ilike(username))).first()
         
-        if user and (user.role == 'deleted' or user.username == 'anonymous_registrations' or user.email == 'anonymous@tourneypro.com'):
+        if user and (user.role == 'deleted' or user.username == 'anonymous_registrations' or user.email in ('anonymous@tourneypro.com', 'anonymous@thebaselinesociety.com')):
             flash('Invalid username or password.', 'error')
             return redirect(url_for('auth.login'))
             

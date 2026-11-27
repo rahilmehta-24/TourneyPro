@@ -712,7 +712,7 @@ def register_for_tournament(slug):
 
                 anon_user = User(
                     username="anonymous_registrations",
-                    email="anonymous@tourneypro.com",
+                    email="anonymous@thebaselinesociety.com",
                     role="user",
                     account_status="INACTIVE",
                 )
