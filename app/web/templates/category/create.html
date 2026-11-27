@@ -343,6 +343,90 @@
                 </label>
                 <small style="display: block; margin-left: 26px;">If checked, top players will advance to a knockout bracket.</small>
             </div>
+
+            <!-- DUAL STAGE SCORING & KNOCKOUT TARGETS -->
+            <div id="dual-stage-scoring-box" style="margin-top: 1.25rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 1.25rem;">
+                <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 6px;">
+                    <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-trophy"></use></svg>
+                    <span>Knockout Stage Scoring &amp; Stage Targets (Dual-Stage Configuration)</span>
+                </div>
+                <p style="margin: 0 0 1rem; color: var(--text-secondary); font-size: 0.82rem; line-height: 1.4;">
+                    Configure stage-specific scoring rules. Knockout stage can inherit group scoring or switch formats with elevated targets (e.g. group to 21, SF to 25, Final to 31).
+                </p>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label for="knockout_scoring_format" style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.3rem;">
+                            Knockout Scoring Mode
+                        </label>
+                        <select id="knockout_scoring_format" name="knockout_scoring_format" class="form-input">
+                            <option value="same">Same as Group Stage</option>
+                            <option value="games">Games-based (Sets &amp; Games)</option>
+                            <option value="points">Points-based (Point Target)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="win_by_margin" style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.3rem;">
+                            Win By Margin
+                        </label>
+                        <input type="number" id="win_by_margin" name="win_by_margin" class="form-input" min="1" max="5" value="2" placeholder="2">
+                    </div>
+
+                    <div>
+                        <label for="score_cap" style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.3rem;">
+                            Hard Score Cap (Optional)
+                        </label>
+                        <input type="number" id="score_cap" name="score_cap" class="form-input" min="1" placeholder="e.g. 25, 30">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label for="semifinal_target" style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.3rem;">
+                            Semifinal Target (Points or Games)
+                        </label>
+                        <input type="number" id="semifinal_target" name="semifinal_target" class="form-input" min="1" placeholder="e.g. 25 (points) or 8 (games)">
+                    </div>
+
+                    <div>
+                        <label for="final_target" style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.3rem;">
+                            Final Target (Points or Games)
+                        </label>
+                        <input type="number" id="final_target" name="final_target" class="form-input" min="1" placeholder="e.g. 31 (points) or 8 (games)">
+                    </div>
+
+                    <div>
+                        <label for="final_num_sets" style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.3rem;">
+                            Final Sets (Optional)
+                        </label>
+                        <input type="number" id="final_num_sets" name="final_num_sets" class="form-input" min="1" max="5" placeholder="e.g. 3 (Best of 3)">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 0.5rem;">
+                    <div>
+                        <label for="tiebreak_at" style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.3rem;">
+                            Tiebreak At (Games)
+                        </label>
+                        <input type="number" id="tiebreak_at" name="tiebreak_at" class="form-input" min="1" value="6" placeholder="6">
+                    </div>
+
+                    <div>
+                        <label for="tiebreak_points" style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.3rem;">
+                            Tiebreak Points Target
+                        </label>
+                        <input type="number" id="tiebreak_points" name="tiebreak_points" class="form-input" min="5" value="7" placeholder="7 or 10">
+                    </div>
+
+                    <div style="display: flex; align-items: center; padding-top: 1.25rem;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" name="has_third_place_match" id="has_third_place_match" style="width: 18px; height: 18px; accent-color: var(--primary);">
+                            <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary);">Third-Place Match (Playoff for 3rd/4th)</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="form-actions">

@@ -97,6 +97,27 @@ class MigrationTestCase(unittest.TestCase):
             self.assertIn('file_hash', ParticipantImportBatch.__table__.columns)
             self.assertIn('error_data', ParticipantImportBatch.__table__.columns)
 
+            # Verify dual stage scoring, targets, and group stats columns from f4a5b6c7d8e9
+            self.assertIn('knockout_scoring_format', Category.__table__.columns)
+            self.assertIn('win_by_margin', Category.__table__.columns)
+            self.assertIn('score_cap', Category.__table__.columns)
+            self.assertIn('semifinal_target', Category.__table__.columns)
+            self.assertIn('final_target', Category.__table__.columns)
+            self.assertIn('has_third_place_match', Category.__table__.columns)
+            self.assertIn('tiebreak_at', Category.__table__.columns)
+            self.assertIn('tiebreak_points', Category.__table__.columns)
+            self.assertIn('final_num_sets', Category.__table__.columns)
+
+            self.assertIn('group_points_conceded', Participant.__table__.columns)
+            self.assertIn('group_point_diff', Participant.__table__.columns)
+            self.assertIn('group_sets_won', Participant.__table__.columns)
+            self.assertIn('group_sets_lost', Participant.__table__.columns)
+
+            self.assertIn('match_stage', Match.__table__.columns)
+            self.assertIn('is_final_group_round', Match.__table__.columns)
+            self.assertIn('win_by_margin', Match.__table__.columns)
+            self.assertIn('score_cap', Match.__table__.columns)
+
     def test_02_sqlite_batch_mode_enabled(self):
         """Verify that render_as_batch is enabled on the migrate extension"""
         migrate = self.app.extensions.get('migrate')

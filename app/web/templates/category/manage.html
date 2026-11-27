@@ -424,6 +424,62 @@
                         </label>
                         <small style="display: block; margin-left: 24px; color: var(--text-muted); font-size: 0.78rem;">When direct qualifiers aren't a power of 2 (e.g., 3 groups × Top 2 = 6), fills vacant spots up to 4 / 8 / 16 via manual chit draw or normalized group standings.</small>
                     </div>
+
+                    <!-- Dual-Stage Knockout Scoring & Targets -->
+                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 1rem; margin-top: 0.5rem;">
+                        <span style="font-size: 0.9rem; font-weight: 700; color: var(--text-primary); display: inline-flex; align-items: center; gap: 6px; margin-bottom: 0.5rem;">
+                            <svg class="tp-icon tp-icon-sm" style="color: var(--accent-primary);"><use href="#icon-trophy"></use></svg>
+                            <span>Knockout Stage Scoring &amp; Stage Targets</span>
+                        </span>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; margin-top: 0.5rem;">
+                            <div class="form-group" style="margin: 0;">
+                                <label class="form-label" style="font-size: 0.82rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 600;">Knockout Mode</label>
+                                <select id="knockout_scoring_format" name="knockout_scoring_format" class="form-input" style="width: 100%;">
+                                    <option value="same" {% if category.knockout_scoring_format == 'same' %}selected{% endif %}>Same as Group Stage</option>
+                                    <option value="games" {% if category.knockout_scoring_format == 'games' %}selected{% endif %}>Games-based</option>
+                                    <option value="points" {% if category.knockout_scoring_format == 'points' %}selected{% endif %}>Points-based</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <label class="form-label" style="font-size: 0.82rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 600;">Win By Margin</label>
+                                <input type="number" id="win_by_margin" name="win_by_margin" class="form-input" min="1" max="5" value="{{ category.win_by_margin or 2 }}" style="width: 100%;">
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <label class="form-label" style="font-size: 0.82rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 600;">Hard Score Cap</label>
+                                <input type="number" id="score_cap" name="score_cap" class="form-input" min="1" value="{{ category.score_cap or '' }}" placeholder="None" style="width: 100%;">
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; margin-top: 0.75rem;">
+                            <div class="form-group" style="margin: 0;">
+                                <label class="form-label" style="font-size: 0.82rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 600;">Semifinal Target</label>
+                                <input type="number" id="semifinal_target" name="semifinal_target" class="form-input" min="1" value="{{ category.semifinal_target or '' }}" placeholder="Inherit" style="width: 100%;">
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <label class="form-label" style="font-size: 0.82rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 600;">Final Target</label>
+                                <input type="number" id="final_target" name="final_target" class="form-input" min="1" value="{{ category.final_target or '' }}" placeholder="Inherit" style="width: 100%;">
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <label class="form-label" style="font-size: 0.82rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 600;">Final Sets (Optional)</label>
+                                <input type="number" id="final_num_sets" name="final_num_sets" class="form-input" min="1" max="5" value="{{ category.final_num_sets or '' }}" placeholder="Inherit" style="width: 100%;">
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; margin-top: 0.75rem;">
+                            <div class="form-group" style="margin: 0;">
+                                <label class="form-label" style="font-size: 0.82rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 600;">Tiebreak At (Games)</label>
+                                <input type="number" id="tiebreak_at" name="tiebreak_at" class="form-input" min="1" value="{{ category.tiebreak_at or 6 }}" style="width: 100%;">
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <label class="form-label" style="font-size: 0.82rem; margin-bottom: 0.25rem; display: block; color: var(--text-secondary); font-weight: 600;">Tiebreak Target Points</label>
+                                <input type="number" id="tiebreak_points" name="tiebreak_points" class="form-input" min="5" value="{{ category.tiebreak_points or 7 }}" style="width: 100%;">
+                            </div>
+                            <div class="form-group" style="margin: 0; display: flex; align-items: center; padding-top: 1.25rem;">
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" name="has_third_place_match" id="has_third_place_match" style="width: 16px; height: 16px; accent-color: var(--primary);" {% if category.has_third_place_match %}checked{% endif %}>
+                                    <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600;">Third-Place Playoff</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 {% endif %}
 

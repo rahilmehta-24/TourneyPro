@@ -443,6 +443,7 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
 
     # Match earliest start time per category round (Round N cannot start before Round N-1 ends)
     round_ready_at: dict[tuple[int, int], datetime] = {} # (category_id, round) -> earliest datetime
+    group_final_start_times: dict[int, datetime] = {} # group_id -> synchronized start time for final group round
 
     scheduled_count = 0
     match_updates: list[dict] = []
@@ -493,6 +494,11 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
             if grp_time and target_days:
                 grp_start_dt = datetime.combine(target_days[0], grp_time)
                 earliest_time = max(earliest_time, grp_start_dt)
+
+        # Synchronize simultaneous start time for group stage final round
+        if getattr(match, 'is_final_group_round', False) and match.group_id:
+            if match.group_id in group_final_start_times:
+                earliest_time = max(earliest_time, group_final_start_times[match.group_id])
 
         # Session targeting (Day Session vs Evening Session)
         target_session = get_target_session(match.round, max_round, len(tournament_days))
@@ -582,6 +588,9 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
                         curr_round_max = round_ready_at.get((match.category_id, match.round), datetime.min)
                         round_ready_at[(match.category_id, match.round)] = max(curr_round_max, tentative_end)
 
+                        if getattr(match, "is_final_group_round", False) and match.group_id and match.group_id not in group_final_start_times:
+                            group_final_start_times[match.group_id] = tentative_start
+
                         scheduled_count += 1
                         assigned = True
                         break
@@ -632,6 +641,9 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
                 # Update category round progress time
                 curr_round_max = round_ready_at.get((match.category_id, match.round), datetime.min)
                 round_ready_at[(match.category_id, match.round)] = max(curr_round_max, tentative_end)
+
+                if getattr(match, "is_final_group_round", False) and match.group_id and match.group_id not in group_final_start_times:
+                    group_final_start_times[match.group_id] = tentative_start
 
                 scheduled_count += 1
                 assigned = True

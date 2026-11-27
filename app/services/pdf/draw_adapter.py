@@ -324,10 +324,21 @@ class DrawExportAdapter:
                 dates_str += f" – {e_date.strftime('%d %b %Y')}"
 
         scoring_summary = None
-        if category.format == "group_stage":
-            scoring_summary = f"{category.total_games or 7} Games/Rubber"
+        if category.format in ("group_stage", "round_robin", "doubles_round_robin"):
+            if category.scoring_format == "points":
+                scoring_summary = f"Group: {category.points_to_win or 21} Pts"
+            else:
+                scoring_summary = f"Group: {category.total_games or 7} Games"
+            if category.knockout_scoring_format and category.knockout_scoring_format != "same":
+                scoring_summary += f" | KO: {category.knockout_scoring_format.capitalize()}"
+            if category.semifinal_target:
+                scoring_summary += f" | SF: {category.semifinal_target}"
+            if category.final_target:
+                scoring_summary += f" | F: {category.final_target}"
         elif category.scoring_format == "points":
             scoring_summary = f"First to {category.points_to_win or 11} Points"
+            if category.score_cap:
+                scoring_summary += f" (Cap: {category.score_cap})"
         elif category.num_sets:
             scoring_summary = f"{category.num_sets} Sets ({category.games_per_set or 6} Games)"
 
