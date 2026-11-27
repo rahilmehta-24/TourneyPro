@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tournament Registration Tutorial — The Baseline Society</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --brand-green: #0F3D2E;
+      --brand-green-light: #164E3B;
+      --brand-cream: #F8F6F0;
+      --brand-gold: #C9A55C;
+      --brand-gold-soft: rgba(201, 165, 92, 0.15);
+      --brand-terracotta: #B5593A;
+      --brand-dark: #0B241B;
+      --text-main: #FFFFFF;
+      --text-muted: #A3B8B0;
+      --accent-success: #10B981;
+      --accent-warning: #F59E0B;
+      --border-subtle: rgba(201, 165, 92, 0.25);
+      --card-bg: rgba(15, 61, 46, 0.75);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 20%, #164E3B 0%, #0B241B 100%);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem 1rem 3rem;
+    }
+
+    /* Top Bar Header */
+    .header-bar {
+      width: 100%;
+      max-width: 1200px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      padding: 0.75rem 1.5rem;
+      background: rgba(11, 36, 27, 0.65);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+    }
+
+    .brand-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .monogram-badge {
+      width: 36px;
+      height: 36px;
+      background: var(--brand-gold);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--brand-dark);
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 700;
+      font-size: 1.3rem;
+      box-shadow: 0 0 12px rgba(201, 165, 92, 0.4);
+    }
+
+    .brand-heading {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.45rem;
+      letter-spacing: 0.5px;
+      color: var(--brand-cream);
+    }
+
+    .brand-subtitle {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--brand-gold);
+      font-weight: 600;
+    }
+
+    /* Video Player Frame Wrapper */
+    .player-container {
+      width: 100%;
+      max-width: 1100px;
+      background: #061711;
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(201, 165, 92, 0.1);
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Simulated Browser Window Top */
+    .browser-window-header {
+      background: #0B241B;
+      border-bottom: 1px solid rgba(201, 165, 92, 0.2);
+      padding: 0.65rem 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8rem;
+    }
+
+    .browser-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .dot-red { background: #FF5F56; }
+    .dot-yellow { background: #FFBD2E; }
+    .dot-green { background: #27C93F; }
+
+    .browser-url-pill {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(201, 165, 92, 0.2);
+      border-radius: 20px;
+      padding: 3px 18px;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      letter-spacing: 0.2px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .browser-url-pill strong {
+      color: var(--brand-gold);
+    }
+
+    /* Canvas Stage */
+    .video-stage {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #0F3D2E;
+      overflow: hidden;
+    }
+
+    #videoCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Floating Subtitle Overlay */
+    .subtitle-bar {
+      position: absolute;
+      bottom: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(11, 36, 27, 0.88);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--brand-gold);
+      border-radius: 30px;
+      padding: 8px 24px;
+      font-size: 0.95rem;
+      color: #FFFFFF;
+      text-align: center;
+      max-width: 85%;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      pointer-events: none;
+      transition: all 0.25s ease;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    /* Scene Indicator Badge */
+    .scene-pill {
+      position: absolute;
+      top: 16px;
+      right: 18px;
+      background: rgba(11, 36, 27, 0.8);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: var(--brand-gold);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      pointer-events: none;
+    }
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10B981;
+      box-shadow: 0 0 8px #10B981;
+    }
+
+    /* Controls Bar */
+    .player-controls {
+      background: #091D16;
+      padding: 0.85rem 1.25rem;
+      border-top: 1px solid rgba(201, 165, 92, 0.2);
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    /* Progress bar */
+    .progress-bar-container {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+      cursor: pointer;
+      position: relative;
+    }
+    .progress-bar-filled {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--brand-gold) 0%, #10B981 100%);
+      border-radius: 4px;
+      position: relative;
+    }
+    .progress-handle {
+      position: absolute;
+      right: -6px;
+      top: -4px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #FFFFFF;
+      box-shadow: 0 0 8px rgba(0,0,0,0.5);
+    }
+
+    /* Control Buttons Row */
+    .control-buttons-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .btn-group-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-control {
+      background: rgba(201, 165, 92, 0.15);
+      color: var(--brand-cream);
+      border: 1px solid var(--border-subtle);
+      padding: 6px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .btn-control:hover {
+      background: var(--brand-gold);
+      color: var(--brand-dark);
+      border-color: var(--brand-gold);
+    }
+    .btn-primary-action {
+      background: var(--accent-success);
+      color: #FFFFFF;
+      border-color: var(--accent-success);
+    }
+    .btn-primary-action:hover {
+      background: #059669;
+      color: #FFFFFF;
+    }
+
+    .timecode-display {
+      font-family: monospace;
+      font-size: 0.88rem;
+      color: var(--brand-gold);
+      min-width: 90px;
+    }
+
+    /* Timeline Scene Jump Grid */
+    .scenes-jump-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 8px;
+      margin-top: 1.25rem;
+      width: 100%;
+      max-width: 1100px;
+    }
+
+    .scene-jump-btn {
+      background: rgba(11, 36, 27, 0.8);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 8px 10px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .scene-jump-btn:hover, .scene-jump-btn.active {
+      background: rgba(201, 165, 92, 0.2);
+      border-color: var(--brand-gold);
+      transform: translateY(-2px);
+    }
+    .scene-jump-btn .scene-num {
+      font-size: 0.7rem;
+      color: var(--brand-gold);
+      font-weight: 700;
+      text-transform: uppercase;
+      display: block;
+    }
+    .scene-jump-btn .scene-name {
+      font-size: 0.8rem;
+      color: #FFFFFF;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <div class="header-bar">
+    <div class="brand-title-wrap">
+      <div class="monogram-badge">B</div>
+      <div>
+        <div class="brand-heading">The Baseline Society</div>
+        <div class="brand-subtitle">Official Member & Player Portal</div>
+      </div>
+    </div>
+    <div>
+      <button class="btn-control btn-primary-action" id="recordExportBtn" onclick="toggleExportRecording()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg>
+        <span id="exportBtnText">Record & Download Video (.webm)</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Player Frame -->
+  <div class="player-container">
+    <div class="browser-window-header">
+      <div class="browser-dots">
+        <div class="dot dot-red"></div>
+        <div class="dot dot-yellow"></div>
+        <div class="dot dot-green"></div>
+      </div>
+      <div class="browser-url-pill">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <span>thebaselinesociety.com/tournaments/<strong>open-2026/register</strong></span>
+      </div>
+      <div style="font-size: 0.72rem; color: var(--brand-gold); font-weight: 600;">1080p HD</div>
+    </div>
+
+    <!-- Video Stage Canvas -->
+    <div class="video-stage">
+      <canvas id="videoCanvas" width="1920" height="1080"></canvas>
+      <div class="scene-pill">
+        <div class="pulse-dot"></div>
+        <span id="sceneBadgeText">Scene 1 / 6: Intro</span>
+      </div>
+      <div class="subtitle-bar" id="subtitleText">
+        Welcome to The Baseline Society. Here is how to register for your tournament in under 2 minutes.
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="player-controls">
+      <div class="progress-bar-container" id="progressBar" onclick="seekVideo(event)">
+        <div class="progress-bar-filled" id="progressFill">
+          <div class="progress-handle"></div>
+        </div>
+      </div>
+
+      <div class="control-buttons-row">
+        <div class="btn-group-left">
+          <button class="btn-control" id="playPauseBtn" onclick="togglePlay()">
+            <span id="playIcon">▶ Play</span>
+          </button>
+          <button class="btn-control" onclick="restartVideo()">
+            ↺ Restart
+          </button>
+          <div class="timecode-display" id="timecodeDisplay">00:00 / 01:20</div>
+        </div>
+
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button class="btn-control" id="speechToggleBtn" onclick="toggleVoiceNarration()">
+            <span id="speechIcon">🔊 Voice: ON</span>
+          </button>
+          <button class="btn-control" id="speedBtn" onclick="cycleSpeed()">1.0x Speed</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scene Timeline Quick Navigation -->
+  <div class="scenes-jump-grid">
+    <div class="scene-jump-btn active" onclick="jumpToTime(0)">
+      <span class="scene-num">00:00 • Scene 1</span>
+      <div class="scene-name">Tournament Overview</div>
+    </div>
+    <div class="scene-jump-btn" onclick="jumpToTime(14)">
+      <span class="scene-num">00:14 • Scene 2</span>
+      <div class="scene-name">Select Events & Categories</div>
+    </div>
+    <div class="scene-jump-btn" onclick="jumpToTime(28)">
+      <span class="scene-num">00:28 • Scene 3</span>
+      <div class="scene-name">Player Information</div>
+    </div>
+    <div class="scene-jump-btn" onclick="jumpToTime(44)">
+      <span class="scene-num">00:44 • Scene 4</span>
+      <div class="scene-name">Doubles Partner Details</div>
+    </div>
+    <div class="scene-jump-btn" onclick="jumpToTime(58)">
+      <span class="scene-num">00:58 • Scene 5</span>
+      <div class="scene-name">Payment (UPI QR / Cash)</div>
+    </div>
+    <div class="scene-jump-btn" onclick="jumpToTime(72)">
+      <span class="scene-num">01:12 • Scene 6</span>
+      <div class="scene-name">Instant Confirmation</div>
+    </div>
+  </div>
+
+  <script>
+    // --- Tutorial Animation Engine (Canvas 1920x1080) ---
+    const canvas = document.getElementById('videoCanvas');
+    const ctx = canvas.getContext('2d');
+    const TOTAL_DURATION = 80; // 80 seconds
+    let currentTime = 0;
+    let isPlaying = false;
+    let playbackSpeed = 1.0;
+    let lastTimestamp = 0;
+    let voiceEnabled = true;
+
+    // Timeline Scenes Definition with subtitles & speech
+    const SCENES = [
+      {
+        start: 0,
+        end: 14,
+        badge: "Scene 1: Tournament Hub",
+        sub: "Welcome to The Baseline Society! Let's register for The Baseline Society Open 2026.",
+        speech: "Welcome to The Baseline Society. In this tutorial, we will show you how to register for your tournament in under two minutes."
+      },
+      {
+        start: 14,
+        end: 28,
+        badge: "Scene 2: Event Selection",
+        sub: "Step 1: Choose your categories. Select Men's Singles and Open Doubles.",
+        speech: "First, select the events you wish to enter. You can select both Singles and Doubles. Real-time slots and fees update automatically."
+      },
+      {
+        start: 28,
+        end: 44,
+        badge: "Scene 3: Player Details",
+        sub: "Step 2: Enter your player profile: Full Name, Age, Mobile Number, and Email.",
+        speech: "Next, fill in your player information. Your phone number and email ensure you receive instant match schedule notifications."
+      },
+      {
+        start: 44,
+        end: 58,
+        badge: "Scene 4: Doubles Partner",
+        sub: "Step 3: Enter your doubles partner's details to automatically link your team.",
+        speech: "Because you selected a doubles category, provide your partner's name and contact number to automatically link your team in the bracket."
+      },
+      {
+        start: 58,
+        end: 72,
+        badge: "Scene 5: Payment (UPI / Cash)",
+        sub: "Step 4: Scan the UPI QR code and enter your 12-digit UTR, or select Pay in Cash.",
+        speech: "Now select your payment method. Scan the UPI QR code and enter your 12-digit transaction ID, or choose Pay in Cash at the venue desk."
+      },
+      {
+        start: 72,
+        end: 80,
+        badge: "Scene 6: Confirmation",
+        sub: "Step 5: Click Complete Registration. Your entry is officially confirmed!",
+        speech: "Click Complete Registration, and you are officially registered. We look forward to seeing you on the court at The Baseline Society."
+      }
+    ];
+
+    let currentSceneIndex = -1;
+
+    // --- Voice Narration using Web Speech API ---
+    let synth = window.speechSynthesis;
+    let lastSpokenScene = -1;
+
+    function speakScene(index) {
+      if (!voiceEnabled || !synth) return;
+      if (lastSpokenScene === index) return;
+      lastSpokenScene = index;
+      synth.cancel();
+      const utterance = new SpeechSynthesisUtterance(SCENES[index].speech);
+      utterance.rate = 1.05 * playbackSpeed;
+      utterance.pitch = 1.0;
+      synth.speak(utterance);
+    }
+
+    function toggleVoiceNarration() {
+      voiceEnabled = !voiceEnabled;
+      document.getElementById('speechIcon').innerText = voiceEnabled ? "🔊 Voice: ON" : "🔇 Voice: OFF";
+      if (!voiceEnabled && synth) synth.cancel();
+      if (voiceEnabled && isPlaying) {
+        lastSpokenScene = -1;
+        const idx = getSceneIndex(currentTime);
+        if (idx !== -1) speakScene(idx);
+      }
+    }
+
+    function getSceneIndex(t) {
+      return SCENES.findIndex(s => t >= s.start && t < s.end);
+    }
+
+    // --- Main Rendering Loop ---
+    function render(time) {
+      // Background court/club theme
+      ctx.fillStyle = "#0F3D2E";
+      ctx.fillRect(0, 0, 1920, 1080);
+
+      // Top App Navigation Bar
+      drawTopNavbar();
+
+      // Main Content Box
+      drawRegistrationPage(time);
+
+      // Simulated Mouse Cursor
+      drawAnimatedCursor(time);
+
+      // Click Effects
+      drawClickPulse(time);
+
+      // Update Subtitles & Scene Badges
+      updateUIOverlay(time);
+    }
+
+    // --- Drawing Modules ---
+    function drawTopNavbar() {
+      // Dark Header Bar
+      ctx.fillStyle = "#0B241B";
+      ctx.fillRect(0, 0, 1920, 100);
+      ctx.strokeStyle = "rgba(201, 165, 92, 0.35)";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(0, 100);
+      ctx.lineTo(1920, 100);
+      ctx.stroke();
+
+      // Monogram circle
+      ctx.fillStyle = "#C9A55C";
+      ctx.beginPath();
+      ctx.arc(120, 50, 26, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#0B241B";
+      ctx.font = "bold 28px 'Cormorant Garamond', Georgia, serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("B", 120, 51);
+
+      // Brand Title
+      ctx.fillStyle = "#F8F6F0";
+      ctx.font = "600 32px 'Cormorant Garamond', Georgia, serif";
+      ctx.textAlign = "left";
+      ctx.fillText("THE BASELINE SOCIETY", 165, 48);
+
+      ctx.fillStyle = "#C9A55C";
+      ctx.font = "600 13px 'Inter', sans-serif";
+      ctx.letterSpacing = "2px";
+      ctx.fillText("OFFICIAL TOURNAMENT REGISTRATION", 168, 72);
+
+      // Right pill: User Profile
+      ctx.fillStyle = "rgba(201, 165, 92, 0.15)";
+      ctx.strokeStyle = "rgba(201, 165, 92, 0.4)";
+      drawRoundedRect(1620, 28, 220, 44, 22, true, true);
+
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = "500 15px 'Inter', sans-serif";
+      ctx.fillText("🎾 Guest / Player Mode", 1650, 55);
+    }
+
+    function drawRegistrationPage(t) {
+      // Center card container
+      const startX = 360;
+      const startY = 130;
+      const cardW = 1200;
+
+      // Tournament Header Card
+      ctx.fillStyle = "#0D2B20";
+      ctx.strokeStyle = "rgba(201, 165, 92, 0.3)";
+      drawRoundedRect(startX, startY, cardW, 140, 14, true, true);
+
+      // Open badge
+      ctx.fillStyle = "rgba(16, 185, 129, 0.2)";
+      ctx.strokeStyle = "#10B981";
+      drawRoundedRect(startX + 30, startY + 22, 160, 28, 14, true, true);
+      ctx.fillStyle = "#10B981";
+      ctx.font = "700 12px 'Inter', sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("● REGISTRATION OPEN", startX + 110, startY + 40);
+
+      // Tournament Name
+      ctx.fillStyle = "#F8F6F0";
+      ctx.font = "700 32px 'Inter', sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText("The Baseline Society Open 2026", startX + 30, startY + 85);
+
+      ctx.fillStyle = "#A3B8B0";
+      ctx.font = "500 16px 'Inter', sans-serif";
+      ctx.fillText("Official Tournament of The Baseline Society • Deadline: Dec 15, 2026 at 11:59 PM IST", startX + 30, startY + 115);
+
+      // SECTION 1: Category Selection Cards
+      const sec1Y = startY + 160;
+      ctx.fillStyle = "#0D2B20";
+      drawRoundedRect(startX, sec1Y, cardW, 200, 14, true, true);
+
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = "700 20px 'Inter', sans-serif";
+      ctx.fillText("1. Select Categories to Enter", startX + 30, sec1Y + 35);
+      ctx.fillStyle = "#A3B8B0";
+      ctx.font = "400 14px 'Inter', sans-serif";
+      ctx.fillText("Choose events you wish to compete in. You may select both singles and doubles.", startX + 30, sec1Y + 60);
+
+      // Option 1: Men's Open Singles
+      const cat1Checked = t >= 16;
+      drawCategoryCard(startX + 30, sec1Y + 80, 550, 95, "Men's Open Singles", "₹500 / person", "Single Elimination • 18 slots left", cat1Checked);
+
+      // Option 2: Open Doubles
+      const cat2Checked = t >= 22;
+      drawCategoryCard(startX + 620, sec1Y + 80, 550, 95, "Open Doubles", "₹1,000 / team (₹500 / person)", "Single Elimination • 8 slots left", cat2Checked);
+
+      // SECTION 2: Player Information
+      const sec2Y = sec1Y + 220;
+      ctx.fillStyle = "#0D2B20";
+      drawRoundedRect(startX, sec2Y, cardW, 190, 14, true, true);
+
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = "700 20px 'Inter', sans-serif";
+      ctx.fillText("2. Player Information", startX + 30, sec2Y + 35);
+
+      // Form Fields
+      const pName = getTypedText("Alex Morgan", t, 30, 34);
+      const pAge = getTypedText("24", t, 35, 37);
+      const pPhone = getTypedText("+91 98765 43210", t, 38, 41);
+      const pEmail = getTypedText("alex@thebaselinesociety.com", t, 41, 44);
+
+      drawInputBox(startX + 30, sec2Y + 55, 350, "Full Name *", pName, t >= 30 && t < 35);
+      drawInputBox(startX + 410, sec2Y + 55, 140, "Age *", pAge, t >= 35 && t < 38);
+      drawInputBox(startX + 580, sec2Y + 55, 270, "Mobile Number *", pPhone, t >= 38 && t < 41);
+      drawInputBox(startX + 880, sec2Y + 55, 290, "Email Address *", pEmail, t >= 41 && t < 44);
+
+      drawSelectBox(startX + 30, sec2Y + 125, 260, "Gender *", t >= 34 ? "Male" : "Select Gender");
+
+      // SECTION 3: Doubles Partner Card (Dynamic Reveal)
+      const sec3Y = sec2Y + 210;
+      if (t >= 22) {
+        ctx.fillStyle = "#12372A";
+        ctx.strokeStyle = t >= 44 && t < 58 ? "rgba(201, 165, 92, 0.8)" : "rgba(201, 165, 92, 0.3)";
+        drawRoundedRect(startX, sec3Y, cardW, 125, 14, true, true);
+
+        ctx.fillStyle = "#C9A55C";
+        ctx.font = "700 18px 'Inter', sans-serif";
+        ctx.fillText("3. Doubles Partner Details (Open Doubles)", startX + 30, sec3Y + 30);
+
+        const partnerName = getTypedText("Jordan Lee", t, 46, 50);
+        const partnerPhone = getTypedText("+91 98123 45670", t, 51, 54);
+        const partnerEmail = getTypedText("jordan.lee@example.com", t, 54, 57);
+
+        drawInputBox(startX + 30, sec3Y + 45, 360, "Partner Full Name *", partnerName, t >= 46 && t < 51);
+        drawInputBox(startX + 420, sec3Y + 45, 340, "Partner Mobile Number *", partnerPhone, t >= 51 && t < 54);
+        drawInputBox(startX + 790, sec3Y + 45, 380, "Partner Email Address", partnerEmail, t >= 54 && t < 58);
+      }
+
+      // SECTION 4: Fee & Payment Summary
+      const sec4Y = sec3Y + 145;
+      let totalAmount = "₹0.00";
+      if (cat1Checked && !cat2Checked) totalAmount = "₹500.00";
+      if (!cat1Checked && cat2Checked) totalAmount = "₹1,000.00";
+      if (cat1Checked && cat2Checked) totalAmount = "₹1,500.00";
+
+      ctx.fillStyle = "#0D2B20";
+      ctx.strokeStyle = t >= 58 ? "#C9A55C" : "rgba(201, 165, 92, 0.3)";
+      drawRoundedRect(startX, sec4Y, cardW, 175, 14, true, true);
+
+      // Fee display
+      ctx.fillStyle = "#A3B8B0";
+      ctx.font = "600 13px 'Inter', sans-serif";
+      ctx.fillText("TOTAL REGISTRATION DUE", startX + 30, sec4Y + 30);
+
+      ctx.fillStyle = "#10B981";
+      ctx.font = "800 36px 'Inter', sans-serif";
+      ctx.fillText(totalAmount, startX + 30, sec4Y + 70);
+
+      // Payment Method Options
+      const isOnline = t < 68;
+      drawPaymentMethodPill(startX + 320, sec4Y + 30, 240, 50, "Pay Online (UPI QR)", isOnline);
+      drawPaymentMethodPill(startX + 580, sec4Y + 30, 240, 50, "Pay in Cash at Desk", !isOnline);
+
+      // UPI QR Code preview and UTR input
+      if (isOnline) {
+        drawSimulatedQR(startX + 850, sec4Y + 25, 110);
+        const utrText = getTypedText("402194829391", t, 62, 67);
+        drawInputBox(startX + 980, sec4Y + 45, 190, "12-Digit UTR Number *", utrText, t >= 62 && t < 67);
+      } else {
+        ctx.fillStyle = "#C9A55C";
+        ctx.font = "500 14px 'Inter', sans-serif";
+        ctx.fillText("✓ Cash collected by desk organizers on arrival.", startX + 850, sec4Y + 65);
+      }
+
+      // Submit Button
+      const btnX = startX + 860;
+      const btnY = sec4Y + 115;
+      const isSubmitted = t >= 74;
+      ctx.fillStyle = isSubmitted ? "#10B981" : "#0F3D2E";
+      ctx.strokeStyle = "#10B981";
+      drawRoundedRect(btnX, btnY, 310, 46, 8, true, true);
+
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = "700 16px 'Inter', sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(isSubmitted ? "✓ REGISTRATION COMPLETE!" : "Complete Registration →", btnX + 155, btnY + 28);
+
+      // Scene 6 Success Modal Overlay
+      if (t >= 74) {
+        drawConfirmationModal(t);
+      }
+    }
+
+    function drawCategoryCard(x, y, w, h, title, fee, details, checked) {
+      ctx.fillStyle = checked ? "rgba(201, 165, 92, 0.16)" : "rgba(11, 36, 27, 0.5)";
+      ctx.strokeStyle = checked ? "#C9A55C" : "rgba(201, 165, 92, 0.25)";
+      ctx.lineWidth = checked ? 2 : 1;
+      drawRoundedRect(x, y, w, h, 8, true, true);
+
+      // Checkbox
+      ctx.fillStyle = checked ? "#C9A55C" : "#0B241B";
+      ctx.strokeStyle = "#C9A55C";
+      drawRoundedRect(x + 15, y + 20, 22, 22, 4, true, true);
+      if (checked) {
+        ctx.fillStyle = "#0B241B";
+        ctx.font = "bold 16px 'Inter', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("✓", x + 26, y + 36);
+      }
+
+      ctx.textAlign = "left";
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = "700 17px 'Inter', sans-serif";
+      ctx.fillText(title, x + 50, y + 36);
+
+      ctx.fillStyle = "#C9A55C";
+      ctx.font = "700 15px 'Inter', sans-serif";
+      ctx.textAlign = "right";
+      ctx.fillText(fee, x + w - 15, y + 36);
+
+      ctx.textAlign = "left";
+      ctx.fillStyle = "#A3B8B0";
+      ctx.font = "400 13px 'Inter', sans-serif";
+      ctx.fillText(details, x + 50, y + 68);
+    }
+
+    function drawInputBox(x, y, w, label, val, active) {
+      ctx.fillStyle = "#A3B8B0";
+      ctx.font = "500 12px 'Inter', sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText(label, x, y - 6);
+
+      ctx.fillStyle = active ? "#164E3B" : "#081B14";
+      ctx.strokeStyle = active ? "#C9A55C" : "rgba(201, 165, 92, 0.25)";
+      ctx.lineWidth = active ? 2 : 1;
+      drawRoundedRect(x, y, w, 38, 6, true, true);
+
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = "500 15px 'Inter', sans-serif";
+      ctx.fillText(val + (active ? " |" : ""), x + 12, y + 24);
+    }
+
+    function drawSelectBox(x, y, w, label, val) {
+      ctx.fillStyle = "#A3B8B0";
+      ctx.font = "500 12px 'Inter', sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText(label, x, y - 6);
+
+      ctx.fillStyle = "#081B14";
+      ctx.strokeStyle = "rgba(201, 165, 92, 0.25)";
+      drawRoundedRect(x, y, w, 38, 6, true, true);
+
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = "500 14px 'Inter', sans-serif";
+      ctx.fillText(val + " ▾", x + 12, y + 24);
+    }
+
+    function drawPaymentMethodPill(x, y, w, h, label, active) {
+      ctx.fillStyle = active ? "rgba(201, 165, 92, 0.25)" : "rgba(0, 0, 0, 0.3)";
+      ctx.strokeStyle = active ? "#C9A55C" : "rgba(201, 165, 92, 0.2)";
+      ctx.lineWidth = active ? 2 : 1;
+      drawRoundedRect(x, y, w, h, 8, true, true);
+
+      ctx.fillStyle = active ? "#F8F6F0" : "#A3B8B0";
+      ctx.font = "600 14px 'Inter', sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText((active ? "◉ " : "○ ") + label, x + w / 2, y + h / 2 + 5);
+    }
+
+    function drawSimulatedQR(x, y, size) {
+      ctx.fillStyle = "#FFFFFF";
+      drawRoundedRect(x, y, size, size, 8, true, false);
+
+      // Draw stylized QR matrix
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(x + 10, y + 10, 24, 24);
+      ctx.fillRect(x + size - 34, y + 10, 24, 24);
+      ctx.fillRect(x + 10, y + size - 34, 24, 24);
+
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillRect(x + 15, y + 15, 14, 14);
+      ctx.fillRect(x + size - 29, y + 15, 14, 14);
+      ctx.fillRect(x + 15, y + size - 29, 14, 14);
+
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(x + 19, y + 19, 6, 6);
+      ctx.fillRect(x + size - 25, y + 19, 6, 6);
+      ctx.fillRect(x + 19, y + size - 25, 6, 6);
+
+      // Random-look pattern in center
+      ctx.fillRect(x + 45, y + 45, 20, 20);
+      ctx.fillRect(x + 70, y + 50, 10, 25);
+      ctx.fillRect(x + 40, y + 75, 25, 10);
+    }
+
+    function drawConfirmationModal(t) {
+      // Backdrop
+      ctx.fillStyle = "rgba(11, 36, 27, 0.85)";
+      ctx.fillRect(0, 0, 1920, 1080);
+
+      const modalW = 700;
+      const modalH = 460;
+      const mx = (1920 - modalW) / 2;
+      const my = (1080 - modalH) / 2;
+
+      ctx.fillStyle = "#0D2B20";
+      ctx.strokeStyle = "#C9A55C";
+      ctx.lineWidth = 2;
+      drawRoundedRect(mx, my, modalW, modalH, 16, true, true);
+
+      // Success Checkmark Circle
+      ctx.fillStyle = "#10B981";
+      ctx.beginPath();
+      ctx.arc(mx + modalW / 2, my + 80, 42, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = "bold 44px 'Inter', sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("✓", mx + modalW / 2, my + 94);
+
+      ctx.fillStyle = "#F8F6F0";
+      ctx.font = "700 28px 'Inter', sans-serif";
+      ctx.fillText("Registration Confirmed!", mx + modalW / 2, my + 170);
+
+      ctx.fillStyle = "#C9A55C";
+      ctx.font = "600 16px 'Inter', sans-serif";
+      ctx.fillText("THE BASELINE SOCIETY OPEN 2026", mx + modalW / 2, my + 205);
+
+      ctx.fillStyle = "#A3B8B0";
+      ctx.font = "400 15px 'Inter', sans-serif";
+      ctx.fillText("Player: Alex Morgan • Events: Men's Singles & Open Doubles", mx + modalW / 2, my + 245);
+      ctx.fillText("Registration ID: TBS-REG-84920 • Venue: The Baseline Society Club", mx + modalW / 2, my + 275);
+
+      // Confirmation button
+      ctx.fillStyle = "#C9A55C";
+      drawRoundedRect(mx + 175, my + 340, 350, 52, 26, true, false);
+      ctx.fillStyle = "#0B241B";
+      ctx.font = "700 16px 'Inter', sans-serif";
+      ctx.fillText("View Live Draws & Match Schedule →", mx + modalW / 2, my + 372);
+    }
+
+    // --- Cursor & Interaction Path ---
+    function getCursorTarget(t) {
+      if (t < 14) return { x: 500, y: 220 }; // Hovering header
+      if (t >= 14 && t < 20) return { x: 410, y: 390 }; // Clicking Category 1
+      if (t >= 20 && t < 26) return { x: 1000, y: 390 }; // Clicking Category 2
+      if (t >= 26 && t < 34) return { x: 500, y: 550 }; // Player Name
+      if (t >= 34 && t < 38) return { x: 820, y: 550 }; // Age
+      if (t >= 38 && t < 44) return { x: 1000, y: 550 }; // Mobile/Email
+      if (t >= 44 && t < 58) return { x: 600, y: 720 }; // Doubles partner
+      if (t >= 58 && t < 68) return { x: 1400, y: 880 }; // UTR input
+      if (t >= 68 && t < 74) return { x: 1380, y: 940 }; // Complete button
+      return { x: 960, y: 680 }; // Confirmation modal button
+    }
+
+    function drawAnimatedCursor(t) {
+      const target = getCursorTarget(t);
+      // Smooth interpolation
+      const cx = target.x;
+      const cy = target.y;
+
+      ctx.save();
+      ctx.translate(cx, cy);
+
+      // Cursor arrow
+      ctx.fillStyle = "#FFFFFF";
+      ctx.strokeStyle = "#000000";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0, 24);
+      ctx.lineTo(6, 19);
+      ctx.lineTo(12, 29);
+      ctx.lineTo(16, 27);
+      ctx.lineTo(10, 17);
+      ctx.lineTo(18, 17);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function drawClickPulse(t) {
+      const clickTimes = [16, 22, 30, 46, 62, 73.5];
+      for (const ct of clickTimes) {
+        if (t >= ct && t <= ct + 0.6) {
+          const progress = (t - ct) / 0.6;
+          const target = getCursorTarget(ct);
+          ctx.strokeStyle = `rgba(201, 165, 92, ${1 - progress})`;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(target.x, target.y, progress * 40, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+    }
+
+    function getTypedText(fullText, t, startT, endT) {
+      if (t < startT) return "";
+      if (t >= endT) return fullText;
+      const progress = (t - startT) / (endT - startT);
+      const chars = Math.floor(progress * fullText.length);
+      return fullText.slice(0, chars);
+    }
+
+    function drawRoundedRect(x, y, w, h, r, fill, stroke) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+      if (fill) ctx.fill();
+      if (stroke) ctx.stroke();
+    }
+
+    function updateUIOverlay(t) {
+      const sIndex = getSceneIndex(t);
+      if (sIndex !== -1 && sIndex !== currentSceneIndex) {
+        currentSceneIndex = sIndex;
+        document.getElementById('sceneBadgeText').innerText = SCENES[sIndex].badge;
+        document.getElementById('subtitleText').innerText = SCENES[sIndex].sub;
+
+        // Update timeline jump buttons
+        const btns = document.querySelectorAll('.scene-jump-btn');
+        btns.forEach((b, i) => {
+          if (i === sIndex) b.classList.add('active');
+          else b.classList.remove('active');
+        });
+
+        // Trigger narration
+        if (isPlaying) {
+          speakScene(sIndex);
+        }
+      }
+
+      // Progress bar & Timecode
+      const pct = (t / TOTAL_DURATION) * 100;
+      document.getElementById('progressFill').style.width = pct + "%";
+
+      const mins = Math.floor(t / 60);
+      const secs = Math.floor(t % 60);
+      const totalMins = Math.floor(TOTAL_DURATION / 60);
+      const totalSecs = Math.floor(TOTAL_DURATION % 60);
+      document.getElementById('timecodeDisplay').innerText = 
+        `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')} / ${String(totalMins).padStart(2,'0')}:${String(totalSecs).padStart(2,'0')}`;
+    }
+
+    // --- Playback Engine ---
+    function loop(timestamp) {
+      if (!lastTimestamp) lastTimestamp = timestamp;
+      const delta = (timestamp - lastTimestamp) / 1000;
+      lastTimestamp = timestamp;
+
+      if (isPlaying) {
+        currentTime += delta * playbackSpeed;
+        if (currentTime >= TOTAL_DURATION) {
+          currentTime = TOTAL_DURATION;
+          pauseVideo();
+        }
+      }
+
+      render(currentTime);
+
+      if (isPlaying || isExporting) {
+        requestAnimationFrame(loop);
+      }
+    }
+
+    function togglePlay() {
+      if (isPlaying) {
+        pauseVideo();
+      } else {
+        playVideo();
+      }
+    }
+
+    function playVideo() {
+      if (currentTime >= TOTAL_DURATION) currentTime = 0;
+      isPlaying = true;
+      document.getElementById('playIcon').innerText = "⏸ Pause";
+      lastTimestamp = 0;
+      requestAnimationFrame(loop);
+      const sIdx = getSceneIndex(currentTime);
+      if (sIdx !== -1) speakScene(sIdx);
+    }
+
+    function pauseVideo() {
+      isPlaying = false;
+      document.getElementById('playIcon').innerText = "▶ Play";
+      if (synth) synth.cancel();
+    }
+
+    function restartVideo() {
+      currentTime = 0;
+      lastSpokenScene = -1;
+      render(0);
+      if (!isPlaying) playVideo();
+    }
+
+    function jumpToTime(t) {
+      currentTime = t;
+      lastSpokenScene = -1;
+      render(t);
+      if (isPlaying) {
+        const sIdx = getSceneIndex(t);
+        if (sIdx !== -1) speakScene(sIdx);
+      }
+    }
+
+    function seekVideo(e) {
+      const rect = document.getElementById('progressBar').getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const ratio = Math.max(0, Math.min(1, clickX / rect.width));
+      jumpToTime(ratio * TOTAL_DURATION);
+    }
+
+    function cycleSpeed() {
+      if (playbackSpeed === 1.0) playbackSpeed = 1.25;
+      else if (playbackSpeed === 1.25) playbackSpeed = 1.5;
+      else if (playbackSpeed === 1.5) playbackSpeed = 2.0;
+      else playbackSpeed = 1.0;
+      document.getElementById('speedBtn').innerText = playbackSpeed.toFixed(1) + "x Speed";
+    }
+
+    // --- 1-Click Video Recording Exporter (MediaRecorder) ---
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let isExporting = false;
+
+    function toggleExportRecording() {
+      if (isExporting) {
+        stopRecording();
+      } else {
+        startRecording();
+      }
+    }
+
+    function startRecording() {
+      isExporting = true;
+      recordedChunks = [];
+      document.getElementById('exportBtnText').innerText = "Stop & Save Video...";
+      document.getElementById('recordExportBtn').style.background = "#EF4444";
+
+      // Reset to beginning
+      currentTime = 0;
+      lastSpokenScene = -1;
+      playVideo();
+
+      const stream = canvas.captureStream(30); // 30 FPS
+      let mimeType = 'video/webm;codecs=vp9';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'video/webm;codecs=vp8';
+      }
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'video/webm';
+      }
+
+      mediaRecorder = new MediaRecorder(stream, { mimeType: mimeType, videoBitsPerSecond: 5000000 });
+      mediaRecorder.ondataavailable = e => {
+        if (e.data.size > 0) recordedChunks.push(e.data);
+      };
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'the_baseline_society_tournament_registration_tutorial.webm';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+        }, 100);
+      };
+      mediaRecorder.start();
+    }
+
+    function stopRecording() {
+      isExporting = false;
+      document.getElementById('exportBtnText').innerText = "Record & Download Video (.webm)";
+      document.getElementById('recordExportBtn').style.background = "var(--accent-success)";
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+      }
+      pauseVideo();
+    }
+
+    // Initial render
+    render(0);
+  </script>
+</body>
+</html>
