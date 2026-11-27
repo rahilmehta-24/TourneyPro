@@ -45,3 +45,16 @@ class Config:
     # Upload folder in 'app/web/static/uploads'
     UPLOAD_FOLDER = os.path.join(basedir, 'app', 'web', 'static', 'uploads')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
+
+    # Email & SMTP Configuration
+    MAIL_SERVER = os.environ.get('MAIL_SERVER')
+    MAIL_PORT = int(os.environ.get('MAIL_PORT') or 587)
+    MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'true').lower() in ['true', '1', 't', 'yes']
+    MAIL_USE_SSL = os.environ.get('MAIL_USE_SSL', 'false').lower() in ['true', '1', 't', 'yes']
+    MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
+    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
+    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER') or 'The Baseline Society <confirmation@thebaselinesociety.com>'
+    MAIL_CONFIRMATION_EMAIL = os.environ.get('MAIL_CONFIRMATION_EMAIL') or 'confirmation@thebaselinesociety.com'
+    MAIL_SUPPRESS_SEND = os.environ.get('MAIL_SUPPRESS_SEND', 'false').lower() in ['true', '1', 't', 'yes']
+    SUPERADMIN_EMAIL = os.environ.get('SUPERADMIN_EMAIL')
+

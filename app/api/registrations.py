@@ -1,3 +1,4 @@
+import logging
 from flask import request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime
@@ -7,6 +8,8 @@ from app.domain.models import (
     TournamentStaff, User
 )
 from app.domain.schemas import registration_schema, registrations_schema
+
+logger = logging.getLogger(__name__)
 
 
 @api_bp.route('/tournaments/<slug>/register', methods=['POST'])
@@ -60,6 +63,25 @@ def register_for_tournament(slug):
     if not is_authorized:
         return jsonify({"success": False, "message": "Forbidden: You may only register player profiles associated with your account"}), 403
 
+    # Require email and mobile number for notifications
+    req_email = (data.get('email') or (player.email if player else None) or (caller.email if caller else '') or '').strip()
+    req_mobile = (data.get('mobile') or data.get('contact_number') or (player.contact_number if player else None) or (getattr(caller, 'phone_number', None) if caller else '') or '').strip()
+
+    from app.services.utils.validation import validate_email, validate_mobile
+    ok, clean_email = validate_email(req_email, required=True, field_name="Email Address")
+    if not ok:
+        return jsonify({"success": False, "message": clean_email}), 400
+
+    ok, clean_mobile = validate_mobile(req_mobile, required=True, field_name="Mobile Number")
+    if not ok:
+        return jsonify({"success": False, "message": clean_mobile}), 400
+
+    if player:
+        if not player.email:
+            player.email = clean_email
+        if not player.contact_number:
+            player.contact_number = clean_mobile
+
     # Duplicate check
     existing = Registration.query.filter_by(
         tournament_id=tournament.id,
@@ -112,6 +134,13 @@ def register_for_tournament(slug):
     )
     db.session.add(registration)
     db.session.commit()
+
+    # Dispatch email notifications to Player, Organizer, and Superadmin
+    try:
+        from app.services.email_service import notify_registration_created
+        notify_registration_created(registration.id)
+    except Exception as e:
+        logger.error("[API] Failed to dispatch registration email notification: %s", e)
 
     return jsonify({
         "success": True,

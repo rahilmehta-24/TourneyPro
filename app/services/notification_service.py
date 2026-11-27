@@ -91,6 +91,14 @@ def notify_registration_status(
         title = "Registration Status Updated"
         body = f"Your entry for {t_name} ({c_name}) status is now: {status}."
 
+    # Dispatch email update if email service available
+    try:
+        from app.services.email_service import notify_registration_status_update
+
+        notify_registration_status_update(registration.id, status, reason)
+    except Exception as e:
+        logger.error("[Notification] Failed to send registration status email: %s", e)
+
     return send_notification(
         user_id=registration.user_id,
         title=title,

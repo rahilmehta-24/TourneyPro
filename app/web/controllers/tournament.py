@@ -599,6 +599,26 @@ def register_for_tournament(slug):
             participant_gender = participant_gender or player.gender
             participant_dob = player.dob
             participant_age = player.age
+
+            ok, clean_p_mobile = validate_mobile(
+                participant_mobile, required=True, field_name="Mobile Number"
+            )
+            if not ok:
+                flash(clean_p_mobile, "error")
+                return redirect(url_for("tournament.register_for_tournament", slug=slug))
+            participant_mobile = clean_p_mobile
+            if not player.contact_number:
+                player.contact_number = clean_p_mobile
+
+            ok, clean_p_email = validate_email(
+                participant_email, required=True, field_name="Email Address"
+            )
+            if not ok:
+                flash(clean_p_email, "error")
+                return redirect(url_for("tournament.register_for_tournament", slug=slug))
+            participant_email = clean_p_email
+            if not player.email:
+                player.email = clean_p_email
         else:
             ok, clean_p_name = validate_name(participant_name, field_name="Full Name")
             if not ok:
@@ -614,14 +634,13 @@ def register_for_tournament(slug):
                 return redirect(url_for("tournament.register_for_tournament", slug=slug))
             participant_mobile = clean_p_mobile
 
-            if participant_email:
-                ok, clean_p_email = validate_email(
-                    participant_email, required=False, field_name="Email Address"
-                )
-                if not ok:
-                    flash(clean_p_email, "error")
-                    return redirect(url_for("tournament.register_for_tournament", slug=slug))
-                participant_email = clean_p_email
+            ok, clean_p_email = validate_email(
+                participant_email, required=True, field_name="Email Address"
+            )
+            if not ok:
+                flash(clean_p_email, "error")
+                return redirect(url_for("tournament.register_for_tournament", slug=slug))
+            participant_email = clean_p_email
 
             if not participant_gender:
                 flash("Gender is required.", "error")
@@ -737,6 +756,7 @@ def register_for_tournament(slug):
             partner_players[cat_id] = p_player
 
         # Create Registrations and Participants for each category
+        created_registrations = []
         for cat in selected_categories:
             p2_obj = partner_players.get(cat.id)
             p2_id = p2_obj.id if p2_obj else None
@@ -802,6 +822,7 @@ def register_for_tournament(slug):
                 academy_id_snapshot=academy_snapshot_id,
             )
             db.session.add(reg)
+            created_registrations.append(reg)
 
             if reg_status == "approved":
                 display_name = (
@@ -827,6 +848,18 @@ def register_for_tournament(slug):
                 db.session.add(p)
 
         db.session.commit()
+
+        # Dispatch email notifications to Player, Organizer, and Superadmin
+        try:
+            from app.services.email_service import notify_registration_created
+
+            for created_reg in created_registrations:
+                notify_registration_created(created_reg.id)
+        except Exception as e:
+            from flask import current_app
+
+            current_app.logger.error("Failed to dispatch registration email notifications: %s", e)
+
 
         is_guest = not current_u
         if total_due > 0:
