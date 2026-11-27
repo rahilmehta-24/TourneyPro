@@ -856,6 +856,7 @@
         
         {% if not (category.max_players_per_team and category.max_players_per_team > 1) and current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] %}
         <form id="group-matrix-form" method="POST" action="{{ url_for('category.update_grid_scores', slug=tournament.url_slug, category_id=category.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         {% endif %}
 
         {% if groups_data and groups_data|length > 1 %}
@@ -944,9 +945,17 @@
                         <th>Diff</th>
                         {% else %}
                         <th>Participant</th>
-                        <th>W</th>
-                        <th>L</th>
-                        <th>Pts</th>
+                        <th style="text-align: center;">W</th>
+                        <th style="text-align: center;">L</th>
+                        {% if category.scoring_format == 'points' %}
+                        <th style="text-align: center;">Points For (PF)</th>
+                        <th style="text-align: center;">Points Against (PA)</th>
+                        <th style="text-align: center;">Diff</th>
+                        {% else %}
+                        <th style="text-align: center;">Games Won (GW)</th>
+                        <th style="text-align: center;">Games Lost (GL)</th>
+                        <th style="text-align: center;">Diff</th>
+                        {% endif %}
                         {% endif %}
                     </tr>
                 </thead>
@@ -1006,15 +1015,20 @@
                                 {% if not loop.last %}<span style="color: var(--text-muted); margin: 0 2px;">/</span>{% endif %}
                             {% endfor %}
                         </td>
-                        <td class="tabular-nums">{{ participant.group_wins }}</td>
-                        <td class="tabular-nums">{{ participant.group_losses }}</td>
-                        <td class="tabular-nums">{{ participant.group_points }}</td>
+                        <td class="tabular-nums" style="text-align: center; font-weight: 700; color: #065F46;">{{ participant.group_wins }}</td>
+                        <td class="tabular-nums" style="text-align: center; color: var(--text-muted);">{{ participant.group_losses }}</td>
+                        <td class="tabular-nums" style="text-align: center; font-weight: 700;">{{ participant.group_points }}</td>
+                        <td class="tabular-nums" style="text-align: center;">{{ participant.group_points_conceded or participant._games_conceded or 0 }}</td>
+                        <td class="tabular-nums" style="text-align: center; font-weight: 600; color: {% if (participant.group_point_diff if participant.group_point_diff is not none else (participant.group_points - (participant._games_conceded or 0))) > 0 %}#065F46{% elif (participant.group_point_diff if participant.group_point_diff is not none else (participant.group_points - (participant._games_conceded or 0))) < 0 %}#B91C1C{% else %}var(--text-muted){% endif %};">
+                            {% set p_diff = participant.group_point_diff if participant.group_point_diff is not none else (participant.group_points - (participant._games_conceded or 0)) %}
+                            {% if p_diff > 0 %}+{{ p_diff }}{% else %}{{ p_diff }}{% endif %}
+                        </td>
                         {% endif %}
                     </tr>
                     {% endfor %}
                     {% else %}
                     <tr>
-                        <td colspan="{% if category.max_players_per_team and category.max_players_per_team > 1 %}8{% else %}4{% endif %}" style="text-align: center; color: var(--text-muted); padding: 1.5rem 0.5rem; font-size: 0.9rem;">
+                        <td colspan="{% if category.max_players_per_team and category.max_players_per_team > 1 %}8{% else %}6{% endif %}" style="text-align: center; color: var(--text-muted); padding: 1.5rem 0.5rem; font-size: 0.9rem;">
                             No teams assigned to this group yet.
                         </td>
                     </tr>
@@ -1022,6 +1036,102 @@
                 </tbody>
             </table>
             </div>
+
+            <!-- Results Crosstab Matrix (§6.3a) -->
+            {% if group_info.standings and group_info.standings|length >= 2 %}
+            <div style="margin-top: 1.25rem; margin-bottom: 1.25rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <h4 style="font-size: 0.95rem; font-weight: 700; margin: 0; color: var(--text-muted); display: flex; align-items: center; gap: 0.35rem;">
+                        <svg class="icon icon-xs"><use href="#icon-grid"></use></svg> Results Matrix Grid
+                    </h4>
+                    {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] and not (category.max_players_per_team and category.max_players_per_team > 1) %}
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <button type="submit" form="group-matrix-form" class="btn btn-primary btn-small" style="font-weight: 600; padding: 0.35rem 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+                            <svg class="icon icon-xs"><use href="#icon-check"></use></svg> Save Grid Scores
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+                {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] and not (category.max_players_per_team and category.max_players_per_team > 1) %}
+                <p style="font-size: 0.78rem; color: var(--text-muted); margin: 0 0 0.5rem 0;">
+                    Type match scores directly in the cells and click <strong>Save Grid Scores</strong>, or click the ✏️ icon on any matchup for detailed scoring (tiebreaks, walkovers, retirements).
+                </p>
+                {% endif %}
+                <div class="table-container" style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: 8px;">
+                    <table class="standings-table results-matrix-table" style="width: 100%; border-collapse: collapse; text-align: center; font-size: 0.85rem;">
+                        <thead>
+                            <tr style="background: var(--bg-secondary);">
+                                <th style="text-align: left; padding: 0.5rem 0.75rem;">Player / Opponent</th>
+                                {% for opp in group_info.standings %}
+                                <th style="text-align: center; padding: 0.5rem; min-width: 80px;" title="{{ opp.name }}">
+                                    {{ opp.name[:12] }}{% if opp.name|length > 12 %}…{% endif %}
+                                </th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row_p in group_info.standings %}
+                            <tr>
+                                <td style="text-align: left; font-weight: 600; padding: 0.5rem 0.75rem; background: var(--bg-secondary);">
+                                    {{ row_p.name }}
+                                </td>
+                                {% for col_p in group_info.standings %}
+                                {% if row_p.id == col_p.id %}
+                                <td style="background: repeating-linear-gradient(45deg, rgba(0,0,0,0.06), rgba(0,0,0,0.06) 5px, rgba(0,0,0,0.12) 5px, rgba(0,0,0,0.12) 10px); color: var(--text-muted); font-size: 0.75rem;">
+                                    —
+                                </td>
+                                {% else %}
+                                {% set cell = group_info.score_matrix.get((row_p.id, col_p.id)) if group_info.score_matrix else None %}
+                                <td style="padding: 0.35rem; position: relative;">
+                                    {% if cell and cell.match %}
+                                        {% set m = cell.match %}
+                                        {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] and not (category.max_players_per_team and category.max_players_per_team > 1) %}
+                                        <div style="display: flex; align-items: center; justify-content: center; gap: 4px;">
+                                            <input type="text" 
+                                                   name="match_{{ m.id }}_p{% if cell.is_p1 %}1{% else %}2{% endif %}" 
+                                                   id="matrix-input-{{ m.id }}-{% if cell.is_p1 %}1{% else %}2{% endif %}" 
+                                                   data-match-id="{{ m.id }}" 
+                                                   data-player-idx="{% if cell.is_p1 %}1{% else %}2{% endif %}" 
+                                                   value="{{ cell.val or '' }}" 
+                                                   class="matrix-score-input form-input" 
+                                                   placeholder="—" 
+                                                   style="width: 52px; height: 32px; text-align: center; font-weight: 700; font-size: 0.88rem; padding: 2px 4px; border: 1px solid var(--border-strong); border-radius: 4px; background: {% if m.status == 'completed' %}{% if m.winner_id == row_p.id %}rgba(5, 150, 105, 0.12){% else %}var(--bg-secondary){% endif %}{% else %}var(--bg-primary){% endif %}; color: {% if m.status == 'completed' and m.winner_id == row_p.id %}#065F46{% else %}var(--text-primary){% endif %};" 
+                                                   oninput="handleMatrixScoreInput(this)" 
+                                                   onkeydown="if(event.key==='Enter'){event.preventDefault(); document.getElementById('group-matrix-form').submit();}">
+                                            <button type="button" 
+                                                    class="btn btn-secondary btn-small" 
+                                                    style="padding: 2px 5px; font-size: 0.75rem; border-radius: 4px; border: 1px solid var(--border-color); color: var(--text-muted); cursor: pointer;" 
+                                                    title="Open detailed match score modal (tiebreak, sets, walkover, retirement)" 
+                                                    onclick="openMatchModal({{ m.id }}, '{{ m.status }}', '{{ m.scheduled_time.strftime('%Y-%m-%dT%H:%M') if m.scheduled_time else '' }}', '{{ m.participant1.name|escape if m.participant1 else '' }}', {{ m.participant1_id or 'null' }}, '{{ m.participant2.name|escape if m.participant2 else '' }}', {{ m.participant2_id or 'null' }}, true, '{{ m.score1 or '' }}', '{{ m.score2 or '' }}', '{{ m.scoring_format or category.scoring_format or 'games' }}', '{{ m.num_sets or category.num_sets or 3 }}', '{{ m.games_per_set or (category.total_games if category.format == 'group_stage' else category.games_per_set) or 6 }}', '{{ m.points_to_win or category.points_to_win or 11 }}', {{ m.winner_id or 'null' }}, {{ m.match_number or 'null' }}, 'standard')">
+                                                ✏️
+                                            </button>
+                                        </div>
+                                        {% else %}
+                                        <div style="cursor: pointer; padding: 4px 6px; border-radius: 4px;" 
+                                             onclick="openMatchModal({{ m.id }}, '{{ m.status }}', '{{ m.scheduled_time.strftime('%Y-%m-%dT%H:%M') if m.scheduled_time else '' }}', '{{ m.participant1.name|escape if m.participant1 else '' }}', {{ m.participant1_id or 'null' }}, '{{ m.participant2.name|escape if m.participant2 else '' }}', {{ m.participant2_id or 'null' }}, false, '{{ m.score1 or '' }}', '{{ m.score2 or '' }}', '{{ m.scoring_format or category.scoring_format or 'games' }}', '{{ m.num_sets or category.num_sets or 3 }}', '{{ m.games_per_set or (category.total_games if category.format == 'group_stage' else category.games_per_set) or 6 }}', '{{ m.points_to_win or category.points_to_win or 11 }}', {{ m.winner_id or 'null' }}, {{ m.match_number or 'null' }}, 'standard')" 
+                                             title="Click to view match details">
+                                            {% if cell.score_display %}
+                                                <span style="font-weight: 700; color: {% if m.status == 'completed' and m.winner_id == row_p.id %}#065F46{% elif m.status == 'completed' %}var(--text-muted){% else %}var(--text-primary){% endif %};">
+                                                    {{ cell.score_display }}
+                                                </span>
+                                            {% else %}
+                                                <span style="color: var(--text-muted); font-size: 0.85rem;">—</span>
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
+                                    {% else %}
+                                        <span style="color: var(--text-muted);">—</span>
+                                    {% endif %}
+                                </td>
+                                {% endif %}
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
 
             <div class="group-fixtures-container" style="{% if (active_group_param == 'all' or not active_group_param) and groups_data and groups_data|length > 1 %}display: none;{% endif %}">
             {% set ns_team = namespace(has_rubbers=false) %}
@@ -1246,67 +1356,49 @@
                 {% endfor %}
             </div>
             {% else %}
-            <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Group Matrix</h4>
-            <div style="overflow-x: auto;">
-                <table class="standings-table round-robin-grid" style="text-align: center;">
-                    <thead>
-                        <tr>
-                            <th style="text-align: center;">vs</th>
-                            {% for p in group_info.standings %}
-                            <th style="min-width: 100px; text-align: center;" title="{{ p.name }}">{{ p.name }}</th>
-                            {% endfor %}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for row_p in group_info.standings %}
-                        <tr>
-                            <td style="font-weight: 600; text-align: center;">{{ row_p.name }}</td>
-                            {% for col_p in group_info.standings %}
-                            {% if row_p.id == col_p.id %}
-                                <td class="empty-cell" style="background: var(--bg-tertiary); color: var(--text-muted); font-weight: bold; font-size: 1.2rem;">X</td>
-                            {% else %}
-                                {% set ns = namespace(found=false, match=none, is_p1=true) %}
-                                {% for m in group_info.matches %}
-                                    {% if m.participant1_id == row_p.id and m.participant2_id == col_p.id %}
-                                        {% set ns.found = true %}
-                                        {% set ns.match = m %}
-                                        {% set ns.is_p1 = true %}
-                                    {% elif m.participant1_id == col_p.id and m.participant2_id == row_p.id %}
-                                        {% set ns.found = true %}
-                                        {% set ns.match = m %}
-                                        {% set ns.is_p1 = false %}
-                                    {% endif %}
-                                {% endfor %}
-                                
-                                <td style="padding: 4px;">
-                                {% if ns.found %}
-                                    {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] and ns.match.id %}
-                                        <div style="display: flex; justify-content: center; align-items: center;">
-                                            <input type="number" name="match_{{ ns.match.id }}_p{% if ns.is_p1 %}1{% else %}2{% endif %}" 
-                                                   value="{{ ns.match.score1 if (ns.is_p1 and ns.match.score1 is not none) else (ns.match.score2 if not ns.is_p1 and ns.match.score2 is not none else '') }}" 
-                                                   style="width: 60px; text-align: center; padding: 4px; border: 1px solid var(--border-strong); background: var(--bg-primary); color: var(--text-primary); border-radius: 4px;" min="0" placeholder="-">
-                                        </div>
-                                    {% else %}
-                                        {% if ns.match.status == 'completed' %}
-                                            {% if ns.is_p1 %}
-                                                <span style="{% if ns.match.winner_id == row_p.id %}color: var(--primary); font-weight: bold;{% endif %}">{{ ns.match.score1 | format_tennis_score | safe }}</span>
-                                            {% else %}
-                                                <span style="{% if ns.match.winner_id == row_p.id %}color: var(--primary); font-weight: bold;{% endif %}">{{ ns.match.score2 | format_tennis_score | safe }}</span>
-                                            {% endif %}
-                                        {% else %}
-                                            <span style="color: var(--text-muted); font-size: 0.85rem;">Pending</span>
-                                        {% endif %}
-                                    {% endif %}
-                                {% else %}
-                                    -
-                                {% endif %}
-                                </td>
-                            {% endif %}
-                            {% endfor %}
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <!-- Non-Team Group Matches List -->
+            <div style="margin-top: 1.5rem; margin-bottom: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                    <h4 style="margin: 0; font-size: 1.1rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.4rem;">
+                        <svg class="icon icon-xs"><use href="#icon-tennis"></use></svg> {{ group_info.group.name }} Fixtures
+                    </h4>
+                </div>
+                <div class="matches-list" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;">
+                    {% for match in group_info.matches %}
+                    <div class="match-card {% if match.status == 'completed' %}completed{% endif %} clickable-match" 
+                         id="match-card-{{ match.id }}" 
+                         data-match-id="{{ match.id }}" 
+                         onclick="openMatchModal({{ match.id }}, '{{ match.status }}', '{{ match.scheduled_time.strftime('%Y-%m-%dT%H:%M') if match.scheduled_time else '' }}', '{{ match.participant1.name|escape if match.participant1 else '' }}', {{ match.participant1_id or 'null' }}, '{{ match.participant2.name|escape if match.participant2 else '' }}', {{ match.participant2_id or 'null' }}, {{ 'true' if current_user and current_user.role in ['admin', 'superadmin'] else 'false' }}, '{{ match.score1 or '' }}', '{{ match.score2 or '' }}', '{{ match.scoring_format or category.scoring_format or 'games' }}', '{{ match.num_sets or category.num_sets or 3 }}', '{{ match.games_per_set or (category.total_games if category.format == 'group_stage' else category.games_per_set) or 6 }}', '{{ match.points_to_win or category.points_to_win or 11 }}', {{ match.winner_id or 'null' }}, {{ match.match_number or 'null' }}, 'standard')" 
+                         title="Click to view/score match">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Round {{ match.round }} &bull; Match #{{ match.match_number }}</span>
+                            <span class="status-badge status-{{ match.status }}" style="font-size: 0.72rem; padding: 2px 7px; border-radius: 9999px;">{{ match.status.replace('_', ' ').title() }}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0;">
+                            <span style="font-weight: {% if match.winner_id == match.participant1_id %}800{% else %}600{% endif %}; color: {% if match.winner_id == match.participant1_id %}#065F46{% else %}var(--text-primary){% endif %};">
+                                {{ match.participant1.name if match.participant1 else 'TBD' }}
+                            </span>
+                            <span style="font-weight: 800; font-size: 1rem; color: {% if match.winner_id == match.participant1_id %}#065F46{% else %}var(--text-primary){% endif %};">
+                                {{ match.score1 if match.score1 is not none else '—' }}
+                            </span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0; border-top: 1px solid var(--border-color);">
+                            <span style="font-weight: {% if match.winner_id == match.participant2_id %}800{% else %}600{% endif %}; color: {% if match.winner_id == match.participant2_id %}#065F46{% else %}var(--text-primary){% endif %};">
+                                {{ match.participant2.name if match.participant2 else 'TBD' }}
+                            </span>
+                            <span style="font-weight: 800; font-size: 1rem; color: {% if match.winner_id == match.participant2_id %}#065F46{% else %}var(--text-primary){% endif %};">
+                                {{ match.score2 if match.score2 is not none else '—' }}
+                            </span>
+                        </div>
+                        {% if match.court_name or match.scheduled_time %}
+                        <div style="margin-top: 0.4rem; padding-top: 0.4rem; border-top: 1px dashed var(--border-color); font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; justify-content: space-between;">
+                            <span>{{ match.court_name or '' }}</span>
+                            <span>{{ match.scheduled_time | ist('%d %b, %I:%M %p') if match.scheduled_time else '' }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
             {% endif %}
             </div><!-- /.group-fixtures-container -->
@@ -1527,9 +1619,16 @@
                             <th style="text-align: center;">Played</th>
                             <th style="text-align: center;">Won</th>
                             <th style="text-align: center;">Lost</th>
+                            {% if category.scoring_format == 'points' %}
+                            <th style="text-align: center;">Points For (PF)</th>
+                            <th style="text-align: center;">Points Against (PA)</th>
+                            <th style="text-align: center;">Diff</th>
+                            {% else %}
                             <th style="text-align: center;">Sets</th>
-                            <th style="text-align: center;">Games</th>
-                            <th style="text-align: center;">Pts</th>
+                            <th style="text-align: center;">Games Won (GW)</th>
+                            <th style="text-align: center;">Games Lost (GL)</th>
+                            <th style="text-align: center;">Diff</th>
+                            {% endif %}
                             <th>Tiebreak</th>
                         </tr>
                     </thead>
@@ -1556,79 +1655,130 @@
                             <td style="text-align: center;" class="tabular-nums">{{ s.played }}</td>
                             <td style="text-align: center; font-weight: 700; color: #065F46;" class="tabular-nums">{{ s.wins }}</td>
                             <td style="text-align: center; color: var(--text-muted);" class="tabular-nums">{{ s.losses }}</td>
+                            {% if category.scoring_format == 'points' %}
+                            <td style="text-align: center; font-weight: 700;" class="tabular-nums">{{ s.points_won if s.points_won is defined else s.points }}</td>
+                            <td style="text-align: center;" class="tabular-nums">{{ s.points_lost if s.points_lost is defined else (s.participant.group_points_conceded or 0) }}</td>
+                            <td style="text-align: center; font-weight: 600; color: {% if (s.point_diff if s.point_diff is defined else s.points) > 0 %}#065F46{% elif (s.point_diff if s.point_diff is defined else s.points) < 0 %}#B91C1C{% else %}var(--text-muted){% endif %};" class="tabular-nums">
+                                {% set p_diff = s.point_diff if s.point_diff is defined else (s.participant.group_point_diff or 0) %}
+                                {% if p_diff > 0 %}+{{ p_diff }}{% else %}{{ p_diff }}{% endif %}
+                            </td>
+                            {% else %}
                             <td style="text-align: center;" class="tabular-nums">{{ s.sets_won }}–{{ s.sets_lost }}</td>
-                            <td style="text-align: center;" class="tabular-nums">{{ s.games_won }}–{{ s.games_lost }}</td>
-                            <td style="text-align: center; font-weight: 700;" class="tabular-nums">{{ s.display_pts }}</td>
+                            <td style="text-align: center; font-weight: 700;" class="tabular-nums">{{ s.games_won }}</td>
+                            <td style="text-align: center;" class="tabular-nums">{{ s.games_lost }}</td>
+                            <td style="text-align: center; font-weight: 600; color: {% if s.game_diff > 0 %}#065F46{% elif s.game_diff < 0 %}#B91C1C{% else %}var(--text-muted){% endif %};" class="tabular-nums">
+                                {% if s.game_diff > 0 %}+{{ s.game_diff }}{% else %}{{ s.game_diff }}{% endif %}
+                            </td>
+                            {% endif %}
                             <td style="font-size: 0.82rem; color: var(--text-muted);">{{ s.tiebreak or '—' }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-        </div>
-        {% endif %}
 
-        <!-- Cross-Matrix Results Grid (§4.2) -->
-        {% if participants and participants|length > 1 %}
-        <div style="margin-bottom: 2.5rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-                <h3 style="margin: 0; font-size: 1.25rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
-                    <svg class="icon icon-sm" style="color: var(--accent-secondary);"><use href="#icon-grid"></use></svg>
-                    Cross-Matrix Results
-                </h3>
-            </div>
-            <div style="overflow-x: auto;">
-                <table class="standings-table round-robin-grid" style="text-align: center;">
-                    <thead>
-                        <tr>
-                            <th style="text-align: center; min-width: 140px;">Competitor</th>
-                            {% for col_p in participants %}
-                            <th style="min-width: 110px; text-align: center;" title="{{ col_p.name }}">{{ col_p.name }}</th>
-                            {% endfor %}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for row_p in participants %}
-                        <tr>
-                            <td style="font-weight: 600; text-align: left; padding: 0.5rem 0.75rem;">{{ row_p.name }}</td>
-                            {% for col_p in participants %}
-                            {% if row_p.id == col_p.id %}
-                                <td class="empty-cell" style="background: var(--bg-tertiary); color: var(--text-muted); font-weight: bold; font-size: 1.1rem;">X</td>
-                            {% else %}
-                                {% set ns = namespace(found=false, match=none, is_p1=true) %}
-                                {% for m in rr_matches %}
-                                    {% if m.participant1_id == row_p.id and m.participant2_id == col_p.id %}
-                                        {% set ns.found = true %}
-                                        {% set ns.match = m %}
-                                        {% set ns.is_p1 = true %}
-                                    {% elif m.participant1_id == col_p.id and m.participant2_id == row_p.id %}
-                                        {% set ns.found = true %}
-                                        {% set ns.match = m %}
-                                        {% set ns.is_p1 = false %}
-                                    {% endif %}
+            <!-- Results Crosstab Matrix Grid for Pure Round Robin (§6.3a) -->
+            {% if rr_standings and rr_standings|length >= 2 %}
+            {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] %}
+            <form id="rr-matrix-form" method="POST" action="{{ url_for('category.update_grid_scores', slug=tournament.url_slug, category_id=category.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            {% endif %}
+            <div style="margin-top: 1.25rem; margin-bottom: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <h4 style="font-size: 0.95rem; font-weight: 700; margin: 0; color: var(--text-muted); display: flex; align-items: center; gap: 0.35rem;">
+                        <svg class="icon icon-xs"><use href="#icon-grid"></use></svg> Results Matrix Grid
+                    </h4>
+                    {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] %}
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <button type="submit" form="rr-matrix-form" class="btn btn-primary btn-small" style="font-weight: 600; padding: 0.35rem 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+                            <svg class="icon icon-xs"><use href="#icon-check"></use></svg> Save Grid Scores
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+                {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] %}
+                <p style="font-size: 0.78rem; color: var(--text-muted); margin: 0 0 0.5rem 0;">
+                    Type match scores directly in the cells and click <strong>Save Grid Scores</strong>, or click the ✏️ icon on any matchup for detailed scoring (tiebreaks, walkovers, retirements).
+                </p>
+                {% endif %}
+                <div class="table-container" style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: 8px;">
+                    <table class="standings-table results-matrix-table" style="width: 100%; border-collapse: collapse; text-align: center; font-size: 0.85rem;">
+                        <thead>
+                            <tr style="background: var(--bg-secondary);">
+                                <th style="text-align: left; padding: 0.5rem 0.75rem;">Player / Opponent</th>
+                                {% for opp_s in rr_standings %}
+                                <th style="text-align: center; padding: 0.5rem; min-width: 80px;" title="{{ opp_s.participant.name }}">
+                                    {{ opp_s.participant.name[:12] }}{% if opp_s.participant.name|length > 12 %}…{% endif %}
+                                </th>
                                 {% endfor %}
-                                <td style="padding: 6px; font-size: 0.85rem;">
-                                {% if ns.found %}
-                                    {% if ns.match.status == 'completed' %}
-                                        {% if ns.is_p1 %}
-                                            <span style="{% if ns.match.winner_id == row_p.id %}color: var(--primary); font-weight: bold;{% endif %}">{{ ns.match.score1 | format_tennis_score | safe }}</span>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row_s in rr_standings %}
+                            <tr>
+                                <td style="text-align: left; font-weight: 600; padding: 0.5rem 0.75rem; background: var(--bg-secondary);">
+                                    {{ row_s.participant.name }}
+                                </td>
+                                {% for col_s in rr_standings %}
+                                {% if row_s.participant.id == col_s.participant.id %}
+                                <td style="background: repeating-linear-gradient(45deg, rgba(0,0,0,0.06), rgba(0,0,0,0.06) 5px, rgba(0,0,0,0.12) 5px, rgba(0,0,0,0.12) 10px); color: var(--text-muted); font-size: 0.75rem;">
+                                    —
+                                </td>
+                                {% else %}
+                                {% set cell = rr_score_matrix.get((row_s.participant.id, col_s.participant.id)) if rr_score_matrix else None %}
+                                <td style="padding: 0.35rem; position: relative;">
+                                    {% if cell and cell.match %}
+                                        {% set m = cell.match %}
+                                        {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] %}
+                                        <div style="display: flex; align-items: center; justify-content: center; gap: 4px;">
+                                            <input type="text" 
+                                                   name="match_{{ m.id }}_p{% if cell.is_p1 %}1{% else %}2{% endif %}" 
+                                                   id="matrix-input-{{ m.id }}-{% if cell.is_p1 %}1{% else %}2{% endif %}" 
+                                                   data-match-id="{{ m.id }}" 
+                                                   data-player-idx="{% if cell.is_p1 %}1{% else %}2{% endif %}" 
+                                                   value="{{ cell.val or '' }}" 
+                                                   class="matrix-score-input form-input" 
+                                                   placeholder="—" 
+                                                   style="width: 52px; height: 32px; text-align: center; font-weight: 700; font-size: 0.88rem; padding: 2px 4px; border: 1px solid var(--border-strong); border-radius: 4px; background: {% if m.status == 'completed' %}{% if m.winner_id == row_s.participant.id %}rgba(5, 150, 105, 0.12){% else %}var(--bg-secondary){% endif %}{% else %}var(--bg-primary){% endif %}; color: {% if m.status == 'completed' and m.winner_id == row_s.participant.id %}#065F46{% else %}var(--text-primary){% endif %};" 
+                                                   oninput="handleMatrixScoreInput(this)" 
+                                                   onkeydown="if(event.key==='Enter'){event.preventDefault(); document.getElementById('rr-matrix-form').submit();}">
+                                            <button type="button" 
+                                                    class="btn btn-secondary btn-small" 
+                                                    style="padding: 2px 5px; font-size: 0.75rem; border-radius: 4px; border: 1px solid var(--border-color); color: var(--text-muted); cursor: pointer;" 
+                                                    title="Open detailed match score modal (tiebreak, sets, walkover, retirement)" 
+                                                    onclick="openMatchModal({{ m.id }}, '{{ m.status }}', '{{ m.scheduled_time.strftime('%Y-%m-%dT%H:%M') if m.scheduled_time else '' }}', '{{ m.participant1.name|escape if m.participant1 else '' }}', {{ m.participant1_id or 'null' }}, '{{ m.participant2.name|escape if m.participant2 else '' }}', {{ m.participant2_id or 'null' }}, true, '{{ m.score1 or '' }}', '{{ m.score2 or '' }}', '{{ m.scoring_format or category.scoring_format or 'games' }}', '{{ m.num_sets or category.num_sets or 3 }}', '{{ m.games_per_set or category.games_per_set or 6 }}', '{{ m.points_to_win or category.points_to_win or 11 }}', {{ m.winner_id or 'null' }}, {{ m.match_number or 'null' }}, 'standard')">
+                                                ✏️
+                                            </button>
+                                        </div>
                                         {% else %}
-                                            <span style="{% if ns.match.winner_id == row_p.id %}color: var(--primary); font-weight: bold;{% endif %}">{{ ns.match.score2 | format_tennis_score | safe }}</span>
+                                        <div style="cursor: pointer; padding: 4px 6px; border-radius: 4px;" 
+                                             onclick="openMatchModal({{ m.id }}, '{{ m.status }}', '{{ m.scheduled_time.strftime('%Y-%m-%dT%H:%M') if m.scheduled_time else '' }}', '{{ m.participant1.name|escape if m.participant1 else '' }}', {{ m.participant1_id or 'null' }}, '{{ m.participant2.name|escape if m.participant2 else '' }}', {{ m.participant2_id or 'null' }}, false, '{{ m.score1 or '' }}', '{{ m.score2 or '' }}', '{{ m.scoring_format or category.scoring_format or 'games' }}', '{{ m.num_sets or category.num_sets or 3 }}', '{{ m.games_per_set or category.games_per_set or 6 }}', '{{ m.points_to_win or category.points_to_win or 11 }}', {{ m.winner_id or 'null' }}, {{ m.match_number or 'null' }}, 'standard')" 
+                                             title="Click to view match details">
+                                            {% if cell.score_display %}
+                                                <span style="font-weight: 700; color: {% if m.status == 'completed' and m.winner_id == row_s.participant.id %}#065F46{% elif m.status == 'completed' %}var(--text-muted){% else %}var(--text-primary){% endif %};">
+                                                    {{ cell.score_display }}
+                                                </span>
+                                            {% else %}
+                                                <span style="color: var(--text-muted); font-size: 0.85rem;">—</span>
+                                            {% endif %}
+                                        </div>
                                         {% endif %}
                                     {% else %}
-                                        <span style="color: var(--text-muted); font-size: 0.8rem;">—</span>
+                                        <span style="color: var(--text-muted);">—</span>
                                     {% endif %}
-                                {% else %}
-                                    —
-                                {% endif %}
                                 </td>
-                            {% endif %}
+                                {% endif %}
+                                {% endfor %}
+                            </tr>
                             {% endfor %}
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                        </tbody>
+                    </table>
+                </div>
             </div>
+            {% if current_user and current_user.role in ['admin', 'superadmin'] and category.status in ['upcoming', 'in_progress', 'completed'] %}
+            </form>
+            {% endif %}
+            {% endif %}
         </div>
         {% endif %}
 
@@ -1920,6 +2070,24 @@
 </style>
 
 <script>
+// Auto-fill symmetric score when hyphens are entered (e.g. "21-17")
+function handleMatrixScoreInput(inputEl) {
+    const val = inputEl.value.trim();
+    if (val.includes('-')) {
+        const parts = val.split('-');
+        if (parts.length === 2 && parts[0].trim() !== '' && parts[1].trim() !== '') {
+            const matchId = inputEl.dataset.matchId;
+            const playerIdx = inputEl.dataset.playerIdx;
+            const otherIdx = playerIdx === '1' ? '2' : '1';
+            const otherInput = document.getElementById('matrix-input-' + matchId + '-' + otherIdx);
+            inputEl.value = parts[0].trim();
+            if (otherInput) {
+                otherInput.value = parts[1].trim();
+            }
+        }
+    }
+}
+
 // Group View Switcher for Multi-Group Categories
 function switchGroupView(groupId, btnElement, saveToStorage = true) {
     const categoryId = '{{ category.id }}';

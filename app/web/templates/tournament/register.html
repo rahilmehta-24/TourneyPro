@@ -182,13 +182,34 @@
                             {{ player.name }}
                         </div>
                         <div style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;">
-                            {{ player.gender }} &bull; {{ player.age_category }} &bull; Mobile: {{ player.mobile if player.mobile else 'Not provided' }}
+                            {{ player.gender }} &bull; {{ player.age_category }} &bull; Mobile: {{ player.contact_number or 'Not provided' }} &bull; Email: {{ player.email or (current_user.email if current_user else 'Not provided') }}
                         </div>
                     </div>
                     <a href="{{ url_for('player.dashboard') }}" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.3rem 0.75rem;">
                         Edit Profile
                     </a>
                 </div>
+                {% if not player.contact_number or not (player.email or (current_user and current_user.email)) %}
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border-color); display: flex; flex-direction: column; gap: 0.75rem;">
+                    <div style="font-size: 0.85rem; color: var(--accent-warning); font-weight: 600;">
+                        ⚠️ Mobile number and Email are mandatory for registration confirmation & notifications:
+                    </div>
+                    <div class="form-row">
+                        {% if not player.contact_number %}
+                        <div class="form-group" style="margin: 0; flex: 1;">
+                            <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Mobile Number *</label>
+                            <input type="tel" name="guest_mobile" class="form-input" required pattern="[0-9+ -]{10,15}" placeholder="+91 98765 43210" style="width: 100%;">
+                        </div>
+                        {% endif %}
+                        {% if not (player.email or (current_user and current_user.email)) %}
+                        <div class="form-group" style="margin: 0; flex: 1;">
+                            <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Email Address *</label>
+                            <input type="email" name="guest_email" class="form-input" required placeholder="alex@example.com" style="width: 100%;">
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
             </div>
             {% else %}
             <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.28); padding: 1.1rem 1.25rem; border-radius: var(--radius-md); margin-bottom: 1.25rem;">
@@ -229,8 +250,8 @@
 
                 <div class="form-row">
                     <div class="form-group" style="margin: 0;">
-                        <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Email Address (Optional)</label>
-                        <input type="email" name="guest_email" class="form-input" placeholder="alex@example.com" value="{{ current_user.email if current_user else '' }}" style="width: 100%;">
+                        <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Email Address *</label>
+                        <input type="email" name="guest_email" class="form-input" required placeholder="alex@example.com" value="{{ current_user.email if current_user else '' }}" style="width: 100%;">
                     </div>
                     <div class="form-group" style="margin: 0;">
                         <label class="form-label" style="font-size: 0.85rem; margin-bottom: 0.3rem; display: block; color: var(--text-secondary); font-weight: 600;">Gender *</label>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Tournament Registration</title>
+  <style type="text/css">
+    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
+    body { margin: 0; padding: 0; width: 100% !important; background-color: #F4EFE3; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0B2B20; }
+    @media only screen and (max-width: 620px) {
+      .email-container { width: 100% !important; }
+      .mobile-padding { padding: 20px 16px !important; }
+      .mobile-stack { display: block !important; width: 100% !important; box-sizing: border-box !important; padding-bottom: 8px !important; }
+      .btn-action { display: block !important; width: 100% !important; text-align: center !important; margin: 8px 0 !important; box-sizing: border-box !important; }
+    }
+  </style>
+</head>
+<body style="margin: 0; padding: 24px 8px; background-color: #F4EFE3;">
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+    <tr>
+      <td align="center">
+        <!-- Main Email Container -->
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-container" style="max-width: 600px; background-color: #FDFBF6; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(11, 43, 32, 0.08); border: 1px solid #E8E0CC;">
+          
+          <!-- Header Bar -->
+          <tr>
+            <td align="center" style="background-color: #0F3D2E; padding: 26px 20px; border-bottom: 3px solid #C9A55C;">
+              <div style="font-family: Georgia, serif; font-size: 22px; font-weight: bold; letter-spacing: 2px; color: #FDFBF6; text-transform: uppercase;">
+                The Baseline Society
+              </div>
+              <div style="font-size: 10px; color: #C9A55C; letter-spacing: 3px; margin-top: 4px; text-transform: uppercase;">
+                Organizer Alert Portal
+              </div>
+            </td>
+          </tr>
+
+          <!-- Hero Greeting -->
+          <tr>
+            <td class="mobile-padding" style="padding: 32px 32px 18px 32px;">
+              <div style="display: inline-block; background-color: rgba(201, 165, 92, 0.2); color: #7A5F1E; font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; border: 1px solid rgba(201, 165, 92, 0.5);">
+                ★ New Registration Received
+              </div>
+              <h1 style="font-family: Georgia, serif; font-size: 24px; color: #0B2B20; margin: 16px 0 8px 0; font-weight: 700;">
+                New Entry for {{ tournament.name }}
+              </h1>
+              <p style="font-size: 14px; line-height: 1.6; color: #55695E; margin: 0 0 16px 0;">
+                A new participant has registered for your tournament. You can connect with them directly using the contact details below or review their entry.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Details Card -->
+          <tr>
+            <td class="mobile-padding" style="padding: 0 32px 24px 32px;">
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #F4EFE3; border-radius: 8px; border: 1px solid #E8E0CC;">
+                <tr style="background-color: #E8E0CC;">
+                  <td colspan="2" style="padding: 10px 14px; font-size: 12px; font-weight: 700; color: #0B2B20; text-transform: uppercase; letter-spacing: 0.5px; border-radius: 8px 8px 0 0;">
+                    👤 Player Details
+                  </td>
+                </tr>
+                <tr>
+                  <td class="mobile-stack" style="padding: 12px 14px; border-bottom: 1px solid #E8E0CC; width: 50%;">
+                    <div style="font-size: 11px; text-transform: uppercase; color: #55695E; font-weight: 600;">Player Name</div>
+                    <div style="font-size: 15px; font-weight: 600; color: #0B2B20; margin-top: 2px;">{{ player_name }}</div>
+                  </td>
+                  <td class="mobile-stack" style="padding: 12px 14px; border-bottom: 1px solid #E8E0CC; width: 50%;">
+                    <div style="font-size: 11px; text-transform: uppercase; color: #55695E; font-weight: 600;">Category</div>
+                    <div style="font-size: 14px; font-weight: 500; color: #0B2B20; margin-top: 2px;">
+                      {{ category.name if category else 'General' }}
+                      {% if partner_name %}<div style="font-size: 12px; color: #55695E;">Partner: {{ partner_name }} ({{ partner_mobile or 'No phone' }})</div>{% endif %}
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="mobile-stack" style="padding: 12px 14px; border-bottom: 1px solid #E8E0CC; width: 50%;">
+                    <div style="font-size: 11px; text-transform: uppercase; color: #55695E; font-weight: 600;">Email Address</div>
+                    <div style="font-size: 14px; color: #0F3D2E; font-weight: 500; margin-top: 2px;">
+                      {% if player_email %}
+                      <a href="mailto:{{ player_email }}" style="color: #0F3D2E; text-decoration: underline;">{{ player_email }}</a>
+                      {% else %}
+                      <span style="color: #8F9D95;">Not provided</span>
+                      {% endif %}
+                    </div>
+                  </td>
+                  <td class="mobile-stack" style="padding: 12px 14px; border-bottom: 1px solid #E8E0CC; width: 50%;">
+                    <div style="font-size: 11px; text-transform: uppercase; color: #55695E; font-weight: 600;">Phone Number</div>
+                    <div style="font-size: 14px; color: #0B2B20; font-weight: 500; margin-top: 2px;">
+                      {% if player_phone %}
+                      <a href="tel:{{ player_phone }}" style="color: #0B2B20; text-decoration: underline;">{{ player_phone }}</a>
+                      {% else %}
+                      <span style="color: #8F9D95;">Not provided</span>
+                      {% endif %}
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="mobile-stack" style="padding: 12px 14px; width: 50%;">
+                    <div style="font-size: 11px; text-transform: uppercase; color: #55695E; font-weight: 600;">Payment & Fee</div>
+                    <div style="font-size: 13px; color: #0B2B20; margin-top: 2px;">
+                      ₹{{ amount_due }} • {{ payment_status | upper }} ({{ payment_method | upper }})
+                    </div>
+                  </td>
+                  <td class="mobile-stack" style="padding: 12px 14px; width: 50%;">
+                    <div style="font-size: 11px; text-transform: uppercase; color: #55695E; font-weight: 600;">Registered At</div>
+                    <div style="font-size: 13px; color: #0B2B20; margin-top: 2px;">{{ registered_at }}</div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Action Buttons -->
+          <tr>
+            <td align="center" class="mobile-padding" style="padding: 6px 32px 28px 32px;">
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td align="center">
+                    <a href="{{ manage_url }}" class="btn-action" style="display: inline-block; background-color: #0F3D2E; color: #FDFBF6; font-size: 14px; font-weight: 600; padding: 13px 22px; border-radius: 8px; text-decoration: none;">
+                      Review & Approve Entry →
+                    </a>
+                    {% if player_phone %}
+                    <a href="tel:{{ player_phone }}" class="btn-action" style="display: inline-block; background-color: #F4EFE3; color: #0F3D2E; border: 1px solid #0F3D2E; font-size: 14px; font-weight: 600; padding: 12px 20px; border-radius: 8px; text-decoration: none; margin-left: 6px;">
+                      📞 Call Player
+                    </a>
+                    {% endif %}
+                    {% if player_email %}
+                    <a href="mailto:{{ player_email }}" class="btn-action" style="display: inline-block; background-color: #F4EFE3; color: #0F3D2E; border: 1px solid #0F3D2E; font-size: 14px; font-weight: 600; padding: 12px 20px; border-radius: 8px; text-decoration: none; margin-left: 6px;">
+                      ✉️ Email Player
+                    </a>
+                    {% endif %}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding: 20px 24px; background-color: #F4EFE3; border-top: 1px solid #E8E0CC;">
+              <p style="font-size: 12px; color: #55695E; margin: 0 0 4px 0;">
+                You are receiving this as the organizer of <strong>{{ tournament.name }}</strong>.
+              </p>
+              <p style="font-size: 11px; color: #8F9D95; margin: 0;">
+                The Baseline Society
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

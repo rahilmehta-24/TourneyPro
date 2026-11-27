@@ -112,6 +112,15 @@ class Category(db.Model):
     total_games = db.Column(db.Integer)
     scoring_format = db.Column(db.String(20), default="games")  # 'games' or 'points'
     points_to_win = db.Column(db.Integer, default=11)
+    knockout_scoring_format = db.Column(db.String(20), default="same")  # 'same', 'games', 'points'
+    win_by_margin = db.Column(db.Integer, default=2)  # Margin required to win
+    score_cap = db.Column(db.Integer, nullable=True)  # Hard score cap (e.g. 25)
+    semifinal_target = db.Column(db.Integer, nullable=True)  # Points or games target for semifinal
+    final_target = db.Column(db.Integer, nullable=True)  # Points or games target for final
+    has_third_place_match = db.Column(db.Boolean, default=False)
+    tiebreak_at = db.Column(db.Integer, default=6)  # Games score triggering tiebreak (e.g. 6 or 7)
+    tiebreak_points = db.Column(db.Integer, default=7)  # Tiebreak target (7 or 10)
+    final_num_sets = db.Column(db.Integer, nullable=True)  # Sets for final if different from group
 
     # Court scheduling fields
     start_date = db.Column(db.Date)  # Category start date
@@ -184,6 +193,10 @@ class Participant(db.Model):
     group_wins = db.Column(db.Integer, default=0)
     group_losses = db.Column(db.Integer, default=0)
     group_points = db.Column(db.Integer, default=0)
+    group_points_conceded = db.Column(db.Integer, default=0)
+    group_point_diff = db.Column(db.Integer, default=0)
+    group_sets_won = db.Column(db.Integer, default=0)
+    group_sets_lost = db.Column(db.Integer, default=0)
 
     # Payment info
     payment_status = db.Column(db.String(20), default="paid")
@@ -250,6 +263,10 @@ class Match(db.Model):
     court_name = db.Column(db.String(100))  # e.g. "Court 1", assigned by scheduler
     completed_at = db.Column(db.DateTime)
     lock_version = db.Column(db.Integer, default=1, nullable=False)
+    match_stage = db.Column(db.String(20), nullable=True)  # 'group', 'quarterfinal', 'semifinal', 'final', 'third_place'
+    is_final_group_round = db.Column(db.Boolean, default=False)
+    win_by_margin = db.Column(db.Integer, nullable=True)
+    score_cap = db.Column(db.Integer, nullable=True)
 
     # Match-specific scoring overrides (only for knockout)
     scoring_format = db.Column(db.String(20))  # 'games', 'points', or None to inherit

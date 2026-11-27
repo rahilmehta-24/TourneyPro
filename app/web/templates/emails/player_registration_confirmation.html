@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tournament Registration Confirmation</title>
+  <style type="text/css">
+    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
+    body { margin: 0; padding: 0; width: 100% !important; background-color: #F4EFE3; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0B2B20; }
+    @media only screen and (max-width: 620px) {
+      .email-container { width: 100% !important; }
+      .mobile-padding { padding: 20px 16px !important; }
+      .mobile-stack { display: block !important; width: 100% !important; box-sizing: border-box !important; padding-bottom: 8px !important; }
+      .btn-action { display: block !important; width: 100% !important; text-align: center !important; margin: 8px 0 !important; box-sizing: border-box !important; }
+    }
+  </style>
+</head>
+<body style="margin: 0; padding: 24px 8px; background-color: #F4EFE3;">
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+    <tr>
+      <td align="center">
+        <!-- Main Email Container -->
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-container" style="max-width: 600px; background-color: #FDFBF6; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(11, 43, 32, 0.08); border: 1px solid #E8E0CC;">
+          
+          <!-- Header Bar -->
+          <tr>
+            <td align="center" style="background-color: #0F3D2E; padding: 26px 20px; border-bottom: 3px solid #C9A55C;">
+              <div style="font-family: Georgia, serif; font-size: 22px; font-weight: bold; letter-spacing: 2px; color: #FDFBF6; text-transform: uppercase;">
+                The Baseline Society
+              </div>
+              <div style="font-size: 10px; color: #C9A55C; letter-spacing: 3px; margin-top: 4px; text-transform: uppercase;">
+                Tournament Entry Confirmation
+              </div>
+            </td>
+          </tr>
+
+          <!-- Hero Greeting -->
+          <tr>
+            <td class="mobile-padding" style="padding: 32px 32px 18px 32px;">
+              <div style="display: inline-block; background-color: rgba(4, 120, 87, 0.12); color: #047857; font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; border: 1px solid rgba(4, 120, 87, 0.3);">
+                ● Registration Confirmed
+              </div>
+              <h1 style="font-family: Georgia, serif; font-size: 24px; color: #0B2B20; margin: 16px 0 8px 0; font-weight: 700;">
+                You're in, {{ player_name }}! 🎾
+              </h1>
+              <p style="font-size: 14px; line-height: 1.6; color: #55695E; margin: 0 0 16px 0;">
+                Your entry for <strong>{{ tournament.name }}</strong> has been recorded. Below are your event details and tournament organizer contact information.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Details Card -->
+          <tr>
+            <td class="mobile-padding" style="padding: 0 32px 24px 32px;">
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #F4EFE3; border-radius: 8px; border: 1px solid #E8E0CC;">
+                <tr>
+                  <td style="padding: 10px 14px; border-bottom: 1px solid #E8E0CC;">
+                    <div style="font-size: 11px; text-transform: uppercase; color: #55695E; font-weight: 600;">Tournament</div>
+                    <div style="font-size: 15px; font-weight: 600; color: #0B2B20; margin-top: 2px;">{{ tournament.name }}</div>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 10px 14px; border-bottom: 1px solid #E8E0CC;">
+                    <div style="font-size: 11px; text-transform: uppercase; color: #55695E; font-weight: 600;">Category</div>
+                    <div style="font-size: 14px; font-weight: 500; color: #0B2B20; margin-top: 2px;">
+                      {{ category.name if category else 'General' }}
+                      {% if partner_name %}<span style="color: #55695E;">(Partner: {{ partner_name }})</span>{% endif %}
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 10px 14px; border-bottom: 1px solid #E8E0CC;">
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                      <tr>
+                        <td class="mobile-stack" style="width: 50%; vertical-align: top;">
+                          <div style="font-size: 11px; text-transform: uppercase; color: #55695E; font-weight: 600;">Entry Fee</div>
+                          <div style="font-size: 14px; font-weight: 600; color: #0B2B20; margin-top: 2px;">
+                            ₹{{ amount_due }} ({{ payment_method | upper }})
+                          </div>
+                        </td>
+                        <td class="mobile-stack" style="width: 50%; vertical-align: top;">
+                          <div style="font-size: 11px; text-transform: uppercase; color: #55695E; font-weight: 600;">Status</div>
+                          <div style="font-size: 14px; font-weight: 600; color: #047857; margin-top: 2px;">
+                            {{ registration_status | upper }}
+                          </div>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                {% if tournament.start_date %}
+                <tr>
+                  <td style="padding: 10px 14px; border-bottom: 1px solid #E8E0CC;">
+                    <div style="font-size: 11px; text-transform: uppercase; color: #55695E; font-weight: 600;">Dates</div>
+                    <div style="font-size: 13px; color: #0B2B20; margin-top: 2px;">
+                      {{ tournament.start_date.strftime('%b %d, %Y') }}{% if tournament.end_date %} to {{ tournament.end_date.strftime('%b %d, %Y') }}{% endif %}
+                    </div>
+                  </td>
+                </tr>
+                {% endif %}
+                <!-- Organizer Contact Card -->
+                <tr>
+                  <td style="padding: 12px 14px; background-color: #ECE5D5; border-radius: 0 0 8px 8px;">
+                    <div style="font-size: 11px; text-transform: uppercase; color: #55695E; font-weight: 600; margin-bottom: 4px;">
+                      📞 Tournament Organizer Contact
+                    </div>
+                    <div style="font-size: 13px; color: #0B2B20; line-height: 1.5;">
+                      <div><strong>Organizer:</strong> {{ organizer_name }}</div>
+                      {% if organizer_email %}
+                      <div><strong>Email:</strong> <a href="mailto:{{ organizer_email }}" style="color: #0F3D2E; text-decoration: underline;">{{ organizer_email }}</a></div>
+                      {% endif %}
+                      {% if organizer_phone %}
+                      <div><strong>Phone:</strong> <a href="tel:{{ organizer_phone }}" style="color: #0F3D2E; text-decoration: underline;">{{ organizer_phone }}</a></div>
+                      {% endif %}
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Action Buttons -->
+          <tr>
+            <td align="center" class="mobile-padding" style="padding: 6px 32px 28px 32px;">
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td align="center">
+                    <a href="{{ tournament_url }}" class="btn-action" style="display: inline-block; background-color: #0F3D2E; color: #FDFBF6; font-size: 14px; font-weight: 600; padding: 13px 24px; border-radius: 8px; text-decoration: none; box-shadow: 0 2px 6px rgba(15, 61, 46, 0.25);">
+                      View Tournament Schedule →
+                    </a>
+                    {% if organizer_email %}
+                    <a href="mailto:{{ organizer_email }}" class="btn-action" style="display: inline-block; background-color: #F4EFE3; color: #0F3D2E; border: 1px solid #0F3D2E; font-size: 14px; font-weight: 600; padding: 12px 20px; border-radius: 8px; text-decoration: none; margin-left: 8px;">
+                      ✉️ Email Organizer
+                    </a>
+                    {% endif %}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding: 20px 24px; background-color: #F4EFE3; border-top: 1px solid #E8E0CC;">
+              <p style="font-size: 12px; color: #55695E; margin: 0 0 4px 0;">
+                Have questions? You can reply directly to this email to contact the tournament desk.
+              </p>
+              <p style="font-size: 11px; color: #8F9D95; margin: 0;">
+                The Baseline Society
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

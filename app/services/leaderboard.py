@@ -153,6 +153,8 @@ def recalculate_all_group_stats(category_id):
         p.group_wins = 0
         p.group_losses = 0
         p.group_points = 0
+        p.group_points_conceded = 0
+        p.group_point_diff = 0
         
     matches = Match.query.filter(
         Match.category_id == category_id,
@@ -184,13 +186,20 @@ def recalculate_all_group_stats(category_id):
             
             if winner.id == p1.id:
                 winner.group_points += s1
+                winner.group_points_conceded += s2
                 loser.group_points += s2
+                loser.group_points_conceded += s1
             else:
                 winner.group_points += s2
+                winner.group_points_conceded += s1
                 loser.group_points += s1
+                loser.group_points_conceded += s2
         except (ValueError, TypeError):
             # Fallback for standard tennis sets: 3 points for win
             winner.group_points += 3
+
+        winner.group_point_diff = (winner.group_points or 0) - (winner.group_points_conceded or 0)
+        loser.group_point_diff = (loser.group_points or 0) - (loser.group_points_conceded or 0)
 
     db.session.commit()
 

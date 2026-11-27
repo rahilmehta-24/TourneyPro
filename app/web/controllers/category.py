@@ -141,40 +141,72 @@ def start_single_category(category, tournament):
 
 def _extract_category_scoring_config(format_type, form):
     """Extract format-isolated scoring configuration for a category."""
-    if format_type == "group_stage":
-        raw_total = form.get("total_games", type=int)
-        return {
-            "scoring_format": "games",
-            "num_sets": None,
-            "games_per_set": None,
-            "total_games": raw_total if raw_total is not None else 7,
-            "points_to_win": None,
-            "max_players_per_team": form.get("max_players_per_team", type=int),
-        }
-
     scoring_format = form.get("scoring_format") or "games"
     if scoring_format not in ("games", "points"):
         scoring_format = "games"
 
+    knockout_scoring_format = form.get("knockout_scoring_format") or "same"
+    if knockout_scoring_format not in ("same", "games", "points"):
+        knockout_scoring_format = "same"
+
+    win_by_margin = form.get("win_by_margin", type=int)
+    if win_by_margin is None or win_by_margin < 1:
+        win_by_margin = 2
+
+    score_cap = form.get("score_cap", type=int)
+    semifinal_target = form.get("semifinal_target", type=int)
+    final_target = form.get("final_target", type=int)
+    has_third_place_match = form.get("has_third_place_match") in ("on", "true", "1", True)
+    tiebreak_at = form.get("tiebreak_at", type=int) or 6
+    tiebreak_points = form.get("tiebreak_points", type=int) or 7
+    final_num_sets = form.get("final_num_sets", type=int)
+
+    base = {
+        "knockout_scoring_format": knockout_scoring_format,
+        "win_by_margin": win_by_margin,
+        "score_cap": score_cap,
+        "semifinal_target": semifinal_target,
+        "final_target": final_target,
+        "has_third_place_match": has_third_place_match,
+        "tiebreak_at": tiebreak_at,
+        "tiebreak_points": tiebreak_points,
+        "final_num_sets": final_num_sets,
+    }
+
+    if format_type == "group_stage":
+        raw_total = form.get("total_games", type=int)
+        raw_points = form.get("points_to_win", type=int)
+        base.update({
+            "scoring_format": scoring_format,
+            "num_sets": form.get("num_sets", type=int) if scoring_format == "games" else None,
+            "games_per_set": form.get("games_per_set", type=int) if scoring_format == "games" else None,
+            "total_games": raw_total if raw_total is not None else (7 if scoring_format == "games" else None),
+            "points_to_win": raw_points if raw_points is not None else (21 if scoring_format == "points" else None),
+            "max_players_per_team": form.get("max_players_per_team", type=int),
+        })
+        return base
+
     if scoring_format == "points":
         raw_points = form.get("points_to_win", type=int)
-        return {
+        base.update({
             "scoring_format": "points",
             "num_sets": None,
             "games_per_set": None,
             "total_games": None,
             "points_to_win": raw_points if raw_points is not None else 11,
             "max_players_per_team": None,
-        }
+        })
+        return base
 
-    return {
+    base.update({
         "scoring_format": "games",
         "num_sets": form.get("num_sets", type=int) or 3,
         "games_per_set": form.get("games_per_set", type=int) or 6,
         "total_games": None,
         "points_to_win": None,
         "max_players_per_team": None,
-    }
+    })
+    return base
 
 
 def _sync_category_groups(category, target_num_groups, rebalance_participants=False):
@@ -445,6 +477,15 @@ def create_category(slug):
             total_games=total_games,
             scoring_format=scoring_format,
             points_to_win=points_to_win,
+            knockout_scoring_format=scoring_cfg.get("knockout_scoring_format", "same"),
+            win_by_margin=scoring_cfg.get("win_by_margin", 2),
+            score_cap=scoring_cfg.get("score_cap"),
+            semifinal_target=scoring_cfg.get("semifinal_target"),
+            final_target=scoring_cfg.get("final_target"),
+            has_third_place_match=scoring_cfg.get("has_third_place_match", False),
+            tiebreak_at=scoring_cfg.get("tiebreak_at", 6),
+            tiebreak_points=scoring_cfg.get("tiebreak_points", 7),
+            final_num_sets=scoring_cfg.get("final_num_sets"),
             has_group_stage=has_group_stage,
             num_groups=num_groups,
             teams_per_group=teams_per_group,
@@ -481,6 +522,73 @@ def create_category(slug):
     return render_template(
         "category/create.html", tournament=tournament, formats=TOURNAMENT_FORMATS
     )
+
+
+class ScoreMatrixCell(dict):
+    """Rich matrix cell holding match object, display string, and raw scores."""
+    def __init__(self, match, is_p1, score_display="", val="", opp_val=""):
+        super().__init__(
+            match=match,
+            is_p1=is_p1,
+            score_display=score_display,
+            val=val,
+            opp_val=opp_val,
+        )
+
+    def __getattr__(self, name):
+        try:
+            return self[name]
+        except KeyError:
+            raise AttributeError(name)
+
+    def __str__(self):
+        return self.get("score_display", "")
+
+    def __repr__(self):
+        return self.get("score_display", "")
+
+
+def _build_score_matrix(match_list):
+    matrix = {}
+    for m in match_list:
+        p1_id = getattr(m, "participant1_id", None)
+        p2_id = getattr(m, "participant2_id", None)
+        if p1_id and p2_id:
+            s1 = str(getattr(m, "score1", "") or "").strip()
+            s2 = str(getattr(m, "score2", "") or "").strip()
+            score_display = ""
+            rev_display = ""
+            p1_val = s1
+            p2_val = s2
+            if s1 and s2 and ("-" not in s1 or s2):
+                score_display = f"{s1}-{s2}"
+                rev_display = f"{s2}-{s1}"
+            elif s1 and "-" in s1:
+                parts = s1.split("-")
+                score_display = s1
+                rev_display = f"{parts[1].strip()}-{parts[0].strip()}" if len(parts) == 2 else s1
+                if len(parts) == 2:
+                    p1_val = parts[0].strip()
+                    p2_val = parts[1].strip()
+            elif getattr(m, "status", "") == "completed" and getattr(m, "winner_id", None):
+                score_display = "W" if m.winner_id == p1_id else "L"
+                rev_display = "W" if m.winner_id == p2_id else "L"
+
+            matrix[(p1_id, p2_id)] = ScoreMatrixCell(
+                match=m,
+                is_p1=True,
+                score_display=score_display,
+                val=p1_val,
+                opp_val=p2_val,
+            )
+            matrix[(p2_id, p1_id)] = ScoreMatrixCell(
+                match=m,
+                is_p1=False,
+                score_display=rev_display,
+                val=p2_val,
+                opp_val=p1_val,
+            )
+    return matrix
 
 
 @category_bp.route("/t/<slug>/categories/<int:category_id>")
@@ -586,7 +694,12 @@ def view_category(slug, category_id):
                 .order_by(Match.round, Match.match_number)
                 .all()
             )
-            groups_data.append({"group": group, "standings": standings, "matches": group_matches})
+            groups_data.append({
+                "group": group,
+                "standings": standings,
+                "matches": group_matches,
+                "score_matrix": _build_score_matrix(group_matches),
+            })
 
     # Calculate final rankings if tournament is complete
     rankings = None
@@ -632,6 +745,7 @@ def view_category(slug, category_id):
         rr_standings = RoundRobinFormat.calculate_final_rankings(
             category, commit=(category.status == "completed")
         )
+    rr_score_matrix = _build_score_matrix(rr_matches)
 
     is_export = request.args.get("export") == "1"
     winners = get_category_winners(category) if is_export else []
@@ -778,6 +892,7 @@ def view_category(slug, category_id):
         winners=winners,
         rr_matches=rr_matches,
         rr_standings=rr_standings,
+        rr_score_matrix=rr_score_matrix,
         verification_checks=verification_checks,
         tournament=tournament,
         category=category,
@@ -1242,6 +1357,15 @@ def manage_category(slug, category_id):
                     category.total_games = scoring_cfg["total_games"]
                     category.points_to_win = scoring_cfg["points_to_win"]
                     category.max_players_per_team = scoring_cfg["max_players_per_team"]
+                    category.knockout_scoring_format = scoring_cfg.get("knockout_scoring_format", "same")
+                    category.win_by_margin = scoring_cfg.get("win_by_margin", 2)
+                    category.score_cap = scoring_cfg.get("score_cap")
+                    category.semifinal_target = scoring_cfg.get("semifinal_target")
+                    category.final_target = scoring_cfg.get("final_target")
+                    category.has_third_place_match = scoring_cfg.get("has_third_place_match", False)
+                    category.tiebreak_at = scoring_cfg.get("tiebreak_at", 6)
+                    category.tiebreak_points = scoring_cfg.get("tiebreak_points", 7)
+                    category.final_num_sets = scoring_cfg.get("final_num_sets")
 
                     category.has_group_stage = format_type in [
                         "group_stage",
@@ -2098,12 +2222,22 @@ def update_grid_scores(slug, category_id):
                     if match_id not in match_updates:
                         match_updates[match_id] = {}
 
-                    if value and value.strip() != "":
-                        v_int = int(value)
-                        if v_int >= 0:
-                            match_updates[match_id][player_idx] = v_int
+                    val_str = str(value or "").strip()
+                    if val_str != "":
+                        if "-" in val_str:
+                            sub_parts = val_str.split("-", 1)
+                            p1_val = int(sub_parts[0].strip())
+                            p2_val = int(sub_parts[1].strip())
+                            if player_idx == "p1":
+                                match_updates[match_id]["p1"] = p1_val
+                                match_updates[match_id]["p2"] = p2_val
+                            else:
+                                match_updates[match_id]["p2"] = p1_val
+                                match_updates[match_id]["p1"] = p2_val
                         else:
-                            continue
+                            v_int = int(val_str)
+                            if v_int >= 0:
+                                match_updates[match_id][player_idx] = v_int
                     else:
                         match_updates[match_id][player_idx] = None
                 except ValueError:
@@ -2151,9 +2285,12 @@ def update_grid_scores(slug, category_id):
     db.session.commit()
 
     # Recalculate group/round-robin stats
-    from app.services.leaderboard import recalculate_all_group_stats
-
-    recalculate_all_group_stats(category.id)
+    if category.has_group_stage:
+        from app.services.leaderboard import recalculate_all_group_stats
+        recalculate_all_group_stats(category.id)
+    if category.format in ["round_robin", "doubles_round_robin"]:
+        from app.services.leaderboard import calculate_combined_round_robin_standings
+        calculate_combined_round_robin_standings(category.id)
 
     # Check if category is finished
     if check_category_auto_completion(category):
@@ -2836,6 +2973,15 @@ def finalize_category_format(slug, category_id):
     category.total_games = scoring_cfg["total_games"]
     category.points_to_win = scoring_cfg["points_to_win"]
     category.max_players_per_team = scoring_cfg["max_players_per_team"]
+    category.knockout_scoring_format = scoring_cfg.get("knockout_scoring_format", "same")
+    category.win_by_margin = scoring_cfg.get("win_by_margin", 2)
+    category.score_cap = scoring_cfg.get("score_cap")
+    category.semifinal_target = scoring_cfg.get("semifinal_target")
+    category.final_target = scoring_cfg.get("final_target")
+    category.has_third_place_match = scoring_cfg.get("has_third_place_match", False)
+    category.tiebreak_at = scoring_cfg.get("tiebreak_at", 6)
+    category.tiebreak_points = scoring_cfg.get("tiebreak_points", 7)
+    category.final_num_sets = scoring_cfg.get("final_num_sets")
 
     if new_format in ["group_stage", "round_robin", "doubles_round_robin"]:
         category.has_group_stage = True
