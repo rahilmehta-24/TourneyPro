@@ -82,7 +82,46 @@ class RoundRobinFormat(TournamentFormat):
 
     @classmethod
     def advance_match(cls, match, category, winner_id=None):
-        pass
+        if match.match_type == "knockout":
+            from app.services.format_engine.single_elimination.logic import (
+                SingleEliminationFormat,
+            )
+
+            SingleEliminationFormat.advance_match(match, category, winner_id)
+
+            if getattr(category, "has_third_place_match", False) and getattr(match, "match_stage", None) == "semifinal":
+                tp_match = Match.query.filter_by(
+                    category_id=category.id,
+                    bracket_type="third_place",
+                ).first()
+                if tp_match:
+                    loser_id = (
+                        match.participant2_id
+                        if winner_id == match.participant1_id
+                        else match.participant1_id
+                    )
+                    if match.match_number % 2 == 1:
+                        tp_match.participant1_id = loser_id
+                    else:
+                        tp_match.participant2_id = loser_id
+                db.session.commit()
+
+            final_match = Match.query.filter_by(
+                category_id=category.id,
+                match_type="knockout",
+                match_stage="final",
+            ).first()
+            if final_match and final_match.status == "completed" and final_match.winner_id:
+                SingleEliminationFormat.calculate_final_rankings(category)
+
+        elif match.match_type in ["group_stage", "round_robin"]:
+            if match.group_id:
+                from app.services.format_engine.group_stage.logic import GroupStageFormat
+
+                GroupStageFormat.calculate_group_standings(match.group_id)
+            from app.services.leaderboard import recalculate_all_group_stats
+
+            recalculate_all_group_stats(category.id)
 
     @staticmethod
     def parse_match_score(match, p_id, category=None):

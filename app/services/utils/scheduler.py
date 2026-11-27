@@ -275,6 +275,23 @@ def enforce_order_of_play_day_progression(tournament_id: int) -> int:
     # 2. Bracket Round Progression per category: Round R+1 cannot be completed if Round R is pending
     for cat_id in {m.category_id for m in all_matches if m.category_id}:
         cat_matches = [m for m in all_matches if m.category_id == cat_id]
+
+        # Knockout progression: If any group/round-robin match is incomplete, knockout matches must remain pending
+        pending_league = [
+            m for m in cat_matches
+            if m.match_type in ('group_stage', 'round_robin') and m.status != 'completed'
+        ]
+        if pending_league:
+            for m in cat_matches:
+                if m.match_type == 'knockout' and m.status in ('completed', 'in_progress'):
+                    m.status = 'pending'
+                    m.score1 = None
+                    m.score2 = None
+                    m.winner_id = None
+                    m.completed_at = None
+                    clear_downstream(m)
+                    sanitized += 1
+
         cat_rounds = sorted(list({m.round for m in cat_matches}))
         earliest_incomplete_round = None
         for r in cat_rounds:
@@ -329,12 +346,26 @@ def check_match_progression_allowed(match: Match) -> tuple[bool, str | None]:
             return False, f"Matches on {earlier_d_str} must be completed before starting this match."
 
     # 2. Category Round progression check
+    if match.category_id and match.match_type == "knockout":
+        pending_group = (
+            Match.query.filter(
+                Match.category_id == match.category_id,
+                Match.match_type.in_(["group_stage", "round_robin"]),
+                Match.status != "completed",
+                Match.parent_match_id.is_(None),
+            )
+            .first()
+        )
+        if pending_group:
+            return False, "All group stage / league matches in this category must be completed before starting knockout matches."
+
     if match.category_id and match.round and match.round > 1:
         earlier_round_pending = (
             Match.query.filter(
                 Match.category_id == match.category_id,
+                Match.match_type == match.match_type,
                 Match.round < match.round,
-                Match.status != 'completed'
+                Match.status != "completed",
             )
             .order_by(Match.round)
             .first()
@@ -388,7 +419,13 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
 
     all_matches = (
         Match.query.filter_by(tournament_id=tournament_id)
-        .filter(Match.status != "completed", Match.parent_match_id.is_(None))
+        .filter(
+            Match.parent_match_id.is_(None),
+            db.or_(
+                Match.status != "completed",
+                Match.scheduled_time.is_(None),
+            ),
+        )
         .options(
             db.joinedload(Match.participant1),
             db.joinedload(Match.participant2),
@@ -417,13 +454,13 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
         target_session = get_target_session(m.round, max_round, len(tournament_days))
         target_session_idx = 1 if target_session == 'evening' else 0
 
-        # Match type priority (group stage before knockout)
+        # Match type priority (group stage strictly before knockout)
         type_priority = 0 if m.match_type in ('group_stage', 'round_robin') else 1
 
         # Interleave groups across available courts: sort by round first, then group
         group_priority = m.group_id or 0
 
-        return (target_day_idx, target_session_idx, pref_day, type_priority, m.round, group_priority, is_doubles, m.match_number)
+        return (type_priority, target_day_idx, target_session_idx, pref_day, m.round, group_priority, is_doubles, m.match_number)
 
     sorted_matches = sorted(all_matches, key=match_priority_key)
 
@@ -441,9 +478,59 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
     # player_daily_count[d][player_key] = count
     player_daily_count: dict[date, dict[str, int]] = {d: {} for d in tournament_days}
 
+    # Pre-populate court availability and player rest buffers from existing scheduled matches that are completed
+    existing_completed = (
+        Match.query.filter_by(tournament_id=tournament_id)
+        .filter(
+            Match.parent_match_id.is_(None),
+            Match.scheduled_time.isnot(None),
+            Match.court_name.isnot(None),
+            Match.status == "completed",
+        )
+        .all()
+    )
+    for em in existing_completed:
+        em_date = em.scheduled_date or em.scheduled_time.date()
+        if em_date in court_next_available and em.court_name in court_next_available[em_date]:
+            em_end = em.scheduled_end_time or (em.scheduled_time + timedelta(minutes=60))
+            em_next = em_end + court_buffer
+            if em_next > court_next_available[em_date][em.court_name]:
+                court_next_available[em_date][em.court_name] = em_next
+
+        em_keys = get_participant_player_keys(em.participant1).union(
+            get_participant_player_keys(em.participant2)
+        )
+        for pk in em_keys:
+            p_ready = (em.scheduled_end_time or em.scheduled_time) + player_rest_buffer
+            if pk not in player_next_available or p_ready > player_next_available[pk]:
+                player_next_available[pk] = p_ready
+
     # Match earliest start time per category round (Round N cannot start before Round N-1 ends)
     round_ready_at: dict[tuple[int, int], datetime] = {} # (category_id, round) -> earliest datetime
     group_final_start_times: dict[int, datetime] = {} # group_id -> synchronized start time for final group round
+    category_league_end_time: dict[int, datetime] = {} # category_id -> latest scheduled end time of league matches
+
+    existing_group_matches = (
+        Match.query.filter_by(tournament_id=tournament_id)
+        .filter(
+            Match.parent_match_id.is_(None),
+            Match.match_type.in_(["group_stage", "round_robin"]),
+            Match.scheduled_time.isnot(None),
+        )
+        .all()
+    )
+    for gm in existing_group_matches:
+        if gm.category_id:
+            gm_duration = (
+                getattr(cat_map.get(gm.category_id), "avg_match_duration", None)
+                or tournament.avg_match_duration
+                or 60
+            )
+            gm_end = gm.scheduled_end_time or (gm.scheduled_time + timedelta(minutes=gm_duration))
+            category_league_end_time[gm.category_id] = max(
+                category_league_end_time.get(gm.category_id, datetime.min),
+                gm_end,
+            )
 
     scheduled_count = 0
     match_updates: list[dict] = []
@@ -499,6 +586,15 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
         if getattr(match, 'is_final_group_round', False) and match.group_id:
             if match.group_id in group_final_start_times:
                 earliest_time = max(earliest_time, group_final_start_times[match.group_id])
+
+        # Strict rule: Knockout matches must start AFTER all league / group stage matches are completed
+        if match.match_type == "knockout" and match.category_id in category_league_end_time:
+            league_end = category_league_end_time[match.category_id]
+            league_rest = max(player_rest_buffer, timedelta(minutes=45))
+            earliest_time = max(earliest_time, league_end + league_rest)
+            target_days = [d for d in target_days if d >= league_end.date()]
+            if not target_days and tournament_days:
+                target_days = [tournament_days[-1]]
 
         # Session targeting (Day Session vs Evening Session)
         target_session = get_target_session(match.round, max_round, len(tournament_days))
@@ -656,15 +752,26 @@ def auto_schedule_tournament(tournament_id: int) -> dict:
             fallback_day = target_days[-1]
             fallback_day_start = daily_schedules[fallback_day]["start"]
             best_court = min(courts, key=lambda c: court_next_available[fallback_day][c])
-            f_start = max(court_next_available[fallback_day][best_court], datetime.combine(fallback_day, fallback_day_start))
+            f_start = max(
+                court_next_available[fallback_day][best_court],
+                datetime.combine(fallback_day, fallback_day_start),
+                earliest_time if earliest_time.date() == fallback_day else datetime.min,
+            )
             f_end = f_start + match_duration
-            
+
             match.scheduled_time = f_start
             match.scheduled_date = fallback_day
             match.scheduled_end_time = f_end
             match.court_name = best_court
             court_next_available[fallback_day][best_court] = f_end + court_buffer
             scheduled_count += 1
+
+        if match.match_type in ("group_stage", "round_robin") and match.category_id:
+            m_end = match.scheduled_end_time or (match.scheduled_time + match_duration)
+            category_league_end_time[match.category_id] = max(
+                category_league_end_time.get(match.category_id, datetime.min),
+                m_end,
+            )
 
         match_updates.append({
             "id": match.id,
@@ -824,6 +931,23 @@ def get_order_of_play(tournament_slug: str, filter_date: date | None = None) -> 
     'Not Before' indicators, court schedules, and day progression enforcement.
     """
     tournament = Tournament.query.filter_by(url_slug=tournament_slug).first_or_404()
+
+    # Self-heal: ensure any unscheduled top-level matches are scheduled so Order of Play is complete
+    unscheduled = (
+        Match.query.filter_by(tournament_id=tournament.id, parent_match_id=None)
+        .filter(
+            db.or_(
+                Match.scheduled_time.is_(None),
+                Match.court_name.is_(None),
+            )
+        )
+        .first()
+    )
+    if unscheduled:
+        try:
+            auto_schedule_tournament(tournament.id)
+        except Exception:
+            pass
 
     # Pre-fetch categories and groups for tournament into in-memory dictionaries to avoid N+1 queries
     categories = {c.id: c for c in Category.query.filter_by(tournament_id=tournament.id).all()}
