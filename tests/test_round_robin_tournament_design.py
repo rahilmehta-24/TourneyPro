@@ -1,7 +1,7 @@
 import os
 import tempfile
 import unittest
-from datetime import datetime, date, time
+from datetime import date
 from app import create_app
 from app.domain.models import db, Tournament, Category, Participant, Match, Group
 from app.services.format_engine.round_robin.logic import RoundRobinFormat
